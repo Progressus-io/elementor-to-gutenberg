@@ -7,73 +7,87 @@
 
 namespace Progressus\Gutenberg;
 
-defined( 'ABSPATH' ) || exit;
+defined('ABSPATH') || exit;
+
+use Progressus\Gutenberg\Admin\AdminSettings;
 
 /**
  * Class Gutenberg
  *
  * @package Progressus\Gutenberg
  */
-class Gutenberg {
+class Gutenberg
+{
 
-	/**
-	 * Instance to call certain functions globally within the plugin
-	 *
-	 * @var self|null _instance
-	 */
-	protected static ?Gutenberg $instance = null;
+    /**
+     * Instance to call certain functions globally within the plugin
+     *
+     * @var self|null _instance
+     */
+    protected static ?Gutenberg $instance = null;
 
-	/**
-	 * Construct the plugin.
-	 */
-	public function __construct() {
-		add_action( 'init', array( $this, 'load_plugin' ), 0 );
-		add_action( 'gutenberg_plugin_activated', array( $this, 'activation_hooks' ) );
-		add_action( 'gutenberg_plugin_deactivated', array( $this, 'deactivation_hooks' ) );
-	}
+    /**
+     * Construct the plugin.
+     */
+    public function __construct()
+    {
+        add_action('init', array( $this, 'load_plugin' ), 0);
+        add_action('gutenberg_plugin_activated', array( $this, 'activation_hooks' ));
+        add_action('gutenberg_plugin_deactivated', array( $this, 'deactivation_hooks' ));
+    }
 
-	/**
-	 * Gutenberg Customization.
-	 *
-	 * Ensures only one instance is loaded or can be loaded.
-	 *
-	 * @static
-	 * @return Gutenberg|null Gutenberg instance.
-	 */
-	public static function instance(): ?Gutenberg {
-		if ( is_null( self::$instance ) ) {
-			self::$instance = new self();
-		}
+    /**
+     * Gutenberg Customization.
+     *
+     * Ensures only one instance is loaded or can be loaded.
+     *
+     * @static
+     * @return Gutenberg|null Gutenberg instance.
+     */
+    public static function instance(): ?Gutenberg
+    {
+        if (is_null(self::$instance) ) {
+            self::$instance = new self();
+        }
 
-		return self::$instance;
-	}
+        return self::$instance;
+    }
 
-	/**
-	 * Plugin activation hooks.
-	 */
-	public function activation_hooks() {}
+    /**
+     * Plugin activation hooks.
+     */
+    public function activation_hooks()
+    {
+    }
 
-	/**
-	 * Plugin activation hooks.
-	 */
-	public function deactivation_hooks() {}
+    /**
+     * Plugin activation hooks.
+     */
+    public function deactivation_hooks()
+    {
+    }
 
-	/**
-	 * Determine which plugin to load.
-	 */
-	public function load_plugin(): void {
-		$this->init_hooks();
-	}
+    /**
+     * Determine which plugin to load.
+     */
+    public function load_plugin(): void
+    {
+        $this->init_hooks();
+    }
 
-	/**
-	 * Collection of hooks.
-	 */
-	public function init_hooks(): void {
-		add_action( 'init', array( $this, 'init' ), 1 );
-	}
+    /**
+     * Collection of hooks.
+     */
+    public function init_hooks(): void
+    {
+        add_action('init', array( $this, 'init' ), 1);
+    }
 
-	/**
-	 * Initialize the plugin.
-	 */
-	public function init() {}
+    /**
+     * Initialize the plugin.
+     */
+    public function init(): void
+    {
+		new AdminSettings();
+    }
 }

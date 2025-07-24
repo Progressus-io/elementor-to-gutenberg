@@ -1,5 +1,5 @@
 {
-	"name": "progressus/gutenberg",
+	"name": "progressus/elementor-to-gutenberg",
 	"license": "GPL-3.0",
 	"require-dev": {
 		"woocommerce/woocommerce-sniffs": "*",
