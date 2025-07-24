@@ -1,0 +1,28 @@
+{
+	"name": "gutenberg-plugin",
+	"version": "1.0.0",
+	"description": "",
+	"main": "index.js",
+	"scripts": {
+		"prebuild": "rm -rf ./vendor",
+		"build": "composer install -o && npm run archive",
+		"build:dev": "composer install -o",
+		"archive": "composer archive --file=$npm_package_name --format=zip",
+		"postarchive": "rm -rf $npm_package_name && unzip $npm_package_name.zip -d $npm_package_name && rm $npm_package_name.zip && zip -r $npm_package_name.zip $npm_package_name && rm -rf $npm_package_name",
+		"bump": "node version-bump.js",
+		"bump:major": "node version-bump.js major",
+		"wpcs": "composer wpcs",
+		"wpcs:fix": "composer wpcs:fix"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/progressus-io/gutenberg-plugin.git"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"bugs": {
+		"url": "https://github.com/progressus-io/gutenberg-plugin/issues"
+	},
+	"homepage": "https://github.com/progressus-io/gutenberg-plugin#readme"
+}

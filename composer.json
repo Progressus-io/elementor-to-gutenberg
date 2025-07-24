@@ -1,0 +1,45 @@
+{
+	"name": "progressus/gutenberg",
+	"license": "GPL-3.0",
+	"require-dev": {
+		"woocommerce/woocommerce-sniffs": "*",
+		"wp-coding-standards/wpcs": "*",
+		"dealerdirect/phpcodesniffer-composer-installer": "*"
+	},
+	"require": {
+		"php": ">=8.2",
+		"automattic/jetpack-autoloader": "^2.11"
+	},
+	"autoload": {
+		"psr-4": {
+			"Progressus\\Gutenberg\\": "src/"
+		}
+	},
+	"archive": {
+		"exclude": [
+			"!/assets",
+			"!/languages",
+			"!/vendor",
+			"composer.json",
+			"composer.lock",
+			"package.json",
+			".gitignore",
+			"README.md",
+			"version-bump.js"
+		]
+	},
+	"config": {
+		"allow-plugins": {
+			"dealerdirect/phpcodesniffer-composer-installer": true,
+			"automattic/jetpack-autoloader": true
+		}
+	},
+	"scripts": {
+		"wpcs": [
+			"./vendor/bin/phpcs . --ignore=vendor,.git,assets,node_modules --standard=WooCommerce-Core,WordPress-Core,WordPress-Extra,WordPress-Docs  --report-full --report-summary --colors -s"
+		],
+		"wpcs:fix": [
+			"./vendor/bin/phpcbf . --ignore=vendor,.git,assets,node_modules --standard=WooCommerce-Core,WordPress-Core,WordPress-Extra,WordPress-Docs  --report-full --report-summary --colors"
+		]
+	}
+}
