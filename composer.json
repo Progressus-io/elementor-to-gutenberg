@@ -2,8 +2,8 @@
 	"name": "progressus/elementor-to-gutenberg",
 	"license": "GPL-3.0",
 	"require-dev": {
-		"woocommerce/woocommerce-sniffs": "*",
-		"wp-coding-standards/wpcs": "*",
+		"woocommerce/woocommerce-sniffs": "^1.0",
+		"wp-coding-standards/wpcs": "^3.2",
 		"dealerdirect/phpcodesniffer-composer-installer": "*"
 	},
 	"require": {
