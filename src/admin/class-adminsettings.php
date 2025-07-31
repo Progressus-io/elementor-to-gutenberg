@@ -177,6 +177,27 @@ class AdminSettings {
 		return ! empty( $typography ) ? $typography : '';
 	}
 
+    /**
+     * Parse spacing settings from the element.
+     *
+     * @param  array $settings The settings array.
+     * @param  array $attrs    The attributes array to modify.
+     * @return array The modified attributes array with spacing styles.
+     */
+    public function parse_spacing_settings( $settings, $attrs ) {
+        foreach ( array( 'margin', 'padding' ) as $spacing ) {
+            $spacing_key = '_' . $spacing;
+            if ( isset( $settings[ $spacing_key ] ) && is_array( $settings[ $spacing_key ] ) ) {
+                foreach ( array( 'top', 'right', 'bottom', 'left' ) as $side ) {
+                    if ( isset( $settings[ $spacing_key ][ $side ] ) ) {
+                        $attrs['style'][ $spacing ][ $side ] = $settings[ $spacing_key ][ $side ] . ( isset( $settings[ $spacing_key ]['unit'] ) ? $settings[ $spacing_key ]['unit'] : 'px' );
+                    }
+                }
+            }
+        }
+        return $attrs;
+    }
+
 	/**
 	 * Convert JSON data to Gutenberg blocks.
 	 *
@@ -258,16 +279,7 @@ class AdminSettings {
 								$attrs_array['style']['typography']['lineHeight'] = $element['settings']['typography_line_height']['size'] . ( isset( $element['settings']['typography_line_height']['unit'] ) ? $element['settings']['typography_line_height']['unit'] : '' );
 							}
 							// Margin & Padding
-							foreach ( array( 'margin', 'padding' ) as $spacing ) {
-								$spacing_key = '_' . $spacing;
-								if ( isset( $element['settings'][ $spacing_key ] ) && is_array( $element['settings'][ $spacing_key ] ) ) {
-									foreach ( array( 'top', 'right', 'bottom', 'left' ) as $side ) {
-										if ( isset( $element['settings'][ $spacing_key ][ $side ] ) ) {
-											$attrs_array['style'][ $spacing ][ $side ] = $element['settings'][ $spacing_key ][ $side ] . ( isset( $element['settings'][ $spacing_key ]['unit'] ) ? $element['settings'][ $spacing_key ]['unit'] : 'px' );
-										}
-									}
-								}
-							}
+                            $attrs_array = $this->parse_spacing_settings( $element['settings'], $attrs_array );
 						}
 
 						$attrs = wp_json_encode( $attrs_array );
@@ -315,32 +327,79 @@ class AdminSettings {
 								$attrs_array['style']['typography']['lineHeight'] = $element['settings']['typography_line_height']['size'] . ( isset( $element['settings']['typography_line_height']['unit'] ) ? $element['settings']['typography_line_height']['unit'] : '' );
 							}
 							// Margin & Padding
-							foreach ( array( 'margin', 'padding' ) as $spacing ) {
-								$spacing_key = '_' . $spacing;
-								if ( isset( $element['settings'][ $spacing_key ] ) && is_array( $element['settings'][ $spacing_key ] ) ) {
-									foreach ( array( 'top', 'right', 'bottom', 'left' ) as $side ) {
-										if ( isset( $element['settings'][ $spacing_key ][ $side ] ) ) {
-											$attrs_array['style'][ $spacing ][ $side ] = $element['settings'][ $spacing_key ][ $side ] . ( isset( $element['settings'][ $spacing_key ]['unit'] ) ? $element['settings'][ $spacing_key ]['unit'] : 'px' );
-										}
-									}
-								}
-							}
+                            $attrs_array = $this->parse_spacing_settings( $element['settings'], $attrs_array );
 						}
 
 						$attrs          = wp_json_encode( $attrs_array );
-						$block_content .= "<!-- wp:paragraph {$attrs} -->";
+						$block_content .= "<!-- wp:html {$attrs} -->";
 						$block_content .= "<div class=\"wp-block-paragraph {$class}\"";
 						if ( $style ) {
 							$block_content .= ' style="' . esc_attr( $style ) . '"';
 						}
-						$block_content .= '>' . wp_kses_post( $text ) . "</div><!-- /wp:paragraph -->\n";
+						$block_content .= '>' . wp_kses_post( $text ) . "</div><!-- /wp:html -->\n";
 						break;
-					case 'image':
-						$url    = isset( $element['settings']['image']['url'] ) ? $element['settings']['image']['url'] : '';
-						$alt    = isset( $element['settings']['image']['alt'] ) ? $element['settings']['image']['alt'] : '';
-						$attrs  = '{"url":"' . esc_url( $url ) . '","alt":"' . esc_attr( $alt ) . '"}';
-						$inner .= "<!-- wp:image {$attrs} /-->\n";
-						break;
+                    case 'image':
+                        $url = isset( $element['settings']['image']['url'] ) ? $element['settings']['image']['url'] : '';
+                        $alt = isset( $element['settings']['image']['alt'] ) ? $element['settings']['image']['alt'] : '';
+
+                        $new_url = '';
+                        if ( $url ) {
+                            // Download image to temp file
+                            $tmp_file = download_url( $url );
+                            if ( ! is_wp_error( $tmp_file ) ) {
+                                $file_array = array(
+                                    'name'     => basename( $url ),
+                                    'tmp_name' => $tmp_file,
+                                );
+                                // Upload to media library
+                                $attachment_id = media_handle_sideload( $file_array, 0 );
+                                if ( ! is_wp_error( $attachment_id ) ) {
+                                    $new_url = wp_get_attachment_url( $attachment_id );
+                                }
+                                // Clean up temp file if needed
+                                if ( file_exists( $tmp_file ) ) {
+                                    @unlink( $tmp_file );
+                                }
+                            }
+                        }
+                        $image_url = $new_url ? $new_url : '';
+                        $attachment_id = 0;
+                        if ( $new_url ) {
+                            // Try to get the attachment ID by URL
+                            $attachment_id = attachment_url_to_postid( $new_url );
+                        }
+                        $attrs_array = array(
+                            'id'              => $attachment_id,
+                            'sizeSlug'        => 'full',
+                            'linkDestination' => 'none',
+                        );
+
+                        $attrs_array = $this->parse_spacing_settings( $element['settings'], $attrs_array );
+                        $classes = '';
+
+                        if ( isset( $element['settings']['align'] ) ) {
+                            $attrs_array['align'] = $element['settings']['align'];
+                            $classes .= 'align'.$element['settings']['align'];
+                        }
+                        if ( isset( $element['settings']['width']['size'] ) && $element['settings']['width']['size'] !== '' ) {
+                            $attrs_array['width'] = $element['settings']['width']['size'] . ( isset( $element['settings']['width']['unit'] ) ? $element['settings']['width']['unit'] : '%' );
+                        }
+                        if ( isset( $element['settings']['height']['size'] ) && $element['settings']['height']['size'] !== '' ) {
+                            $attrs_array['height'] = $element['settings']['height']['size'] . ( isset( $element['settings']['height']['unit'] ) ? $element['settings']['height']['unit'] : '%' );
+                        }
+                        if ( isset( $element['settings']['space']['size'] ) && $element['settings']['space']['size'] !== '' ) {
+                            $attrs_array['space'] = $element['settings']['space']['size'] . ( isset( $element['settings']['space']['unit'] ) ? $element['settings']['space']['unit'] : '%' );
+                        }
+                        if ( isset( $element['settings']['premium_tooltip_text'] ) ) {
+                            $attrs_array['premiumTooltipText'] = $element['settings']['premium_tooltip_text'];
+                        }
+                        if ( isset( $element['settings']['premium_tooltip_position'] ) ) {
+                            $attrs_array['premiumTooltipPosition'] = $element['settings']['premium_tooltip_position'];
+                        }
+                        $attrs = wp_json_encode( $attrs_array );
+                        $img_tag = '<img src="' . esc_url( $image_url ) . '" alt="' . esc_attr( $alt ) . '" class="wp-image-' . esc_attr( $attachment_id ) . '"/>';
+                        $block_content .= "<!-- wp:image {$attrs} -->\n<figure class=\"wp-block-image " . esc_attr($classes) . "\">{$img_tag}</figure>\n<!-- /wp:image -->\n";
+                        break;
 					case 'button':
 						$text           = isset( $element['settings']['text'] ) ? $element['settings']['text'] : '';
 						$url            = isset( $element['settings']['link']['url'] ) ? $element['settings']['link']['url'] : '';
