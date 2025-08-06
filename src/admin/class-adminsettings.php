@@ -254,62 +254,11 @@ class AdminSettings {
 	 * @param  array $elements The elements to check.
 	 * @return bool True if any video has overlay enabled.
 	 */
-	private function check_for_video_overlays( $settings ) {
+	private function has_video_overlay( $settings ) {
 		if ( isset( $settings['show_image_overlay'] ) && $settings['show_image_overlay'] === 'yes' ) {
 			return true;
 		}
 		return false;
-	}
-
-	/**
-	 * Download a file using cURL as a fallback method
-	 *
-	 * @param string $url The URL to download
-	 * @return string|WP_Error The temporary file path or WP_Error on failure
-	 */
-	private function download_file_with_curl( $url ) {
-		if ( ! function_exists( 'curl_init' ) ) {
-			return new WP_Error( 'curl_not_available', 'cURL is not available on this server' );
-		}
-
-		$tmp_file = wp_tempnam( basename( $url ) );
-		if ( ! $tmp_file ) {
-			return new WP_Error( 'temp_file_failed', 'Could not create temporary file' );
-		}
-
-		$ch = curl_init();
-		curl_setopt_array(
-			$ch,
-			array(
-				CURLOPT_URL            => $url,
-				CURLOPT_FOLLOWLOCATION => true,
-				CURLOPT_RETURNTRANSFER => true,
-				CURLOPT_TIMEOUT        => 60,
-				CURLOPT_FILE           => fopen( $tmp_file, 'w' ),
-				CURLOPT_USERAGENT      => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-				CURLOPT_HTTPHEADER     => array(
-					'Accept: video/mp4,video/*,*/*;q=0.9',
-					'Accept-Language: en-US,en;q=0.9',
-					'Cache-Control: no-cache',
-					'Pragma: no-cache',
-				),
-				CURLOPT_SSL_VERIFYPEER => false,
-				CURLOPT_SSL_VERIFYHOST => false,
-			)
-		);
-
-		$result    = curl_exec( $ch );
-		$http_code = curl_getinfo( $ch, CURLINFO_HTTP_CODE );
-		$error     = curl_error( $ch );
-		curl_close( $ch );
-
-		if ( $result === false || $http_code !== 200 ) {
-			@unlink( $tmp_file );
-			error_log( 'cURL download failed - HTTP Code: ' . $http_code . ', Error: ' . $error );
-			return new WP_Error( 'curl_download_failed', 'cURL download failed: ' . $error );
-		}
-
-		return $tmp_file;
 	}
 
 	/**
@@ -322,16 +271,14 @@ class AdminSettings {
 		$block_content = '';
 		foreach ( $elements as $element ) {
 			// Handle containers
-			if ( isset( $element['elType'] ) && $element['elType'] === 'container' ) {
+			if ( isset( $element['elType'] ) && 'container' === $element['elType'] ) {
 				$inner = '';
 				if ( ! empty( $element['elements'] ) ) {
 					$inner = $this->parse_elements( $element['elements'] );
 				}
 				// Use group block for containers
 				$block_content .= "<!-- wp:group --><div class=\"wp-block-group\">{$inner}</div><!-- /wp:group -->";
-			}
-			// Handle widgets
-			elseif ( isset( $element['elType'] ) && $element['elType'] === 'widget' ) {
+			} elseif ( isset( $element['elType'] ) && 'widget' === $element['elType'] ) {
 				$color = isset( $element['settings']['text_color'] ) ? $element['settings']['text_color'] : '';
 				switch ( $element['widgetType'] ) {
 					case 'heading':
@@ -422,7 +369,6 @@ class AdminSettings {
 
 						$new_url = '';
 						if ( $url ) {
-							// Download image to temp file
 							$tmp_file = download_url( $url );
 							if ( ! is_wp_error( $tmp_file ) ) {
 								$file_array = array(
@@ -436,7 +382,7 @@ class AdminSettings {
 								}
 								// Clean up temp file if needed
 								if ( file_exists( $tmp_file ) ) {
-									@unlink( $tmp_file );
+									wp_delete_file( $tmp_file );
 								}
 							}
 						}
@@ -612,33 +558,9 @@ class AdminSettings {
 											'tmp_name' => $tmp_file,
 										);
 										$attachment_id = media_handle_sideload( $file_array, 0 );
-										error_log( 'attachment_id: ' . print_r( $attachment_id, true ) );
 										if ( ! is_wp_error( $attachment_id ) ) {
 											$video_url = wp_get_attachment_url( $attachment_id );
 										} else {
-											$video_url = $hosted_video_url;
-										}
-										if ( file_exists( $tmp_file ) ) {
-											@unlink( $tmp_file );
-										}
-									} else {
-										$curl_tmp_file = $this->download_file_with_curl( $hosted_video_url );
-										if ( $curl_tmp_file && ! is_wp_error( $curl_tmp_file ) ) {
-											$file_array    = array(
-												'name'     => basename( $hosted_video_url ),
-												'tmp_name' => $curl_tmp_file,
-											);
-											$attachment_id = media_handle_sideload( $file_array, 0 );
-											if ( ! is_wp_error( $attachment_id ) ) {
-												$video_url = wp_get_attachment_url( $attachment_id );
-											} else {
-												$video_url = $hosted_video_url;
-											}
-											if ( file_exists( $curl_tmp_file ) ) {
-												@unlink( $curl_tmp_file );
-											}
-										} else {
-											// If all methods fail, show admin notice and use original URL
 											$video_url = $hosted_video_url;
 											add_settings_error(
 												'gutenberg_json_data',
@@ -646,6 +568,9 @@ class AdminSettings {
 												esc_html__( 'Video Download Failed:Please manually download the video and upload it to your Media Library, or ensure the video URL is publicly accessible.', 'elementor-to-gutenberg' ),
 												'error'
 											);
+										}
+										if ( file_exists( $tmp_file ) ) {
+											wp_delete_file( $tmp_file );
 										}
 									}
 								}
@@ -668,7 +593,7 @@ class AdminSettings {
 						$poster_id  = 0;
 
 						// Handle overlay image
-						if ( isset( $element['settings']['image_overlay']['url'] ) && ! empty( $element['settings']['image_overlay']['url'] ) ) {
+						if ( $this->has_video_overlay( $element['settings'] ) ) {
 							$overlay_url = $element['settings']['image_overlay']['url'];
 							$tmp_file    = download_url( $overlay_url );
 							if ( ! is_wp_error( $tmp_file ) ) {
@@ -682,7 +607,7 @@ class AdminSettings {
 									$poster_id  = $attachment_id;
 								}
 								if ( file_exists( $tmp_file ) ) {
-									@unlink( $tmp_file );
+									wp_delete_file( $tmp_file );
 								}
 							}
 						}
@@ -964,11 +889,11 @@ class AdminSettings {
 
 							// Generate icon HTML
 							$icon_class = 'fas';
-							if ( $icon_library === 'fa-solid' ) {
+							if ( 'fa-solid' === $icon_library ) {
 								$icon_class = 'fas';
-							} elseif ( $icon_library === 'fa-regular' ) {
+							} elseif ( 'fa-regular' === $icon_library ) {
 								$icon_class = 'far';
-							} elseif ( $icon_library === 'fa-brands' ) {
+							} elseif ( 'fa-brands' === $icon_library ) {
 								$icon_class = 'fab';
 							}
 
@@ -986,17 +911,87 @@ class AdminSettings {
 						}
 						break;
 					case 'social-icons':
-						$social_icons = isset( $element['settings']['social_icons'] ) ? $element['settings']['social_icons'] : array();
+						$settings     = isset( $element['settings'] ) ? $element['settings'] : array();
+						$social_icons = isset( $settings['social_icon_list'] ) ? $settings['social_icon_list'] : array();
+
 						if ( ! empty( $social_icons ) ) {
 							$icons_content = '';
+
 							foreach ( $social_icons as $icon ) {
-								$icon_name = isset( $icon['name'] ) ? $icon['name'] : '';
-								$icon_url  = isset( $icon['url'] ) ? $icon['url'] : '';
-								if ( $icon_name && $icon_url ) {
-									$icons_content .= '<!-- wp:social-link --><a href="' . esc_url( $icon_url ) . '" class="wp-block-social-link wp-block-social-link--' . esc_attr( $icon_name ) . '">' . esc_html( $icon_name ) . "</a><!-- /wp:social-link -->\n";
+								$url     = $icon['link']['url'] ?? '';
+								$service = '';
+
+								// Match some common services from icon value
+								if ( ! empty( $icon['social_icon']['value'] ) ) {
+									if ( strpos( $icon['social_icon']['value'], 'facebook' ) !== false ) {
+										$service = 'facebook';
+									} elseif ( strpos( $icon['social_icon']['value'], 'twitter' ) !== false ) {
+										$service = 'twitter';
+									} elseif ( strpos( $icon['social_icon']['value'], 'youtube' ) !== false ) {
+										$service = 'youtube';
+									} elseif ( strpos( $icon['social_icon']['value'], 'linkedin' ) !== false ) {
+										$service = 'linkedin';
+									}
+								}
+
+								if ( $url && $service ) {
+									$icons_content .= '<!-- wp:social-link {"url":"' . esc_url( $url ) . '","service":"' . esc_attr( $service ) . '"} /-->' . "\n";
 								}
 							}
-							$block_content .= "<!-- wp:social-links -->{$icons_content}<!-- /wp:social-links -->\n";
+
+							// Extract styles
+							$style_json = array();
+
+							if ( isset( $settings['icon_color'] ) ) {
+								$style_json['iconColor'] = $settings['icon_color'];
+							}
+
+							if ( isset( $settings['icon_color_value'] ) ) {
+								$style_json['iconColorValue'] = $settings['icon_color_value'];
+							}
+
+							if ( isset( $settings['_flex_align_self'] ) ) {
+								$style_json['layout'] = array(
+									'type'           => 'flex',
+									'justifyContent' => $settings['_flex_align_self'],
+								);
+							}
+
+							if ( isset( $settings['icon_size']['size'] ) ) {
+								$style_json['iconSize'] = $settings['icon_size']['size'];
+							}
+
+							if ( isset( $settings['icon_padding']['size'] ) ) {
+								$style_json['iconPadding'] = $settings['icon_padding']['size'];
+							}
+
+							if ( isset( $settings['icon_spacing']['size'] ) ) {
+								$style_json['iconSpacing'] = $settings['icon_spacing']['size'];
+							}
+
+							if ( isset( $settings['border_radius'] ) ) {
+								$style_json['borderRadius'] = $settings['border_radius'];
+							}
+
+							if ( isset( $settings['image_border_width'] ) ) {
+								$style_json['borderWidth'] = $settings['image_border_width'];
+							}
+
+							if ( isset( $settings['image_border_border'] ) ) {
+								$style_json['borderStyle'] = $settings['image_border_border'];
+							}
+
+							if ( isset( $settings['_padding'] ) ) {
+								$style_json['padding'] = $settings['_padding'];
+							}
+
+							if ( isset( $settings['_margin'] ) ) {
+								$style_json['margin'] = $settings['_margin'];
+							}
+							$block_content .= '<!-- wp:group ' . wp_json_encode( $style_json ) . ' --><div class=\"wp-block-group\">';
+							$block_content .= "<!-- wp:social-links -->\n";
+							$block_content .= $icons_content;
+							$block_content .= "<!-- /wp:social-links -->\n";
 						}
 						break;
 					case 'gallery':
@@ -1014,15 +1009,81 @@ class AdminSettings {
 							$block_content .= "<!-- wp:gallery -->{$gallery_content}<!-- /wp:gallery -->\n";
 						}
 						break;
-					case 'list':
-						$items = isset( $element['settings']['items'] ) ? $element['settings']['items'] : array();
-						if ( ! empty( $items ) ) {
-							$list_content = '<ul>';
-							foreach ( $items as $item ) {
-								$list_content .= '<li>' . esc_html( $item ) . '</li>';
+					case 'premium-icon-list':
+						$list_items = isset( $element['settings']['list'] ) ? $element['settings']['list'] : array();
+
+						if ( ! empty( $list_items ) ) {
+							$list_content = '';
+
+							// Get widget-level settings for inline styling
+							$align          = $element['settings']['premium_icon_list_align'] ?? '';
+							$icon_position  = $element['settings']['icon_postion'] ?? '';
+							$hover_effect   = $element['settings']['hover_effect_type'] ?? '';
+							$top_icon_align = $element['settings']['top_icon_align'] ?? '';
+							$icon_color     = $element['settings']['__globals__']['icon_color'] ?? '';
+							$title_color    = $element['settings']['__globals__']['title_list_color'] ?? '';
+							$title_hover    = $element['settings']['__globals__']['title_hover_color'] ?? '';
+							$tooltip_text   = $element['settings']['premium_tooltip_text'] ?? '';
+
+							// Build container-level inline style
+							$ul_style_parts = array();
+
+							if ( $align ) {
+								$ul_style_parts[] = "text-align: {$align}";
 							}
-							$list_content  .= '</ul>';
-							$block_content .= "<!-- wp:list -->{$list_content}<!-- /wp:list -->\n";
+
+							if ( $icon_position === 'column' ) {
+								$ul_style_parts[] = "display: flex; flex-direction: column; align-items: {$top_icon_align};";
+							}
+
+							$ul_style = implode( '; ', $ul_style_parts );
+
+							foreach ( $list_items as $item ) {
+								$title      = isset( $item['list_title'] ) ? esc_html( $item['list_title'] ) : '';
+								$icon_type  = $item['icon_type'] ?? 'icon';
+								$icon_html  = '';
+								$icon_style = '';
+
+								if ( 'image' === $icon_type && ! empty( $item['custom_image']['url'] ) ) {
+									$original_url = esc_url_raw( $item['custom_image']['url'] );
+									$tmp_file     = download_url( $original_url );
+									if ( ! is_wp_error( $tmp_file ) ) {
+										$file_array    = array(
+											'name'     => basename( $original_url ),
+											'tmp_name' => $tmp_file,
+										);
+										$attachment_id = media_handle_sideload( $file_array, 0 );
+										if ( ! is_wp_error( $attachment_id ) ) {
+											$new_url   = wp_get_attachment_url( $attachment_id );
+											$icon_html = '<figure><img src="' . esc_url( $new_url ) . '" alt="" style="' . esc_attr( $icon_style ) . '" /></figure>';
+										} else {
+											$icon_html = '<figure><img src="' . esc_url( $original_url ) . '" alt="" style="' . esc_attr( $icon_style ) . '" /></figure>';
+										}
+										if ( file_exists( $tmp_file ) ) {
+											wp_delete_file( $tmp_file );
+										}
+									} else {
+										$icon_html = '<figure><img src="' . esc_url( $original_url ) . '" alt="" style="' . esc_attr( $icon_style ) . '" /></figure>';
+									}
+								} elseif ( 'text' === $icon_type && ! empty( $item['list_text_icon'] ) ) {
+									$text_icon = esc_html( $item['list_text_icon'] );
+									$icon_html = '<span class="wp-block-text-icon" style="' . esc_attr( $icon_style ) . '">' . $text_icon . '</span>';
+								} elseif ( ! empty( $item['premium_icon_list_font_updated']['value'] ) ) {
+									$icon_class = esc_attr( $item['premium_icon_list_font_updated']['value'] );
+									$icon_html  = '<i class="' . $icon_class . '" style="' . esc_attr( $icon_style ) . '"></i>';
+								}
+
+								$title_style = '';
+
+								$list_content .= '<!-- wp:list-item -->';
+								$list_content .= '<li class="wp-block-list-item" title="' . esc_attr( $tooltip_text ) . '">';
+								$list_content .= $icon_html . ' <span ' . $title_style . '>' . $title . '</span>';
+								$list_content .= '</li><!-- /wp:list-item -->';
+							}
+
+							if ( ! empty( $list_content ) ) {
+								$block_content .= "<!-- wp:list -->\n<ul style=\"" . esc_attr( $ul_style ) . "\">{$list_content}</ul>\n<!-- /wp:list -->\n";
+							}
 						}
 						break;
 					case 'tabs':
