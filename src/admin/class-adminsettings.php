@@ -243,7 +243,7 @@ class AdminSettings {
 		$content = '';
 
 		// Start parsing from top-level content
-		$content .= $this->parse_elements( $json_data['content'] );
+		$content .= $this->parse_elementor_elements( $json_data['content'] );
 
 		return $content;
 	}
@@ -264,17 +264,17 @@ class AdminSettings {
 	/**
 	 * Convert JSON data to Gutenberg blocks.
 	 *
-	 * @param  array $elements The elements to convert.
+	 * @param  array $elements The elementor elements to convert.
 	 * @return string The converted Gutenberg content.
 	 */
-	public function parse_elements( $elements ) {
+	public function parse_elementor_elements( $elements ) {
 		$block_content = '';
 		foreach ( $elements as $element ) {
 			// Handle containers
 			if ( isset( $element['elType'] ) && 'container' === $element['elType'] ) {
 				$inner = '';
 				if ( ! empty( $element['elements'] ) ) {
-					$inner = $this->parse_elements( $element['elements'] );
+					$inner = $this->parse_elementor_elements( $element['elements'] );
 				}
 				// Use group block for containers
 				$block_content .= "<!-- wp:group --><div class=\"wp-block-group\">{$inner}</div><!-- /wp:group -->";
@@ -1020,9 +1020,6 @@ class AdminSettings {
 							$icon_position  = $element['settings']['icon_postion'] ?? '';
 							$hover_effect   = $element['settings']['hover_effect_type'] ?? '';
 							$top_icon_align = $element['settings']['top_icon_align'] ?? '';
-							$icon_color     = $element['settings']['__globals__']['icon_color'] ?? '';
-							$title_color    = $element['settings']['__globals__']['title_list_color'] ?? '';
-							$title_hover    = $element['settings']['__globals__']['title_hover_color'] ?? '';
 							$tooltip_text   = $element['settings']['premium_tooltip_text'] ?? '';
 
 							// Build container-level inline style
@@ -1086,30 +1083,145 @@ class AdminSettings {
 							}
 						}
 						break;
-					case 'tabs':
-						$tabs = isset( $element['settings']['tabs'] ) ? $element['settings']['tabs'] : array();
-						if ( ! empty( $tabs ) ) {
-							foreach ( $tabs as $tab ) {
-								$tab_title   = isset( $tab['title'] ) ? $tab['title'] : '';
-								$tab_content = isset( $tab['content'] ) ? $tab['content'] : '';
-								// Use heading for tab title and group for tab content
-								$block_content .= "<!-- wp:heading -->{$tab_title}<!-- /wp:heading -->\n";
-								$block_content .= "<!-- wp:group -->{$tab_content}<!-- /wp:group -->\n";
-							}
-						}
-						break;
+					
 					case 'accordion':
 						$accordions = isset( $element['settings']['accordions'] ) ? $element['settings']['accordions'] : array();
-						if ( ! empty( $accordions ) ) {
+
+						if ( ! empty( $accordions ) && is_array( $accordions ) ) {
 							$accordion_content = '';
-							foreach ( $accordions as $accordion ) {
-								$accordion_title        = isset( $accordion['title'] ) ? $accordion['title'] : '';
-								$accordion_content_text = isset( $accordion['content'] ) ? $accordion['content'] : '';
-								$accordion_content     .= "<!-- wp:accordion-item -->\n<!-- wp:accordion-title -->{$accordion_title}<!-- /wp:accordion-title -->\n<!-- wp:accordion-content -->{$accordion_content_text}<!-- /wp:accordion-content -->\n<!-- /wp:accordion-item -->\n";
+
+							// Get optional styles from settings
+							$title_color              = ! empty( $element['settings']['title_color'] ) ? $element['settings']['title_color'] : '';
+							$title_bg_color           = ! empty( $element['settings']['title_background_color'] ) ? $element['settings']['title_background_color'] : '';
+							$content_color            = ! empty( $element['settings']['content_color'] ) ? $element['settings']['content_color'] : '';
+							$content_bg_color         = ! empty( $element['settings']['content_background_color'] ) ? $element['settings']['content_background_color'] : '';
+							$border_radius            = ! empty( $element['settings']['border_radius'] ) ? intval( $element['settings']['border_radius'] ) . 'px' : '0';
+							$border_width             = ! empty( $element['settings']['border_width'] ) ? intval( $element['settings']['border_width'] ) . 'px' : '0';
+							$border_color             = ! empty( $element['settings']['border_color'] ) ? $element['settings']['border_color'] : '';
+							$spacing_between_items    = ! empty( $element['settings']['items_gap'] ) ? intval( $element['settings']['items_gap'] ) . 'px' : '16px';
+
+							foreach ( $accordions as $item ) {
+								$title   = isset( $item['title'] ) ? wp_kses_post( $item['title'] ) : '';
+								$content = isset( $item['content'] ) ? wp_kses_post( $item['content'] ) : '';
+
+								if ( $title && $content ) {
+									// Generate inline styles
+									$summary_styles = array();
+									$content_styles = array();
+									$details_styles = array();
+
+									if ( $title_color ) {
+										$summary_styles[] = "color: {$title_color}";
+									}
+									if ( $title_bg_color ) {
+										$summary_styles[] = "background-color: {$title_bg_color}";
+									}
+									if ( $content_color ) {
+										$content_styles[] = "color: {$content_color}";
+									}
+									if ( $content_bg_color ) {
+										$content_styles[] = "background-color: {$content_bg_color}";
+									}
+									if ( $border_radius ) {
+										$details_styles[] = "border-radius: {$border_radius}";
+									}
+									if ( $border_width && $border_color ) {
+										$details_styles[] = "border: {$border_width} solid {$border_color}";
+									}
+									if ( $spacing_between_items ) {
+										$details_styles[] = "margin-bottom: {$spacing_between_items}";
+									}
+
+									// Build content
+									$accordion_content .= "<!-- wp:html -->\n";
+									$accordion_content .= '<details style="' . esc_attr( implode( '; ', $details_styles ) ) . "\">\n";
+									$accordion_content .= '<summary style="padding:0.5em 0;' . esc_attr( implode( '; ', $summary_styles ) ) . '">' . $title . "</summary>\n";
+									$accordion_content .= '<div style="padding:0.5em 1em;' . esc_attr( implode( '; ', $content_styles ) ) . '">' . $content . "</div>\n";
+									$accordion_content .= "</details>\n";
+									$accordion_content .= "<!-- /wp:html -->\n";
+								}
 							}
-							$block_content .= "<!-- wp:details --><summary>{$accordion_title}</summary>{$accordion_content_text}<!-- /wp:details -->\n";
+
+							$block_content .= $accordion_content;
 						}
 						break;
+					case 'nested-accordion':
+						$settings  = $element['settings'] ?? [];
+						$elements  = $element['elements'] ?? [];
+						$items     = $settings['items'] ?? [];
+
+						// Styling map
+						$style = [];
+
+						// Title spacing
+						if ( isset( $settings['accordion_item_title_space_between']['size'] ) ) {
+							$style[] = '--title-gap: ' . $settings['accordion_item_title_space_between']['size'] . 'px;';
+						}
+
+						// Title distance from content
+						if ( isset( $settings['accordion_item_title_distance_from_content']['size'] ) ) {
+							$style[] = '--content-gap: ' . $settings['accordion_item_title_distance_from_content']['size'] . 'px;';
+						}
+
+						// Padding
+						if ( isset( $settings['accordion_padding'] ) ) {
+							$p = $settings['accordion_padding'];
+							$style[] = 'padding: ' . $p['top'] . 'px ' . $p['right'] . 'px ' . $p['bottom'] . 'px ' . $p['left'] . 'px;';
+						}
+
+						// Margin
+						if ( isset( $settings['_margin'] ) ) {
+							$m = $settings['_margin'];
+							$style[] = 'margin: ' . $m['top'] . 'px ' . $m['right'] . 'px ' . $m['bottom'] . 'px ' . $m['left'] . 'px;';
+						}
+
+						// Border
+						if ( isset( $settings['accordion_border_normal_border'] ) ) {
+							$border_type = $settings['accordion_border_normal_border'];
+							$border_width = $settings['accordion_border_normal_width'] ?? [];
+							$b_top = $border_width['top'] ?? 0;
+							$b_right = $border_width['right'] ?? 0;
+							$b_bottom = $border_width['bottom'] ?? 0;
+							$b_left = $border_width['left'] ?? 0;
+							$style[] = "border-style: {$border_type}; border-width: {$b_top}px {$b_right}px {$b_bottom}px {$b_left}px;";
+						}
+
+						// Border radius
+						if ( isset( $settings['accordion_border_radius'] ) ) {
+							$r = $settings['accordion_border_radius'];
+							$style[] = 'border-radius: ' . $r['top'] . 'px ' . $r['right'] . 'px ' . $r['bottom'] . 'px ' . $r['left'] . 'px;';
+						}
+
+						// CSS classes and ID
+						$class  = $settings['_css_classes'] ?? '';
+						$css_id = $settings['_element_id'] ?? '';
+
+						// Combine all styles
+						$style_attr = ! empty( $style ) ? ' style="' . implode( ' ', $style ) . '"' : '';
+						$class_attr = ! empty( $class ) ? ' class="' . esc_attr( $class ) . '"' : '';
+						$id_attr    = ! empty( $css_id ) ? ' id="' . esc_attr( $css_id ) . '"' : '';
+
+						$block_content .= "<!-- wp:group{$class_attr}{$id_attr}{$style_attr} -->";
+						$block_content .= '<div class="wp-block-group">';
+
+						// Loop through accordion containers
+						foreach ( $elements as $index => $accordion_element ) {
+							$title = $accordion_element['settings']['_title'] ?? 'Accordion Item';
+							$content = '';
+
+							if ( ! empty( $accordion_element['elements'] ) ) {
+								$content = $this->parse_elementor_elements( $accordion_element['elements'] );
+							} elseif ( isset( $accordion_element['settings']['content'] ) ) {
+								$content = wp_kses_post( $accordion_element['settings']['content'] );
+							}
+
+							$block_content .= "<!-- wp:details -->\n<details><summary>{$title}</summary>{$content}";
+							$block_content .= "</details>\n<!-- /wp:details -->\n";
+						}
+
+						$block_content .= "</div><!-- /wp:group -->\n";
+						break;
+
 					default:
 						// Unknown widget, fallback to paragraph
 						$block_content .= "<!-- wp:paragraph -->{$element['widgetType']}<!-- /wp:paragraph -->\n";
