@@ -9,7 +9,7 @@ namespace Progressus\Gutenberg;
 
 defined('ABSPATH') || exit;
 
-use Progressus\Gutenberg\Admin\AdminSettings;
+use Progressus\Gutenberg\Admin\Admin_Settings;
 
 /**
  * Class Gutenberg
@@ -88,6 +88,6 @@ class Gutenberg
      */
     public function init(): void
     {
-		new AdminSettings();
+		new Admin_Settings();
     }
 }
