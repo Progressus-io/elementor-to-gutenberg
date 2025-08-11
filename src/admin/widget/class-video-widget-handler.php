@@ -69,6 +69,14 @@ class Video_Widget_Handler implements Widget_Handler_Interface {
 					if ( file_exists( $tmp_file ) ) {
 						wp_delete_file( $tmp_file );
 					}
+				} else {
+					$video_url = $hosted_video_url;
+					add_settings_error(
+						'gutenberg_json_data',
+						'json_upload_error',
+						esc_html__( 'Video Download Failed: Please manually download the video and upload it to your Media Library, or ensure the video URL is publicly accessible.', 'elementor-to-gutenberg' ),
+						'error'
+					);
 				}
 			}
 		} elseif ( ! empty( $settings['youtube_url'] ) ) {
@@ -141,21 +149,21 @@ class Video_Widget_Handler implements Widget_Handler_Interface {
 
 			$video_attrs = array();
 			if ( $attrs_array['autoplay'] ) {
-				$video_attrs[] = 'autoplay';
+				$video_attrs[] = 'autoplay=""';
 			}
 			if ( $attrs_array['loop'] ) {
-				$video_attrs[] = 'loop';
+				$video_attrs[] = 'loop=""';
 			}
 			if ( $attrs_array['muted'] ) {
-				$video_attrs[] = 'muted';
+				$video_attrs[] = 'muted=""';
 			}
 			$video_attrs[] = 'controls="controls"';
 			$video_attrs_str = implode( ' ', $video_attrs );
 			$poster_attr = $attrs_array['poster'] ? ' poster="' . esc_url( $attrs_array['poster'] ) . '"' : '';
 
 			$block_content .= sprintf(
-				"<!-- wp:video %s -->\n<figure class=\"wp-block-video\"><video %s%s><source src=\"%s\" /></video></figure>\n<!-- /wp:video -->\n",
-				esc_attr( $attrs ),
+				"<!-- wp:video %s -->\n<figure class=\"wp-block-video\"><video %s%s><source src=\"%s\"></video></figure>\n<!-- /wp:video -->\n",
+				$attrs,
 				$video_attrs_str,
 				$poster_attr,
 				esc_url( $video_url )
