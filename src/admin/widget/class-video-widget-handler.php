@@ -37,10 +37,12 @@ class Video_Widget_Handler implements Widget_Handler_Interface {
 				$video_url = wp_get_attachment_url( $attachment_id );
 			} else {
 				$download_args = array(
-					'timeout'    => 60,
-					'user-agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-					'headers'    => array(
-						'Accept'          => 'video/mp4,video/*,*/*;q=0.9',
+					'timeout'      => 60,
+					'redirection'  => 5,
+					'stream'       => true,
+					'headers'      => array(
+						'User-Agent'      => 'WordPress/' . get_bloginfo( 'version' ) . '; ' . home_url( '/' ),
+						'Accept'          => 'video/mp4,video/*;q=0.9,*/*;q=0.8',
 						'Accept-Language' => 'en-US,en;q=0.9',
 						'Cache-Control'   => 'no-cache',
 						'Pragma'          => 'no-cache',

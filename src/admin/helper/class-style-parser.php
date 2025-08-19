@@ -83,4 +83,31 @@ class Style_Parser {
 
 		return $attrs;
 	}
+
+	public static function parse_border( array $settings ) {
+		if ( isset( $settings['border_radius'] ) && is_array( $settings['border_radius'] ) ) {
+			$unit = isset( $settings['border_radius']['unit'] ) ? $settings['border_radius']['unit'] : 'px';
+			foreach ( array( 'top', 'right', 'bottom', 'left' ) as $side ) {
+				
+				if ( isset( $settings['border_radius'][ $side ] ) ) {
+					$attrs['style']['border']['radius'][ $side ] = $settings['border_radius'][ $side ] . $unit;
+				}
+			}
+		}
+
+		if ( isset( $settings['border_border'] ) ) {
+			$attrs['style']['border']['style'] = $settings['border_border'];
+		}
+
+		if ( isset( $settings['border_width'] ) && is_array( $settings['border_width'] ) ) {
+			$unit = isset( $settings['border_width']['unit'] ) ? $settings['border_width']['unit'] : 'px';
+			foreach ( array( 'top', 'right', 'bottom', 'left' ) as $side ) {
+				if ( isset( $settings['border_width'][ $side ] ) ) {
+					$attrs['style']['border']['width'][ $side ] = $settings['border_width'][ $side ] . $unit;
+				}
+			}
+		}
+
+		return $attrs;
+	}
 }
