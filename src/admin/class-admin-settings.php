@@ -111,14 +111,30 @@ class Admin_Settings {
 
 		$post_title = $data['title'] ?? 'Untitled';
 		$post_type  = $data['type'] ?? 'page';
-		$new_post_id = wp_insert_post(
-			array(
-				'post_title'   => sanitize_text_field( $post_title ),
-				'post_content' => $gutenberg_content,
-				'post_type'    => sanitize_key( $post_type ),
-				'post_status'  => 'publish',
-			)
-		);
+
+		// Check if a post with the same title and type exists
+		$existing_post = get_page_by_title( $post_title, OBJECT, $post_type );
+
+		if ( $existing_post ) {
+			// Update existing post
+			$new_post_id = wp_update_post(
+				array(
+					'ID'           => $existing_post->ID,
+					'post_content' => $gutenberg_content,
+					'post_status'  => 'publish',
+				)
+			);
+		} else {
+			// Create new post
+			$new_post_id = wp_insert_post(
+				array(
+					'post_title'   => sanitize_text_field( $post_title ),
+					'post_content' => $gutenberg_content,
+					'post_type'    => sanitize_key( $post_type ),
+					'post_status'  => 'publish',
+				)
+			);
+		}
 
 		if ( is_wp_error( $new_post_id ) ) {
 			add_settings_error(
