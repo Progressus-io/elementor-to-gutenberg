@@ -81,6 +81,20 @@ class Gutenberg
     public function init_hooks(): void
     {
         add_action('init', array( $this, 'init' ), 1);
+        add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
+    }
+
+    /**
+     * Enqueue scripts and styles.
+     */
+    public function enqueue_scripts(): void
+    {
+        wp_enqueue_style(
+            'font-awesome-custom',
+            'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css',
+            array(),
+            '6.5.0'
+        );
     }
 
     /**
