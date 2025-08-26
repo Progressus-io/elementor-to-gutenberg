@@ -27,25 +27,28 @@ class Widget_Handler_Factory {
 		'nested-accordion' => 'Progressus\Gutenberg\Admin\Widget\Nested_Accordion_Widget_Handler',
 		'icon'             => 'Progressus\Gutenberg\Admin\Widget\Icon_Widget_Handler',
 		'icon-box'         => 'Progressus\Gutenberg\Admin\Widget\Icon_Box_Widget_Handler',
+		'icon-list'        => 'Progressus\Gutenberg\Admin\Widget\Icon_List_Widget_Handler',
 		'social-icons'     => 'Progressus\Gutenberg\Admin\Widget\Social_Icons_Widget_Handler',
 		'spacer'           => 'Progressus\Gutenberg\Admin\Widget\Spacer_Widget_Handler',
 		'image-gallery'    => 'Progressus\Gutenberg\Admin\Widget\Gallery_Widget_Handler',
 		'divider'          => 'Progressus\Gutenberg\Admin\Widget\Divider_Widget_Handler',
+		'tabs'             => 'Progressus\Gutenberg\Admin\Widget\Tabs_Widget_Handler',
 	);
 
 	/**
-	 * Get a widget handler instance.
-	 *
-	 * @param string $widget_type The Elementor widget type.
-	 * @return Widget_Handler_Interface|null The widget handler or null if not found.
-	 */
-	public static function get_handler( string $widget_type ): ?Widget_Handler_Interface {
-		$handler_class = self::$handlers[ $widget_type ] ?? null;
-		if ( null === $handler_class ) {
-			return null;
-		}
-		return new $handler_class();
-	}
+     * Get a widget handler instance.
+     *
+     * @param string $widget_type The Elementor widget type.
+     * @return Widget_Handler_Interface|null The widget handler or null if not found.
+     */
+    public static function get_handler( string $widget_type ): ?Widget_Handler_Interface {
+        $handler_class = self::$handlers[ $widget_type ] ?? null;
+        if ( null === $handler_class ) {
+            return null;
+        }
+
+        return new $handler_class();
+    }
 
 	/**
 	 * Register a new widget handler.
