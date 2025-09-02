@@ -28,6 +28,9 @@ class Divider_Widget_Handler implements Widget_Handler_Interface {
 		$block_content = '';
 		$attrs_array   = array();
 		$inline_style  = '';
+		$custom_class  = $settings['_css_classes'] ?? '';
+		$custom_id     = $settings['_element_id'] ?? '';
+		$custom_css    = $settings['custom_css'] ?? '';
 
 		// Alignment
 		if ( isset( $settings['align'] ) ) {
@@ -97,6 +100,11 @@ class Divider_Widget_Handler implements Widget_Handler_Interface {
 				$attrs ?: '',
 				$inline_style ? ' style="' . esc_attr( $inline_style ) . '"' : ''
 			);
+		}
+
+		// Save custom CSS to the Customizer's Additional CSS
+		if ( ! empty( $custom_css ) ) {
+			Style_Parser::save_custom_css( $custom_css );
 		}
 
 		return $block_content;

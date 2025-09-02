@@ -95,6 +95,14 @@ class Gutenberg
             array(),
             '6.5.0'
         );
+
+        wp_enqueue_script(
+            'gutenberg-plugin-scripts',
+            GUTENBERG_PLUGIN_DIR_URL . '/assets/js/scripts.js',
+            array( 'jquery' ),
+            GUTENBERG_PLUGIN_VERSION,
+            true
+        );
     }
 
     /**

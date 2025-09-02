@@ -110,4 +110,12 @@ class Style_Parser {
 
 		return $attrs;
 	}
+
+	public static function save_custom_css( $css ) {
+		$customizer_css_post = wp_get_custom_css_post();
+		$existing_css        = $customizer_css_post ? $customizer_css_post->post_content : '';
+		$new_css             = $existing_css . "\n" . $css;
+
+		wp_update_custom_css_post( $new_css );
+	}
 }

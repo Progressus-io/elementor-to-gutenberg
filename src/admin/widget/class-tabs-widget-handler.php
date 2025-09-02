@@ -4,6 +4,7 @@ namespace Progressus\Gutenberg\Admin\Widget;
 defined( 'ABSPATH' ) || exit;
 
 use Progressus\Gutenberg\Admin\Widget_Handler_Interface;
+use Progressus\Gutenberg\Admin\Helper\Style_Parser;
 
 class Tabs_Widget_Handler implements Widget_Handler_Interface {
 
@@ -19,8 +20,9 @@ class Tabs_Widget_Handler implements Widget_Handler_Interface {
         }
 
         $tabs = $element['settings']['tabs'];
-        $tab_titles = [];
+        $tab_titles   = [];
         $tab_contents = [];
+		$custom_css   = $settings['custom_css'] ?? '';
 
         foreach ( $tabs as $index => $tab ) {
             $tab_id  = 'tab-' . $index;
@@ -55,31 +57,13 @@ class Tabs_Widget_Handler implements Widget_Handler_Interface {
         $block_content .= '</div><!-- /wp:column -->';
         $block_content .= '</div><!-- /wp:columns -->';
 
-        // Optional: Add minimal JS for tab switching (can be improved or moved to a separate JS file)
-        $block_content .= '<script>
-        document.addEventListener("DOMContentLoaded",function(){
-            var buttons=document.querySelectorAll(".gb-tab-title");
-            var contents=document.querySelectorAll(".gb-tab-content");
-            buttons.forEach(function(btn){
-                btn.addEventListener("click",function(){
-                    buttons.forEach(function(b){b.classList.remove("active");});
-                    btn.classList.add("active");
-                    contents.forEach(function(c){
-                        c.style.display=(c.id===btn.getAttribute("data-tab"))?"block":"none";
-                    });
-                });
-            });
-            if(buttons.length)buttons[0].classList.add("active");
-        });
-        </script>';
+        $unique_class = 'elementor-custom-' . uniqid();
+        $attrs_array['className'] = trim( ($attrs_array['className'] ?? '') . ' ' . $unique_class );
 
-        // Optional: Add minimal CSS for tabs (can be improved or moved to a separate CSS file)
-        $block_content .= '<style>
-        .gb-tabs-nav { display: flex; gap: 10px; margin-bottom: 10px; }
-        .gb-tab-title { background: #f3f3f3; border: 1px solid #ccc; padding: 8px 16px; cursor: pointer; }
-        .gb-tab-title.active { background: #e0e0e0; font-weight: bold; }
-        .gb-tab-content { padding: 10px; border: 1px solid #eee; }
-        </style>';
+        // Save custom CSS to the Customizer's Additional CSS
+		if ( ! empty( $custom_css ) ) {
+			Style_Parser::save_custom_css( $custom_css );
+		}
 
         return $block_content;
     }

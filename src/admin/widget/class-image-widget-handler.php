@@ -29,6 +29,9 @@ class Image_Widget_Handler implements Widget_Handler_Interface {
 		$alt           = $settings['image']['alt'] ?? '';
 		$new_url       = File_Upload_Service::download_and_upload( $url ) ?? $url;
 		$attachment_id = ! empty( $new_url ) ? attachment_url_to_postid( $new_url ) : 0;
+		$custom_class  = $settings['_css_classes'] ?? '';
+		$custom_id     = $settings['_element_id'] ?? '';
+		$custom_css    = $settings['custom_css'] ?? '';
 
 		$attrs_array = array(
 			'id'            => $attachment_id,
@@ -71,6 +74,11 @@ class Image_Widget_Handler implements Widget_Handler_Interface {
 			$classes,
 			$img_tag
 		);
+
+		// Save custom CSS to the Customizer's Additional CSS
+		if ( ! empty( $custom_css ) ) {
+			Style_Parser::save_custom_css( $custom_css );
+		}
 
 		return $block_content;
 	}
