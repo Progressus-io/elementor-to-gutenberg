@@ -42,6 +42,10 @@ class Admin_Settings {
 
 	public function myplugin_add_convert_button( $actions, $post ) {
 		if ( $post->post_type === 'page' ) {
+			$json_data = get_post_meta( $post->ID, '_elementor_data', true );
+			if ( empty( $json_data ) ) {
+				return;
+			}
 			$url = wp_nonce_url(
 				admin_url( 'admin-post.php?action=myplugin_convert_page&page_id=' . $post->ID ),
 				'myplugin_convert_page_' . $post->ID
@@ -65,7 +69,7 @@ class Admin_Settings {
 		// Get JSON template stored in post meta
 		$json_data = get_post_meta( $page_id, '_elementor_data', true ); // Example for Elementor
 		if ( empty( $json_data ) ) {
-			wp_die( 'No template JSON found for this page.' );
+			wp_die( 'This page is not created by elementor.' );
 		}
 
 		$data['content'] = json_decode( $json_data, true );
