@@ -36,6 +36,71 @@ class Admin_Settings {
 	public function __construct() {
 		add_action( 'admin_menu', array( $this, 'add_admin_menu' ) );
 		add_action( 'admin_init', array( $this, 'settings_init' ) );
+		add_filter( 'page_row_actions', array( $this, 'myplugin_add_convert_button' ), 10, 2 );
+		add_action( 'admin_post_myplugin_convert_page', array( $this, 'myplugin_handle_convert_page' ) );
+	}
+
+	public function myplugin_add_convert_button( $actions, $post ) {
+		if ( $post->post_type === 'page' ) {
+			$url = wp_nonce_url(
+				admin_url( 'admin-post.php?action=myplugin_convert_page&page_id=' . $post->ID ),
+				'myplugin_convert_page_' . $post->ID
+			);
+			$actions['convert_to_gutenberg'] = '<a href="' . esc_url( $url ) . '">Convert to Gutenberg</a>';
+		}
+		return $actions;
+	}
+
+
+	public function myplugin_handle_convert_page() {
+		if ( ! isset( $_GET['page_id'] ) ) {
+			wp_die( 'Page ID missing.' );
+		}
+
+		$page_id = absint( $_GET['page_id'] );
+
+		// Verify nonce
+		check_admin_referer( 'myplugin_convert_page_' . $page_id );
+
+		// Get JSON template stored in post meta
+		$json_data = get_post_meta( $page_id, '_elementor_data', true ); // Example for Elementor
+		if ( empty( $json_data ) ) {
+			wp_die( 'No template JSON found for this page.' );
+		}
+
+		$data['content'] = json_decode( $json_data, true );
+		// Convert JSON → Gutenberg blocks
+		$blocks = $this->convert_json_to_gutenberg_content( $data );
+
+		// Create new page with blocks
+		$new_page_id = $this->insert_new_page( $page_id, $blocks );
+
+		if ( $new_page_id ) {
+			wp_safe_redirect( admin_url( 'post.php?post=' . $new_page_id . '&action=edit' ) );
+			exit;
+		}
+
+		wp_die( 'Failed to create Gutenberg page.' );
+	}
+
+	/**
+	 * Insert new page with Gutenberg blocks.
+	 *
+	 * @param int $page_id Page ID.
+	 * @param array $blocks Gutenberg blocks.
+	 * 
+	 * @return int New page ID.
+	 */
+	public function insert_new_page( $page_id, $blocks ): int {
+		$new_page_id = wp_insert_post( array(
+				'post_title'   => get_the_title( $page_id ) . ' (Gutenberg)',
+				'post_type'    => 'page',
+				'post_status'  => 'publish',
+				'post_content' =>  $blocks,
+			)
+		);
+
+		return $new_page_id;
 	}
 
 	/**
@@ -220,7 +285,7 @@ class Admin_Settings {
 					$inner
 				);
 			} elseif ( isset( $element['elType'] ) && 'widget' === $element['elType'] ) {
-				$handler = Widget_Handler_Factory::get_handler( $element['widgetType'] );
+				$handler = Widget_Handler_Factory::get_handler( $element['widgetType'], array( $this, 'parse_elementor_elements' ) );
 				if ( null !== $handler ) {
 					$block_content .= $handler->handle( $element );
 				} else {
