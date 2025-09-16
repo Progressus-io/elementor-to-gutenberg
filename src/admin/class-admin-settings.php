@@ -44,7 +44,7 @@ class Admin_Settings {
 		if ( $post->post_type === 'page' ) {
 			$json_data = get_post_meta( $post->ID, '_elementor_data', true );
 			if ( empty( $json_data ) ) {
-				return;
+				return $actions;
 			}
 			$url = wp_nonce_url(
 				admin_url( 'admin-post.php?action=myplugin_convert_page&page_id=' . $post->ID ),
@@ -69,7 +69,7 @@ class Admin_Settings {
 		// Get JSON template stored in post meta
 		$json_data = get_post_meta( $page_id, '_elementor_data', true ); // Example for Elementor
 		if ( empty( $json_data ) ) {
-			wp_die( 'This page is not created by elementor.' );
+			wp_die( 'No template JSON found for this page.' );
 		}
 
 		$data['content'] = json_decode( $json_data, true );
@@ -289,7 +289,8 @@ class Admin_Settings {
 					$inner
 				);
 			} elseif ( isset( $element['elType'] ) && 'widget' === $element['elType'] ) {
-				$handler = Widget_Handler_Factory::get_handler( $element['widgetType'], array( $this, 'parse_elementor_elements' ) );
+
+				$handler = Widget_Handler_Factory::get_handler( $element['widgetType'] );
 				if ( null !== $handler ) {
 					$block_content .= $handler->handle( $element );
 				} else {
@@ -298,6 +299,7 @@ class Admin_Settings {
 						esc_html( $element['widgetType'] )
 					);
 				}
+
 			} else {
 				$block_content .= sprintf(
 					'<!-- wp:paragraph -->%s<!-- /wp:paragraph -->' . "\n",
