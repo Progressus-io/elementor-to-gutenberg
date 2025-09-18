@@ -6,6 +6,9 @@
  */
 namespace Progressus\Gutenberg\Admin;
 use Progressus\Gutenberg\Admin\Helper\File_Upload_Service;
+use Progressus\Gutenberg\Admin\Layout\Css_Registry;
+use Progressus\Gutenberg\Admin\Layout\Grid_Mapper;
+
 defined( 'ABSPATH' ) || exit;
 /**
  * Main admin settings class for Elementor to Gutenberg conversion.
@@ -136,6 +139,16 @@ class Admin_Settings {
 			);
 		}
 
+
+		if ( ! is_wp_error( $new_post_id ) ) {
+			$stylesheet = Css_Registry::get_stylesheet();
+			if ( '' !== trim( $stylesheet ) ) {
+				update_post_meta( $new_post_id, '_etg_grid_css', $stylesheet );
+			} else {
+				delete_post_meta( $new_post_id, '_etg_grid_css' );
+			}
+		}
+
 		if ( is_wp_error( $new_post_id ) ) {
 			add_settings_error(
 				'gutenberg_json_data',
@@ -214,6 +227,15 @@ class Admin_Settings {
 		$block_content = '';
 		foreach ( $elements as $element ) {
 			if ( isset( $element['elType'] ) && 'container' === $element['elType'] ) {
+				$settings = $element['settings'] ?? array();
+				if ( is_array( $settings ) && ( $settings['container_type'] ?? '' ) === 'grid' ) {
+					$block_content .= Grid_Mapper::render_grid_container( $element, array(
+						$this,
+						'parse_elementor_elements'
+					) );
+					continue;
+				}
+
 				$inner = ! empty( $element['elements'] ) ? $this->parse_elementor_elements( $element['elements'] ) : '';
 				$block_content .= sprintf(
 					'<!-- wp:group --><div class="wp-block-group">%s</div><!-- /wp:group -->' . "\n",
