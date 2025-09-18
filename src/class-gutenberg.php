@@ -10,6 +10,7 @@ namespace Progressus\Gutenberg;
 defined('ABSPATH') || exit;
 
 use Progressus\Gutenberg\Admin\Admin_Settings;
+use Progressus\Gutenberg\Admin\Layout\Css_Registry;
 
 /**
  * Class Gutenberg
@@ -82,6 +83,7 @@ class Gutenberg
     {
         add_action('init', array( $this, 'init' ), 1);
         add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
+	    add_action( 'wp_head', array( Css_Registry::class, 'output' ) );
     }
 
     /**
