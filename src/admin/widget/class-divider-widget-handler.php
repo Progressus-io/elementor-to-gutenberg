@@ -16,6 +16,7 @@ defined( 'ABSPATH' ) || exit;
  * Widget handler for Elementor divider widget.
  */
 class Divider_Widget_Handler implements Widget_Handler_Interface {
+
 	/**
 	 * Handle conversion of Elementor divider to Gutenberg block.
 	 *
@@ -26,83 +27,103 @@ class Divider_Widget_Handler implements Widget_Handler_Interface {
 		$settings      = $element['settings'] ?? array();
 		$text          = $settings['text'] ?? '';
 		$block_content = '';
-		$attrs_array   = array();
 		$inline_style  = '';
 		$custom_class  = $settings['_css_classes'] ?? '';
 		$custom_id     = $settings['_element_id'] ?? '';
 		$custom_css    = $settings['custom_css'] ?? '';
+		$unique_class  = 'divider-' . uniqid();
+		$custom_class  .= ' ' . $unique_class;
 
-		// Alignment
+		// Alignment → group wrapper.
+		$group_attrs = array();
 		if ( isset( $settings['align'] ) ) {
-			$attrs_array['align'] = $settings['align'];
-			$inline_style .= 'text-align:' . esc_attr( $settings['align'] ) . ';';
+			$group_attrs['align'] = $settings['align'];
 		}
 
-		// Width
+		// Separator attributes.
+		$separator_attrs = array(
+			'className' => trim( $custom_class ),
+		);
+
+		// Width.
 		if ( isset( $settings['width']['size'] ) ) {
-			$attrs_array['style']['dimensions']['width'] = $settings['width']['size'] . ($settings['width']['unit'] ?? 'px');
-			$inline_style .= 'width:' . esc_attr( $settings['width']['size'] . ($settings['width']['unit'] ?? 'px')) . ';';
+			$group_attrs['width'] = esc_attr( $settings['width']['size'] . ( $settings['width']['unit'] ?? 'px' ) ) . ';';
 		}
 
-		// Color
+		// Color.
 		if ( isset( $settings['color'] ) ) {
-			$attrs_array['style']['color']['background'] = $settings['color'];
-			$inline_style .= 'border-color:' . esc_attr( $settings['color'] ) . ';';
+			$color = strtolower( $settings['color'] );
+			$separator_attrs['style']['color']['background'] = $color;
+			$separator_attrs['className']                   .= ' has-text-color has-background has-alpha-channel-opacity';
+			$inline_style                                   .= 'background-color:' . esc_attr( $color ) . ';color:' . esc_attr( $color ) . ';';
 		}
 
-		// Style (e.g., solid, dashed)
-        	$attrs_array = array_merge_recursive( $attrs_array, Style_Parser::parse_border( $settings ) );
-
-		// if ( isset( $settings['style'] ) ) {
-		// 	$attrs_array['style']['border']['style'] = $settings['style'];
-		// 	$inline_style .= 'border-style:' . esc_attr( $settings['style'] ) . ';';
-		// }
-
-		// Gap (spacing above/below divider)
-		if ( isset( $settings['gap']['size'] ) ) {
-			$attrs_array['style']['spacing']['margin']['top'] = $settings['gap']['size'] . ($settings['gap']['unit'] ?? 'px');
-			$attrs_array['style']['spacing']['margin']['bottom'] = $settings['gap']['size'] . ($settings['gap']['unit'] ?? 'px');
-			$inline_style .= 'margin-top:' . esc_attr( $settings['gap']['size'] . ($settings['gap']['unit'] ?? 'px')) . ';';
-			$inline_style .= 'margin-bottom:' . esc_attr( $settings['gap']['size'] . ($settings['gap']['unit'] ?? 'px')) . ';';
+		// Style (solid/dashed/dotted).
+		if ( isset( $settings['style'] ) ) {
+			$separator_attrs['className'] .= esc_attr( $settings['style'] ) == 'dotted' ? ' is-style-' . 'dots' : ' is-style-' . esc_attr( $settings['style'] );
 		}
 
-		// Margin & Padding (using Style_Parser for consistency)
-		$attrs_array = array_merge_recursive( $attrs_array, Style_Parser::parse_spacing( $settings ) );
-
-		// Remove empty style arrays
-		if ( empty( $attrs_array['style']['spacing'] ) ) {
-			unset( $attrs_array['style']['spacing'] );
-		}
-		if ( empty( $attrs_array['style'] ) ) {
-			unset( $attrs_array['style'] );
+		// Margin / Spacing.
+		$spacing = Style_Parser::parse_spacing( $settings );
+		if ( ! empty( $spacing['attributes'] ) ) {
+			$separator_attrs['style']['spacing'] = $spacing['attributes'];
+			$inline_style                       .= $spacing['style'];
 		}
 
-		$attrs = wp_json_encode( $attrs_array );
-
-		// Build block content
+		// Build block content.
 		if ( $text ) {
-			// If text is present, use a group block with paragraph and separator
+			$group_attrs['layout'] = array(
+				'type'           => 'flex',
+				'justifyContent' => 'center',
+				'flexWrap'       => 'nowrap',
+			);
+
 			$block_content .= sprintf(
 				'<!-- wp:group %s --><div class="wp-block-group">',
-				$attrs ?: ''
+				$group_attrs ? wp_json_encode( $group_attrs ) : ''
 			);
+
+			// First separator.
 			$block_content .= sprintf(
-				'<!-- wp:paragraph --><p%s>%s</p><!-- /wp:paragraph -->' . "\n",
-				$inline_style ? ' style="' . esc_attr( $inline_style ) . '"' : '',
+				'<!-- wp:separator %s --><hr class="wp-block-separator %s" style="%s"/><!-- /wp:separator -->' . "\n",
+				$separator_attrs ? wp_json_encode( $separator_attrs ) : '',
+				esc_attr( $separator_attrs['className'] ),
+				esc_attr( $inline_style )
+			);
+
+			// Text.
+			$block_content .= sprintf(
+				'<!-- wp:paragraph --><p>%s</p><!-- /wp:paragraph -->' . "\n",
 				esc_html( $text )
 			);
-			$block_content .= '<!-- wp:separator --><hr class="wp-block-separator"/><!-- /wp:separator -->' . "\n";
+
+			// Second separator (with css opacity).
+			$second_attrs = array(
+				'opacity'   => 'css',
+				'className' => trim( $unique_class ),
+			);
+			$block_content .= sprintf(
+				'<!-- wp:separator %s --><hr class="wp-block-separator has-css-opacity %s"/><!-- /wp:separator -->' . "\n",
+				wp_json_encode( $second_attrs ),
+				esc_attr( $unique_class )
+			);
+
 			$block_content .= '</div><!-- /wp:group -->' . "\n";
 		} else {
-			// If no text, use a simple separator block
+			// Simple separator.
 			$block_content .= sprintf(
-				'<!-- wp:separator %s --><hr class="wp-block-separator"%s/><!-- /wp:separator -->' . "\n",
-				$attrs ?: '',
-				$inline_style ? ' style="' . esc_attr( $inline_style ) . '"' : ''
+				'<!-- wp:separator %s --><hr class="wp-block-separator %s" style="%s"/><!-- /wp:separator -->' . "\n",
+				$separator_attrs ? wp_json_encode( $separator_attrs ) : '',
+				esc_attr( $separator_attrs['className'] ),
+				esc_attr( $inline_style )
 			);
 		}
 
-		// Save custom CSS to the Customizer's Additional CSS
+		// Save inline CSS.
+		if ( $inline_style ) {
+			$element_selector = '.' . $unique_class;
+			$custom_css      .= sprintf( '%s{ %s }', $element_selector, $inline_style );
+		}
 		if ( ! empty( $custom_css ) ) {
 			Style_Parser::save_custom_css( $custom_css );
 		}
