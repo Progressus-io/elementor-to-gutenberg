@@ -93,7 +93,7 @@ class Css_Registry {
 	 * Reset stored rules and output flag.
 	 */
 	public static function reset(): void {
-		self::$rules = array();
+		self::$rules      = array();
 		self::$did_output = false;
 	}
 

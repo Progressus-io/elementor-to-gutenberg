@@ -44,7 +44,7 @@ class Grid_Mapper {
 		$rows = self::get_responsive_int( $settings, 'grid_rows_grid', null );
 		$gaps = self::get_gap( $settings );
 
-		$selector = '.etg-' . $container_id;
+		$selector        = '.etg-' . $container_id;
 		$desktop_columns = max( 1, absint( $columns['desktop'] ) );
 
 		$base_props = array(
@@ -57,7 +57,7 @@ class Grid_Mapper {
 		}
 
 		$gap_desktop = self::build_gap_properties( $gaps['desktop'], true );
-		$base_props   = array_merge( $base_props, $gap_desktop['properties'] );
+		$base_props  = array_merge( $base_props, $gap_desktop['properties'] );
 
 		Css_Registry::add_rule( $selector, $base_props );
 
@@ -135,8 +135,7 @@ class Grid_Mapper {
 					continue;
 				}
 				$child_attributes_json = wp_json_encode( array( 'className' => 'etg-grid-item' ) );
-				$children_output        .= '<!-- wp:group ' . $child_attributes_json . ' --><div class="wp-block-group etg-grid-item">' . $child_markup . '</div><!-- /wp:group -->' . "
-";
+				$children_output      .= '<!-- wp:group ' . $child_attributes_json . ' --><div class="wp-block-group etg-grid-item">' . $child_markup . '</div><!-- /wp:group -->';
 			}
 		}
 
@@ -152,7 +151,7 @@ class Grid_Mapper {
 		$block_content .= $children_output;
 		$block_content .= '</div>';
 		$block_content .= $comment_close;
-		$block_content .= "\n";
+		$block_content .= '\n';
 
 		return $block_content;
 	}
@@ -160,14 +159,14 @@ class Grid_Mapper {
 	/**
 	 * Get responsive integer settings for desktop/tablet/mobile.
 	 *
-	 * @param array   $settings Elementor settings array.
-	 * @param string  $base_key Base key for the setting.
-	 * @param integer $default  Default desktop value.
+	 * @param array   $settings       Elementor settings array.
+	 * @param string  $base_key       Base key for the setting.
+	 * @param integer $default_value  Default desktop value.
 	 * @return array
 	 */
-	private static function get_responsive_int( array $settings, string $base_key, ?int $default ): array {
+	private static function get_responsive_int( array $settings, string $base_key, ?int $default_value ): array {
 		return array(
-			'desktop' => self::get_int( $settings, $base_key . '.size', $default ),
+			'desktop' => self::get_int( $settings, $base_key . '.size', $default_value ),
 			'tablet'  => self::get_int( $settings, $base_key . '_tablet.size', null ),
 			'mobile'  => self::get_int( $settings, $base_key . '_mobile.size', null ),
 		);
@@ -176,26 +175,26 @@ class Grid_Mapper {
 	/**
 	 * Safely extract an integer from nested settings.
 	 *
-	 * @param array   $settings Settings array.
-	 * @param string  $path     Dot separated path.
-	 * @param integer $default  Default value.
+	 * @param array   $settings       Settings array.
+	 * @param string  $path           Dot separated path.
+	 * @param integer $default_value  Default value.
 	 * @return int|null
 	 */
-	private static function get_int( array $settings, string $path, ?int $default ): ?int {
+	private static function get_int( array $settings, string $path, ?int $default_value ): ?int {
 		$value = self::get_value_by_path( $settings, $path );
 		if ( null === $value || '' === $value ) {
-			return $default;
+			return $default_value;
 		}
 		if ( is_array( $value ) ) {
-			return $default;
+			return $default_value;
 		}
 		if ( ! is_numeric( $value ) ) {
-			return $default;
+			return $default_value;
 		}
 
 		$int_value = absint( $value );
 		if ( $int_value < 1 ) {
-			return $default;
+			return $default_value;
 		}
 
 		return $int_value;
@@ -256,7 +255,7 @@ class Grid_Mapper {
 	 * @return string|null
 	 */
 	private static function get_dimension_value( array $settings, string $key ): ?string {
-		$raw = self::get_value_by_path( $settings, $key );
+		$raw  = self::get_value_by_path( $settings, $key );
 		$size = null;
 		$unit = '';
 

@@ -4,7 +4,9 @@
  *
  * @package Progressus\Gutenberg
  */
+
 namespace Progressus\Gutenberg\Admin;
+
 use Progressus\Gutenberg\Admin\Helper\File_Upload_Service;
 use Progressus\Gutenberg\Admin\Layout\Css_Registry;
 use Progressus\Gutenberg\Admin\Layout\Grid_Mapper;
@@ -109,17 +111,17 @@ class Admin_Settings {
 			return get_option( 'gutenberg_json_data', '' );
 		}
 
-		$data = json_decode( $json_content, true );
+		$data              = json_decode( $json_content, true );
 		$gutenberg_content = $this->convert_json_to_gutenberg_content( $data );
 
 		$post_title = $data['title'] ?? 'Untitled';
 		$post_type  = $data['type'] ?? 'page';
 
-		// Check if a post with the same title and type exists
+		// Check if a post with the same title and type exists.
 		$existing_post = get_page_by_title( $post_title, OBJECT, $post_type );
 
 		if ( $existing_post ) {
-			// Update existing post
+			// Update existing post.
 			$new_post_id = wp_update_post(
 				array(
 					'ID'           => $existing_post->ID,
@@ -128,7 +130,7 @@ class Admin_Settings {
 				)
 			);
 		} else {
-			// Create new post
+			// Create new post.
 			$new_post_id = wp_insert_post(
 				array(
 					'post_title'   => sanitize_text_field( $post_title ),
@@ -138,7 +140,6 @@ class Admin_Settings {
 				)
 			);
 		}
-
 
 		if ( ! is_wp_error( $new_post_id ) ) {
 			$stylesheet = Css_Registry::get_stylesheet();
@@ -229,14 +230,17 @@ class Admin_Settings {
 			if ( isset( $element['elType'] ) && 'container' === $element['elType'] ) {
 				$settings = $element['settings'] ?? array();
 				if ( is_array( $settings ) && ( $settings['container_type'] ?? '' ) === 'grid' ) {
-					$block_content .= Grid_Mapper::render_grid_container( $element, array(
-						$this,
-						'parse_elementor_elements'
-					) );
+					$block_content .= Grid_Mapper::render_grid_container(
+						$element,
+						array(
+							$this,
+							'parse_elementor_elements',
+						),
+					);
 					continue;
 				}
 
-				$inner = ! empty( $element['elements'] ) ? $this->parse_elementor_elements( $element['elements'] ) : '';
+				$inner          = ! empty( $element['elements'] ) ? $this->parse_elementor_elements( $element['elements'] ) : '';
 				$block_content .= sprintf(
 					'<!-- wp:group --><div class="wp-block-group">%s</div><!-- /wp:group -->' . "\n",
 					$inner
