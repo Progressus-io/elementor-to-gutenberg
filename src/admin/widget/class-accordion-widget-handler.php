@@ -8,6 +8,7 @@
 namespace Progressus\Gutenberg\Admin\Widget;
 
 use Progressus\Gutenberg\Admin\Widget_Handler_Interface;
+use Progressus\Gutenberg\Admin\Helper\Style_Parser;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -36,7 +37,10 @@ class Accordion_Widget_Handler implements Widget_Handler_Interface {
 			$border_width          = ! empty( $settings['border_width'] ) ? intval( $settings['border_width'] ) . 'px' : '0';
 			$border_color          = $settings['border_color'] ?? '';
 			$spacing_between_items = ! empty( $settings['items_gap'] ) ? intval( $settings['items_gap'] ) . 'px' : '16px';
-
+			$custom_class          = $settings['_css_classes'] ?? '';
+			$custom_id             = $settings['_element_id'] ?? '';
+			$custom_css            = $settings['custom_css'] ?? '';
+			
 			$accordion_content = '';
 
 			foreach ( $accordions as $item ) {
@@ -72,7 +76,9 @@ class Accordion_Widget_Handler implements Widget_Handler_Interface {
 					}
 
 					$accordion_content .= sprintf(
-						"<!-- wp:html -->\n<details style=\"%s\">\n<summary style=\"padding:0.5em 0;%s\">%s</summary>\n<div style=\"padding:0.5em 1em;%s\">%s</div>\n</details>\n<!-- /wp:html -->\n",
+						"<!-- wp:html -->\n<details class=\"%s\" id=\"%s\" style=\"%s\">\n<summary style=\"padding:0.5em 0;%s\">%s</summary>\n<div style=\"padding:0.5em 1em;%s\">%s</div>\n</details>\n<!-- /wp:html -->\n",
+						$custom_class,
+						$custom_id,
 						implode( '; ', $details_styles ),
 						implode( '; ', $summary_styles ),
 						$title,
@@ -83,6 +89,11 @@ class Accordion_Widget_Handler implements Widget_Handler_Interface {
 			}
 
 			$block_content .= $accordion_content;
+
+			// Save custom CSS to the Customizer's Additional CSS
+			if ( ! empty( $custom_css ) ) {
+				Style_Parser::save_custom_css( $custom_css );
+			}
 		}
 
 		return $block_content;

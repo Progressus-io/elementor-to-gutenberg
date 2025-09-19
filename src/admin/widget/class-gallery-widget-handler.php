@@ -52,6 +52,9 @@ class Gallery_Widget_Handler implements Widget_Handler_Interface {
         }
         $custom_classes[] = 'elementor-gallery-widget';
 
+        $custom_id  = $settings['_element_id'] ?? '';
+        $custom_css = $settings['custom_css'] ?? '';
+
         // Map spacing (image_spacing_custom)
         $style = array();
 
@@ -105,13 +108,13 @@ class Gallery_Widget_Handler implements Widget_Handler_Interface {
             $img_url   = esc_url( $images['url'][$i] );
             $img_size  = esc_attr( $size_slug );
             $inner_blocks .= sprintf(
-            '<!-- wp:image {"id":%d,"sizeSlug":"%s","linkDestination":"none"} -->' .
-            '<figure class="wp-block-image size-%s"><img src="%s" alt=""/></figure>' .
-            '<!-- /wp:image -->' . "\n",
-            $img_id,
-            $img_size,
-            $img_size,
-            $img_url
+                '<!-- wp:image {"id":%d,"sizeSlug":"%s","linkDestination":"none"} -->' .
+                '<figure class="wp-block-image size-%s"><img src="%s" alt=""/></figure>' .
+                '<!-- /wp:image -->' . "\n",
+                $img_id,
+                $img_size,
+                $img_size,
+                $img_url
             );
         }
 
@@ -126,6 +129,11 @@ class Gallery_Widget_Handler implements Widget_Handler_Interface {
             $inner_blocks
         );     
 
+        // Save custom CSS to the Customizer's Additional CSS
+		if ( ! empty( $custom_css ) ) {
+			Style_Parser::save_custom_css( $custom_css );
+		}
+        
         return $block_content;
     }
 }

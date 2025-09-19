@@ -8,6 +8,7 @@
 namespace Progressus\Gutenberg\Admin\Widget;
 
 use Progressus\Gutenberg\Admin\Widget_Handler_Interface;
+use Progressus\Gutenberg\Admin\Helper\Style_Parser;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -25,6 +26,9 @@ class Social_Icons_Widget_Handler implements Widget_Handler_Interface {
 		$settings      = $element['settings'] ?? array();
 		$social_icons  = $settings['social_icon_list'] ?? array();
 		$block_content = '';
+		$custom_class  = $settings['_css_classes'] ?? '';
+		$custom_id     = $settings['_element_id'] ?? '';
+		$custom_css    = $settings['custom_css'] ?? '';
 
 		if ( ! empty( $social_icons ) ) {
 			$icons_content = '';
@@ -149,6 +153,11 @@ class Social_Icons_Widget_Handler implements Widget_Handler_Interface {
 				$attrs,
 				$icons_content
 			);
+
+			// Save custom CSS to the Customizer's Additional CSS
+			if ( ! empty( $custom_css ) ) {
+				Style_Parser::save_custom_css( $custom_css );
+			}
 		}
 
 		return $block_content;

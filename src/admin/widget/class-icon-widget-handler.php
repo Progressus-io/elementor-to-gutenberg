@@ -8,6 +8,7 @@
 namespace Progressus\Gutenberg\Admin\Widget;
 
 use Progressus\Gutenberg\Admin\Widget_Handler_Interface;
+use Progressus\Gutenberg\Admin\Helper\Style_Parser;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -26,6 +27,9 @@ class Icon_Widget_Handler implements Widget_Handler_Interface {
 		$icon_value     = '';
 		$icon_library   = '';
 		$block_content  = '';
+		$custom_class  = $settings['_css_classes'] ?? '';
+		$custom_id     = $settings['_element_id'] ?? '';
+		$custom_css    = $settings['custom_css'] ?? '';
 
 		// Handle the icon structure
 		if ( isset( $settings['selected_icon']['value'] ) ) {
@@ -102,6 +106,10 @@ class Icon_Widget_Handler implements Widget_Handler_Interface {
 			$icon_html
 		);
 
+		// Save custom CSS to the Customizer's Additional CSS
+		if ( ! empty( $custom_css ) ) {
+			Style_Parser::save_custom_css( $custom_css );
+		}
 		return $block_content;
 	}
 }

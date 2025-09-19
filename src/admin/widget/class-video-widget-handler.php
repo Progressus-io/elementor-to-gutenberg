@@ -27,6 +27,9 @@ class Video_Widget_Handler implements Widget_Handler_Interface {
 		$video_url      = '';
 		$embed_provider = '';
 		$block_content  = '';
+		$custom_class   = $settings['_css_classes'] ?? '';
+		$custom_id      = $settings['_element_id'] ?? '';
+		$custom_css     = $settings['custom_css'] ?? '';
 
 		// Determine video URL and provider
 		if ( isset( $settings['video_type'] ) && $settings['video_type'] === 'hosted' && ! empty( $settings['hosted_url']['url'] ) ) {
@@ -164,8 +167,10 @@ class Video_Widget_Handler implements Widget_Handler_Interface {
 			$poster_attr = $attrs_array['poster'] ? ' poster="' . esc_url( $attrs_array['poster'] ) . '"' : '';
 
 			$block_content .= sprintf(
-				"<!-- wp:video %s -->\n<figure class=\"wp-block-video\"><video %s%s><source src=\"%s\"></video></figure>\n<!-- /wp:video -->\n",
+				"<!-- wp:video %s -->\n<figure class=\"wp-block-video %s\" id=\"%s\"><video %s%s><source src=\"%s\"></video></figure>\n<!-- /wp:video -->\n",
 				$attrs,
+				$custom_class,
+				$custom_id,
 				$video_attrs_str,
 				$poster_attr,
 				esc_url( $video_url )
@@ -196,12 +201,19 @@ class Video_Widget_Handler implements Widget_Handler_Interface {
 			$attrs = wp_json_encode( $attrs_array );
 
 			$block_content .= sprintf(
-				"<!-- wp:embed %s -->\n<figure class=\"wp-block-embed is-type-video is-provider-%s wp-block-embed-%s wp-embed-aspect-16-9 wp-has-aspect-ratio\"><div class=\"wp-block-embed__wrapper\">\n%s\n</div></figure>\n<!-- /wp:embed -->\n",
+				"<!-- wp:embed %s -->\n<figure class=\"wp-block-embed is-type-video is-provider-%s wp-block-embed-%s wp-embed-aspect-16-9 wp-has-aspect-ratio %s\" id=\"%s\"><div class=\"wp-block-embed__wrapper\">\n%s\n</div></figure>\n<!-- /wp:embed -->\n",
 				$attrs,
 				$embed_provider,
 				$embed_provider,
+				$custom_class,
+				$custom_id,
 				esc_url( $video_url )
 			);
+		}
+		
+        // Save custom CSS to the Customizer's Additional CSS
+		if ( ! empty( $custom_css ) ) {
+			Style_Parser::save_custom_css( $custom_css );
 		}
 
 		return $block_content;
