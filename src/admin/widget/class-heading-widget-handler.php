@@ -68,9 +68,15 @@ class Heading_Widget_Handler implements Widget_Handler_Interface {
 
 		$attrs_array['className'] = trim( $class );
 
-		$attrs_array['style']['typography'] = $typography['attributes'];
-		$attrs_array['style']['border']     = $border['attributes'];
-		$attrs_array['style']['spacing']    = $spacing['attributes'];
+		if ( ! empty( $typography['attributes'] ) ) {
+			$attrs_array['style']['typography'] = $typography['attributes'];
+		}
+		if ( ! empty( $spacing['attributes'] ) ) {
+			$attrs_array['style']['spacing'] = $spacing['attributes'];
+		}
+		if ( ! empty( $border['attributes'] ) ) {
+			$attrs_array['style']['border'] = $border['attributes'];
+		}
 		$inline_style .= $typography['style'] . $border['style'] . $spacing['style'];
 		// Encode block attributes.
 		$attrs = wp_json_encode( $attrs_array );
