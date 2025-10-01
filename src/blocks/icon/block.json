@@ -1,0 +1,85 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "gutenberg/icon",
+  "title": "Styled Icon Block",
+  "category": "widgets",
+  "icon": "star-filled",
+  "description": "A customizable icon block with extensive styling options and hover effects.",
+  "keywords": ["icon", "symbol", "svg"],
+  "version": "1.0.0",
+  "textdomain": "gutenberg",
+  "editorScript": "file:./index.js",
+  "style": "file:./style.css",
+  "example": {
+    "attributes": {
+      "icon": "heart",
+      "size": 48,
+      "color": "#e74c3c",
+      "alignment": "center"
+    }
+  },
+  "supports": {
+    "html": false,
+    "anchor": true,
+    "align": ["left", "right", "center"],
+    "spacing": {
+      "margin": true,
+      "padding": true
+    }
+  },
+  "attributes": {
+    "icon": {
+      "type": "string",
+      "default": "star-filled"
+    },
+    "size": {
+      "type": "number",
+      "default": 32
+    },
+    "color": {
+      "type": "string",
+      "default": "#333333"
+    },
+    "backgroundColor": {
+      "type": "string",
+      "default": ""
+    },
+    "borderRadius": {
+      "type": "number",
+      "default": 0
+    },
+    "padding": {
+      "type": "number",
+      "default": 0
+    },
+    "alignment": {
+      "type": "string",
+      "default": "left"
+    },
+    "hoverColor": {
+      "type": "string",
+      "default": ""
+    },
+    "hoverBackgroundColor": {
+      "type": "string",
+      "default": ""
+    },
+    "hoverEffect": {
+      "type": "string",
+      "default": "none"
+    },
+    "link": {
+      "type": "string",
+      "default": ""
+    },
+    "linkTarget": {
+      "type": "boolean",
+      "default": false
+    },
+    "ariaLabel": {
+      "type": "string",
+      "default": ""
+    }
+  }
+}

@@ -112,8 +112,9 @@ class Divider_Widget_Handler implements Widget_Handler_Interface {
 		} else {
 			// Simple separator.
 			$block_content .= sprintf(
-				'<!-- wp:separator %s --><hr class="wp-block-separator %s" style="%s"/><!-- /wp:separator -->' . "\n",
+				'<!-- wp:separator %s --><hr id="%s" class="wp-block-separator %s" style="%s"/><!-- /wp:separator -->' . "\n",
 				$separator_attrs ? wp_json_encode( $separator_attrs ) : '',
+				esc_attr( $custom_id ),
 				esc_attr( $separator_attrs['className'] ),
 				esc_attr( $inline_style )
 			);
