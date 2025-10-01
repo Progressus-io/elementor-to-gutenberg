@@ -2,10 +2,10 @@
 	"name": "gutenberg-plugin",
 	"version": "1.0.0",
 	"description": "",
-	"main": "index.js",
+	"main": "build/index.js",
 	"scripts": {
 		"prebuild": "rm -rf ./vendor",
-		"build": "composer install -o && npm run archive",
+		"build": "composer install -o && wp-scripts build && npm run archive",
 		"build:dev": "composer install -o",
 		"archive": "composer archive --file=$npm_package_name --format=zip",
 		"postarchive": "rm -rf $npm_package_name && unzip $npm_package_name.zip -d $npm_package_name && rm $npm_package_name.zip && zip -r $npm_package_name.zip $npm_package_name && rm -rf $npm_package_name",
@@ -21,6 +21,10 @@
 	"keywords": [],
 	"author": "",
 	"license": "ISC",
+	"devDependencies": {
+		"@woocommerce/dependency-extraction-webpack-plugin": "^4.0.0",
+		"@wordpress/scripts": "^30.24.0"
+	},
 	"bugs": {
 		"url": "https://github.com/progressus-io/gutenberg-plugin/issues"
 	},

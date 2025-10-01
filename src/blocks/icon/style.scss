@@ -1,0 +1,98 @@
+/**
+ * The following styles get applied both on the front of your site
+ * and in the editor.
+ *
+ * Replace them with your own styles or remove the file completely.
+ */
+
+.wp-block-progressus-icon {
+	&.styled-icon-align-left {
+		text-align: left;
+	}
+	
+	&.styled-icon-align-center {
+		text-align: center;
+	}
+	
+	&.styled-icon-align-right {
+		text-align: right;
+	}
+
+	.dashicons {
+		width: auto;
+		height: auto;
+		cursor: default;
+		
+		&.styled-icon-hover-scale-up:hover {
+			transform: scale(1.2);
+		}
+		
+		&.styled-icon-hover-scale-down:hover {
+			transform: scale(0.8);
+		}
+		
+		&.styled-icon-hover-rotate:hover {
+			transform: rotate(360deg);
+		}
+		
+		&.styled-icon-hover-bounce:hover {
+			animation: styled-icon-bounce 0.6s ease-in-out;
+		}
+		
+		&.styled-icon-hover-pulse:hover {
+			animation: styled-icon-pulse 1s ease-in-out infinite;
+		}
+		
+		// Hover color changes
+		&:hover {
+			color: var(--styled-icon-hover-color, currentColor);
+			background-color: var(--styled-icon-hover-bg, transparent);
+		}
+	}
+	
+	a {
+		color: inherit;
+		text-decoration: none;
+		
+		&:hover {
+			text-decoration: none;
+		}
+		
+		.dashicons {
+			cursor: pointer;
+		}
+	}
+}
+
+@keyframes styled-icon-bounce {
+	0%, 100% {
+		transform: translateY(0);
+	}
+	50% {
+		transform: translateY(-10px);
+	}
+}
+
+@keyframes styled-icon-pulse {
+	0%, 100% {
+		transform: scale(1);
+		opacity: 1;
+	}
+	50% {
+		transform: scale(1.1);
+		opacity: 0.8;
+	}
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+	.wp-block-progressus-icon {
+		.dashicons {
+			// Slightly reduce icon size on mobile if it's too large
+			&[style*="font-size"] {
+				max-width: 100px;
+				max-height: 100px;
+			}
+		}
+	}
+}
