@@ -91,13 +91,22 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 			$inline_style .= 'border-radius:' . trim( $radius ) . ';';
 		}
 
-		// Margin & Padding
-		$attrs_array = array_merge_recursive( $attrs_array, Style_Parser::parse_spacing( $settings ) );
-
 		// Typography
 		$typography  = Style_Parser::parse_typography( $settings );
+		$spacing     = Style_Parser::parse_spacing( $settings );
+		$border	     = Style_Parser::parse_border( $settings );
+		if ( ! empty( $typography['attributes'] ) ) {
+			$attrs_array['style']['typography'] = $typography['attributes'];
+		}
+		if ( ! empty( $spacing['attributes'] ) ) {
+			$attrs_array['style']['spacing'] = $spacing['attributes'];
+		}
+		if ( ! empty( $border['attributes'] ) ) {
+			$attrs_array['style']['border'] = $border['attributes'];
+		}
 		$inline_style .= $typography['style'];
-		$attrs_array['style']['typography'] = $typography['attributes'];
+		$inline_style .= $spacing['style'];
+		$inline_style .= $border['style'];
 
 		$attrs = wp_json_encode( $attrs_array );
 
