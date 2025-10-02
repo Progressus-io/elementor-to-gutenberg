@@ -16,6 +16,7 @@ defined( 'ABSPATH' ) || exit;
  * Widget handler for Elementor button widget.
  */
 class Button_Widget_Handler implements Widget_Handler_Interface {
+
 	/**
 	 * Handle conversion of Elementor button to Gutenberg block.
 	 *
@@ -23,78 +24,58 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 	 * @return string The Gutenberg block content.
 	 */
 	public function handle( array $element ): string {
-		$settings      = $element['settings'] ?? array();
-		$text          = $settings['text'] ?? '';
-		$url           = $settings['link']['url'] ?? '';
-		$attrs_array   = array();
-		$inline_style  = '';
+		$settings     = $element['settings'] ?? array();
+		$text         = $settings['text'] ?? '';
+		$url          = $settings['link']['url'] ?? '';
+		$custom_class = $settings['_css_classes'] ?? '';
+		$custom_id    = $settings['_element_id'] ?? '';
+		$custom_css   = $settings['custom_css'] ?? '';
 
-		// Button URL
+		$class = '';
+		if ( ! empty( $custom_class ) ) {
+			$class .= ' ' . esc_attr( $custom_class );
+		}
+
+		$attrs_array = array();
+		$inline_style = '';
+
+		// URL.
 		if ( $url ) {
 			$attrs_array['url'] = esc_url( $url );
 		}
 
-		// Alignment
-		if ( isset( $settings['align'] ) ) {
-			$attrs_array['align'] = $settings['align'];
-		}
-
-		// Size
-		if ( isset( $settings['size'] ) ) {
-			$attrs_array['size'] = $settings['size'];
-		}
-
-		// Text shadow
-		if ( isset( $settings['text_shadow_text_shadow_type'] ) && $settings['text_shadow_text_shadow_type'] === 'yes' ) {
-			$attrs_array['style']['textShadow'] = '1px 1px 2px #000';
-			$inline_style .= 'text-shadow:1px 1px 2px #000;';
-		}
-
-		// Background color
-		if ( isset( $settings['background_color'] ) ) {
-			$attrs_array['style']['color']['background'] = $settings['background_color'];
-			$inline_style .= 'background-color:' . esc_attr( $settings['background_color'] ) . ';';
-		}
-
-		// Button text color
-		if ( isset( $settings['button_text_color'] ) ) {
-			$inline_style .= 'color:' . esc_attr( $settings['button_text_color'] ) . ';';
-		}
-
-		// Border
-		if ( isset( $settings['border_border'] ) ) {
-			$attrs_array['style']['border']['style'] = $settings['border_border'];
-			$inline_style .= 'border-style:' . esc_attr( $settings['border_border'] ) . ';';
-		}
-
-		if ( isset( $settings['border_width'] ) && is_array( $settings['border_width'] ) ) {
-			foreach ( array( 'top', 'right', 'bottom', 'left' ) as $side ) {
-				if ( isset( $settings['border_width'][ $side ] ) ) {
-					$unit = isset( $settings['border_width']['unit'] ) ? $settings['border_width']['unit'] : 'px';
-					$attrs_array['style']['border']['width'][ $side ] = $settings['border_width'][ $side ] . $unit;
-					$inline_style .= 'border-' . $side . '-width:' . esc_attr( $settings['border_width'][ $side ] ) . $unit . ';';
-				}
+		if ( ! empty( $settings['button_text_color'] ) ) {
+			$txt = strtolower( $settings['button_text_color'] );
+			if ( $this->is_preset_color_slug( $txt ) ) {
+				$attrs_array['textColor'] = $txt;
+				$class .= ' has-text-color has-link-color';
+				$attrs_array['style']['elements']['link']['color']['text'] = 'var:preset|color|' . $txt;
+			} else {
+				$attrs_array['style']['color']['text'] = $txt;
+				$attrs_array['style']['elements']['link']['color']['text'] = $txt;
+				$inline_style .= 'color:' . $txt . ';';
+				$class .= ' has-text-color has-link-color';
 			}
 		}
 
-		if ( isset( $settings['border_radius'] ) && is_array( $settings['border_radius'] ) ) {
-			$radius = '';
-			foreach ( array( 'top', 'right', 'bottom', 'left' ) as $side ) {
-				if ( isset( $settings['border_radius'][ $side ] ) ) {
-					$unit = isset( $settings['border_radius']['unit'] ) ? $settings['border_radius']['unit'] : 'px';
-					$attrs_array['style']['border']['radius'][ $side ] = $settings['border_radius'][ $side ] . $unit;
-					$radius .= esc_attr( $settings['border_radius'][ $side ] ) . $unit . ' ';
-				} else {
-					$radius .= '0px ';
-				}
+		// Colors: background + text.
+		if ( ! empty( $settings['background_color'] ) ) {
+			$bg = strtolower( $settings['background_color'] );
+			if ( $this->is_preset_color_slug( $bg ) ) {
+				$attrs_array['backgroundColor'] = $bg;
+				$class .= ' has-background';
+			} else {
+				$attrs_array['style']['color']['background'] = $bg;
+				$inline_style .= 'background-color:' . $bg . ';';
+				$class .= ' has-background';
 			}
-			$inline_style .= 'border-radius:' . trim( $radius ) . ';';
 		}
 
-		// Typography
-		$typography  = Style_Parser::parse_typography( $settings );
-		$spacing     = Style_Parser::parse_spacing( $settings );
-		$border	     = Style_Parser::parse_border( $settings );
+		// Typography, spacing, border.
+		$typography = Style_Parser::parse_typography( $settings );
+		$spacing    = Style_Parser::parse_spacing( $settings );
+		$border     = Style_Parser::parse_border( $settings );
+
 		if ( ! empty( $typography['attributes'] ) ) {
 			$attrs_array['style']['typography'] = $typography['attributes'];
 		}
@@ -104,21 +85,39 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 		if ( ! empty( $border['attributes'] ) ) {
 			$attrs_array['style']['border'] = $border['attributes'];
 		}
-		$inline_style .= $typography['style'];
-		$inline_style .= $spacing['style'];
-		$inline_style .= $border['style'];
 
+		// Inline style fallback (optional, safe for editor).
+		$inline_style .= $typography['style'] . $spacing['style'] . $border['style'];
+
+		// Encode attributes.
 		$attrs = wp_json_encode( $attrs_array );
 
-		// Build block content
+		// Build block content.
 		$block_content = sprintf(
-			'<!-- wp:button %s --><p><a class="wp-block-button__link"%s%s>%s</a></p><!-- /wp:button -->' . "\n",
+			'<!-- wp:buttons --><div class="wp-block-buttons"><!-- wp:button %s --><div class="wp-block-button"><a id="%s" class="wp-block-button__link %s wp-element-button"%s%s>%s</a></div><!-- /wp:button --></div><!-- /wp:buttons -->' . "\n",
 			$attrs,
-			$inline_style ? ' style="' . $inline_style . '"' : '',
+			esc_attr( $custom_id ),
+			esc_attr( $class ),
+			$inline_style ? ' style="' . esc_attr( $inline_style ) . '"' : '',
 			$url ? ' href="' . esc_url( $url ) . '"' : '',
 			esc_html( $text )
 		);
 
+		// Save custom CSS if any.
+		if ( ! empty( $custom_css ) ) {
+			Style_Parser::save_custom_css( $custom_css );
+		}
+
 		return $block_content;
+	}
+
+	/**
+	 * Check if a given color value is a Gutenberg preset slug.
+	 *
+	 * @param string $color Color value.
+	 * @return bool
+	 */
+	private function is_preset_color_slug( string $color ): bool {
+		return ! empty( $color ) && strpos( $color, '#' ) === false;
 	}
 }
