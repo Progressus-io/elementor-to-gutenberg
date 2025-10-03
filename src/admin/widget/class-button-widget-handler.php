@@ -39,13 +39,13 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 		$attrs_array = array();
 		$inline_style = '';
 
-		// URL.
 		if ( $url ) {
 			$attrs_array['url'] = esc_url( $url );
 		}
 
 		if ( ! empty( $settings['button_text_color'] ) ) {
 			$txt = strtolower( $settings['button_text_color'] );
+			$class .= ' has-text-color has-link-color';
 			if ( $this->is_preset_color_slug( $txt ) ) {
 				$attrs_array['textColor'] = $txt;
 				$class .= ' has-text-color has-link-color';
@@ -54,20 +54,18 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 				$attrs_array['style']['color']['text'] = $txt;
 				$attrs_array['style']['elements']['link']['color']['text'] = $txt;
 				$inline_style .= 'color:' . $txt . ';';
-				$class .= ' has-text-color has-link-color';
 			}
+
 		}
 
-		// Colors: background + text.
 		if ( ! empty( $settings['background_color'] ) ) {
 			$bg = strtolower( $settings['background_color'] );
+			$class .= ' has-background';
 			if ( $this->is_preset_color_slug( $bg ) ) {
 				$attrs_array['backgroundColor'] = $bg;
-				$class .= ' has-background';
 			} else {
 				$attrs_array['style']['color']['background'] = $bg;
 				$inline_style .= 'background-color:' . $bg . ';';
-				$class .= ' has-background';
 			}
 		}
 
@@ -94,7 +92,7 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 
 		// Build block content.
 		$block_content = sprintf(
-			'<!-- wp:buttons --><div class="wp-block-buttons"><!-- wp:button %s --><div class="wp-block-button"><a id="%s" class="wp-block-button__link %s wp-element-button"%s%s>%s</a></div><!-- /wp:button --></div><!-- /wp:buttons -->' . "\n",
+			'<!-- wp:buttons --><div class="wp-block-buttons"><!-- wp:button %1s --><div class="wp-block-button"><a id="%2s" class="wp-block-button__link %3s wp-element-button"%4s%5s>%6s</a></div><!-- /wp:button --></div><!-- /wp:buttons -->' . "\n",
 			$attrs,
 			esc_attr( $custom_id ),
 			esc_attr( $class ),
