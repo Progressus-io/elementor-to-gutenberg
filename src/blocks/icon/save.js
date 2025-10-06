@@ -18,6 +18,7 @@ import { useBlockProps } from '@wordpress/block-editor';
 export default function save( { attributes } ) {
 	const {
 		icon,
+		iconStyle,
 		size,
 		color,
 		backgroundColor,
@@ -33,7 +34,7 @@ export default function save( { attributes } ) {
 	} = attributes;
 
 	const blockProps = useBlockProps.save( {
-		className: `styled-icon-align-${alignment}`,
+		className: `fontawesome-icon-align-${alignment}`,
 		style: {
 			textAlign: alignment
 		}
@@ -47,27 +48,30 @@ export default function save( { attributes } ) {
 		padding: padding ? `${padding}px` : '0',
 		display: 'inline-block',
 		lineHeight: 1,
-		transition: 'all 0.3s ease'
+		transition: 'all 0.3s ease',
+		width: 'auto',
+		height: 'auto'
 	};
 
-	const iconClasses = `dashicons dashicons-${icon} styled-icon-hover-${hoverEffect}`;
-
 	// Create custom CSS variables for hover effects
-	const customProperties = {};
+	const customProperties = { ...iconStyles };
 	if ( hoverColor ) {
-		customProperties['--styled-icon-hover-color'] = hoverColor;
+		customProperties['--fontawesome-icon-hover-color'] = hoverColor;
 	}
 	if ( hoverBackgroundColor ) {
-		customProperties['--styled-icon-hover-bg'] = hoverBackgroundColor;
+		customProperties['--fontawesome-icon-hover-bg'] = hoverBackgroundColor;
 	}
 
 	const iconElement = (
-		<span 
-			className={ iconClasses }
-			style={ { ...iconStyles, ...customProperties } }
+		<i 
+			className={ `${iconStyle} ${icon} fontawesome-icon-hover-${hoverEffect}` }
+			style={ customProperties }
 			aria-label={ ariaLabel }
+			aria-hidden={ !ariaLabel ? 'true' : 'false' }
 			data-hover-effect={ hoverEffect }
-		></span>
+			data-icon={ icon }
+			data-icon-style={ iconStyle }
+		/>
 	);
 
 	return (
