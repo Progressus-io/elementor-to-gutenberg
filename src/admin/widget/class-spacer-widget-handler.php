@@ -31,9 +31,11 @@ class Spacer_Widget_Handler implements Widget_Handler_Interface {
 		$custom_css   = $settings['custom_css'] ?? '';
 
 		$block_content = sprintf(
-			"<!-- wp:spacer %s -->\n<div style=\"height: %spx\" aria-hidden=\"true\" class=\"wp-block-spacer\"></div>\n<!-- /wp:spacer -->\n",
+			"<!-- wp:spacer %1s -->\n<div %2s style=\"height: %3spx\" aria-hidden=\"true\" class=\"wp-block-spacer %4s\"></div>\n<!-- /wp:spacer -->\n",
 			$attrs,
-			$height
+			! empty( $custom_id ) ? 'id="' . esc_attr( $custom_id ) . '"' : '',
+			$height,
+			esc_attr( $custom_class )
 		);
 
 		// Save custom CSS to the Customizer's Additional CSS

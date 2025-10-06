@@ -60,6 +60,11 @@ class Image_Widget_Handler implements Widget_Handler_Interface {
 			'className'       => 'is-style-default ' . trim( $custom_class ),
 		);
 
+		if ( ! empty( $settings['align'] ) ) {
+			$custom_class .= ' align' . esc_attr( $settings['align'] );
+			$attrs_array['align'] = $settings['align'];
+		}
+
 		// Width from Elementor.
 		if ( isset( $settings['width']['size'] ) && '' !== $settings['width']['size'] ) {
 			$attrs_array['width'] = $settings['width']['size'] . ( $settings['width']['unit'] ?? 'px' );
@@ -106,7 +111,7 @@ class Image_Widget_Handler implements Widget_Handler_Interface {
 		// Wrap with <a> if link_to = custom.
 		if ( $settings['link_to'] === 'custom' && ! empty( $settings['link']['url'] ) ) {
 			$img_tag = sprintf(
-				'<a href="%1s">%2s</a>',
+				'<a href="%s">%s</a>',
 				esc_url( $settings['link']['url'] ),
 				$img_tag
 			);
@@ -122,7 +127,6 @@ class Image_Widget_Handler implements Widget_Handler_Interface {
 			$img_tag
 		);
 
-		// Save custom CSS to the Customizer's Additional CSS
 		if ( ! empty( $custom_css ) ) {
 			Style_Parser::save_custom_css( $custom_css );
 		}
