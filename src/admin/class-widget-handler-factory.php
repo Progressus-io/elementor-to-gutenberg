@@ -25,6 +25,7 @@ class Widget_Handler_Factory {
 		'video'            => 'Progressus\Gutenberg\Admin\Widget\Video_Widget_Handler',
 		'accordion'        => 'Progressus\Gutenberg\Admin\Widget\Accordion_Widget_Handler',
 		'nested-accordion' => 'Progressus\Gutenberg\Admin\Widget\Nested_Accordion_Widget_Handler',
+		'nested-tabs'      => 'Progressus\Gutenberg\Admin\Widget\Nested_Tabs_Widget_Handler',
 		'icon'             => 'Progressus\Gutenberg\Admin\Widget\Icon_Widget_Handler',
 		'icon-box'         => 'Progressus\Gutenberg\Admin\Widget\Icon_Box_Widget_Handler',
 		'icon-list'        => 'Progressus\Gutenberg\Admin\Widget\Icon_List_Widget_Handler',
