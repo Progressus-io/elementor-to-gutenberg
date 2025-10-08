@@ -8,6 +8,7 @@
 namespace Progressus\Gutenberg\Admin\Widget;
 
 use Progressus\Gutenberg\Admin\Widget_Handler_Interface;
+use Progressus\Gutenberg\Admin\Helper\Elementor_Elements_Parser;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -138,6 +139,6 @@ class Nested_Accordion_Widget_Handler implements Widget_Handler_Interface {
 	 */
 	private function parse_elementor_elements( array $elements ): string {
 		// This is a stub; implement recursive parsing logic as needed
-		return '';
+		return Elementor_Elements_Parser::parse( $elements );
 	}
 }
