@@ -21,8 +21,8 @@
  */
 
 document.addEventListener('DOMContentLoaded', function() {
-	// Get all styled icon blocks
-	const iconBlocks = document.querySelectorAll('.wp-block-progressus-icon .dashicons');
+	// Get all FontAwesome icon blocks
+	const iconBlocks = document.querySelectorAll('.wp-block-gutenberg-icon i');
 	
 	iconBlocks.forEach(function(icon) {
 		// Add enhanced accessibility
@@ -63,6 +63,30 @@ document.addEventListener('DOMContentLoaded', function() {
 				icon.style.opacity = '';
 			}, 150);
 		});
+		
+		// Add loading state for FontAwesome icons
+		// Check if FontAwesome is loaded
+		if (window.FontAwesome || document.querySelector('link[href*="font-awesome"]')) {
+			icon.classList.add('fa-loaded');
+		} else {
+			// Add a loading indicator or fallback
+			icon.style.opacity = '0.5';
+			
+			// Check periodically if FontAwesome has loaded
+			const checkFontAwesome = setInterval(function() {
+				if (window.FontAwesome || document.querySelector('link[href*="font-awesome"]')) {
+					icon.style.opacity = '';
+					icon.classList.add('fa-loaded');
+					clearInterval(checkFontAwesome);
+				}
+			}, 100);
+			
+			// Stop checking after 5 seconds
+			setTimeout(function() {
+				clearInterval(checkFontAwesome);
+				icon.style.opacity = '';
+			}, 5000);
+		}
 	});
 	
 	// Performance optimization: Use CSS custom properties for hover effects
@@ -72,17 +96,87 @@ document.addEventListener('DOMContentLoaded', function() {
 		
 		if (hoverEffect && hoverEffect !== 'none') {
 			// Add a class to enable hardware acceleration
-			icon.classList.add('styled-icon-hw-accelerated');
+			icon.classList.add('fontawesome-icon-hw-accelerated');
 		}
 	});
+	
+	// Add intersection observer for animation optimization
+	if ('IntersectionObserver' in window) {
+		const observer = new IntersectionObserver(function(entries) {
+			entries.forEach(function(entry) {
+				const icon = entry.target;
+				if (entry.isIntersecting) {
+					icon.classList.add('in-viewport');
+				} else {
+					icon.classList.remove('in-viewport');
+				}
+			});
+		}, {
+			rootMargin: '10px'
+		});
+		
+		iconBlocks.forEach(function(icon) {
+			observer.observe(icon);
+		});
+	}
 });
 
-// Add CSS for hardware acceleration
+// Add CSS for hardware acceleration and viewport optimization
 const style = document.createElement('style');
 style.textContent = `
-	.styled-icon-hw-accelerated {
+	.fontawesome-icon-hw-accelerated {
 		will-change: transform, opacity;
 		backface-visibility: hidden;
 	}
+	
+	.wp-block-gutenberg-icon i.fa-loaded {
+		opacity: 1 !important;
+		transition: all 0.3s ease;
+	}
+	
+	/* Reduce animations when not in viewport for performance */
+	.wp-block-gutenberg-icon i:not(.in-viewport) {
+		animation-play-state: paused;
+	}
+	
+	.wp-block-gutenberg-icon i.in-viewport {
+		animation-play-state: running;
+	}
 `;
 document.head.appendChild(style);
+
+// Add error handling for FontAwesome loading
+window.addEventListener('error', function(e) {
+	if (e.target && e.target.href && e.target.href.includes('font-awesome')) {
+		console.warn('FontAwesome failed to load from CDN. Icons may not display correctly.');
+		
+		// Optionally, you could load a fallback or show text-based icons
+		const iconBlocks = document.querySelectorAll('.wp-block-gutenberg-icon i');
+		iconBlocks.forEach(function(icon) {
+			const iconName = icon.getAttribute('data-icon');
+			if (iconName && !icon.textContent.trim()) {
+				// Show icon name as fallback
+				icon.textContent = iconName.replace('fa-', '');
+				icon.style.fontFamily = 'inherit';
+				icon.style.fontSize = '0.8em';
+				icon.style.textTransform = 'uppercase';
+				icon.style.border = '1px solid currentColor';
+				icon.style.padding = '2px 4px';
+				icon.style.borderRadius = '2px';
+			}
+		});
+	}
+}, true);
+
+// Preload FontAwesome if not already loaded
+if (!document.querySelector('link[href*="font-awesome"]')) {
+	const link = document.createElement('link');
+	link.rel = 'preload';
+	link.as = 'style';
+	link.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
+	link.onload = function() {
+		this.onload = null;
+		this.rel = 'stylesheet';
+	};
+	document.head.appendChild(link);
+}

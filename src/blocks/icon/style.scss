@@ -5,48 +5,52 @@
  * Replace them with your own styles or remove the file completely.
  */
 
-.wp-block-progressus-icon {
-	&.styled-icon-align-left {
+.wp-block-gutenberg-icon {
+	&.fontawesome-icon-align-left {
 		text-align: left;
 	}
 	
-	&.styled-icon-align-center {
+	&.fontawesome-icon-align-center {
 		text-align: center;
 	}
 	
-	&.styled-icon-align-right {
+	&.fontawesome-icon-align-right {
 		text-align: right;
 	}
 
-	.dashicons {
-		width: auto;
-		height: auto;
+	// FontAwesome icon styles
+	i {
 		cursor: default;
+		position: relative;
+		vertical-align: middle;
+		-webkit-font-smoothing: antialiased;
+		-moz-osx-font-smoothing: grayscale;
 		
-		&.styled-icon-hover-scale-up:hover {
+		// Hover effects
+		&.fontawesome-icon-hover-scale-up:hover {
 			transform: scale(1.2);
 		}
 		
-		&.styled-icon-hover-scale-down:hover {
+		&.fontawesome-icon-hover-scale-down:hover {
 			transform: scale(0.8);
 		}
 		
-		&.styled-icon-hover-rotate:hover {
+		&.fontawesome-icon-hover-rotate:hover {
 			transform: rotate(360deg);
 		}
 		
-		&.styled-icon-hover-bounce:hover {
-			animation: styled-icon-bounce 0.6s ease-in-out;
+		&.fontawesome-icon-hover-bounce:hover {
+			animation: fontawesome-icon-bounce 0.6s ease-in-out;
 		}
 		
-		&.styled-icon-hover-pulse:hover {
-			animation: styled-icon-pulse 1s ease-in-out infinite;
+		&.fontawesome-icon-hover-pulse:hover {
+			animation: fontawesome-icon-pulse 1s ease-in-out infinite;
 		}
 		
 		// Hover color changes
 		&:hover {
-			color: var(--styled-icon-hover-color, currentColor);
-			background-color: var(--styled-icon-hover-bg, transparent);
+			color: var(--fontawesome-icon-hover-color, currentColor) !important;
+			background-color: var(--fontawesome-icon-hover-bg, transparent) !important;
 		}
 	}
 	
@@ -58,13 +62,14 @@
 			text-decoration: none;
 		}
 		
-		.dashicons {
+		i {
 			cursor: pointer;
 		}
 	}
 }
 
-@keyframes styled-icon-bounce {
+// Animation keyframes
+@keyframes fontawesome-icon-bounce {
 	0%, 100% {
 		transform: translateY(0);
 	}
@@ -73,7 +78,7 @@
 	}
 }
 
-@keyframes styled-icon-pulse {
+@keyframes fontawesome-icon-pulse {
 	0%, 100% {
 		transform: scale(1);
 		opacity: 1;
@@ -86,13 +91,61 @@
 
 // Responsive adjustments
 @media (max-width: 768px) {
-	.wp-block-progressus-icon {
-		.dashicons {
+	.wp-block-gutenberg-icon {
+		i {
 			// Slightly reduce icon size on mobile if it's too large
 			&[style*="font-size"] {
 				max-width: 100px;
 				max-height: 100px;
 			}
+		}
+	}
+}
+
+// Accessibility improvements
+@media (prefers-reduced-motion: reduce) {
+	.wp-block-gutenberg-icon {
+		i {
+			transition: none !important;
+			animation: none !important;
+			
+			&:hover {
+				transform: none !important;
+			}
+		}
+	}
+}
+
+// High contrast mode support
+@media (prefers-contrast: high) {
+	.wp-block-gutenberg-icon {
+		i {
+			filter: contrast(2);
+		}
+	}
+}
+
+// Focus styles for accessibility
+.wp-block-gutenberg-icon {
+	a:focus {
+		outline: 2px solid #005cee;
+		outline-offset: 2px;
+		border-radius: 2px;
+	}
+	
+	i:focus-visible {
+		outline: 2px solid #005cee;
+		outline-offset: 2px;
+		border-radius: 2px;
+	}
+}
+
+// Print styles
+@media print {
+	.wp-block-gutenberg-icon {
+		i {
+			-webkit-print-color-adjust: exact;
+			color-adjust: exact;
 		}
 	}
 }
