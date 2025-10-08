@@ -5,7 +5,14 @@
  * @package Progressus\Gutenberg
  */
 namespace Progressus\Gutenberg\Admin;
+
+use Progressus\Gutenberg\Admin\Helper\Block_Builder;
 use Progressus\Gutenberg\Admin\Helper\File_Upload_Service;
+use Progressus\Gutenberg\Admin\Helper\Style_Parser;
+use Progressus\Gutenberg\Admin\Layout\Container_Classifier;
+
+use function esc_html;
+use function esc_html__;
 defined( 'ABSPATH' ) || exit;
 /**
  * Main admin settings class for Elementor to Gutenberg conversion.
@@ -92,7 +99,7 @@ class Admin_Settings {
 	 *
 	 * @param int $page_id Page ID.
 	 * @param array $blocks Gutenberg blocks.
-	 * 
+	 *
 	 * @return int New page ID.
 	 */
 	public function insert_new_page( $page_id, $blocks ): int {
@@ -267,7 +274,7 @@ class Admin_Settings {
 	 * @return string The converted Gutenberg content.
 	 */
 	public function convert_json_to_gutenberg_content( array $json_data ): string {
-		if ( ! isset( $json_data['content'] ) || ! is_array( $json_data['content'] ) ) {
+		if ( empty( $json_data['content'] ) || ! is_array( $json_data['content'] ) ) {
 			return '';
 		}
 		return $this->parse_elementor_elements( $json_data['content'] );
@@ -280,33 +287,143 @@ class Admin_Settings {
 	 * @return string The converted Gutenberg block content.
 	 */
 	public function parse_elementor_elements( array $elements ): string {
-		$block_content = '';
+		$blocks = '';
 		foreach ( $elements as $element ) {
-			if ( isset( $element['elType'] ) && 'container' === $element['elType'] ) {
-				$inner = ! empty( $element['elements'] ) ? $this->parse_elementor_elements( $element['elements'] ) : '';
-				$block_content .= sprintf(
-					'<!-- wp:group --><div class="wp-block-group">%s</div><!-- /wp:group -->' . "\n",
-					$inner
-				);
-			} elseif ( isset( $element['elType'] ) && 'widget' === $element['elType'] ) {
+			if ( ! is_array( $element ) ) {
+				continue;
+			}
 
-				$handler = Widget_Handler_Factory::get_handler( $element['widgetType'] );
-				if ( null !== $handler ) {
-					$block_content .= $handler->handle( $element );
-				} else {
-					$block_content .= sprintf(
-						'<!-- wp:paragraph -->%s<!-- /wp:paragraph -->' . "\n",
-						esc_html( $element['widgetType'] )
-					);
-				}
+			$blocks .= $this->render_element( $element );
+		}
 
-			} else {
-				$block_content .= sprintf(
-					'<!-- wp:paragraph -->%s<!-- /wp:paragraph -->' . "\n",
-					esc_html__( 'Unknown element', 'elementor-to-gutenberg' )
-				);
+		return $blocks;
+	}
+
+	/**
+	 * Render an Elementor element into block markup.
+	 *
+	 * @param array $element Elementor element.
+	 */
+	private function render_element( array $element ): string {
+		$el_type = $element['elType'] ?? '';
+		if ( 'container' === $el_type ) {
+			return $this->render_container( $element );
+		}
+
+		if ( 'widget' === $el_type ) {
+			$widget_type = $element['widgetType'] ?? '';
+			$handler     = Widget_Handler_Factory::get_handler( $widget_type );
+			if ( null !== $handler ) {
+				return $handler->handle( $element );
+			}
+
+			return $this->render_unknown_widget( $widget_type );
+		}
+
+		return $this->render_unknown_widget( $el_type ?: 'unknown' );
+	}
+
+	/**
+	 * Render a container element based on layout classification.
+	 *
+	 * @param array $element Elementor container element.
+	 */
+	private function render_container( array $element ): string {
+		$children     = is_array( $element['elements'] ?? null ) ? $element['elements'] : array();
+		$child_blocks = array();
+		foreach ( $children as $child ) {
+			if ( ! is_array( $child ) ) {
+				continue;
+			}
+			$converted = $this->render_element( $child );
+			if ( '' !== $converted ) {
+				$child_blocks[] = $converted;
 			}
 		}
-		return $block_content;
+
+		$child_count    = count( $children );
+		$container_attr = Style_Parser::parse_container_styles( is_array( $element['settings'] ?? null ) ? $element['settings'] : array() );
+
+		if ( Container_Classifier::is_grid( $element ) ) {
+			$columns = Container_Classifier::get_grid_column_count( $element, $child_count );
+
+			return $this->render_grid_group( $container_attr, $child_blocks, $columns );
+		}
+
+		if ( Container_Classifier::is_row( $element, $child_count ) ) {
+			return $this->render_row_group( $container_attr, $child_blocks );
+		}
+
+		return $this->render_group( $container_attr, $child_blocks );
+	}
+
+	/**
+	 * Render a Gutenberg group with constrained layout.
+	 *
+	 * @param array $attributes Block attributes.
+	 * @param array $child_blocks Rendered child blocks.
+	 */
+	private function render_group( array $attributes, array $child_blocks ): string {
+		$attributes['layout'] = array( 'type' => 'constrained' );
+		$inner_html           = implode( '', $child_blocks );
+
+		return Block_Builder::build( 'group', $attributes, $inner_html );
+	}
+
+	/**
+	 * Render a Gutenberg group with flex layout for row containers.
+	 *
+	 * @param array $attributes Block attributes.
+	 * @param array $child_blocks Rendered child blocks.
+	 */
+	private function render_row_group( array $attributes, array $child_blocks ): string {
+		$attributes['layout'] = array(
+			'type'           => 'flex',
+			'justifyContent' => 'space-between',
+			'flexWrap'       => 'wrap',
+		);
+
+		return Block_Builder::build( 'group', $attributes, implode( '', $child_blocks ) );
+	}
+
+	/**
+	 * Render a Gutenberg grid layout group.
+	 *
+	 * @param array $attributes Block attributes.
+	 * @param array $child_blocks Rendered child blocks.
+	 * @param int $columns Number of columns.
+	 */
+	private function render_grid_group( array $attributes, array $child_blocks, int $columns ): string {
+		$attributes['layout'] = array(
+			'type'        => 'grid',
+			'columnCount' => max( 1, $columns ),
+		);
+
+		$inner_html = '';
+		foreach ( $child_blocks as $child_block ) {
+			$inner_html .= Block_Builder::build(
+				'group',
+				array( 'layout' => array( 'type' => 'constrained' ) ),
+				$child_block
+			);
+		}
+
+		return Block_Builder::build( 'group', $attributes, $inner_html );
+	}
+
+	/**
+	 * Render a placeholder for unknown widgets.
+	 *
+	 * @param string $type Widget type.
+	 */
+	private function render_unknown_widget( string $type ): string {
+		$message   = sprintf( /* translators: %s widget type */ esc_html__( 'Unknown widget: %s', 'elementor-to-gutenberg' ), esc_html( $type ) );
+		$paragraph = sprintf( '<p>%s</p>', $message );
+
+		return Block_Builder::build(
+			'group',
+			array( 'layout' => array( 'type' => 'constrained' ) ),
+			'<!-- wp:paragraph -->' . $paragraph . '<!-- /wp:paragraph -->' . "\n"
+		);
 	}
 }

@@ -7,8 +7,13 @@
 
 namespace Progressus\Gutenberg\Admin\Widget;
 
-use Progressus\Gutenberg\Admin\Widget_Handler_Interface;
+use Progressus\Gutenberg\Admin\Helper\Block_Builder;
 use Progressus\Gutenberg\Admin\Helper\Style_Parser;
+use Progressus\Gutenberg\Admin\Widget_Handler_Interface;
+
+use function esc_attr;
+use function sanitize_html_class;
+use function wp_kses_post;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -21,93 +26,135 @@ class Heading_Widget_Handler implements Widget_Handler_Interface {
 	 * Handle conversion of Elementor heading to Gutenberg block.
 	 *
 	 * @param array $element The Elementor element data.
+	 *
 	 * @return string The Gutenberg block content.
 	 */
 	public function handle( array $element ): string {
-		$settings      = $element['settings'] ?? array();
-		$title         = $settings['title'] ?? '';
-		$level         = str_split( $settings['header_size'] )[1] ?? 2;
-		$text_color    = ! empty( $settings['title_color'] ) ? strtolower( $settings['title_color'] ) : '';
-		$custom_class  = $settings['_css_classes'] ?? '';
-		$unique_class  = 'heading-' . uniqid();
-		$custom_id     = $settings['_element_id'] ?? '';
-		$custom_css    = $settings['custom_css'] ?? '';
-		$custom_class .= ' ' . $unique_class;
+		$settings = is_array( $element['settings'] ?? null ) ? $element['settings'] : array();
+		$title    = isset( $settings['title'] ) ? (string) $settings['title'] : '';
+		$level    = $this->resolve_heading_level( $settings['header_size'] ?? '' );
 
-		$class = 'wp-block-heading';
+		$attributes         = array( 'level' => $level );
+		$inline_style_parts = array();
+		$class_names        = array();
+		$element_classes    = array( 'wp-block-heading' );
+		$custom_id          = isset( $settings['_element_id'] ) ? trim( (string) $settings['_element_id'] ) : '';
+		$custom_css         = isset( $settings['custom_css'] ) ? (string) $settings['custom_css'] : '';
+		$custom_class       = isset( $settings['_css_classes'] ) ? trim( (string) $settings['_css_classes'] ) : '';
+		$text_color         = isset( $settings['title_color'] ) ? strtolower( (string) $settings['title_color'] ) : '';
+		$text_transform     = isset( $settings['typography_text_transform'] ) ? trim( (string) $settings['typography_text_transform'] ) : '';
 
-		// Handle text transform.
-		if ( ! empty( $settings['typography_text_transform'] ) ) {
-			$class .= 'has-text-transform-' . esc_attr( $settings['typography_text_transform'] );
-		}
-		if ( ! empty( $custom_class ) ) {
-			$class .= ' ' . esc_attr( $custom_class );
-		}
-
-		$typography  = Style_Parser::parse_typography( $settings );
-		$border      = Style_Parser::parse_border( $settings );
-		$spacing	 = Style_Parser::parse_spacing( $settings );
-
-		$attrs_array['level'] = (int) $level;
-		// Handle text + link color.
-		$inline_style = '';
-		if ( $this->is_preset_color_slug( $text_color ) ) {
-			// Preset slug.
-			$attrs_array['textColor'] = $text_color;
-			$attrs_array['style']['elements']['link']['color']['text'] = 'var:preset|color|' . $text_color;
-			$class .= ' has-text-color has-link-color';
-		} elseif ( ! empty( $text_color ) ) {
-			// Raw hex.
-			$attrs_array['style']['color']['text'] = $text_color;
-			$attrs_array['style']['elements']['link']['color']['text'] = $text_color;
-			$class .= ' has-text-color has-link-color';
-
-			// Add inline style for both text + link.
-			$inline_style .= 'color:' . esc_attr( $text_color ) . ';';
+		if ( '' !== $text_transform ) {
+			$class_names[]     = 'has-text-transform-' . sanitize_html_class( $text_transform );
+			$element_classes[] = 'has-text-transform-' . sanitize_html_class( $text_transform );
 		}
 
-		$attrs_array['className'] = trim( $class );
+		if ( '' !== $custom_class ) {
+			foreach ( preg_split( '/\s+/', $custom_class ) as $class ) {
+				$class = trim( $class );
+				if ( '' !== $class ) {
+					$class_names[]     = sanitize_html_class( $class );
+					$element_classes[] = sanitize_html_class( $class );
+				}
+			}
+		}
+
+		$typography = Style_Parser::parse_typography( $settings );
+		$spacing    = Style_Parser::parse_spacing( $settings );
+		$border     = Style_Parser::parse_border( $settings );
 
 		if ( ! empty( $typography['attributes'] ) ) {
-			$attrs_array['style']['typography'] = $typography['attributes'];
+			$attributes['style']['typography'] = $typography['attributes'];
 		}
 		if ( ! empty( $spacing['attributes'] ) ) {
-			$attrs_array['style']['spacing'] = $spacing['attributes'];
+			$attributes['style']['spacing'] = $spacing['attributes'];
 		}
 		if ( ! empty( $border['attributes'] ) ) {
-			$attrs_array['style']['border'] = $border['attributes'];
+			$attributes['style']['border'] = $border['attributes'];
 		}
-		$inline_style .= $typography['style'] . $border['style'] . $spacing['style'];
-		// Encode block attributes.
-		$attrs = wp_json_encode( $attrs_array );
 
-		// Build block output.
-		$block_content = sprintf(
-			'<!-- wp:heading %s --><h%s id="%s" class="%s"%s>%s</h%s><!-- /wp:heading -->' . "\n",
-			$attrs,
-			esc_html( $level ),
-			esc_attr( $custom_id ),
-			esc_attr( $class ),
-			$inline_style ? ' style="' . esc_attr( $inline_style ) . '"' : '',
-			esc_html( $title ),
-			esc_html( $level )
+		$inline_style_parts[] = $typography['style'];
+		$inline_style_parts[] = $spacing['style'];
+		$inline_style_parts[] = $border['style'];
+
+		if ( '' !== $text_color ) {
+			if ( $this->is_preset_color_slug( $text_color ) ) {
+				$attributes['textColor']                                  = $text_color;
+				$attributes['style']['elements']['link']['color']['text'] = 'var:preset|color|' . $text_color;
+			} else {
+				$attributes['style']['color']['text']                     = $text_color;
+				$attributes['style']['elements']['link']['color']['text'] = $text_color;
+				$inline_style_parts[]                                     = 'color:' . $text_color . ';';
+			}
+			$class_names[]     = 'has-text-color';
+			$class_names[]     = 'has-link-color';
+			$element_classes[] = 'has-text-color';
+			$element_classes[] = 'has-link-color';
+		}
+
+		if ( ! empty( $attributes['style']['color']['text'] ) && ! in_array( 'has-text-color', $class_names, true ) ) {
+			$class_names[]     = 'has-text-color';
+			$element_classes[] = 'has-text-color';
+		}
+
+		if ( ! empty( $attributes['style']['elements']['link']['color']['text'] ) && ! in_array( 'has-link-color', $class_names, true ) ) {
+			$class_names[]     = 'has-link-color';
+			$element_classes[] = 'has-link-color';
+		}
+
+		if ( ! empty( $class_names ) ) {
+			$attributes['className'] = implode( ' ', array_unique( $class_names ) );
+		}
+
+		if ( '' !== $custom_id ) {
+			$attributes['anchor'] = $custom_id;
+		}
+
+		$inline_style    = implode( '', array_filter( $inline_style_parts ) );
+		$element_classes = array_unique( $element_classes );
+
+		$heading_markup = sprintf(
+			'<h%d%s%s%s>%s</h%d>',
+			$level,
+			'' !== $custom_id ? ' id="' . esc_attr( $custom_id ) . '"' : '',
+			! empty( $element_classes ) ? ' class="' . esc_attr( implode( ' ', $element_classes ) ) . '"' : '',
+			'' !== $inline_style ? ' style="' . esc_attr( $inline_style ) . '"' : '',
+			wp_kses_post( $title ),
+			$level
 		);
 
-		// Save custom CSS if any.
-		if ( ! empty( $custom_css ) ) {
+		if ( '' !== $custom_css ) {
 			Style_Parser::save_custom_css( $custom_css );
 		}
 
-		return $block_content;
+		return Block_Builder::build( 'heading', $attributes, $heading_markup );
 	}
 
 	/**
 	 * Check if a given color value is a Gutenberg preset slug.
 	 *
 	 * @param string $color Color value.
+	 *
 	 * @return bool
 	 */
 	private function is_preset_color_slug( string $color ): bool {
-		return ! empty( $color ) && strpos( $color, '#' ) === false;
+		return '' !== $color && false === strpos( $color, '#' );
+	}
+
+	/**
+	 * Resolve heading level from Elementor header size setting.
+	 *
+	 * @param mixed $header_size Elementor header size.
+	 */
+	private function resolve_heading_level( $header_size ): int {
+		if ( is_string( $header_size ) && preg_match( '/h([1-6])/', strtolower( $header_size ), $matches ) ) {
+			return (int) $matches[1];
+		}
+
+		if ( is_numeric( $header_size ) ) {
+			return max( 1, min( 6, (int) $header_size ) );
+		}
+
+		return 2;
 	}
 }
