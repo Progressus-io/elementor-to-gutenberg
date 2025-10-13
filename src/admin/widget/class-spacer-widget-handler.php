@@ -39,26 +39,15 @@ class Spacer_Widget_Handler implements Widget_Handler_Interface {
 		// Spacing (margin + padding).
 		$spacing = Style_Parser::parse_spacing( $settings );
 
-		// Flex alignment & sizing.
-		$flex_style = '';
-		if ( ! empty( $settings['_flex_align_self'] ) ) {
-			$flex_style .= 'align-self:' . esc_attr( $settings['_flex_align_self'] ) . ';';
-		}
-		if ( isset( $settings['_flex_grow'] ) ) {
-			$flex_style .= 'flex-grow:' . intval( $settings['_flex_grow'] ) . ';';
-		}
-		if ( isset( $settings['_flex_shrink'] ) ) {
-			$flex_style .= 'flex-shrink:' . intval( $settings['_flex_shrink'] ) . ';';
-		}
-
 		// Merge all inline styles.
-		$inline_style = "height:{$height};" . $spacing['style'] . $flex_style;
+		$inline_style = "height:{$height};" . $spacing['style'];
 
 		// Build attributes for wp:spacer block.
-		$attrs_array = [
+		$attrs_array = array(
 			'height' => $height,
 			'className' => trim( $custom_class ),
-		];
+		);
+
 		if ( ! empty( $spacing['attributes'] ) ) {
 			$attrs_array['style']['spacing'] = $spacing['attributes'];
 		}
@@ -67,7 +56,7 @@ class Spacer_Widget_Handler implements Widget_Handler_Interface {
 
 		// Final block output.
 		$block_content = sprintf(
-			'<!-- wp:spacer %s --><div %s class="wp-block-spacer %s"%s></div><!-- /wp:spacer -->' . "\n",
+			'<!-- wp:spacer %s --><div %s class="wp-block-spacer %s"%s aria-hidden="true"></div><!-- /wp:spacer -->' . "\n",
 			$attrs,
 			! empty( $custom_id ) ? 'id="' . esc_attr( $custom_id ) . '"' : '',
 			esc_attr( $custom_class ),

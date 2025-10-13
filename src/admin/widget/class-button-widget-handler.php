@@ -87,14 +87,19 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 		// Inline style fallback (optional, safe for editor).
 		$inline_style .= $typography['style'] . $spacing['style'] . $border['style'];
 
+		// Remove trailing semicolon if exists.
+		$inline_style = rtrim( trim( $inline_style ), ';' );
+
 		// Encode attributes.
-		$attrs = wp_json_encode( $attrs_array );
+		$attrs   = wp_json_encode( $attrs_array );
+		$id_attr = ! empty( $custom_id ) ? ' id="' . esc_attr( $custom_id ) . '"' : '';
+
 
 		// Build block content.
 		$block_content = sprintf(
-			'<!-- wp:buttons --><div class="wp-block-buttons"><!-- wp:button %1s --><div class="wp-block-button"><a id="%2s" class="wp-block-button__link %3s wp-element-button"%4s%5s>%6s</a></div><!-- /wp:button --></div><!-- /wp:buttons -->' . "\n",
+			'<!-- wp:buttons --><div class="wp-block-buttons"><!-- wp:button %1s --><div class="wp-block-button"><a%2s class="wp-block-button__link %3s wp-element-button"%4s%5s>%6s</a></div><!-- /wp:button --></div><!-- /wp:buttons -->' . "\n",
 			$attrs,
-			esc_attr( $custom_id ),
+			$id_attr,
 			esc_attr( $class ),
 			$inline_style ? ' style="' . esc_attr( $inline_style ) . '"' : '',
 			$url ? ' href="' . esc_url( $url ) . '"' : '',
