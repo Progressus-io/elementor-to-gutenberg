@@ -7,8 +7,12 @@
 
 namespace Progressus\Gutenberg\Admin\Widget;
 
-use Progressus\Gutenberg\Admin\Widget_Handler_Interface;
+use Progressus\Gutenberg\Admin\Helper\Block_Builder;
 use Progressus\Gutenberg\Admin\Helper\Style_Parser;
+use Progressus\Gutenberg\Admin\Widget_Handler_Interface;
+
+use function esc_url;
+use function wp_kses_post;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -20,212 +24,70 @@ class Video_Widget_Handler implements Widget_Handler_Interface {
 	 * Handle conversion of Elementor video to Gutenberg block.
 	 *
 	 * @param array $element The Elementor element data.
-	 * @return string The Gutenberg block content.
 	 */
 	public function handle( array $element ): string {
-		$settings       = $element['settings'] ?? array();
-		$video_url      = '';
-		$embed_provider = '';
-		$block_content  = '';
-		$custom_class   = $settings['_css_classes'] ?? '';
-		$custom_id      = $settings['_element_id'] ?? '';
-		$custom_css     = $settings['custom_css'] ?? '';
+		$settings = is_array( $element['settings'] ?? null ) ? $element['settings'] : array();
+		$youtube  = isset( $settings['youtube_url'] ) ? trim( (string) $settings['youtube_url'] ) : '';
+		$custom   = isset( $settings['custom_css'] ) ? (string) $settings['custom_css'] : '';
 
-		// Determine video URL and provider
-		if ( isset( $settings['video_type'] ) && $settings['video_type'] === 'hosted' && ! empty( $settings['hosted_url']['url'] ) ) {
-			$hosted_video_url = $settings['hosted_url']['url'];
-			$attachment_id    = attachment_url_to_postid( $hosted_video_url );
-
-			if ( $attachment_id ) {
-				$video_url = wp_get_attachment_url( $attachment_id );
-			} else {
-				$download_args = array(
-					'timeout'      => 60,
-					'redirection'  => 5,
-					'stream'       => true,
-					'headers'      => array(
-						'User-Agent'      => 'WordPress/' . get_bloginfo( 'version' ) . '; ' . home_url( '/' ),
-						'Accept'          => 'video/mp4,video/*;q=0.9,*/*;q=0.8',
-						'Accept-Language' => 'en-US,en;q=0.9',
-						'Cache-Control'   => 'no-cache',
-						'Pragma'          => 'no-cache',
-					),
-				);
-
-				$tmp_file = download_url( $hosted_video_url, 60, false, $download_args );
-
-				if ( ! is_wp_error( $tmp_file ) ) {
-					$file_array    = array(
-						'name'     => basename( $hosted_video_url ),
-						'tmp_name' => $tmp_file,
-					);
-					$attachment_id = media_handle_sideload( $file_array, 0 );
-					if ( ! is_wp_error( $attachment_id ) ) {
-						$video_url = wp_get_attachment_url( $attachment_id );
-					} else {
-						$video_url = $hosted_video_url;
-						add_settings_error(
-							'gutenberg_json_data',
-							'json_upload_error',
-							esc_html__( 'Video Download Failed: Please manually download the video and upload it to your Media Library, or ensure the video URL is publicly accessible.', 'elementor-to-gutenberg' ),
-							'error'
-						);
-					}
-					if ( file_exists( $tmp_file ) ) {
-						wp_delete_file( $tmp_file );
-					}
-				} else {
-					$video_url = $hosted_video_url;
-					add_settings_error(
-						'gutenberg_json_data',
-						'json_upload_error',
-						esc_html__( 'Video Download Failed: Please manually download the video and upload it to your Media Library, or ensure the video URL is publicly accessible.', 'elementor-to-gutenberg' ),
-						'error'
-					);
-				}
-			}
-		} elseif ( ! empty( $settings['youtube_url'] ) ) {
-			$video_url      = $settings['youtube_url'];
-			$embed_provider = 'youtube';
-		} elseif ( ! empty( $settings['vimeo_url'] ) ) {
-			$video_url      = $settings['vimeo_url'];
-			$embed_provider = 'vimeo';
-		} elseif ( ! empty( $settings['dailymotion_url'] ) ) {
-			$video_url      = $settings['dailymotion_url'];
-			$embed_provider = 'dailymotion';
-		} elseif ( ! empty( $settings['videopress_url'] ) ) {
-			$video_url      = $settings['videopress_url'];
-			$embed_provider = 'videopress';
+		if ( '' === $youtube ) {
+			return '';
 		}
 
-		// Handle overlay image
-		$poster_url = '';
-		$poster_id  = 0;
-		if ( $this->has_video_overlay( $settings ) ) {
-			$overlay_url = $settings['image_overlay']['url'];
-			$tmp_file    = download_url( $overlay_url );
-			if ( ! is_wp_error( $tmp_file ) ) {
-				$file_array    = array(
-					'name'     => basename( $overlay_url ),
-					'tmp_name' => $tmp_file,
-				);
-				$attachment_id = media_handle_sideload( $file_array, 0 );
-				if ( ! is_wp_error( $attachment_id ) ) {
-					$poster_url = wp_get_attachment_url( $attachment_id );
-					$poster_id  = $attachment_id;
-				}
-				if ( file_exists( $tmp_file ) ) {
-					wp_delete_file( $tmp_file );
-				}
-			}
+		$watch_url = $this->normalize_youtube_url( $youtube );
+		if ( '' === $watch_url ) {
+			return '';
 		}
 
-		// Apply spacing and extra attributes
-		$attrs_array = array();
-		$attrs_array = array_merge_recursive( $attrs_array, Style_Parser::parse_spacing( $settings ) );
-
-		if ( isset( $settings['_css_classes'] ) ) {
-			$attrs_array['className'] = $settings['_css_classes'];
-		}
-		if ( isset( $settings['premium_tooltip_text'] ) ) {
-			$attrs_array['premiumTooltipText'] = $settings['premium_tooltip_text'];
-		}
-		if ( isset( $settings['premium_tooltip_position'] ) ) {
-			$attrs_array['premiumTooltipPosition'] = $settings['premium_tooltip_position'];
+		if ( '' !== $custom ) {
+			Style_Parser::save_custom_css( $custom );
 		}
 
-		// Hosted or direct video files
-		if ( preg_match( '/\.(mp4|webm|ogg)$/i', $video_url ) ) {
-			$attrs_array = array_merge(
-				$attrs_array,
-				array(
-					'src'         => esc_url( $video_url ),
-					'poster'      => $poster_url ? esc_url( $poster_url ) : '',
-					'id'          => $poster_id,
-					'autoplay'    => isset( $settings['autoplay'] ) && $settings['autoplay'] === 'yes',
-					'loop'        => isset( $settings['loop'] ) && $settings['loop'] === 'yes',
-					'muted'       => isset( $settings['mute'] ) && $settings['mute'] === 'yes',
-					'controls'    => true,
-					'playsInline' => isset( $settings['play_on_mobile'] ) && $settings['play_on_mobile'] === 'yes',
-				)
-			);
+		$attrs = array(
+			'url'              => $watch_url,
+			'type'             => 'video',
+			'providerNameSlug' => 'youtube',
+			'responsive'       => true,
+		);
 
-			$attrs = wp_json_encode( $attrs_array );
+		$figure = sprintf(
+			'<figure class="wp-block-embed is-type-video is-provider-youtube wp-block-embed-youtube"><div class="wp-block-embed__wrapper">%s</div></figure>',
+			wp_kses_post( esc_url( $watch_url ) )
+		);
 
-			$video_attrs = array();
-			if ( $attrs_array['autoplay'] ) {
-				$video_attrs[] = 'autoplay=""';
-			}
-			if ( $attrs_array['loop'] ) {
-				$video_attrs[] = 'loop=""';
-			}
-			if ( $attrs_array['muted'] ) {
-				$video_attrs[] = 'muted=""';
-			}
-			$video_attrs[] = 'controls="controls"';
-			$video_attrs_str = implode( ' ', $video_attrs );
-			$poster_attr = $attrs_array['poster'] ? ' poster="' . esc_url( $attrs_array['poster'] ) . '"' : '';
-
-			$block_content .= sprintf(
-				"<!-- wp:video %s -->\n<figure class=\"wp-block-video %s\" id=\"%s\"><video %s%s><source src=\"%s\"></video></figure>\n<!-- /wp:video -->\n",
-				$attrs,
-				$custom_class,
-				$custom_id,
-				$video_attrs_str,
-				$poster_attr,
-				esc_url( $video_url )
-			);
-		} else {
-			// External embeds
-			$attrs_array = array_merge(
-				$attrs_array,
-				array(
-					'url'              => esc_url( $video_url ),
-					'type'             => 'video',
-					'providerNameSlug' => $embed_provider,
-					'responsive'       => true,
-				)
-			);
-
-			// Append start/end time for YouTube/Vimeo
-			if ( in_array( $embed_provider, array( 'youtube', 'vimeo' ), true ) ) {
-				if ( ! empty( $settings['start'] ) ) {
-					$video_url = add_query_arg( 'start', intval( $settings['start'] ), $video_url );
-				}
-				if ( ! empty( $settings['end'] ) ) {
-					$video_url = add_query_arg( 'end', intval( $settings['end'] ), $video_url );
-				}
-				$attrs_array['url'] = esc_url( $video_url );
-			}
-
-			$attrs = wp_json_encode( $attrs_array );
-
-			$block_content .= sprintf(
-				"<!-- wp:embed %s -->\n<figure class=\"wp-block-embed is-type-video is-provider-%s wp-block-embed-%s wp-embed-aspect-16-9 wp-has-aspect-ratio %s\" id=\"%s\"><div class=\"wp-block-embed__wrapper\">\n%s\n</div></figure>\n<!-- /wp:embed -->\n",
-				$attrs,
-				$embed_provider,
-				$embed_provider,
-				$custom_class,
-				$custom_id,
-				esc_url( $video_url )
-			);
-		}
-		
-        // Save custom CSS to the Customizer's Additional CSS
-		if ( ! empty( $custom_css ) ) {
-			Style_Parser::save_custom_css( $custom_css );
-		}
-
-		return $block_content;
+		return Block_Builder::build( 'embed', $attrs, $figure );
 	}
 
 	/**
-	 * Check if video overlay is present.
-	 *
-	 * @param array $settings The Elementor settings.
-	 * @return bool True if overlay is present, false otherwise.
+	 * Normalize various YouTube URLs to canonical watch form.
 	 */
-	private function has_video_overlay( array $settings ): bool {
-		return isset( $settings['image_overlay']['url'] ) && ! empty( $settings['image_overlay']['url'] );
+	private function normalize_youtube_url( string $url ): string {
+		$url = trim( $url );
+		if ( '' === $url ) {
+			return '';
+		}
+
+		$video_id = '';
+
+		if ( preg_match( '#youtu\.be/([^?&]+)#i', $url, $matches ) ) {
+			$video_id = $matches[1];
+		} elseif ( preg_match( '#youtube\.com/embed/([^?&]+)#i', $url, $matches ) ) {
+			$video_id = $matches[1];
+		} else {
+			$parts = parse_url( $url );
+			if ( isset( $parts['query'] ) ) {
+				parse_str( $parts['query'], $query_vars );
+				if ( ! empty( $query_vars['v'] ) ) {
+					$video_id = (string) $query_vars['v'];
+				}
+			}
+		}
+
+		$video_id = preg_replace( '/[^a-zA-Z0-9_-]/', '', $video_id );
+		if ( '' === $video_id ) {
+			return '';
+		}
+
+		return 'https://www.youtube.com/watch?v=' . $video_id;
 	}
 }

@@ -4,6 +4,7 @@
  *
  * @package Progressus\Gutenberg
  */
+
 namespace Progressus\Gutenberg\Admin;
 
 defined( 'ABSPATH' ) || exit;

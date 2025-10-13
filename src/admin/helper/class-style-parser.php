@@ -6,6 +6,8 @@
  */
 namespace Progressus\Gutenberg\Admin\Helper;
 
+use function sanitize_html_class;
+
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -364,14 +366,75 @@ class Style_Parser {
 
 		$classes = array();
 		foreach ( preg_split( '/\s+/', $value ) as $class ) {
-			$class = trim( $class );
-			if ( '' === $class ) {
+			$sanitized = self::clean_class( $class );
+			if ( '' === $sanitized ) {
 				continue;
 			}
-			$classes[] = sanitize_html_class( $class );
+			$classes[] = $sanitized;
 		}
 
 		return implode( ' ', $classes );
+	}
+
+	/**
+	 * Sanitize a single class name while dropping Elementor-generated classes.
+	 *
+	 * @param string $class Raw class name.
+	 *
+	 * @return string Sanitized class name or empty string if disallowed.
+	 */
+	public static function clean_class( string $class ): string {
+		$class = trim( $class );
+		if ( '' === $class ) {
+			return '';
+		}
+
+		$sanitized = sanitize_html_class( $class );
+		if ( '' === $sanitized ) {
+			return '';
+		}
+
+		if ( self::is_disallowed_elementor_class( $sanitized ) ) {
+			return '';
+		}
+
+		return $sanitized;
+	}
+
+	/**
+	 * Determine if a class should be stripped because it's Elementor-specific.
+	 *
+	 * @param string $class Sanitized class name.
+	 */
+	private static function is_disallowed_elementor_class( string $class ): bool {
+		$blocked_exact = array(
+			'e-con',
+			'e-con-full',
+			'e-con-boxed',
+			'e-con-child',
+			'e-grid',
+		);
+
+		if ( in_array( $class, $blocked_exact, true ) ) {
+			return true;
+		}
+
+		$blocked_prefixes = array(
+			'elementor',
+			'elementor-',
+			'elementor_',
+			'e-con-',
+			'e-grid-',
+			'wp-elements-',
+		);
+
+		foreach ( $blocked_prefixes as $prefix ) {
+			if ( 0 === strpos( $class, $prefix ) ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**

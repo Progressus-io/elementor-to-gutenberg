@@ -335,26 +335,42 @@ class Admin_Settings {
 			if ( ! is_array( $child ) ) {
 				continue;
 			}
-			$converted = $this->render_element( $child );
-			if ( '' !== $converted ) {
-				$child_blocks[] = $converted;
-			}
+
+			$child_data[] = array(
+				'element' => $child,
+				'content' => $this->render_element( $child ),
+			);
 		}
 
-		$child_count    = count( $children );
-		$container_attr = Style_Parser::parse_container_styles( is_array( $element['settings'] ?? null ) ? $element['settings'] : array() );
+		$child_count        = count( $children );
+		$container_settings = is_array( $element['settings'] ?? null ) ? $element['settings'] : array();
+		$container_attr     = Style_Parser::parse_container_styles( $container_settings );
+		$container_classes  = Container_Classifier::get_element_classes( $element );
+		$container_attr     = $this->apply_container_class_adjustments( $container_attr, $container_classes );
+		$child_blocks       = array_map(
+			static function ( array $data ): string {
+				return $data['content'] ?? '';
+			},
+			$child_data
+		);
 
 		if ( Container_Classifier::is_grid( $element ) ) {
 			$columns = Container_Classifier::get_grid_column_count( $element, $child_count );
 
-			return $this->render_grid_group( $container_attr, $child_blocks, $columns );
+			return $this->render_grid_group( $container_attr, $child_data, $columns );
+		}
+
+		if ( Container_Classifier::should_use_columns( $element ) ) {
+			return $this->render_columns_group( $container_attr, $child_data );
 		}
 
 		if ( Container_Classifier::is_row( $element, $child_count ) ) {
 			return $this->render_row_group( $container_attr, $child_blocks );
 		}
 
-		return $this->render_group( $container_attr, $child_blocks );
+		$layout_type = in_array( 'e-con-full', $container_classes, true ) ? 'default' : 'constrained';
+
+		return $this->render_group( $container_attr, $child_blocks, $layout_type );
 	}
 
 	/**
@@ -363,8 +379,8 @@ class Admin_Settings {
 	 * @param array $attributes Block attributes.
 	 * @param array $child_blocks Rendered child blocks.
 	 */
-	private function render_group( array $attributes, array $child_blocks ): string {
-		$attributes['layout'] = array( 'type' => 'constrained' );
+	private function render_group( array $attributes, array $child_blocks, string $layout_type = 'constrained' ): string {
+		$attributes['layout'] = array( 'type' => $layout_type );
 		$inner_html           = implode( '', $child_blocks );
 
 		return Block_Builder::build( 'group', $attributes, $inner_html );
@@ -393,22 +409,130 @@ class Admin_Settings {
 	 * @param array $child_blocks Rendered child blocks.
 	 * @param int $columns Number of columns.
 	 */
-	private function render_grid_group( array $attributes, array $child_blocks, int $columns ): string {
+	private function render_grid_group( array $attributes, array $child_data, int $columns ): string {
 		$attributes['layout'] = array(
 			'type'        => 'grid',
 			'columnCount' => max( 1, $columns ),
 		);
 
 		$inner_html = '';
-		foreach ( $child_blocks as $child_block ) {
+		foreach ( $child_data as $child ) {
+			$content = $child['content'] ?? '';
+			if ( '' === $content ) {
+				continue;
+			}
+
 			$inner_html .= Block_Builder::build(
 				'group',
 				array( 'layout' => array( 'type' => 'constrained' ) ),
-				$child_block
+				$content
 			);
 		}
 
 		return Block_Builder::build( 'group', $attributes, $inner_html );
+	}
+
+	/**
+	 * Render a Gutenberg columns block for typical three/four card rows.
+	 *
+	 * @param array $attributes Block attributes.
+	 * @param array $child_data Child element data with rendered content.
+	 */
+	private function render_columns_group( array $attributes, array $child_data ): string {
+		$inner_html = '';
+
+		foreach ( $child_data as $child ) {
+			$inner_html .= Block_Builder::build( 'column', array(), $child['content'] ?? '' );
+		}
+
+		return Block_Builder::build( 'columns', $attributes, $inner_html );
+	}
+
+	/**
+	 * Apply Elementor container class adjustments (full/boxed) to block attributes.
+	 *
+	 * @param array $attributes Block attributes.
+	 * @param array $classes Elementor class list.
+	 */
+	private function apply_container_class_adjustments( array $attributes, array $classes ): array {
+		if ( in_array( 'e-con-boxed', $classes, true ) ) {
+			$attributes = $this->add_class_to_attributes( $attributes, 'has-global-padding' );
+		}
+
+		if ( in_array( 'e-con-full', $classes, true ) ) {
+			$attributes = $this->remove_class_from_attributes( $attributes, 'has-global-padding' );
+		}
+
+		return $attributes;
+	}
+
+	/**
+	 * Add a className entry to block attributes.
+	 *
+	 * @param array $attributes Block attributes.
+	 * @param string $class Class to add.
+	 */
+	private function add_class_to_attributes( array $attributes, string $class ): array {
+		$sanitized = Style_Parser::clean_class( $class );
+		if ( '' === $sanitized ) {
+			return $attributes;
+		}
+
+		$existing   = isset( $attributes['className'] ) ? preg_split( '/\s+/', $attributes['className'] ) : array();
+		$existing   = is_array( $existing ) ? array_filter( $existing ) : array();
+		$existing[] = $sanitized;
+
+		$unique = array();
+		foreach ( $existing as $item ) {
+			$item = Style_Parser::clean_class( $item );
+			if ( '' === $item ) {
+				continue;
+			}
+			$unique[ $item ] = true;
+		}
+
+		if ( empty( $unique ) ) {
+			unset( $attributes['className'] );
+
+			return $attributes;
+		}
+
+		$attributes['className'] = implode( ' ', array_keys( $unique ) );
+
+		return $attributes;
+	}
+
+	/**
+	 * Remove a class from block attributes if present.
+	 *
+	 * @param array $attributes Block attributes.
+	 * @param string $class Class to remove.
+	 */
+	private function remove_class_from_attributes( array $attributes, string $class ): array {
+		if ( empty( $attributes['className'] ) ) {
+			return $attributes;
+		}
+
+		$target    = Style_Parser::clean_class( $class );
+		$classlist = preg_split( '/\s+/', (string) $attributes['className'] );
+		$classlist = is_array( $classlist ) ? array_filter( $classlist ) : array();
+
+		$filtered = array();
+		foreach ( $classlist as $item ) {
+			$item = Style_Parser::clean_class( $item );
+			if ( '' === $item || $item === $target ) {
+				continue;
+			}
+			$filtered[ $item ] = true;
+		}
+
+		if ( empty( $filtered ) ) {
+			unset( $attributes['className'] );
+		} else {
+			$attributes['className'] = implode( ' ', array_keys( $filtered ) );
+		}
+
+		return $attributes;
 	}
 
 	/**

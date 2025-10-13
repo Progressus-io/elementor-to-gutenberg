@@ -36,6 +36,10 @@ class Block_Builder {
 
 		$attrs        = self::normalize_attributes( $attrs );
 		$attr_json    = empty( $attrs ) ? '' : ' ' . wp_json_encode( $attrs );
+
+		if ( 'button' === $block && '' === trim( $inner_html ) ) {
+			return sprintf( '<!-- wp:%s%s /-->%s', $block, $attr_json, "\n" );
+		}
 		$opening      = sprintf( '<!-- wp:%s%s -->', $block, $attr_json );
 		$closing      = sprintf( '<!-- /wp:%s -->', $block );
 		$block_slug   = self::get_block_slug( $block );
@@ -70,16 +74,19 @@ class Block_Builder {
 		$class_raw = isset( $attrs['className'] ) ? (string) $attrs['className'] : '';
 
 		if ( '' !== $align ) {
-			$classes[] = 'align' . sanitize_html_class( $align );
+			$clean_align = Style_Parser::clean_class( 'align' . $align );
+			if ( '' !== $clean_align ) {
+				$classes[] = $clean_align;
+			}
 		}
 
 		if ( '' !== $class_raw ) {
 			$class_parts = preg_split( '/\s+/', $class_raw );
 			if ( is_array( $class_parts ) ) {
 				foreach ( $class_parts as $class_part ) {
-					$class_part = trim( $class_part );
-					if ( '' !== $class_part ) {
-						$classes[] = sanitize_html_class( $class_part );
+					$sanitized = Style_Parser::clean_class( $class_part );
+					if ( '' !== $sanitized ) {
+						$classes[] = $sanitized;
 					}
 				}
 			}
