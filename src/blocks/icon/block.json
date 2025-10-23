@@ -47,6 +47,5 @@
     "link": { "type": "string", "default": "" },
     "linkTarget": { "type": "boolean", "default": false },
     "ariaLabel": { "type": "string", "default": "" }
-  },
-  "render": "file:./render.php"
+  }
 }

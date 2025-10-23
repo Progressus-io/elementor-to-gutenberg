@@ -4,6 +4,7 @@
  *
  * @package Progressus\Gutenberg
  */
+
 namespace Progressus\Gutenberg\Admin;
 
 defined( 'ABSPATH' ) || exit;
@@ -18,6 +19,7 @@ class Widget_Handler_Factory {
 	 * @var array
 	 */
 	private static $handlers = array(
+		'counter'          => 'Progressus\Gutenberg\Admin\Widget\Counter_Widget_Handler',
 		'heading'          => 'Progressus\Gutenberg\Admin\Widget\Heading_Widget_Handler',
 		'text-editor'      => 'Progressus\Gutenberg\Admin\Widget\Text_Editor_Widget_Handler',
 		'image'            => 'Progressus\Gutenberg\Admin\Widget\Image_Widget_Handler',
@@ -37,19 +39,19 @@ class Widget_Handler_Factory {
 	);
 
 	/**
-     * Get a widget handler instance.
-     *
-     * @param string $widget_type The Elementor widget type.
-     * @return Widget_Handler_Interface|null The widget handler or null if not found.
-     */
-    public static function get_handler( string $widget_type ): ?Widget_Handler_Interface {
-        $handler_class = self::$handlers[ $widget_type ] ?? null;
-        if ( null === $handler_class ) {
-            return null;
-        }
+	 * Get a widget handler instance.
+	 *
+	 * @param string $widget_type The Elementor widget type.
+	 * @return Widget_Handler_Interface|null The widget handler or null if not found.
+	 */
+	public static function get_handler( string $widget_type ): ?Widget_Handler_Interface {
+		$handler_class = self::$handlers[ $widget_type ] ?? null;
+		if ( null === $handler_class ) {
+			return null;
+		}
 
-        return new $handler_class();
-    }
+		return new $handler_class();
+	}
 
 	/**
 	 * Register a new widget handler.
