@@ -20,6 +20,7 @@ class Widget_Handler_Factory {
 	 */
 	private static $handlers = array(
 		'counter'          => 'Progressus\Gutenberg\Admin\Widget\Counter_Widget_Handler',
+		'progress'         => 'Progressus\Gutenberg\Admin\Widget\Progress_Widget_Handler',
 		'heading'          => 'Progressus\Gutenberg\Admin\Widget\Heading_Widget_Handler',
 		'text-editor'      => 'Progressus\Gutenberg\Admin\Widget\Text_Editor_Widget_Handler',
 		'image'            => 'Progressus\Gutenberg\Admin\Widget\Image_Widget_Handler',
