@@ -4,9 +4,12 @@
  *
  * @package Progressus\Gutenberg
  */
+
 namespace Progressus\Gutenberg\Admin\Helper;
 
 use function sanitize_html_class;
+use function sanitize_hex_color;
+use function wp_get_global_settings;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -16,9 +19,24 @@ defined( 'ABSPATH' ) || exit;
 class Style_Parser {
 
 	/**
+	 * Cached theme palette colors.
+	 *
+	 * @var array<int, array<string, string>>|null
+	 */
+	private static ?array $theme_palette = null;
+
+	/**
+	 * Cached theme font-size presets.
+	 *
+	 * @var array<int, array<string, string>>|null
+	 */
+	private static ?array $font_sizes = null;
+
+	/**
 	 * Parse typography settings from Elementor settings.
 	 *
 	 * @param array $settings The Elementor settings array.
+	 *
 	 * @return array Array containing 'attributes' and 'style' keys.
 	 */
 	public static function parse_typography( array $settings ): array {
@@ -78,6 +96,617 @@ class Style_Parser {
 	}
 
 	/**
+	 * Retrieve computed styles from an Elementor element.
+	 *
+	 * @param array $element Elementor element data.
+	 *
+	 * @return array<string, string> Normalized property => value map.
+	 */
+	public static function get_computed_styles( array $element ): array {
+		$candidates = array();
+
+		foreach ( array( 'computed_styles', 'computedStyles', 'computed' ) as $key ) {
+			if ( isset( $element[ $key ] ) && is_array( $element[ $key ] ) ) {
+				$candidates[] = $element[ $key ];
+			}
+		}
+
+		if ( isset( $element['settings'] ) && is_array( $element['settings'] ) ) {
+			foreach ( array( 'computed_styles', 'computedStyles', 'computed' ) as $key ) {
+				if ( isset( $element['settings'][ $key ] ) && is_array( $element['settings'][ $key ] ) ) {
+					$candidates[] = $element['settings'][ $key ];
+				}
+			}
+		}
+
+		$styles = array();
+
+		foreach ( $candidates as $candidate ) {
+			foreach ( self::flatten_style_candidate( $candidate ) as $property => $value ) {
+				if ( '' === $property || '' === $value ) {
+					continue;
+				}
+
+				$styles[ $property ] = $value;
+			}
+		}
+
+		return $styles;
+	}
+
+	/**
+	 * Attempt to match a color to a theme preset slug within a 3% delta.
+	 *
+	 * @param string $color Color string.
+	 *
+	 * @return string|null Preset slug or null when no close match exists.
+	 */
+	public static function match_theme_color_slug( string $color ): ?string {
+		$rgb = self::parse_color_to_rgb( $color );
+		if ( null === $rgb ) {
+			return null;
+		}
+
+		$palette = self::get_theme_palette();
+		if ( empty( $palette ) ) {
+			return null;
+		}
+
+		$closest_slug   = null;
+		$closest_delta  = null;
+		$max_difference = sqrt( 3 * ( 255 ** 2 ) );
+
+		foreach ( $palette as $preset ) {
+			$preset_color = self::parse_color_to_rgb( $preset['color'] ?? '' );
+			if ( null === $preset_color ) {
+				continue;
+			}
+
+			$distance = sqrt(
+				( $rgb[0] - $preset_color[0] ) ** 2 +
+				( $rgb[1] - $preset_color[1] ) ** 2 +
+				( $rgb[2] - $preset_color[2] ) ** 2
+			);
+
+			$delta = $distance / $max_difference;
+
+			if ( $delta > 0.03 ) {
+				continue;
+			}
+
+			if ( null === $closest_delta || $delta < $closest_delta ) {
+				$closest_delta = $delta;
+				$closest_slug  = $preset['slug'] ?? null;
+			}
+		}
+
+		return $closest_slug;
+	}
+
+	/**
+	 * Attempt to match a font-size to a theme preset slug.
+	 *
+	 * @param string $font_size Font-size value (e.g. 18px, 1.125rem).
+	 *
+	 * @return string|null Preset slug when the value is within a 3% tolerance of a preset.
+	 */
+	public static function match_font_size_slug( string $font_size ): ?string {
+		$target = self::font_size_to_pixels( $font_size );
+		if ( null === $target ) {
+			return null;
+		}
+
+		$presets = self::get_font_size_presets();
+		if ( empty( $presets ) ) {
+			return null;
+		}
+
+		foreach ( $presets as $preset ) {
+			$preset_value = self::font_size_to_pixels( $preset['size'] ?? '' );
+			if ( null === $preset_value ) {
+				continue;
+			}
+
+			$tolerance = max( 0.25, $preset_value * 0.03 );
+
+			if ( abs( $preset_value - $target ) <= $tolerance ) {
+				return $preset['slug'] ?? null;
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * Resolve a theme color value from a preset slug.
+	 *
+	 * @param string $slug Theme color slug.
+	 *
+	 * @return string Normalized hexadecimal color or empty string when unavailable.
+	 */
+	public static function resolve_theme_color_value( string $slug ): string {
+		$slug = self::sanitize_scalar( $slug );
+		if ( '' === $slug ) {
+			return '';
+		}
+
+		foreach ( self::get_theme_palette() as $preset ) {
+			if ( strtolower( $preset['slug'] ?? '' ) !== strtolower( $slug ) ) {
+				continue;
+			}
+
+			$normalized = self::normalize_color_value( $preset['color'] ?? '' );
+			if ( '' !== $normalized ) {
+				return $normalized;
+			}
+		}
+
+		return '';
+	}
+
+	/**
+	 * Resolve a font-size value from a preset slug.
+	 *
+	 * @param string $slug Theme font size slug.
+	 *
+	 * @return string Sanitized font-size string or empty string when unavailable.
+	 */
+	public static function resolve_font_size_value( string $slug ): string {
+		$slug = self::sanitize_scalar( $slug );
+		if ( '' === $slug ) {
+			return '';
+		}
+
+		foreach ( self::get_font_size_presets() as $preset ) {
+			if ( strtolower( $preset['slug'] ?? '' ) !== strtolower( $slug ) ) {
+				continue;
+			}
+
+			$value = self::sanitize_css_dimension_value( $preset['size'] ?? '' );
+			if ( '' !== $value ) {
+				return $value;
+			}
+		}
+
+		return '';
+	}
+
+	/**
+	 * Sanitize a CSS dimension value allowing typical units.
+	 *
+	 * @param mixed $value Raw value.
+	 */
+	public static function sanitize_css_dimension_value( $value ): string {
+		if ( is_array( $value ) || is_object( $value ) ) {
+			return '';
+		}
+
+		$value = trim( (string) $value );
+		if ( '' === $value ) {
+			return '';
+		}
+
+		if ( '0' === $value || '0px' === strtolower( $value ) ) {
+			return '0';
+		}
+
+		if ( preg_match( '/^-?[0-9]*\.?[0-9]+(px|em|rem|vh|vw|%)?$/i', $value ) ) {
+			return $value;
+		}
+
+		return '';
+	}
+
+	/**
+	 * Sanitize a font-family value.
+	 *
+	 * @param mixed $value Raw value.
+	 */
+	public static function sanitize_font_family_value( $value ): string {
+		if ( is_array( $value ) || is_object( $value ) ) {
+			return '';
+		}
+
+		return trim( (string) $value );
+	}
+
+	/**
+	 * Sanitize a font-style value.
+	 *
+	 * @param mixed $value Raw value.
+	 */
+	public static function sanitize_font_style_value( $value ): string {
+		if ( is_array( $value ) || is_object( $value ) ) {
+			return '';
+		}
+
+		$value    = strtolower( trim( (string) $value ) );
+		$allowed  = array( 'normal', 'italic', 'oblique', 'inherit', 'initial', 'unset' );
+		$fallback = '';
+
+		foreach ( $allowed as $option ) {
+			if ( $value === $option ) {
+				return $option;
+			}
+		}
+
+		return $fallback;
+	}
+
+	/**
+	 * Sanitize a text-decoration value.
+	 *
+	 * @param mixed $value Raw value.
+	 */
+	public static function sanitize_text_decoration_value( $value ): string {
+		if ( is_array( $value ) || is_object( $value ) ) {
+			return '';
+		}
+
+		$value   = strtolower( trim( (string) $value ) );
+		$allowed = array(
+			'none',
+			'underline',
+			'overline',
+			'line-through',
+			'inherit',
+			'initial',
+			'unset',
+		);
+
+		return in_array( $value, $allowed, true ) ? $value : '';
+	}
+
+	/**
+	 * Sanitize a letter-spacing value.
+	 *
+	 * @param mixed $value Raw value.
+	 */
+	public static function sanitize_letter_spacing_value( $value ): string {
+		$sanitized = self::sanitize_css_dimension_value( $value );
+
+		return $sanitized;
+	}
+
+	/**
+	 * Sanitize a word-spacing value.
+	 *
+	 * @param mixed $value Raw value.
+	 */
+	public static function sanitize_word_spacing_value( $value ): string {
+		$sanitized = self::sanitize_css_dimension_value( $value );
+
+		return $sanitized;
+	}
+
+	/**
+	 * Sanitize a line-height value.
+	 *
+	 * @param mixed $value Raw value.
+	 */
+	public static function sanitize_line_height_value( $value ): string {
+		if ( is_array( $value ) || is_object( $value ) ) {
+			return '';
+		}
+
+		$value = trim( strtolower( (string) $value ) );
+		if ( '' === $value ) {
+			return '';
+		}
+
+		$keywords = array( 'normal', 'inherit', 'initial', 'unset' );
+		if ( in_array( $value, $keywords, true ) ) {
+			return $value;
+		}
+
+		if ( preg_match( '/^-?[0-9]*\.?[0-9]+(px|em|rem|%)?$/', $value ) ) {
+			return $value;
+		}
+
+		return '';
+	}
+
+	/**
+	 * Sanitize a font-weight value.
+	 *
+	 * @param mixed $value Raw value.
+	 */
+	public static function sanitize_font_weight_value( $value ): string {
+		if ( is_array( $value ) || is_object( $value ) ) {
+			return '';
+		}
+
+		$value = trim( strtolower( (string) $value ) );
+		if ( '' === $value ) {
+			return '';
+		}
+
+		$keywords = array( 'normal', 'bold', 'lighter', 'bolder', 'inherit', 'initial', 'unset' );
+		if ( in_array( $value, $keywords, true ) ) {
+			return $value;
+		}
+
+		if ( preg_match( '/^(100|200|300|400|500|600|700|800|900)$/', $value ) ) {
+			return $value;
+		}
+
+		return '';
+	}
+
+	/**
+	 * Sanitize a text-transform value.
+	 *
+	 * @param mixed $value Raw value.
+	 */
+	public static function sanitize_text_transform_value( $value ): string {
+		if ( is_array( $value ) || is_object( $value ) ) {
+			return '';
+		}
+
+		$value = trim( strtolower( (string) $value ) );
+		if ( '' === $value ) {
+			return '';
+		}
+
+		$keywords = array( 'uppercase', 'lowercase', 'capitalize', 'none', 'inherit', 'initial', 'unset' );
+		if ( in_array( $value, $keywords, true ) ) {
+			return $value;
+		}
+
+		return '';
+	}
+
+	/**
+	 * Normalize a color string to hexadecimal when possible.
+	 *
+	 * @param mixed $color Raw color value.
+	 */
+	public static function normalize_color_value( $color ): string {
+		if ( is_array( $color ) || is_object( $color ) ) {
+			return '';
+		}
+
+		$color = trim( strtolower( (string) $color ) );
+		if ( '' === $color || 0 === strpos( $color, 'var(' ) || 'transparent' === $color ) {
+			return '';
+		}
+
+		$hex = sanitize_hex_color( $color );
+		if ( false !== $hex && null !== $hex ) {
+			return strtolower( $hex );
+		}
+
+		$rgb = self::parse_color_to_rgb( $color );
+		if ( null === $rgb ) {
+			return '';
+		}
+
+		return sprintf( '#%02x%02x%02x', $rgb[0], $rgb[1], $rgb[2] );
+	}
+
+	/**
+	 * Convert raw palette data into a flat list.
+	 *
+	 * @return array<int, array<string, string>>
+	 */
+	private static function get_theme_palette(): array {
+		if ( null !== self::$theme_palette ) {
+			return self::$theme_palette;
+		}
+
+		if ( ! function_exists( 'wp_get_global_settings' ) ) {
+			self::$theme_palette = array();
+
+			return self::$theme_palette;
+		}
+
+		$palette = wp_get_global_settings( array( 'color', 'palette' ) );
+		$output  = array();
+
+		foreach ( array( 'theme', 'custom', 'default' ) as $group ) {
+			if ( empty( $palette[ $group ] ) || ! is_array( $palette[ $group ] ) ) {
+				continue;
+			}
+
+			foreach ( $palette[ $group ] as $preset ) {
+				if ( empty( $preset['slug'] ) || empty( $preset['color'] ) ) {
+					continue;
+				}
+
+				$output[] = array(
+					'slug'  => (string) $preset['slug'],
+					'color' => (string) $preset['color'],
+				);
+			}
+		}
+
+		self::$theme_palette = $output;
+
+		return self::$theme_palette;
+	}
+
+	/**
+	 * Fetch font size presets defined by the active theme.
+	 *
+	 * @return array<int, array<string, string>>
+	 */
+	private static function get_font_size_presets(): array {
+		if ( null !== self::$font_sizes ) {
+			return self::$font_sizes;
+		}
+
+		if ( ! function_exists( 'wp_get_global_settings' ) ) {
+			self::$font_sizes = array();
+
+			return self::$font_sizes;
+		}
+
+		$settings = wp_get_global_settings( array( 'typography', 'fontSizes' ) );
+		$output   = array();
+
+		foreach ( array( 'theme', 'custom', 'default' ) as $group ) {
+			if ( empty( $settings[ $group ] ) || ! is_array( $settings[ $group ] ) ) {
+				continue;
+			}
+
+			foreach ( $settings[ $group ] as $preset ) {
+				if ( empty( $preset['slug'] ) || empty( $preset['size'] ) ) {
+					continue;
+				}
+
+				$output[] = array(
+					'slug' => (string) $preset['slug'],
+					'size' => (string) $preset['size'],
+				);
+			}
+		}
+
+		self::$font_sizes = $output;
+
+		return self::$font_sizes;
+	}
+
+	/**
+	 * Convert font-size values to an approximate pixel value.
+	 *
+	 * @param mixed $value Raw value.
+	 */
+	private static function font_size_to_pixels( $value ): ?float {
+		if ( is_array( $value ) || is_object( $value ) ) {
+			return null;
+		}
+
+		$value = trim( strtolower( (string) $value ) );
+		if ( '' === $value ) {
+			return null;
+		}
+
+		if ( preg_match( '/^([0-9]*\.?[0-9]+)px$/', $value, $matches ) ) {
+			return (float) $matches[1];
+		}
+
+		if ( preg_match( '/^([0-9]*\.?[0-9]+)rem$/', $value, $matches ) ) {
+			return (float) $matches[1] * 16;
+		}
+
+		if ( preg_match( '/^([0-9]*\.?[0-9]+)em$/', $value, $matches ) ) {
+			return (float) $matches[1] * 16;
+		}
+
+		if ( preg_match( '/^([0-9]*\.?[0-9]+)$/', $value, $matches ) ) {
+			return (float) $matches[1];
+		}
+
+		return null;
+	}
+
+	/**
+	 * Convert mixed style data into a property => value map.
+	 *
+	 * @param mixed $candidate Potential style structure.
+	 *
+	 * @return array<string, string>
+	 */
+	private static function flatten_style_candidate( $candidate ): array {
+		$output = array();
+
+		if ( ! is_array( $candidate ) ) {
+			return $output;
+		}
+
+		foreach ( $candidate as $key => $value ) {
+			if ( is_array( $value ) ) {
+				if ( isset( $value['property'], $value['value'] ) ) {
+					$property = self::normalize_property_name( $value['property'] );
+					$val      = trim( (string) $value['value'] );
+					if ( '' !== $property && '' !== $val ) {
+						$output[ $property ] = $val;
+					}
+				}
+
+				continue;
+			}
+
+			$property = self::normalize_property_name( (string) $key );
+			$val      = trim( (string) $value );
+			if ( '' === $property || '' === $val ) {
+				continue;
+			}
+
+			$output[ $property ] = $val;
+		}
+
+		return $output;
+	}
+
+	/**
+	 * Normalize property names to kebab-case.
+	 *
+	 * @param string $property Property name.
+	 */
+	private static function normalize_property_name( string $property ): string {
+		$property = trim( (string) $property );
+		if ( '' === $property ) {
+			return '';
+		}
+
+		$property = strtolower( preg_replace( '/([a-z])([A-Z])/', '$1-$2', $property ) );
+		$property = str_replace( array( '_', ' ' ), '-', $property );
+
+		return trim( $property );
+	}
+
+	/**
+	 * Convert color strings (hex/rgb/rgba) to RGB array.
+	 *
+	 * @param mixed $color Raw color value.
+	 *
+	 * @return array{0:int,1:int,2:int}|null
+	 */
+	private static function parse_color_to_rgb( $color ): ?array {
+		if ( is_array( $color ) || is_object( $color ) ) {
+			return null;
+		}
+
+		$color = trim( strtolower( (string) $color ) );
+		if ( '' === $color ) {
+			return null;
+		}
+
+		$hex = sanitize_hex_color( $color );
+		if ( $hex ) {
+			$hex = ltrim( $hex, '#' );
+			if ( 3 === strlen( $hex ) ) {
+				$hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+			}
+
+			if ( 6 === strlen( $hex ) ) {
+				return array(
+					hexdec( substr( $hex, 0, 2 ) ),
+					hexdec( substr( $hex, 2, 2 ) ),
+					hexdec( substr( $hex, 4, 2 ) ),
+				);
+			}
+		}
+
+		if ( preg_match( '/^rgb\(\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*\)$/', $color, $matches ) ) {
+			return array( (int) $matches[1], (int) $matches[2], (int) $matches[3] );
+		}
+
+		if ( preg_match( '/^rgba\(\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*,\s*([0-9]*\.?[0-9]+)\s*\)$/', $color, $matches ) ) {
+			$alpha = (float) $matches[4];
+			if ( $alpha <= 0 ) {
+				return null;
+			}
+
+			return array( (int) $matches[1], (int) $matches[2], (int) $matches[3] );
+		}
+
+		return null;
+	}
+
+
+	/**
 	 * Parse spacing settings from Elementor settings.
 	 *
 	 * @param array $settings Elementor settings array.
@@ -133,6 +762,7 @@ class Style_Parser {
 	 * Parse border settings from Elementor settings.
 	 *
 	 * @param array $settings The Elementor settings array.
+	 *
 	 * @return array Array containing 'attributes' and 'style' keys.
 	 */
 	public static function parse_border( array $settings ): array {

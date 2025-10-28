@@ -1,0 +1,38 @@
+.ele2gb-batch-wizard .ele2gb-wizard-options {
+    margin-top: 20px;
+    padding: 20px;
+    border: 1px solid #ccd0d4;
+    background-color: #fff;
+    border-radius: 4px;
+    max-width: 960px;
+}
+
+.ele2gb-batch-wizard .ele2gb-wizard-option {
+    margin-bottom: 12px;
+}
+
+.ele2gb-batch-wizard .ele2gb-wizard-option:last-child {
+    margin-bottom: 0;
+}
+
+.ele2gb-batch-wizard .ele2gb-option-label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+.ele2gb-batch-wizard .ele2gb-select-all-wrapper {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.ele2gb-batch-wizard .notice ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.ele2gb-batch-wizard .wp-list-table .column-last_result,
+.ele2gb-batch-wizard .wp-list-table .column-last_run {
+    width: 20%;
+}

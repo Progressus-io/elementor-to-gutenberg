@@ -13,11 +13,23 @@ use Progressus\Gutenberg\Admin\Layout\Container_Classifier;
 
 use function esc_html;
 use function esc_html__;
+use function get_option;
+use function sanitize_key;
+use function current_time;
+use function update_option;
+use function sanitize_text_field;
+use function wp_strip_all_tags;
+use function wp_unslash;
 defined( 'ABSPATH' ) || exit;
 /**
  * Main admin settings class for Elementor to Gutenberg conversion.
  */
 class Admin_Settings {
+	public const FULL_WIDTH_TEMPLATE = 'elementor-to-gutenberg-full-width.php';
+
+	private const CONVERSION_LOG_OPTION = 'ele2gb_conversion_log';
+
+	private const CONVERSION_LOG_LIMIT = 20;
 	/**
 	 * Singleton instance.
 	 *
@@ -64,54 +76,90 @@ class Admin_Settings {
 
 
 	public function myplugin_handle_convert_page() {
+		if ( ! current_user_can( 'edit_pages' ) ) {
+			wp_die( esc_html__( 'You do not have permission to convert this page.', 'elementor-to-gutenberg' ) );
+		}
+
 		if ( ! isset( $_GET['page_id'] ) ) {
-			wp_die( 'Page ID missing.' );
+			wp_die( esc_html__( 'Page ID missing.', 'elementor-to-gutenberg' ) );
 		}
 
 		$page_id = absint( $_GET['page_id'] );
 
-		// Verify nonce
 		check_admin_referer( 'myplugin_convert_page_' . $page_id );
 
-		// Get JSON template stored in post meta
-		$json_data = get_post_meta( $page_id, '_elementor_data', true ); // Example for Elementor
+		$json_data = get_post_meta( $page_id, '_elementor_data', true );
 		if ( empty( $json_data ) ) {
-			wp_die( 'No template JSON found for this page.' );
+			$this->record_conversion_result( $page_id, 'error', esc_html__( 'No Elementor data found for this page.', 'elementor-to-gutenberg' ) );
+			wp_die( esc_html__( 'No template JSON found for this page.', 'elementor-to-gutenberg' ) );
 		}
 
-		$data['content'] = json_decode( $json_data, true );
-		// Convert JSON → Gutenberg blocks
-		$blocks = $this->convert_json_to_gutenberg_content( $data );
-
-		// Create new page with blocks
-		$new_page_id = $this->insert_new_page( $page_id, $blocks );
-
-		if ( $new_page_id ) {
-			wp_safe_redirect( admin_url( 'post.php?post=' . $new_page_id . '&action=edit' ) );
-			exit;
+		$decoded = json_decode( $json_data, true );
+		if ( null === $decoded && JSON_ERROR_NONE !== json_last_error() ) {
+			$this->record_conversion_result( $page_id, 'error', esc_html__( 'Invalid Elementor data JSON.', 'elementor-to-gutenberg' ) );
+			wp_die( esc_html__( 'Failed to decode Elementor data.', 'elementor-to-gutenberg' ) );
 		}
 
-		wp_die( 'Failed to create Gutenberg page.' );
-	}
+		$data       = array( 'content' => $decoded );
+		$blocks_html = $this->convert_json_to_gutenberg_content( $data );
+		if ( '' === trim( $blocks_html ) ) {
+			$this->record_conversion_result( $page_id, 'error', esc_html__( 'Conversion produced empty content.', 'elementor-to-gutenberg' ) );
+			wp_die( esc_html__( 'Conversion failed: no Gutenberg content generated.', 'elementor-to-gutenberg' ) );
+		}
 
-	/**
-	 * Insert new page with Gutenberg blocks.
-	 *
-	 * @param int $page_id Page ID.
-	 * @param array $blocks Gutenberg blocks.
-	 *
-	 * @return int New page ID.
-	 */
-	public function insert_new_page( $page_id, $blocks ): int {
-		$new_page_id = wp_insert_post( array(
-				'post_title'   => get_the_title( $page_id ) . ' (Gutenberg)',
-				'post_type'    => 'page',
-				'post_status'  => 'publish',
-				'post_content' =>  $blocks,
-			)
-		);
+		$wrap_full_width = isset( $_GET['wrap_full_width'] ) ? (int) $_GET['wrap_full_width'] : 0;
+		if ( 1 === $wrap_full_width ) {
+			$blocks_html = $this->wrap_content_full_width( $blocks_html );
+		}
 
-		return $new_page_id;
+		$mode = isset( $_GET['mode'] ) ? sanitize_key( wp_unslash( $_GET['mode'] ) ) : 'create';
+		if ( 'update' !== $mode ) {
+			$mode = 'create';
+		}
+
+		$assign_template = isset( $_GET['assign_template'] ) ? (int) $_GET['assign_template'] : 0;
+
+		if ( 'update' === $mode ) {
+			$result = wp_update_post(
+				array(
+					'ID'           => $page_id,
+					'post_content' => $blocks_html,
+				),
+				true
+			);
+			$target_id = is_wp_error( $result ) ? 0 : (int) $result;
+		} else {
+			$result = wp_insert_post(
+				array(
+					'post_title'   => get_the_title( $page_id ) . ' (Gutenberg)',
+					'post_type'    => get_post_type( $page_id ),
+					'post_status'  => get_post_status( $page_id ),
+					'post_author'  => (int) get_post_field( 'post_author', $page_id ),
+					'post_parent'  => (int) get_post_field( 'post_parent', $page_id ),
+					'post_content' => $blocks_html,
+				),
+				true
+			);
+			$target_id = is_wp_error( $result ) ? 0 : (int) $result;
+		}
+
+		if ( empty( $target_id ) ) {
+			$this->record_conversion_result( $page_id, 'error', esc_html__( 'Failed to save Gutenberg content.', 'elementor-to-gutenberg' ) );
+			wp_die( esc_html__( 'Failed to create Gutenberg page.', 'elementor-to-gutenberg' ) );
+		}
+
+		if ( 1 === $assign_template ) {
+			update_post_meta( $target_id, '_wp_page_template', self::FULL_WIDTH_TEMPLATE );
+		}
+
+		$message = ( 'update' === $mode )
+			? esc_html__( 'Page updated with Gutenberg content.', 'elementor-to-gutenberg' )
+			: esc_html__( 'Gutenberg page created successfully.', 'elementor-to-gutenberg' );
+
+		$this->record_conversion_result( $page_id, 'success', $message, $target_id );
+
+		wp_safe_redirect( admin_url( 'post.php?post=' . $target_id . '&action=edit' ) );
+		exit;
 	}
 
 	/**
@@ -267,6 +315,78 @@ class Admin_Settings {
 		<?php
 	}
 
+	/**
+	 * Wrap converted content in a full-width group block when requested.
+	 *
+	 * @param string $content Gutenberg block markup.
+	 *
+	 * @return string
+	 */
+	public function wrap_content_full_width( string $content ): string {
+		$content = trim( $content );
+		if ( '' === $content ) {
+			return $content;
+		}
+
+		return '<!-- wp:group {"align":"full","layout":{"type":"default"}} -->' . "\n" . $content . "\n" . '<!-- /wp:group -->';
+	}
+
+	/**
+	 * Store conversion status meta and append to the rolling log.
+	 *
+	 * @param int    $source_id Source post ID.
+	 * @param string $status Conversion status.
+	 * @param string $message Status message.
+	 * @param int    $target_id Target post ID.
+	 */
+	public function record_conversion_result( int $source_id, string $status, string $message, int $target_id = 0 ): void {
+		$status  = sanitize_key( $status );
+		$message = wp_strip_all_tags( $message );
+		$time    = current_time( 'mysql' );
+
+		$result = array(
+			'status'  => $status,
+			'message' => $message,
+			'target'  => $target_id,
+			'time'    => $time,
+		);
+
+		update_post_meta( $source_id, '_ele2gb_last_result', $result );
+
+		if ( 'success' === $status && $target_id > 0 ) {
+			update_post_meta( $target_id, '_ele2gb_last_converted', $time );
+		}
+
+		$this->append_conversion_log(
+			array(
+				'source' => $source_id,
+				'target' => $target_id,
+				'status' => $status,
+				'message' => $message,
+				'time'   => $time,
+			)
+		);
+	}
+
+	/**
+	 * Append an entry to the conversion log option.
+	 *
+	 * @param array $entry Log entry.
+	 */
+	private function append_conversion_log( array $entry ): void {
+		$log = get_option( self::CONVERSION_LOG_OPTION, array() );
+		if ( ! is_array( $log ) ) {
+			$log = array();
+		}
+
+		array_unshift( $log, $entry );
+
+		if ( count( $log ) > self::CONVERSION_LOG_LIMIT ) {
+			$log = array_slice( $log, 0, self::CONVERSION_LOG_LIMIT );
+		}
+
+		update_option( self::CONVERSION_LOG_OPTION, $log, false );
+	}
 	/**
 	 * Convert JSON data to Gutenberg blocks.
 	 *
