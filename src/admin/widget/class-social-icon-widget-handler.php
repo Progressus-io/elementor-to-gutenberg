@@ -7,8 +7,13 @@
 
 namespace Progressus\Gutenberg\Admin\Widget;
 
-use Progressus\Gutenberg\Admin\Widget_Handler_Interface;
+use Progressus\Gutenberg\Admin\Helper\Block_Builder;
 use Progressus\Gutenberg\Admin\Helper\Style_Parser;
+use Progressus\Gutenberg\Admin\Widget_Handler_Interface;
+
+use function esc_attr;
+use function esc_url;
+use function sanitize_html_class;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -17,149 +22,156 @@ defined( 'ABSPATH' ) || exit;
  */
 class Social_Icons_Widget_Handler implements Widget_Handler_Interface {
 	/**
-	 * Handle conversion of Elementor social icons to Gutenberg block.
+	 * Handle conversion of Elementor social icons widget.
 	 *
-	 * @param array $element The Elementor element data.
-	 * @return string The Gutenberg block content.
+	 * @param array $element Elementor widget data.
 	 */
 	public function handle( array $element ): string {
-		$settings      = $element['settings'] ?? array();
-		$social_icons  = $settings['social_icon_list'] ?? array();
-		$block_content = '';
-		$custom_class  = $settings['_css_classes'] ?? '';
-		$custom_id     = $settings['_element_id'] ?? '';
-		$custom_css    = $settings['custom_css'] ?? '';
+		$settings   = is_array( $element['settings'] ?? null ) ? $element['settings'] : array();
+		$icons      = is_array( $settings['social_icon_list'] ?? null ) ? $settings['social_icon_list'] : array();
+		$custom_css = isset( $settings['custom_css'] ) ? (string) $settings['custom_css'] : '';
 
-		if ( ! empty( $social_icons ) ) {
-			$icons_content = '';
+		if ( empty( $icons ) ) {
+			return '';
+		}
 
-			// Generate social links
-			foreach ( $social_icons as $icon ) {
-				$url     = $icon['link']['url'] ?? '';
-				$service = '';
+		$attributes   = array();
+		$class_names  = array();
+		$list_classes = array( 'wp-block-social-links' );
 
-				// Match common services from icon value
-				if ( ! empty( $icon['social_icon']['value'] ) ) {
-					$icon_value = strtolower( $icon['social_icon']['value'] );
-					if ( strpos( $icon_value, 'facebook' ) !== false ) {
-						$service = 'facebook';
-					} elseif ( strpos( $icon_value, 'twitter' ) !== false || strpos( $icon_value, 'xcorp' ) !== false ) {
-						$service = 'twitter';
-					} elseif ( strpos( $icon_value, 'youtube' ) !== false ) {
-						$service = 'youtube';
-					} elseif ( strpos( $icon_value, 'linkedin' ) !== false ) {
-						$service = 'linkedin';
-					}
+		$custom_class = isset( $settings['_css_classes'] ) ? trim( (string) $settings['_css_classes'] ) : '';
+		if ( '' !== $custom_class ) {
+			foreach ( preg_split( '/\s+/', $custom_class ) as $class ) {
+				$class = trim( $class );
+				if ( '' === $class ) {
+					continue;
 				}
 
-				if ( $url && $service ) {
-					$icons_content .= sprintf(
-						"<!-- wp:social-link {\"url\":\"%s\",\"service\":\"%s\"} /-->\n",
-						esc_url( $url ),
-						esc_attr( $service )
-					);
-				}
-			}
-
-			// Extract styles
-			$style_json = array(
-				'layout' => array(
-					'type' => 'flex',
-				),
-				'style' => array(),
-			);
-
-			if ( isset( $settings['_flex_align_self'] ) ) {
-				$style_json['layout']['justifyContent'] = $settings['_flex_align_self'];
-			}
-
-			if ( isset( $settings['icon_size']['size'] ) ) {
-				$style_json['style']['elements']['link'] = array(
-					'size' => $settings['icon_size']['size'] . 'px',
-				);
-			}
-
-			if ( isset( $settings['icon_spacing']['size'] ) ) {
-				$style_json['style']['spacing']['blockGap'] = $settings['icon_spacing']['size'] . 'px';
-			}
-
-			if ( isset( $settings['icon_padding']['size'] ) ) {
-				$style_json['style']['spacing']['padding'] = array(
-					'top' => $settings['icon_padding']['size'] . 'px',
-					'right' => $settings['icon_padding']['size'] . 'px',
-					'bottom' => $settings['icon_padding']['size'] . 'px',
-					'left' => $settings['icon_padding']['size'] . 'px',
-				);
-			}
-
-			if ( isset( $settings['border_radius'] ) ) {
-				$r = $settings['border_radius'];
-				$style_json['style']['border']['radius'] = is_array( $r ) ? array(
-					'top' => $r['top'] . 'px',
-					'right' => $r['right'] . 'px',
-					'bottom' => $r['bottom'] . 'px',
-					'left' => $r['left'] . 'px',
-				) : $r . 'px';
-			}
-
-			if ( isset( $settings['image_border_width'] ) ) {
-				$w = $settings['image_border_width'];
-				$style_json['style']['border']['width'] = is_array( $w ) ? array(
-					'top' => $w['top'] . 'px',
-					'right' => $w['right'] . 'px',
-					'bottom' => $w['bottom'] . 'px',
-					'left' => $w['left'] . 'px',
-				) : $w . 'px';
-			}
-
-			if ( isset( $settings['image_border_border'] ) ) {
-				$style_json['style']['border']['style'] = $settings['image_border_border'];
-			}
-
-			if ( isset( $settings['_padding'] ) ) {
-				$p = $settings['_padding'];
-				$style_json['style']['spacing']['padding'] = array(
-					'top' => $p['top'] . 'px',
-					'right' => $p['right'] . 'px',
-					'bottom' => $p['bottom'] . 'px',
-					'left' => $p['left'] . 'px',
-				);
-			}
-
-			if ( isset( $settings['_margin'] ) ) {
-				$m = $settings['_margin'];
-				$style_json['style']['spacing']['margin'] = array(
-					'top' => $m['top'] . 'px',
-					'right' => $m['right'] . 'px',
-					'bottom' => $m['bottom'] . 'px',
-					'left' => $m['left'] . 'px',
-				);
-			}
-
-			if ( isset( $settings['icon_color'] ) ) {
-				$style_json['style']['elements']['link']['color'] = $settings['icon_color'];
-			}
-
-			if ( isset( $settings['icon_color_value'] ) ) {
-				$style_json['style']['color'] = array(
-					'text' => $settings['icon_color_value'],
-				);
-			}
-
-			$attrs = wp_json_encode( $style_json );
-
-			$block_content .= sprintf(
-				"<!-- wp:group %s --><div class=\"wp-block-group\"><!-- wp:social-links -->\n<ul class=\"wp-block-social-links\">\n%s</ul>\n<!-- /wp:social-links -->\n</div><!-- /wp:group -->\n",
-				$attrs,
-				$icons_content
-			);
-
-			// Save custom CSS to the Customizer's Additional CSS
-			if ( ! empty( $custom_css ) ) {
-				Style_Parser::save_custom_css( $custom_css );
+				$sanitized      = sanitize_html_class( $class );
+				$class_names[]  = $sanitized;
+				$list_classes[] = $sanitized;
 			}
 		}
 
-		return $block_content;
+		$icon_color = isset( $settings['icon_color'] ) ? strtolower( (string) $settings['icon_color'] ) : '';
+		if ( '' !== $icon_color ) {
+			if ( $this->is_preset_slug( $icon_color ) ) {
+				$attributes['iconColor'] = $icon_color;
+			} else {
+				$attributes['customIconColor'] = $icon_color;
+			}
+			$class_names[]  = 'has-icon-color';
+			$list_classes[] = 'has-icon-color';
+		}
+
+		$icon_background = isset( $settings['icon_background_color'] ) ? strtolower( (string) $settings['icon_background_color'] ) : '';
+		if ( '' !== $icon_background ) {
+			if ( $this->is_preset_slug( $icon_background ) ) {
+				$attributes['iconBackgroundColor'] = $icon_background;
+			} else {
+				$attributes['customIconBackgroundColor'] = $icon_background;
+			}
+			$class_names[]  = 'has-icon-background-color';
+			$list_classes[] = 'has-icon-background-color';
+		}
+
+		$open_new_tab = false;
+		$links_markup = '';
+
+		foreach ( $icons as $icon ) {
+			if ( ! is_array( $icon ) ) {
+				continue;
+			}
+
+			$url = is_array( $icon['link'] ?? null ) ? (string) ( $icon['link']['url'] ?? '' ) : '';
+			if ( '' === $url ) {
+				continue;
+			}
+
+			if ( ! empty( $icon['link']['is_external'] ) ) {
+				$open_new_tab = true;
+			}
+
+			$service = $this->detect_service( $icon );
+
+			$link_attrs = array( 'url' => $url );
+			if ( '' !== $service ) {
+				$link_attrs['service'] = $service;
+			}
+
+			$links_markup .= sprintf(
+				'<!-- wp:social-link%s /-->',
+				empty( $link_attrs ) ? '' : ' ' . wp_json_encode( $link_attrs )
+			);
+		}
+
+		if ( '' === $links_markup ) {
+			return '';
+		}
+
+		if ( $open_new_tab ) {
+			$attributes['openInNewTab'] = true;
+		}
+
+		if ( ! empty( $class_names ) ) {
+			$attributes['className'] = implode( ' ', array_unique( $class_names ) );
+		}
+
+		$inner_markup = sprintf(
+			'<ul class="%s">%s</ul>',
+			esc_attr( implode( ' ', array_unique( $list_classes ) ) ),
+			$links_markup
+		);
+
+		if ( '' !== $custom_css ) {
+			Style_Parser::save_custom_css( $custom_css );
+		}
+
+		return Block_Builder::build( 'social-links', $attributes, $inner_markup );
+	}
+
+	/**
+	 * Determine the best matching social service for the icon.
+	 *
+	 * @param array $icon Icon settings.
+	 */
+	private function detect_service( array $icon ): string {
+		$value = '';
+		if ( isset( $icon['social_icon']['value'] ) ) {
+			$value = strtolower( (string) $icon['social_icon']['value'] );
+		} elseif ( isset( $icon['icon'] ) ) {
+			$value = strtolower( (string) $icon['icon'] );
+		}
+
+		$map = array(
+			'facebook'  => array( 'facebook' ),
+			'twitter'   => array( 'twitter', 'x', 'x-twitter', 'xcorp' ),
+			'linkedin'  => array( 'linkedin' ),
+			'instagram' => array( 'instagram' ),
+			'youtube'   => array( 'youtube' ),
+			'pinterest' => array( 'pinterest' ),
+			'tiktok'    => array( 'tiktok' ),
+			'github'    => array( 'github' ),
+			'wordpress' => array( 'wordpress' ),
+		);
+
+		foreach ( $map as $service => $needles ) {
+			foreach ( $needles as $needle ) {
+				if ( '' !== $needle && false !== strpos( $value, $needle ) ) {
+					return $service;
+				}
+			}
+		}
+
+		return '';
+	}
+
+	/**
+	 * Check whether a color is a preset slug.
+	 *
+	 * @param string $color Color string.
+	 */
+	private function is_preset_slug( string $color ): bool {
+		return '' !== $color && false === strpos( $color, '#' ) && false === strpos( $color, 'rgb' );
 	}
 }

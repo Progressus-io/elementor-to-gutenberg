@@ -8,7 +8,6 @@
 namespace Progressus\Gutenberg\Admin\Widget;
 
 use Progressus\Gutenberg\Admin\Widget_Handler_Interface;
-use Progressus\Gutenberg\Admin\Helper\Elementor_Elements_Parser;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -42,7 +41,7 @@ class Nested_Accordion_Widget_Handler implements Widget_Handler_Interface {
 
 		// Padding
 		if ( isset( $settings['accordion_padding'] ) ) {
-			$p = $settings['accordion_padding'];
+			$p       = $settings['accordion_padding'];
 			$style[] = sprintf(
 				'padding: %spx %spx %spx %spx;',
 				$p['top'],
@@ -54,7 +53,7 @@ class Nested_Accordion_Widget_Handler implements Widget_Handler_Interface {
 
 		// Margin
 		if ( isset( $settings['_margin'] ) ) {
-			$m = $settings['_margin'];
+			$m       = $settings['_margin'];
 			$style[] = sprintf(
 				'margin: %spx %spx %spx %spx;',
 				$m['top'],
@@ -68,11 +67,11 @@ class Nested_Accordion_Widget_Handler implements Widget_Handler_Interface {
 		if ( isset( $settings['accordion_border_normal_border'] ) ) {
 			$border_type  = $settings['accordion_border_normal_border'];
 			$border_width = $settings['accordion_border_normal_width'] ?? array();
-			$b_top    = $border_width['top'] ?? 0;
-			$b_right  = $border_width['right'] ?? 0;
-			$b_bottom = $border_width['bottom'] ?? 0;
-			$b_left   = $border_width['left'] ?? 0;
-			$style[]  = sprintf(
+			$b_top        = $border_width['top'] ?? 0;
+			$b_right      = $border_width['right'] ?? 0;
+			$b_bottom     = $border_width['bottom'] ?? 0;
+			$b_left       = $border_width['left'] ?? 0;
+			$style[]      = sprintf(
 				'border-style: %s; border-width: %spx %spx %spx %spx;',
 				$border_type,
 				$b_top,
@@ -84,7 +83,7 @@ class Nested_Accordion_Widget_Handler implements Widget_Handler_Interface {
 
 		// Border radius
 		if ( isset( $settings['accordion_border_radius'] ) ) {
-			$r = $settings['accordion_border_radius'];
+			$r       = $settings['accordion_border_radius'];
 			$style[] = sprintf(
 				'border-radius: %spx %spx %spx %spx;',
 				$r['top'],
@@ -110,7 +109,7 @@ class Nested_Accordion_Widget_Handler implements Widget_Handler_Interface {
 
 		// Loop through accordion containers
 		foreach ( $elements as $accordion_element ) {
-			$title = $accordion_element['settings']['_title'] ?? 'Accordion Item';
+			$title   = $accordion_element['settings']['_title'] ?? 'Accordion Item';
 			$content = '';
 
 			if ( ! empty( $accordion_element['elements'] ) ) {
@@ -135,10 +134,11 @@ class Nested_Accordion_Widget_Handler implements Widget_Handler_Interface {
 	 * Parse nested Elementor elements (stub method).
 	 *
 	 * @param array $elements The nested Elementor elements.
+	 *
 	 * @return string The parsed content.
 	 */
 	private function parse_elementor_elements( array $elements ): string {
 		// This is a stub; implement recursive parsing logic as needed
-		return Elementor_Elements_Parser::parse( $elements );
+		return '';
 	}
 }
