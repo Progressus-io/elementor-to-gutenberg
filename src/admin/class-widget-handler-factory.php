@@ -24,6 +24,7 @@ class Widget_Handler_Factory {
 		'heading'          => 'Progressus\Gutenberg\Admin\Widget\Heading_Widget_Handler',
 		'text-editor'      => 'Progressus\Gutenberg\Admin\Widget\Text_Editor_Widget_Handler',
 		'image'            => 'Progressus\Gutenberg\Admin\Widget\Image_Widget_Handler',
+		'image-box'        => 'Progressus\Gutenberg\Admin\Widget\Image_Box_Widget_Handler',
 		'button'           => 'Progressus\Gutenberg\Admin\Widget\Button_Widget_Handler',
 		'video'            => 'Progressus\Gutenberg\Admin\Widget\Video_Widget_Handler',
 		'accordion'        => 'Progressus\Gutenberg\Admin\Widget\Accordion_Widget_Handler',
