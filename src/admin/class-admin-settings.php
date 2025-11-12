@@ -8,7 +8,17 @@ namespace Progressus\Gutenberg\Admin;
 use Progressus\Gutenberg\Admin\Helper\File_Upload_Service;
 use Progressus\Gutenberg\Admin\Helper\Block_Builder;
 use Progressus\Gutenberg\Admin\Layout\Container_Classifier;
+use Progressus\Gutenberg\Admin\Helper\Style_Parser;
 
+use function esc_html;
+use function esc_html__;
+use function get_option;
+use function sanitize_key;
+use function current_time;
+use function update_option;
+use function sanitize_text_field;
+use function wp_strip_all_tags;
+use function wp_unslash;
 defined( 'ABSPATH' ) || exit;
 /**
  * Main admin settings class for Elementor to Gutenberg conversion.
@@ -339,9 +349,11 @@ class Admin_Settings {
 		}
 
 		$child_count        = count( $children );
+		$container_settings = is_array( $element['settings'] ?? null ) ? $element['settings'] : array();
+		$container_attr     = Style_Parser::parse_container_styles( $container_settings );
 		$container_classes  = Container_Classifier::get_element_classes( $element );
-		$container_attr = array();
-        $child_blocks       = array_map(
+		$container_attr     = $this->apply_container_class_adjustments( $container_attr, $container_classes );
+		$child_blocks       = array_map(
 			static function ( array $data ): string {
 				return $data['content'] ?? '';
 			},
@@ -442,6 +454,92 @@ class Admin_Settings {
 		return Block_Builder::build( 'columns', $attributes, $inner_html );
 	}
 
+	/**
+	 * Apply Elementor container class adjustments (full/boxed) to block attributes.
+	 *
+	 * @param array $attributes Block attributes.
+	 * @param array $classes Elementor class list.
+	 */
+	private function apply_container_class_adjustments( array $attributes, array $classes ): array {
+		if ( in_array( 'e-con-boxed', $classes, true ) ) {
+			$attributes = $this->add_class_to_attributes( $attributes, 'has-global-padding' );
+		}
+
+		if ( in_array( 'e-con-full', $classes, true ) ) {
+			$attributes = $this->remove_class_from_attributes( $attributes, 'has-global-padding' );
+		}
+
+		return $attributes;
+	}
+
+	/**
+	 * Add a className entry to block attributes.
+	 *
+	 * @param array $attributes Block attributes.
+	 * @param string $class Class to add.
+	 */
+	private function add_class_to_attributes( array $attributes, string $class ): array {
+		$sanitized = Style_Parser::clean_class( $class );
+		if ( '' === $sanitized ) {
+			return $attributes;
+		}
+
+		$existing   = isset( $attributes['className'] ) ? preg_split( '/\s+/', $attributes['className'] ) : array();
+		$existing   = is_array( $existing ) ? array_filter( $existing ) : array();
+		$existing[] = $sanitized;
+
+		$unique = array();
+		foreach ( $existing as $item ) {
+			$item = Style_Parser::clean_class( $item );
+			if ( '' === $item ) {
+				continue;
+			}
+			$unique[ $item ] = true;
+		}
+
+		if ( empty( $unique ) ) {
+			unset( $attributes['className'] );
+
+			return $attributes;
+		}
+
+		$attributes['className'] = implode( ' ', array_keys( $unique ) );
+
+		return $attributes;
+	}
+
+	/**
+	 * Remove a class from block attributes if present.
+	 *
+	 * @param array $attributes Block attributes.
+	 * @param string $class Class to remove.
+	 */
+	private function remove_class_from_attributes( array $attributes, string $class ): array {
+		if ( empty( $attributes['className'] ) ) {
+			return $attributes;
+		}
+
+		$target    = Style_Parser::clean_class( $class );
+		$classlist = preg_split( '/\s+/', (string) $attributes['className'] );
+		$classlist = is_array( $classlist ) ? array_filter( $classlist ) : array();
+
+		$filtered = array();
+		foreach ( $classlist as $item ) {
+			$item = Style_Parser::clean_class( $item );
+			if ( '' === $item || $item === $target ) {
+				continue;
+			}
+			$filtered[ $item ] = true;
+		}
+
+		if ( empty( $filtered ) ) {
+			unset( $attributes['className'] );
+		} else {
+			$attributes['className'] = implode( ' ', array_keys( $filtered ) );
+		}
+
+		return $attributes;
+	}
 
 	/**
 	 * Render a placeholder for unknown widgets.
