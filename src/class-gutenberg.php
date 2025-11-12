@@ -10,6 +10,7 @@ namespace Progressus\Gutenberg;
 defined( 'ABSPATH' ) || exit;
 
 use Progressus\Gutenberg\Admin\Admin_Settings;
+use Progressus\Gutenberg\Admin\Batch_Convert_Wizard;
 
 /**
  * Class Gutenberg
@@ -128,6 +129,7 @@ class Gutenberg {
 	 * Initialize the plugin.
 	 */
 	public function init(): void {
-		new Admin_Settings();
+		Admin_Settings::instance();
+		Batch_Convert_Wizard::instance();
 	}
 }

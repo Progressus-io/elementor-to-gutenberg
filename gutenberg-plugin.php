@@ -28,6 +28,9 @@ if ( ! defined( 'GUTENBERG_PLUGIN_DEBUG' ) ) {
 if ( ! defined( 'GUTENBERG_PLUGIN_FILE' ) ) {
 	define( 'GUTENBERG_PLUGIN_FILE', __FILE__ );
 }
+if ( ! defined( 'GUTENBERG_PLUGIN_MAIN_FILE' ) ) {
+	define( 'GUTENBERG_PLUGIN_MAIN_FILE', GUTENBERG_PLUGIN_FILE );
+}
 if ( ! defined( 'GUTENBERG_PLUGIN_BASENAME' ) ) {
 	define( 'GUTENBERG_PLUGIN_BASENAME', plugin_basename( GUTENBERG_PLUGIN_FILE ) );
 }
