@@ -7,8 +7,13 @@
 
 namespace Progressus\Gutenberg\Admin\Widget;
 
-use Progressus\Gutenberg\Admin\Widget_Handler_Interface;
+use Progressus\Gutenberg\Admin\Helper\Block_Builder;
 use Progressus\Gutenberg\Admin\Helper\Style_Parser;
+use Progressus\Gutenberg\Admin\Widget_Handler_Interface;
+
+use function esc_attr;
+use function esc_url;
+use function wp_strip_all_tags;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -21,106 +26,131 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 	 * Handle conversion of Elementor button to Gutenberg block.
 	 *
 	 * @param array $element The Elementor element data.
-	 * @return string The Gutenberg block content.
 	 */
 	public function handle( array $element ): string {
-		$settings     = $element['settings'] ?? array();
-		$text         = $settings['text'] ?? '';
-		$url          = $settings['link']['url'] ?? '';
-		$custom_class = $settings['_css_classes'] ?? '';
-		$custom_id    = $settings['_element_id'] ?? '';
-		$custom_css   = $settings['custom_css'] ?? '';
+		$settings   = is_array( $element['settings'] ?? null ) ? $element['settings'] : array();
+		$text       = isset( $settings['text'] ) ? trim( (string) $settings['text'] ) : '';
+		$link_data  = is_array( $settings['link'] ?? null ) ? $settings['link'] : array();
+		$url        = isset( $link_data['url'] ) ? esc_url( (string) $link_data['url'] ) : '';
+		$custom_css = isset( $settings['custom_css'] ) ? (string) $settings['custom_css'] : '';
+		$custom_raw = isset( $settings['_css_classes'] ) ? (string) $settings['_css_classes'] : '';
+		$text_color = isset( $settings['button_text_color'] ) ? strtolower( (string) $settings['button_text_color'] ) : '';
+		$background = isset( $settings['background_color'] ) ? strtolower( (string) $settings['background_color'] ) : '';
 
-		$class = '';
-		if ( ! empty( $custom_class ) ) {
-			$class .= ' ' . esc_attr( $custom_class );
+		if ( '' === $text ) {
+			$text = isset( $link_data['custom_text'] ) ? trim( (string) $link_data['custom_text'] ) : '';
 		}
 
-		$attrs_array = array();
-		$inline_style = '';
-
-		if ( $url ) {
-			$attrs_array['url'] = esc_url( $url );
+		if ( '' === $text && '' === $url ) {
+			return '';
 		}
 
-		if ( ! empty( $settings['button_text_color'] ) ) {
-			$txt = strtolower( $settings['button_text_color'] );
-			$class .= ' has-text-color has-link-color';
-			if ( $this->is_preset_color_slug( $txt ) ) {
-				$attrs_array['textColor'] = $txt;
-				$class .= ' has-text-color has-link-color';
-				$attrs_array['style']['elements']['link']['color']['text'] = 'var:preset|color|' . $txt;
-			} else {
-				$attrs_array['style']['color']['text'] = $txt;
-				$attrs_array['style']['elements']['link']['color']['text'] = $txt;
-				$inline_style .= 'color:' . $txt . ';';
-			}
-
-		}
-
-		if ( ! empty( $settings['background_color'] ) ) {
-			$bg = strtolower( $settings['background_color'] );
-			$class .= ' has-background';
-			if ( $this->is_preset_color_slug( $bg ) ) {
-				$attrs_array['backgroundColor'] = $bg;
-			} else {
-				$attrs_array['style']['color']['background'] = $bg;
-				$inline_style .= 'background-color:' . $bg . ';';
+		$custom_classes = array();
+		if ( '' !== $custom_raw ) {
+			foreach ( preg_split( '/\s+/', $custom_raw ) as $class ) {
+				$clean = Style_Parser::clean_class( $class );
+				if ( '' === $clean ) {
+					continue;
+				}
+				$custom_classes[] = $clean;
 			}
 		}
 
-		// Typography, spacing, border.
-		$typography = Style_Parser::parse_typography( $settings );
-		$spacing    = Style_Parser::parse_spacing( $settings );
-		$border     = Style_Parser::parse_border( $settings );
-
-		if ( ! empty( $typography['attributes'] ) ) {
-			$attrs_array['style']['typography'] = $typography['attributes'];
-		}
-		if ( ! empty( $spacing['attributes'] ) ) {
-			$attrs_array['style']['spacing'] = $spacing['attributes'];
-		}
-		if ( ! empty( $border['attributes'] ) ) {
-			$attrs_array['style']['border'] = $border['attributes'];
+		$button_attributes = array();
+		if ( ! empty( $custom_classes ) ) {
+			$button_attributes['className'] = implode( ' ', array_unique( $custom_classes ) );
 		}
 
-		// Inline style fallback (optional, safe for editor).
-		$inline_style .= $typography['style'] . $spacing['style'] . $border['style'];
+		$anchor_classes = array( 'wp-block-button__link', 'wp-element-button' );
+		$anchor_style   = array();
 
-		// Remove trailing semicolon if exists.
-		$inline_style = rtrim( trim( $inline_style ), ';' );
+		if ( '' !== $text_color ) {
+			if ( $this->is_preset_color_slug( $text_color ) ) {
+				$button_attributes['textColor'] = $text_color;
+				$anchor_classes[]               = 'has-text-color';
+				$anchor_classes[]               = 'has-' . Style_Parser::clean_class( $text_color ) . '-color';
+			} elseif ( $this->is_hex_color( $text_color ) ) {
+				$button_attributes['style']['color']['text'] = $text_color;
+				$anchor_classes[]                            = 'has-text-color';
+				$anchor_style[]                              = 'color:' . $text_color;
+			}
+		}
 
-		// Encode attributes.
-		$attrs   = wp_json_encode( $attrs_array );
-		$id_attr = ! empty( $custom_id ) ? ' id="' . esc_attr( $custom_id ) . '"' : '';
+		if ( '' !== $background ) {
+			if ( $this->is_preset_color_slug( $background ) ) {
+				$button_attributes['backgroundColor'] = $background;
+				$anchor_classes[]                     = 'has-background';
+				$anchor_classes[]                     = 'has-' . Style_Parser::clean_class( $background ) . '-background-color';
+			} elseif ( $this->is_hex_color( $background ) ) {
+				$button_attributes['style']['color']['background'] = $background;
+				$anchor_classes[]                                  = 'has-background';
+				$anchor_style[]                                    = 'background-color:' . $background;
+			}
+		}
 
+		if ( '' !== $url ) {
+			$button_attributes['url'] = $url;
+		}
 
-		// Build block content.
-		$block_content = sprintf(
-			'<!-- wp:buttons --><div class="wp-block-buttons"><!-- wp:button %1s --><div class="wp-block-button"><a%2s class="wp-block-button__link %3s wp-element-button"%4s%5s>%6s</a></div><!-- /wp:button --></div><!-- /wp:buttons -->' . "\n",
-			$attrs,
-			$id_attr,
-			esc_attr( $class ),
-			$inline_style ? ' style="' . esc_attr( $inline_style ) . '"' : '',
-			$url ? ' href="' . esc_url( $url ) . '"' : '',
-			esc_html( $text )
-		);
+		$rel_tokens = array();
+		if ( ! empty( $link_data['is_external'] ) ) {
+			$button_attributes['linkTarget'] = '_blank';
+			$rel_tokens[]                    = 'noopener';
+		}
 
-		// Save custom CSS if any.
-		if ( ! empty( $custom_css ) ) {
+		if ( ! empty( $link_data['nofollow'] ) ) {
+			$rel_tokens[] = 'nofollow';
+		}
+
+		if ( ! empty( $rel_tokens ) ) {
+			$button_attributes['rel'] = implode( ' ', array_unique( $rel_tokens ) );
+		}
+
+		if ( '' !== $custom_css ) {
 			Style_Parser::save_custom_css( $custom_css );
 		}
 
-		return $block_content;
+		$anchor_attrs   = array();
+		$anchor_attrs[] = 'class="' . esc_attr( implode( ' ', array_unique( $anchor_classes ) ) ) . '"';
+
+		if ( '' !== $url ) {
+			$anchor_attrs[] = 'href="' . $url . '"';
+		}
+
+		if ( ! empty( $link_data['is_external'] ) ) {
+			$anchor_attrs[] = 'target="_blank"';
+		}
+
+		if ( ! empty( $rel_tokens ) ) {
+			$anchor_attrs[] = 'rel="' . esc_attr( implode( ' ', array_unique( $rel_tokens ) ) ) . '"';
+		}
+
+		if ( ! empty( $anchor_style ) ) {
+			$anchor_attrs[] = 'style="' . esc_attr( implode( ';', $anchor_style ) ) . '"';
+		}
+
+		$anchor_html = sprintf(
+			'<a %s>%s</a>',
+			implode( ' ', $anchor_attrs ),
+			wp_strip_all_tags( $text )
+		);
+
+		$button_block = Block_Builder::build( 'button', $button_attributes, $anchor_html );
+
+		return Block_Builder::build( 'buttons', array(), $button_block );
 	}
 
 	/**
 	 * Check if a given color value is a Gutenberg preset slug.
-	 *
-	 * @param string $color Color value.
-	 * @return bool
 	 */
 	private function is_preset_color_slug( string $color ): bool {
-		return ! empty( $color ) && strpos( $color, '#' ) === false;
+		return '' !== $color && false === strpos( $color, '#' );
+	}
+
+	/**
+	 * Determine if the provided color string is hexadecimal.
+	 */
+	private function is_hex_color( string $color ): bool {
+		return 1 === preg_match( '/^#([0-9a-f]{3}|[0-9a-f]{6})$/i', $color );
 	}
 }
