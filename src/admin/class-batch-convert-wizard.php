@@ -1361,6 +1361,15 @@ class Batch_Convert_Wizard {
 		$this->store_template_part_meta( $target_id, $template_info );
 		$this->update_template_part_role( $target_id, (string) $template_info['role'], (string) $template_info['type'] );
 
+        // force it to become the actual default template part in the active block theme.
+		if ( self::TEMPLATE_ROLE_DEFAULT_HEADER === $template_info['role'] && 'header' === $template_info['type'] ) {
+			$this->force_block_theme_default_header( $target_id );
+		}
+
+		if ( self::TEMPLATE_ROLE_DEFAULT_FOOTER === $template_info['role'] && 'footer' === $template_info['type'] ) {
+			$this->force_block_theme_default_footer( $target_id );
+		}
+
 		$label   = 'header' === $template_info['type'] ? esc_html__( 'header', 'elementor-to-gutenberg' ) : esc_html__( 'footer', 'elementor-to-gutenberg' );
 		$title   = get_the_title( $post );
 		$message = sprintf( esc_html__( 'Converted %1$s “%2$s”.', 'elementor-to-gutenberg' ), $label, $title );
@@ -1443,6 +1452,137 @@ class Batch_Convert_Wizard {
 		}
 
 		update_post_meta( $target_id, '_ele2gb_template_role', $role );
+	}
+
+	/**
+	 * Force a converted template part to act as the default FSE header.
+	 * @param int $target_id Template part post ID.
+	 */
+	private function force_block_theme_default_header( int $target_id ): void {
+		if ( ! function_exists( 'wp_is_block_theme' ) || ! wp_is_block_theme() ) {
+			return;
+		}
+
+		$post = get_post( $target_id );
+		if ( ! $post instanceof WP_Post || 'wp_template_part' !== $post->post_type ) {
+			return;
+		}
+
+		$theme = get_stylesheet();
+
+		// Attach the template part to the current theme and mark it as header area.
+		if ( $theme ) {
+			wp_set_post_terms( $target_id, array( $theme ), 'wp_theme', false );
+		}
+		wp_set_post_terms( $target_id, array( 'header' ), 'wp_template_part_area', false );
+
+		// Find any existing "header" template parts.
+		$existing_query = new WP_Query(
+			array(
+				'post_type'      => 'wp_template_part',
+				'post_status'    => array( 'publish', 'draft', 'pending', 'future', 'private' ),
+				'posts_per_page' => - 1,
+				'name'           => 'header',
+				'tax_query'      => array(
+					'relation' => 'AND',
+					array(
+						'taxonomy' => 'wp_theme',
+						'field'    => 'slug',
+						'terms'    => array( $theme ),
+					),
+					array(
+						'taxonomy' => 'wp_template_part_area',
+						'field'    => 'slug',
+						'terms'    => array( 'header' ),
+					),
+				),
+			)
+		);
+
+		if ( $existing_query->have_posts() ) {
+			foreach ( $existing_query->posts as $existing ) {
+				$existing_id = (int) $existing->ID;
+				if ( $existing_id === $target_id ) {
+					continue;
+				}
+
+				update_post_meta( $existing_id, '_ele2gb_template_role', self::TEMPLATE_ROLE_EXTRA );
+			}
+		}
+
+		wp_reset_postdata();
+
+		wp_update_post(
+			array(
+				'ID'        => $target_id,
+				'post_name' => 'header',
+			)
+		);
+	}
+
+	/**
+	 * Force a converted template part to act as the default FSE footer.
+	 *
+	 * @param int $target_id Template part post ID.
+	 */
+	private function force_block_theme_default_footer( int $target_id ): void {
+		if ( ! function_exists( 'wp_is_block_theme' ) || ! wp_is_block_theme() ) {
+			return;
+		}
+
+		$post = get_post( $target_id );
+		if ( ! $post instanceof WP_Post || 'wp_template_part' !== $post->post_type ) {
+			return;
+		}
+
+		$theme = get_stylesheet();
+
+		if ( $theme ) {
+			wp_set_post_terms( $target_id, array( $theme ), 'wp_theme', false );
+		}
+		wp_set_post_terms( $target_id, array( 'footer' ), 'wp_template_part_area', false );
+
+		$existing_query = new WP_Query(
+			array(
+				'post_type'      => 'wp_template_part',
+				'post_status'    => array( 'publish', 'draft', 'pending', 'future', 'private' ),
+				'posts_per_page' => - 1,
+				'name'           => 'footer',
+				'tax_query'      => array(
+					'relation' => 'AND',
+					array(
+						'taxonomy' => 'wp_theme',
+						'field'    => 'slug',
+						'terms'    => array( $theme ),
+					),
+					array(
+						'taxonomy' => 'wp_template_part_area',
+						'field'    => 'slug',
+						'terms'    => array( 'footer' ),
+					),
+				),
+			)
+		);
+
+		if ( $existing_query->have_posts() ) {
+			foreach ( $existing_query->posts as $existing ) {
+				$existing_id = (int) $existing->ID;
+				if ( $existing_id === $target_id ) {
+					continue;
+				}
+
+				update_post_meta( $existing_id, '_ele2gb_template_role', self::TEMPLATE_ROLE_EXTRA );
+			}
+		}
+
+		wp_reset_postdata();
+
+		wp_update_post(
+			array(
+				'ID'        => $target_id,
+				'post_name' => 'footer',
+			)
+		);
 	}
 
 	/**
