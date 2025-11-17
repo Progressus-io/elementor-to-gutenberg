@@ -77,12 +77,22 @@
             this.config = config;
             this.strings = config.strings || {};
             this.pages = Array.isArray(config.pages) ? config.pages.slice() : [];
+            this.templates = config.templates || {
+                headers: [],
+                footers: [],
+                defaults: { header: 0, footer: 0 },
+                counts: { headers: 0, footers: 0 },
+            };
             this.state = {
                 currentStep: 'mode',
                 mode: 'auto',
                 modeSelection: 'auto',
                 selectedPageIds: new Set(),
                 disabledMeta: new Set(),
+                selectedHeaderIds: new Set(),
+                selectedFooterIds: new Set(),
+                defaultHeaderId: 0,
+                defaultFooterId: 0,
                 skipConverted: true,
                 conflictPolicy: 'skip',
                 tablePage: 1,
@@ -116,11 +126,18 @@
         }
 
         resetSelectionForMode(mode) {
+            const defaultHeader = this.templates && this.templates.defaults ? Number(this.templates.defaults.header) || 0 : 0;
+            const defaultFooter = this.templates && this.templates.defaults ? Number(this.templates.defaults.footer) || 0 : 0;
+
             if (mode === 'auto') {
                 this.state.mode = 'auto';
                 this.state.modeSelection = 'auto';
                 this.state.selectedPageIds = new Set(this.pages.map((page) => page.id));
                 this.state.disabledMeta = new Set();
+                this.state.selectedHeaderIds = new Set();
+                this.state.selectedFooterIds = new Set();
+                this.state.defaultHeaderId = defaultHeader;
+                this.state.defaultFooterId = defaultFooter;
                 this.state.skipConverted = true;
                 this.state.tablePage = 1;
             } else {
@@ -128,9 +145,122 @@
                 this.state.modeSelection = 'custom';
                 this.state.selectedPageIds = new Set();
                 this.state.disabledMeta = new Set();
+                this.state.selectedHeaderIds = new Set(this.getTemplatesFor('header').map((template) => Number(template.id)));
+                this.state.selectedFooterIds = new Set(this.getTemplatesFor('footer').map((template) => Number(template.id)));
+                this.state.defaultHeaderId = this.pickDefaultTemplate('header', this.state.selectedHeaderIds, defaultHeader);
+                this.state.defaultFooterId = this.pickDefaultTemplate('footer', this.state.selectedFooterIds, defaultFooter);
                 this.state.skipConverted = true;
                 this.state.tablePage = 1;
             }
+
+            this.ensureDefaultTemplate('header');
+            this.ensureDefaultTemplate('footer');
+        }
+
+        getTemplatesFor(type) {
+            if (type === 'header') {
+                return Array.isArray(this.templates.headers) ? this.templates.headers : [];
+            }
+            if (type === 'footer') {
+                return Array.isArray(this.templates.footers) ? this.templates.footers : [];
+            }
+            return [];
+        }
+
+        getTemplateById(id) {
+            const targetId = Number(id);
+            const header = this.getTemplatesFor('header').find((template) => Number(template.id) === targetId);
+            if (header) {
+                return header;
+            }
+            return this.getTemplatesFor('footer').find((template) => Number(template.id) === targetId) || null;
+        }
+
+        pickDefaultTemplate(type, selectedSet, fallbackId) {
+            if (fallbackId && selectedSet.has(fallbackId)) {
+                return fallbackId;
+            }
+            const iterator = selectedSet.values();
+            const first = iterator.next();
+            if (!first.done) {
+                return first.value;
+            }
+            return 0;
+        }
+
+        ensureDefaultTemplate(type) {
+            const key = type === 'header' ? 'defaultHeaderId' : 'defaultFooterId';
+            const set = type === 'header' ? this.state.selectedHeaderIds : this.state.selectedFooterIds;
+            if (!set.size) {
+                this.state[key] = 0;
+                return;
+            }
+            if (!set.has(this.state[key])) {
+                this.state[key] = this.pickDefaultTemplate(type, set, 0);
+            }
+        }
+
+        toggleTemplateSelection(type, id, checked) {
+            const templateId = Number(id);
+            const set = type === 'header' ? this.state.selectedHeaderIds : this.state.selectedFooterIds;
+            if (checked) {
+                set.add(templateId);
+            } else {
+                set.delete(templateId);
+            }
+            this.ensureDefaultTemplate(type);
+            this.clearNotice();
+            this.render();
+        }
+
+        setDefaultTemplate(type, id) {
+            const key = type === 'header' ? 'defaultHeaderId' : 'defaultFooterId';
+            const set = type === 'header' ? this.state.selectedHeaderIds : this.state.selectedFooterIds;
+            const templateId = Number(id);
+            if (!set.has(templateId)) {
+                return;
+            }
+            if (this.state[key] !== templateId) {
+                this.state[key] = templateId;
+                this.clearNotice();
+                this.render();
+            }
+        }
+
+        getSelectedTemplateIds(type) {
+            const set = type === 'header' ? this.state.selectedHeaderIds : this.state.selectedFooterIds;
+            return Array.from(set.values());
+        }
+
+        getSelectedTemplates(type) {
+            const set = type === 'header' ? this.state.selectedHeaderIds : this.state.selectedFooterIds;
+            return this.getTemplatesFor(type).filter((template) => set.has(template.id));
+        }
+
+        hasAnySelection() {
+            if (this.state.mode === 'auto') {
+                return true;
+            }
+            return this.state.selectedPageIds.size > 0 || this.state.selectedHeaderIds.size > 0 || this.state.selectedFooterIds.size > 0;
+        }
+
+        formatResultType(type) {
+            if (!type) {
+                return '';
+            }
+            const normalized = String(type);
+            return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+        }
+
+        formatResultRole(role) {
+            if (!role) {
+                return '';
+            }
+            return role
+                .split('_')
+                .filter(Boolean)
+                .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+                .join(' ');
         }
 
         getStepSequence() {
@@ -141,6 +271,7 @@
             const steps = ['mode'];
             if (this.state.mode === 'custom') {
                 steps.push('select');
+                steps.push('templates');
             }
             if (this.shouldShowConflictStep()) {
                 steps.push('conflicts');
@@ -166,6 +297,8 @@
                     const summary = formatString(this.strings.selectionSummary || '%1$d selected / %2$d total', this.state.selectedPageIds.size, this.pages.length);
                     return (this.strings.selectPagesTitle || 'Select Pages') + ' (' + summary + ')';
                 }
+                case 'templates':
+                    return this.strings.headerFooterStepTitle || 'Header & Footer Templates';
                 case 'conflicts':
                     return this.strings.conflictsTitle || 'Resolve Conflicts';
                 case 'review':
@@ -229,6 +362,7 @@
                 this.state.selectedPageIds.delete(id);
                 this.state.disabledMeta.delete(id);
             }
+            this.clearNotice();
             this.render();
         }
 
@@ -293,6 +427,37 @@
             }
         }
 
+        cancelCurrentJob() {
+            if (!this.state.job || !this.state.job.id) {
+                return;
+            }
+
+            this.stopPolling();
+
+            this.request('ele2gb_cancel_job', { jobId: this.state.job.id })
+                .then((response) => {
+                    // If PHP returns the cancelled job, keep it for display; otherwise clear.
+                    if (response && response.job) {
+                        this.state.job = response.job;
+                    } else {
+                        this.state.job = null;
+                    }
+
+                    this.state.isSubmitting = false;
+                    this.setNotice('info', this.strings.jobCancelled || 'Conversion was cancelled.');
+                    this.render();
+                })
+                .catch((error) => {
+                    this.state.isSubmitting = false;
+                    const message =
+                        (error && error.message) ||
+                        this.strings.retryFailed ||
+                        'Unable to cancel conversion.';
+                    this.setNotice('error', message);
+                    this.render();
+                });
+        }
+
         request(action, payload) {
             const formData = new window.FormData();
             formData.append('action', action);
@@ -323,8 +488,10 @@
 
         startConversion() {
             const selected = Array.from(this.state.selectedPageIds);
-            if (!selected.length && this.state.mode !== 'auto') {
-                this.setNotice('error', this.strings.noSelectionError || 'Select at least one page before continuing.');
+            const selectedHeaders = this.getSelectedTemplateIds('header');
+            const selectedFooters = this.getSelectedTemplateIds('footer');
+            if (this.state.mode !== 'auto' && !selected.length && !selectedHeaders.length && !selectedFooters.length) {
+                this.setNotice('error', this.strings.noSelectionError || 'Select at least one page or template before continuing.');
                 return;
             }
             this.clearNotice();
@@ -338,6 +505,13 @@
                 skipConverted: this.state.skipConverted ? 1 : 0,
                 conflictPolicy: this.state.conflictPolicy,
             };
+
+            if (this.state.mode === 'custom') {
+                payload.headerTemplates = selectedHeaders;
+                payload.footerTemplates = selectedFooters;
+                payload.defaultHeader = this.state.defaultHeaderId || 0;
+                payload.defaultFooter = this.state.defaultFooterId || 0;
+            }
 
             this.request('ele2gb_start_job', payload)
                 .then((response) => {
@@ -371,11 +545,19 @@
             payload.disabledMeta = keepMeta ? [] : [pageId];
             payload.skipConverted = 0;
             payload.conflictPolicy = this.state.job ? this.state.job.conflictPolicy || 'skip' : 'skip';
+            delete payload.headerTemplates;
+            delete payload.footerTemplates;
+            delete payload.defaultHeader;
+            delete payload.defaultFooter;
 
             this.state.mode = 'custom';
             this.state.modeSelection = 'custom';
             this.state.selectedPageIds = new Set([pageId]);
             this.state.disabledMeta = keepMeta ? new Set() : new Set([pageId]);
+            this.state.selectedHeaderIds = new Set();
+            this.state.selectedFooterIds = new Set();
+            this.state.defaultHeaderId = 0;
+            this.state.defaultFooterId = 0;
             this.state.skipConverted = false;
             this.state.currentStep = 'progress';
             this.state.lastPayload = payload;
@@ -422,20 +604,13 @@
             this.stopPolling();
             this.state = Object.assign(this.state, {
                 currentStep: 'mode',
-                mode: 'auto',
-                modeSelection: 'auto',
-                selectedPageIds: new Set(this.pages.map((page) => page.id)),
-                disabledMeta: new Set(),
-                skipConverted: true,
-                conflictPolicy: 'skip',
-                tablePage: 1,
-                notice: null,
                 isSubmitting: false,
                 job: null,
                 pollTimer: null,
                 lastPayload: null,
                 resumed: false,
             });
+            this.resetSelectionForMode('auto');
             this.clearNotice();
             this.render();
         }
@@ -657,10 +832,159 @@
             buttons.appendChild(backBtn);
 
             const continueBtn = createButton(this.strings.continue || 'Continue', 'button button-primary');
-            continueBtn.disabled = this.state.selectedPageIds.size === 0;
+            continueBtn.disabled = !this.hasAnySelection();
             continueBtn.addEventListener('click', () => {
-                if (this.state.selectedPageIds.size === 0) {
-                    this.setNotice('error', this.strings.noSelectionError || 'Select at least one page before continuing.');
+                if (!this.hasAnySelection()) {
+                    this.setNotice('error', this.strings.noSelectionError || 'Select at least one page or template before continuing.');
+                    return;
+                }
+                this.clearNotice();
+                this.goToNext();
+            });
+            buttons.appendChild(continueBtn);
+            container.appendChild(buttons);
+
+            return container;
+        }
+
+        renderTemplatesGroup(type, label) {
+            const container = createElement('div', 'ele2gb-template-group');
+            container.appendChild(createElement('h3', null, label));
+
+            const templates = this.getTemplatesFor(type);
+            const selectedSet = type === 'header' ? this.state.selectedHeaderIds : this.state.selectedFooterIds;
+            const defaultId = type === 'header' ? this.state.defaultHeaderId : this.state.defaultFooterId;
+
+            if (!templates.length) {
+                const noneMessage = type === 'header' ? (this.strings.noHeadersFound || 'No header templates detected.') : (this.strings.noFootersFound || 'No footer templates detected.');
+                container.appendChild(createElement('p', 'ele2gb-step-description', noneMessage));
+                return container;
+            }
+
+            const tableWrapper = createElement('div', 'ele2gb-table-wrapper');
+            const table = createElement('table', 'ele2gb-wizard-table widefat fixed striped');
+            const thead = document.createElement('thead');
+            const headRow = document.createElement('tr');
+
+            const selectTh = document.createElement('th');
+            headRow.appendChild(selectTh);
+
+            [
+                this.strings.tableTitle || 'Title',
+                this.strings.tableStatus || 'Status',
+                this.strings.tableLastConverted || 'Last converted',
+            ].forEach((heading) => {
+                const th = document.createElement('th');
+                th.textContent = heading;
+                headRow.appendChild(th);
+            });
+
+            thead.appendChild(headRow);
+            table.appendChild(thead);
+
+            const tbody = document.createElement('tbody');
+            templates.forEach((template) => {
+                const id = Number(template.id);
+                const tr = document.createElement('tr');
+
+                const selectTd = document.createElement('td');
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = selectedSet.has(id);
+                checkbox.addEventListener('change', () => {
+                    this.toggleTemplateSelection(type, id, checkbox.checked);
+                });
+                selectTd.appendChild(checkbox);
+                tr.appendChild(selectTd);
+
+                const titleTd = document.createElement('td');
+                const titleWrapper = createElement('div', 'ele2gb-template-title', template.title);
+                titleTd.appendChild(titleWrapper);
+                const metaLine = createElement('div', 'ele2gb-template-meta');
+                if (template.sourceLabel) {
+                    const source = createElement('span', 'ele2gb-template-source', template.sourceLabel);
+                    metaLine.appendChild(source);
+                }
+                if (template.isLikelyGlobal) {
+                    const flag = createElement('span', 'ele2gb-template-flag', this.strings.likelyGlobal || 'Likely global');
+                    metaLine.appendChild(flag);
+                }
+                if (metaLine.childNodes.length) {
+                    titleTd.appendChild(metaLine);
+                }
+                tr.appendChild(titleTd);
+
+                const statusTd = document.createElement('td');
+                const badgeInfo = STATUS_BADGES[template.conversionStatus] || STATUS_BADGES.not_converted;
+                const badgeLabel = badgeInfo ? (this.strings[badgeInfo.labelKey] || badgeInfo.labelKey) : (this.strings.statusUnknown || 'Unknown');
+                const badge = createElement('span', 'ele2gb-status-badge ' + (badgeInfo ? badgeInfo.className : ''), badgeLabel);
+                statusTd.appendChild(badge);
+                if (template.lastResultMessage) {
+                    statusTd.appendChild(createElement('div', 'ele2gb-template-message', template.lastResultMessage));
+                }
+                tr.appendChild(statusTd);
+
+                const lastTd = document.createElement('td');
+                lastTd.textContent = template.lastConverted || '—';
+                tr.appendChild(lastTd);
+
+                tbody.appendChild(tr);
+            });
+
+            table.appendChild(tbody);
+            tableWrapper.appendChild(table);
+            container.appendChild(tableWrapper);
+
+            const defaultWrapper = createElement('div', 'ele2gb-default-selection');
+            const labelText = type === 'header' ? (this.strings.defaultHeaderLabel || 'Default header after conversion') : (this.strings.defaultFooterLabel || 'Default footer after conversion');
+            defaultWrapper.appendChild(createElement('p', 'ele2gb-step-description', labelText));
+
+            const options = createElement('div', 'ele2gb-default-options');
+            const selectedTemplates = templates.filter((template) => selectedSet.has(Number(template.id)));
+            if (selectedTemplates.length) {
+                selectedTemplates.forEach((template) => {
+                    const id = Number(template.id);
+                    const optionLabel = document.createElement('label');
+                    const input = document.createElement('input');
+                    input.type = 'radio';
+                    input.name = type === 'header' ? 'ele2gb-default-header' : 'ele2gb-default-footer';
+                    input.value = id;
+                    input.checked = defaultId === id;
+                    input.addEventListener('change', () => {
+                        this.setDefaultTemplate(type, id);
+                    });
+                    optionLabel.appendChild(input);
+                    optionLabel.appendChild(createElement('span', null, template.title));
+                    options.appendChild(optionLabel);
+                });
+            } else {
+                const message = type === 'header' ? (this.strings.noHeadersSelected || 'No headers selected for conversion.') : (this.strings.noFootersSelected || 'No footers selected for conversion.');
+                options.appendChild(createElement('p', 'ele2gb-step-description', message));
+            }
+
+            defaultWrapper.appendChild(options);
+            container.appendChild(defaultWrapper);
+
+            return container;
+        }
+
+        renderTemplatesStep() {
+            const container = createElement('div');
+            container.appendChild(createElement('h2', 'ele2gb-wizard-step-title', this.strings.headerFooterStepTitle || 'Header & Footer Templates'));
+
+            container.appendChild(this.renderTemplatesGroup('header', this.strings.headersLabel || 'Headers'));
+            container.appendChild(this.renderTemplatesGroup('footer', this.strings.footersLabel || 'Footers'));
+
+            const buttons = createElement('div', 'ele2gb-wizard-buttons');
+            const backBtn = createButton(this.strings.back || 'Back', 'button button-secondary');
+            backBtn.addEventListener('click', () => this.goToPrevious());
+            buttons.appendChild(backBtn);
+
+            const continueBtn = createButton(this.strings.continue || 'Continue', 'button button-primary');
+            continueBtn.disabled = !this.hasAnySelection();
+            continueBtn.addEventListener('click', () => {
+                if (!this.hasAnySelection()) {
+                    this.setNotice('error', this.strings.noSelectionError || 'Select at least one page or template before continuing.');
                     return;
                 }
                 this.clearNotice();
@@ -787,6 +1111,19 @@
                 list.appendChild(createElement('li', null, metaNote));
             }
 
+            if (this.state.mode === 'custom') {
+                const headerCount = this.state.selectedHeaderIds.size;
+                const footerCount = this.state.selectedFooterIds.size;
+                if (headerCount || footerCount) {
+                    list.appendChild(createElement('li', null, formatString(this.strings.headerFooterSummary || '%1$d headers and %2$d footers selected for conversion.', headerCount, footerCount)));
+                    const defaultHeader = headerCount ? this.getTemplateById(this.state.defaultHeaderId) : null;
+                    const defaultFooter = footerCount ? this.getTemplateById(this.state.defaultFooterId) : null;
+                    const headerTitle = defaultHeader ? defaultHeader.title : '—';
+                    const footerTitle = defaultFooter ? defaultFooter.title : '—';
+                    list.appendChild(createElement('li', null, formatString(this.strings.headerFooterDefaults || 'Default header: %1$s — Default footer: %2$s', headerTitle, footerTitle)));
+                }
+            }
+
             container.appendChild(list);
             container.appendChild(createElement('p', 'ele2gb-wizard-footer-note', this.strings.backgroundInfo || 'Conversion runs in the background. You can safely close this page.'));
 
@@ -858,7 +1195,18 @@
             viewLink.href = 'edit.php?post_type=page';
             viewLink.textContent = this.strings.viewPages || 'View converted pages';
             actions.appendChild(viewLink);
-
+            if (job.status !== 'completed') {
+                const cancelBtn = createButton(this.strings.cancel || 'Cancel', 'button button-secondary');
+                cancelBtn.addEventListener('click', () => {
+                    if (this.state.isSubmitting) {
+                        return;
+                    }
+                    this.state.isSubmitting = true;
+                    this.render();
+                    this.cancelCurrentJob();
+                });
+                actions.appendChild(cancelBtn);
+            }
             if (job.status === 'completed') {
                 const startNew = createButton(this.strings.startNew || 'Start new conversion', 'button button-primary');
                 startNew.addEventListener('click', () => this.resetWizard());
@@ -895,7 +1243,26 @@
                 const tr = document.createElement('tr');
 
                 const titleTd = document.createElement('td');
-                titleTd.textContent = result.title;
+                const titleWrapper = createElement('div', null, result.title);
+                titleTd.appendChild(titleWrapper);
+                const metaParts = [];
+                const typeLabel = this.formatResultType(result.type);
+                if (typeLabel) {
+                    metaParts.push(typeLabel);
+                }
+                const roleLabel = this.formatResultRole(result.role);
+                if (roleLabel) {
+                    metaParts.push(roleLabel);
+                }
+                if (result.type === 'header' || result.type === 'footer') {
+                    const templateInfo = this.getTemplateById(result.id);
+                    if (templateInfo && templateInfo.sourceLabel) {
+                        metaParts.push(templateInfo.sourceLabel);
+                    }
+                }
+                if (metaParts.length) {
+                    titleTd.appendChild(createElement('div', 'ele2gb-result-meta', metaParts.join(' · ')));
+                }
                 tr.appendChild(titleTd);
 
                 const statusTd = document.createElement('td');
@@ -924,7 +1291,7 @@
                     viewLink.rel = 'noopener noreferrer';
                     actionsTd.appendChild(viewLink);
                 }
-                if (result.status === 'error') {
+                if (result.status === 'error' && result.type === 'page') {
                     const retryLink = document.createElement('a');
                     retryLink.href = '#';
                     retryLink.textContent = this.strings.retry || 'Retry';
@@ -958,6 +1325,9 @@
                     break;
                 case 'select':
                     stepContent = this.renderSelectStep();
+                    break;
+                case 'templates':
+                    stepContent = this.renderTemplatesStep();
                     break;
                 case 'conflicts':
                     stepContent = this.renderConflictStep();

@@ -21,6 +21,7 @@ use function delete_user_meta;
 use function esc_html__;
 use function get_current_user_id;
 use function get_edit_post_link;
+use function get_post_thumbnail_id;
 use function get_option;
 use function get_permalink;
 use function get_post;
@@ -36,13 +37,16 @@ use function plugins_url;
 use function sanitize_key;
 use function sanitize_text_field;
 use function sanitize_title;
+use function set_post_thumbnail;
 use function set_transient;
 use function time;
 use function uniqid;
 use function update_user_meta;
 use function update_post_meta;
+use function add_post_meta;
 use function wp_create_nonce;
 use function wp_die;
+use function delete_post_meta;
 use function wp_enqueue_script;
 use function wp_enqueue_style;
 use function wp_localize_script;
@@ -55,6 +59,7 @@ use function strtotime;
 use function wp_insert_post;
 use function wp_update_post;
 use function is_wp_error;
+use function delete_transient;
 
 use const HOUR_IN_SECONDS;
 
@@ -71,6 +76,8 @@ class Batch_Convert_Wizard {
 	private const NONCE_NAME = 'nonce';
 
 	private const JOB_TRANSIENT_PREFIX = 'ele2gb_job_';
+
+	private const TEMPLATE_SLUG = 'elementor-to-gutenberg-full-width.php';
 
 	private const JOB_TRANSIENT_TTL = 6 * HOUR_IN_SECONDS;
 
@@ -120,6 +127,7 @@ class Batch_Convert_Wizard {
 		add_action( 'wp_ajax_ele2gb_pages', array( $this, 'ajax_get_pages' ) );
 		add_action( 'wp_ajax_ele2gb_start_job', array( $this, 'ajax_start_job' ) );
 		add_action( 'wp_ajax_ele2gb_poll_job', array( $this, 'ajax_poll_job' ) );
+		add_action( 'wp_ajax_ele2gb_cancel_job', array( $this, 'ajax_cancel_job' ) );
 	}
 
 	/**
@@ -361,7 +369,7 @@ class Batch_Convert_Wizard {
 				$options['keep_meta'] = ! empty( $page_info['keep_meta'] );
 
 				$start_time = microtime( true );
-				$result     = Batch_Convert_Wizard::instance()->process_single_post( (int) $page_info['id'], $options );
+				$result     = $this->process_single_post( (int) $page_info['id'], $options );
 				$duration   = max( 0, microtime( true ) - $start_time );
 				$view_url   = $result['target'] ? get_permalink( (int) $result['target'] ) : '';
 				$keep_meta  = ! empty( $page_info['keep_meta'] );
@@ -904,7 +912,6 @@ class Batch_Convert_Wizard {
 	 */
 	private function prepare_job_templates( string $mode, array $selected_headers, array $selected_footers, int $default_header, int $default_footer ): array {
 		$detected = $this->get_header_footer_templates_raw();
-
 		$header_index = array();
 		foreach ( $detected['headers'] as $template ) {
 			$header_index[ (int) $template['id'] ] = $template;
@@ -1053,6 +1060,214 @@ class Batch_Convert_Wizard {
 		}
 
 		return $options;
+	}
+
+	/**
+	 * Process a single page conversion.
+	 *
+	 * @param int   $post_id Post ID.
+	 * @param array $options Conversion options.
+	 */
+	public function process_single_post( int $post_id, array $options ): array {
+		$post   = get_post( $post_id );
+		$result = array(
+			'source'  => $post_id,
+			'status'  => 'skipped',
+			'message' => '',
+			'target'  => 0,
+		);
+
+		if ( ! $post || 'page' !== $post->post_type ) {
+			$message = esc_html__( 'Skipped: only pages can be converted.', 'elementor-to-gutenberg' );
+			Admin_Settings::instance()->record_conversion_result( $post_id, 'skipped', $message );
+			$result['message'] = $message;
+			return $result;
+		}
+
+		$target_id = $this->get_existing_target_id( $post_id );
+		if ( ! empty( $options['skip_converted'] ) && $this->has_been_converted( $post_id, $target_id ) ) {
+			$title   = get_the_title( $post_id );
+			$message = sprintf( esc_html__( 'Skipped: “%s” is already converted.', 'elementor-to-gutenberg' ), $title );
+			Admin_Settings::instance()->record_conversion_result( $post_id, 'skipped', $message, $target_id );
+			$result['message'] = $message;
+			$result['target']  = $target_id;
+			return $result;
+		}
+
+		$json_data = get_post_meta( $post_id, '_elementor_data', true );
+		if ( empty( $json_data ) ) {
+			$message = esc_html__( 'Skipped: Elementor data not found.', 'elementor-to-gutenberg' );
+			Admin_Settings::instance()->record_conversion_result( $post_id, 'skipped', $message );
+			$result['message'] = $message;
+			return $result;
+		}
+
+		$decoded = json_decode( $json_data, true );
+		if ( null === $decoded && JSON_ERROR_NONE !== json_last_error() ) {
+			$message = esc_html__( 'Failed: invalid Elementor JSON data.', 'elementor-to-gutenberg' );
+			Admin_Settings::instance()->record_conversion_result( $post_id, 'error', $message );
+			$result['status']  = 'error';
+			$result['message'] = $message;
+			return $result;
+		}
+
+		$content = Admin_Settings::instance()->convert_json_to_gutenberg_content( array( 'content' => $decoded ) );
+		if ( '' === trim( $content ) ) {
+			$message = esc_html__( 'Failed: conversion produced no Gutenberg content.', 'elementor-to-gutenberg' );
+			Admin_Settings::instance()->record_conversion_result( $post_id, 'error', $message );
+			$result['status']  = 'error';
+			$result['message'] = $message;
+			return $result;
+		}
+
+		if ( ! empty( $options['wrap_full_width'] ) ) {
+			$content = Admin_Settings::instance()->wrap_content_full_width( $content );
+		}
+
+		if ( 'update' === $options['mode'] ) {
+			$save = wp_update_post(
+				array(
+					'ID'           => $post_id,
+					'post_content' => $content,
+				),
+				true
+			);
+			$target_id = is_wp_error( $save ) ? 0 : (int) $save;
+		} else {
+			$save = wp_insert_post(
+				array(
+					'post_title'   => get_the_title( $post_id ) . ' (Gutenberg)',
+					'post_type'    => get_post_type( $post_id ),
+					'post_status'  => get_post_status( $post_id ),
+					'post_author'  => (int) $post->post_author,
+					'post_parent'  => (int) $post->post_parent,
+					'post_content' => $content,
+				),
+				true
+			);
+			$target_id = is_wp_error( $save ) ? 0 : (int) $save;
+
+			if ( $target_id && ! empty( $options['keep_meta'] ) ) {
+				$this->copy_post_meta( $post_id, $target_id );
+			}
+		}
+
+		if ( empty( $target_id ) ) {
+			$message = esc_html__( 'Failed: could not save Gutenberg content.', 'elementor-to-gutenberg' );
+			Admin_Settings::instance()->record_conversion_result( $post_id, 'error', $message );
+			$result['status']  = 'error';
+			$result['message'] = $message;
+			return $result;
+		}
+
+		if ( ! empty( $options['assign_template'] ) ) {
+			update_post_meta( $target_id, '_wp_page_template', self::TEMPLATE_SLUG );
+		}
+
+		if ( 'update' === $options['mode'] && ! empty( $options['keep_meta'] ) ) {
+			$this->copy_post_meta( $post_id, $target_id, true );
+		}
+
+		$title   = get_the_title( $post_id );
+		$message = sprintf( esc_html__( 'Converted “%s” to Gutenberg blocks.', 'elementor-to-gutenberg' ), $title );
+		Admin_Settings::instance()->record_conversion_result( $post_id, 'success', $message, $target_id );
+
+		$result['status']  = 'success';
+		$result['message'] = $message;
+		$result['target']  = $target_id;
+
+		return $result;
+	}
+
+	/**
+	 * Copy non-Elementor meta values to the target post.
+	 *
+	 * @param int  $source_id Source post ID.
+	 * @param int  $target_id Target post ID.
+	 * @param bool $update_mode Whether we are updating the same post.
+	 */
+	private function copy_post_meta( int $source_id, int $target_id, bool $update_mode = false ): void {
+		if ( $update_mode ) {
+			$thumbnail_id = get_post_thumbnail_id( $source_id );
+			if ( $thumbnail_id ) {
+				set_post_thumbnail( $target_id, $thumbnail_id );
+			}
+
+			return;
+		}
+
+		$meta = get_post_meta( $source_id );
+		if ( empty( $meta ) ) {
+			$thumbnail_id = get_post_thumbnail_id( $source_id );
+			if ( $thumbnail_id ) {
+				set_post_thumbnail( $target_id, $thumbnail_id );
+			}
+			return;
+		}
+
+		$skip_keys = array( '_edit_lock', '_edit_last', '_elementor_data' );
+
+		foreach ( $meta as $key => $values ) {
+			if ( 0 === strpos( $key, '_elementor_' ) ) {
+				continue;
+			}
+			if ( 0 === strpos( $key, '_ele2gb_' ) ) {
+				continue;
+			}
+			if ( in_array( $key, $skip_keys, true ) ) {
+				continue;
+			}
+			if ( '_thumbnail_id' === $key ) {
+				continue;
+			}
+
+			if ( ! $update_mode ) {
+				delete_post_meta( $target_id, $key );
+			}
+
+			foreach ( $values as $value ) {
+				add_post_meta( $target_id, $key, maybe_unserialize( $value ) );
+			}
+		}
+
+		$thumbnail_id = get_post_thumbnail_id( $source_id );
+		if ( $thumbnail_id ) {
+			set_post_thumbnail( $target_id, $thumbnail_id );
+		}
+	}
+
+	/**
+	 * Determine whether a post already has a converted target.
+	 *
+	 * @param int $post_id Source post ID.
+	 * @param int $target_id Target post ID.
+	 */
+	private function has_been_converted( int $post_id, int $target_id ): bool {
+		$converted_time = '';
+
+		if ( $target_id > 0 ) {
+			$converted_time = get_post_meta( $target_id, '_ele2gb_last_converted', true );
+		}
+
+		if ( empty( $converted_time ) ) {
+			$converted_time = get_post_meta( $post_id, '_ele2gb_last_converted', true );
+		}
+
+		return ! empty( $converted_time );
+	}
+
+	/**
+	 * Attempt to locate a previously converted target ID.
+	 *
+	 * @param int $post_id Source post ID.
+	 */
+	private function get_existing_target_id( int $post_id ): int {
+		$last_result = get_post_meta( $post_id, '_ele2gb_last_result', true );
+		if ( is_array( $last_result ) && ! empty( $last_result['target'] ) ) {
+			return absint( $last_result['target'] );
+		}
+
+		return 0;
 	}
 
 	/**
@@ -1465,6 +1680,8 @@ class Batch_Convert_Wizard {
 				return 'error';
 			case 'skipped':
 				return 'skipped';
+			case 'cancelled':
+				return 'cancelled';
 			default:
 				return 'not_converted';
 		}
@@ -1533,6 +1750,8 @@ class Batch_Convert_Wizard {
 			'defaultFooterLabel'     => esc_html__( 'Default footer after conversion', 'elementor-to-gutenberg' ),
 			'headerFooterSummary'    => esc_html__( '%1$d headers and %2$d footers selected for conversion.', 'elementor-to-gutenberg' ),
 			'headerFooterDefaults'   => esc_html__( 'Default header: %1$s — Default footer: %2$s', 'elementor-to-gutenberg' ),
+			'cancel'                 => esc_html__( 'Cancel', 'elementor-to-gutenberg' ),
+			'jobCancelled'           => esc_html__( 'Conversion was cancelled.', 'elementor-to-gutenberg' ),
 		);
 	}
 
@@ -1553,4 +1772,56 @@ class Batch_Convert_Wizard {
 
 		return $this->format_job_for_response( $job );
 	}
+
+	/**
+	 * Delete a stored job.
+	 *
+	 * @param string $job_id Job ID.
+	 */
+	private function delete_job( string $job_id ): void {
+		delete_transient( self::JOB_TRANSIENT_PREFIX . $job_id );
+	}
+	/**
+	 * Cancel an existing conversion job via AJAX.
+	 */
+	public function ajax_cancel_job(): void {
+		$this->verify_ajax_request();
+
+		$job_id = isset( $_POST['jobId'] ) ? sanitize_text_field( wp_unslash( $_POST['jobId'] ) ) : '';
+
+		if ( '' === $job_id ) {
+			$job_id = (string) get_user_meta( get_current_user_id(), '_ele2gb_job', true );
+		}
+
+		if ( '' === $job_id ) {
+			wp_send_json_error(
+				array(
+					'message' => esc_html__( 'No active conversion job to cancel.', 'elementor-to-gutenberg' ),
+				)
+			);
+		}
+
+		$job = $this->get_job( $job_id );
+		if ( empty( $job ) || (int) $job['user_id'] !== get_current_user_id() ) {
+			wp_send_json_error(
+				array(
+					'message' => esc_html__( 'Conversion job could not be found.', 'elementor-to-gutenberg' ),
+				)
+			);
+		}
+
+		$job['status']       = 'cancelled';
+		$job['completed_at'] = time();
+
+		$this->store_job( $job );
+		delete_user_meta( get_current_user_id(), '_ele2gb_job' );
+		$this->delete_job( $job_id );
+
+		wp_send_json_success(
+			array(
+				'job' => $this->format_job_for_response( $job ),
+			)
+		);
+	}
+
 }
