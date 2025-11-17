@@ -11,19 +11,50 @@ use Progressus\Gutenberg\Admin\Admin_Settings;
 use WP_Post;
 use WP_Query;
 
+use function absint;
 use function add_submenu_page;
 use function admin_url;
+use function check_ajax_referer;
 use function current_user_can;
+use function date_i18n;
+use function delete_user_meta;
 use function esc_html__;
+use function get_current_user_id;
+use function get_edit_post_link;
+use function get_option;
+use function get_permalink;
+use function get_post;
+use function get_post_meta;
+use function get_post_status;
+use function get_post_type;
+use function get_the_title;
+use function get_user_meta;
+use function get_stylesheet;
+use function is_array;
+use function maybe_unserialize;
 use function plugins_url;
 use function sanitize_key;
+use function sanitize_text_field;
+use function sanitize_title;
+use function set_transient;
+use function time;
+use function uniqid;
+use function update_user_meta;
+use function update_post_meta;
 use function wp_create_nonce;
 use function wp_die;
 use function wp_enqueue_script;
 use function wp_enqueue_style;
 use function wp_localize_script;
+use function wp_set_post_terms;
+use function wp_reset_postdata;
+use function wp_send_json_error;
+use function wp_send_json_success;
 use function wp_unslash;
-
+use function strtotime;
+use function wp_insert_post;
+use function wp_update_post;
+use function is_wp_error;
 
 use const HOUR_IN_SECONDS;
 
@@ -33,10 +64,27 @@ defined( 'ABSPATH' ) || exit;
  * Class Batch_Convert_Wizard
  */
 class Batch_Convert_Wizard {
-	public const MENU_SLUG = 'ele2gb-batch-convert-v2';
+	public const MENU_SLUG = 'ele2gb-batch-convert';
 
 	private const NONCE_ACTION = 'ele2gb_batch_convert';
 
+	private const NONCE_NAME = 'nonce';
+
+	private const JOB_TRANSIENT_PREFIX = 'ele2gb_job_';
+
+	private const JOB_TRANSIENT_TTL = 6 * HOUR_IN_SECONDS;
+
+	private const ITEMS_PER_QUERY = 250;
+
+	private const TEMPLATE_SOURCE_ELEMENTOR_PRO = 'elementor_pro';
+
+	private const TEMPLATE_SOURCE_HEADER_FOOTER = 'header_footer_elementor';
+
+	private const TEMPLATE_ROLE_DEFAULT_HEADER = 'default_header';
+
+	private const TEMPLATE_ROLE_DEFAULT_FOOTER = 'default_footer';
+
+	private const TEMPLATE_ROLE_EXTRA = 'extra';
 
 	/**
 	 * Singleton instance.
@@ -69,6 +117,9 @@ class Batch_Convert_Wizard {
 	private function __construct() {
 		add_action( 'admin_menu', array( $this, 'register_menu' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
+		add_action( 'wp_ajax_ele2gb_pages', array( $this, 'ajax_get_pages' ) );
+		add_action( 'wp_ajax_ele2gb_start_job', array( $this, 'ajax_start_job' ) );
+		add_action( 'wp_ajax_ele2gb_poll_job', array( $this, 'ajax_poll_job' ) );
 	}
 
 	/**
@@ -96,26 +147,30 @@ class Batch_Convert_Wizard {
 		}
 
 		wp_enqueue_style(
-			'ele2gb-batch-wizard-v2',
-			plugins_url( 'assets/css/batch-wizard-v2.css', GUTENBERG_PLUGIN_MAIN_FILE ),
+			'ele2gb-batch-wizard',
+			plugins_url( 'assets/css/batch-wizard.css', GUTENBERG_PLUGIN_MAIN_FILE ),
 			array(),
 			GUTENBERG_PLUGIN_VERSION
 		);
 
 		wp_enqueue_script(
-			'ele2gb-batch-wizard-v2',
-			plugins_url( 'assets/js/batch-convert-wizard-v2.js', GUTENBERG_PLUGIN_MAIN_FILE ),
+			'ele2gb-batch-wizard',
+			plugins_url( 'assets/js/batch-convert-wizard.js', GUTENBERG_PLUGIN_MAIN_FILE ),
 			array(),
 			GUTENBERG_PLUGIN_VERSION,
 			true
 		);
 
 		wp_localize_script(
-			'ele2gb-batch-wizard-v2',
-			'ele2gbBatchWizardV2',
+			'ele2gb-batch-wizard',
+			'ele2gbBatchWizard',
 			array(
 				'ajaxUrl'      => admin_url( 'admin-ajax.php' ),
 				'nonce'        => wp_create_nonce( self::NONCE_ACTION ),
+				'pages'        => $this->get_elementor_pages_data(),
+				'strings'      => $this->get_strings(),
+				'templates'    => $this->get_header_footer_templates_data(),
+				'activeJob'    => $this->get_active_job_for_user(),
 				'userCanEdit'  => current_user_can( 'edit_pages' ),
 				'maxBatchSize' => 1,
 			)
@@ -131,12 +186,1371 @@ class Batch_Convert_Wizard {
 		}
 
 		?>
-		<div class="wrap ele2gb-wizard-v2-wrap">
-			<h1 class="wp-heading-inline"><?php esc_html_e( 'Gutenberg Conversion Wizard', 'elementor-to-gutenberg' ); ?></h1>
-			<p class="description"><?php esc_html_e( 'Convert Elementor pages to Gutenberg blocks.', 'elementor-to-gutenberg' ); ?></p>
-			<div id="ele2gb-batch-convert-v2-root" class="ele2gb-wizard-v2-root" aria-live="polite"></div>
-		</div>
+        <div class="wrap ele2gb-wizard-wrap">
+            <h1 class="wp-heading-inline"><?php esc_html_e( 'Gutenberg Conversion Wizard', 'elementor-to-gutenberg' ); ?></h1>
+            <p class="description"><?php esc_html_e( 'Convert Elementor pages to Gutenberg blocks.', 'elementor-to-gutenberg' ); ?></p>
+            <div id="ele2gb-batch-convert-root" class="ele2gb-wizard-root" aria-live="polite"></div>
+        </div>
 		<?php
 	}
 
+	/**
+	 * Handle AJAX request for Elementor pages data.
+	 */
+	public function ajax_get_pages(): void {
+		$this->verify_ajax_request();
+
+		wp_send_json_success(
+			array(
+				'pages'     => $this->get_elementor_pages_data(),
+				'templates' => $this->get_header_footer_templates_data(),
+			)
+		);
+	}
+
+	/**
+	 * Start a conversion job via AJAX.
+	 */
+	public function ajax_start_job(): void {
+		$this->verify_ajax_request();
+
+		$mode            = isset( $_POST['mode'] ) ? sanitize_key( wp_unslash( $_POST['mode'] ) ) : 'auto';
+		$conflict_policy = isset( $_POST['conflictPolicy'] ) ? sanitize_key( wp_unslash( $_POST['conflictPolicy'] ) ) : 'skip';
+		$skip_converted  = ! empty( $_POST['skipConverted'] );
+
+		$raw_pages      = isset( $_POST['pages'] ) ? wp_unslash( $_POST['pages'] ) : array();
+		$raw_disabled   = isset( $_POST['disabledMeta'] ) ? wp_unslash( $_POST['disabledMeta'] ) : array();
+		$raw_headers    = isset( $_POST['headerTemplates'] ) ? wp_unslash( $_POST['headerTemplates'] ) : array();
+		$raw_footers    = isset( $_POST['footerTemplates'] ) ? wp_unslash( $_POST['footerTemplates'] ) : array();
+		$default_header = isset( $_POST['defaultHeader'] ) ? absint( wp_unslash( $_POST['defaultHeader'] ) ) : 0;
+		$default_footer = isset( $_POST['defaultFooter'] ) ? absint( wp_unslash( $_POST['defaultFooter'] ) ) : 0;
+		$selected_page_ids = array_map( 'absint', (array) $raw_pages );
+		$disabled_meta_ids = array_map( 'absint', (array) $raw_disabled );
+		$selected_headers  = $this->normalize_template_selection( $raw_headers );
+		$selected_footers  = $this->normalize_template_selection( $raw_footers );
+
+		if ( 'auto' === $mode ) {
+			$all_pages         = $this->get_elementor_pages_data();
+			$selected_page_ids = array_map(
+				static function ( array $page ): int {
+					return (int) $page['id'];
+				},
+				$all_pages
+			);
+			$skip_converted = true;
+		}
+
+		$selected_page_ids = array_values( array_unique( array_filter( $selected_page_ids ) ) );
+
+		$pages     = $this->prepare_job_pages( $selected_page_ids, $disabled_meta_ids );
+		$templates = $this->prepare_job_templates(
+			$mode,
+			$selected_headers,
+			$selected_footers,
+			$default_header,
+			$default_footer
+		);
+
+		if ( empty( $pages ) && empty( $templates['headers'] ) && empty( $templates['footers'] ) ) {
+			wp_send_json_error(
+				array(
+					'message' => esc_html__( 'Select at least one page or template before starting a conversion.', 'elementor-to-gutenberg' ),
+				)
+			);
+		}
+
+		$options = $this->build_job_options( $mode, $conflict_policy, $skip_converted );
+
+		$job_id = uniqid( 'ele2gb_', true );
+
+		$job = array(
+			'id'              => $job_id,
+			'user_id'         => get_current_user_id(),
+			'mode'            => $mode,
+			'conflict_policy' => $conflict_policy,
+			'status'          => 'queued',
+			'created_at'      => time(),
+			'started_at'      => 0,
+			'completed_at'    => 0,
+			'processed'       => 0,
+			'pages'           => $pages,
+			'templates'       => $templates,
+			'options'         => $options,
+			'counts'          => array(
+				'success' => 0,
+				'skipped' => 0,
+				'error'   => 0,
+				'partial' => 0,
+			),
+			'results'         => array(),
+		);
+
+		$this->store_job( $job );
+
+		update_user_meta( get_current_user_id(), '_ele2gb_job', $job_id );
+
+		wp_send_json_success(
+			array(
+				'job' => $this->format_job_for_response( $job ),
+			)
+		);
+	}
+
+	/**
+	 * Poll and process the next batch of a conversion job.
+	 */
+	public function ajax_poll_job(): void {
+		$this->verify_ajax_request();
+
+		$job_id = isset( $_POST['jobId'] ) ? sanitize_text_field( wp_unslash( $_POST['jobId'] ) ) : '';
+		if ( '' === $job_id ) {
+			wp_send_json_error(
+				array(
+					'message' => esc_html__( 'Missing job identifier.', 'elementor-to-gutenberg' ),
+				)
+			);
+		}
+
+		$job = $this->get_job( $job_id );
+		if ( empty( $job ) || (int) $job['user_id'] !== get_current_user_id() ) {
+			wp_send_json_error(
+				array(
+					'message' => esc_html__( 'Conversion job could not be found.', 'elementor-to-gutenberg' ),
+				)
+			);
+		}
+
+		if ( 'completed' === $job['status'] ) {
+			wp_send_json_success(
+				array(
+					'job' => $this->format_job_for_response( $job ),
+				)
+			);
+		}
+
+		if ( empty( $job['started_at'] ) ) {
+			$job['started_at'] = time();
+		}
+
+		$job['status'] = 'running';
+
+		$batch_size = 1;
+
+		$items       = $this->get_job_queue( $job );
+		$total_items = count( $items );
+		for ( $i = 0; $i < $batch_size; $i++ ) {
+			if ( $job['processed'] >= $total_items ) {
+				break;
+			}
+
+			$index     = $job['processed'];
+			$item      = $items[ $index ];
+			$result    = array(
+				'status'  => 'skipped',
+				'message' => '',
+				'target'  => 0,
+			);
+			$duration  = 0;
+			$view_url  = '';
+			$keep_meta = false;
+
+			if ( 'page' === $item['type'] ) {
+				$page_info = $item['data'];
+
+				$options = $job['options'];
+				$options['keep_meta'] = ! empty( $page_info['keep_meta'] );
+
+				$start_time = microtime( true );
+				$result     = Batch_Convert_Wizard::instance()->process_single_post( (int) $page_info['id'], $options );
+				$duration   = max( 0, microtime( true ) - $start_time );
+				$view_url   = $result['target'] ? get_permalink( (int) $result['target'] ) : '';
+				$keep_meta  = ! empty( $page_info['keep_meta'] );
+
+				$result_entry = array(
+					'id'        => (int) $page_info['id'],
+					'title'     => $page_info['title'],
+					'status'    => $result['status'],
+					'message'   => $result['message'],
+					'target'    => $result['target'],
+					'duration'  => $duration,
+					'view_url'  => $view_url,
+					'keep_meta' => $keep_meta,
+					'type'      => 'page',
+				);
+			} else {
+				$template_info = $item['data'];
+
+				$start_time = microtime( true );
+				$template_result = $this->process_template_conversion( $template_info, $job['options'] );
+				$duration        = max( 0, microtime( true ) - $start_time );
+				$result          = $template_result;
+				$view_url        = $template_result['view_url'];
+
+				$result_entry = array(
+					'id'        => (int) $template_info['id'],
+					'title'     => $template_info['title'],
+					'status'    => $template_result['status'],
+					'message'   => $template_result['message'],
+					'target'    => $template_result['target'],
+					'duration'  => $duration,
+					'view_url'  => $view_url,
+					'keep_meta' => false,
+					'type'      => $template_info['type'],
+					'role'      => $template_info['role'],
+					'source'    => $template_info['source'],
+				);
+			}
+
+			$job['results'][] = $result_entry;
+
+			if ( isset( $job['counts'][ $result['status'] ] ) ) {
+				$job['counts'][ $result['status'] ]++;
+			}
+
+			$job['processed']++;
+		}
+
+		if ( $job['processed'] >= $total_items ) {
+			$job['status']       = 'completed';
+			$job['completed_at'] = time();
+			delete_user_meta( get_current_user_id(), '_ele2gb_job' );
+		}
+
+		$this->store_job( $job );
+
+		wp_send_json_success(
+			array(
+				'job' => $this->format_job_for_response( $job ),
+			)
+		);
+	}
+
+	/**
+	 * Verify AJAX request permissions and nonce.
+	 */
+	private function verify_ajax_request(): void {
+		if ( ! current_user_can( 'edit_pages' ) ) {
+			wp_send_json_error(
+				array(
+					'message' => esc_html__( 'You do not have permission to perform this action.', 'elementor-to-gutenberg' ),
+				),
+				403
+			);
+		}
+
+		check_ajax_referer( self::NONCE_ACTION, self::NONCE_NAME );
+	}
+
+	/**
+	 * Retrieve Elementor pages data for the wizard.
+	 */
+	private function get_elementor_pages_data(): array {
+		$paged       = 1;
+		$accumulated = array();
+
+		do {
+			$query = new WP_Query(
+				array(
+					'post_type'      => array( 'page' ),
+					'post_status'    => array( 'publish', 'draft', 'pending', 'future', 'private' ),
+					'posts_per_page' => self::ITEMS_PER_QUERY,
+					'paged'          => $paged,
+					'meta_query'     => array(
+						array(
+							'key'     => '_elementor_data',
+							'value'   => '',
+							'compare' => '!=',
+						),
+					),
+				)
+			);
+
+			foreach ( $query->posts as $post ) {
+				$accumulated[] = $this->map_page_to_array( $post );
+			}
+
+			$paged++;
+			$max_pages = (int) $query->max_num_pages;
+			wp_reset_postdata();
+		} while ( $paged <= $max_pages );
+
+		return $accumulated;
+	}
+
+	/**
+	 * Retrieve detected header and footer templates for UI consumption.
+	 */
+	private function get_header_footer_templates_data(): array {
+		$raw = $this->get_header_footer_templates_raw();
+
+		$format = function ( array $template ): array {
+			return array(
+				'id'                => (int) $template['id'],
+				'title'             => $template['title'],
+				'status'            => $template['status'],
+				'conversionStatus'  => $template['conversion_status'],
+				'lastResultStatus'  => $template['last_result_status'],
+				'lastResultMessage' => $template['last_result_message'],
+				'lastConverted'     => $template['last_converted'],
+				'source'            => $template['source'],
+				'sourceLabel'       => $this->get_template_source_label( $template['source'] ),
+				'type'              => $template['type'],
+				'postType'          => $template['post_type'],
+				'isLikelyGlobal'    => ! empty( $template['is_global'] ),
+			);
+		};
+
+		$defaults = array(
+			'header' => $this->pick_default_template_id( $raw['headers'] ),
+			'footer' => $this->pick_default_template_id( $raw['footers'] ),
+		);
+
+		return array(
+			'headers'  => array_map( $format, $raw['headers'] ),
+			'footers'  => array_map( $format, $raw['footers'] ),
+			'defaults' => $defaults,
+			'counts'   => array(
+				'headers' => count( $raw['headers'] ),
+				'footers' => count( $raw['footers'] ),
+			),
+		);
+	}
+
+	/**
+	 * Retrieve detected header/footer templates with metadata.
+	 */
+	private function get_header_footer_templates_raw(): array {
+		if ( null !== $this->cached_templates ) {
+			return $this->cached_templates;
+		}
+
+		$templates = array(
+			'headers' => array(),
+			'footers' => array(),
+		);
+
+		$elementor_pro = $this->find_elementor_pro_templates();
+		$hfe           = $this->find_header_footer_elementor_templates();
+
+		$templates['headers'] = array_merge( $templates['headers'], $elementor_pro['headers'], $hfe['headers'] );
+		$templates['footers'] = array_merge( $templates['footers'], $elementor_pro['footers'], $hfe['footers'] );
+
+		$this->cached_templates = $templates;
+
+		return $templates;
+	}
+
+	/**
+	 * Detect Elementor Pro theme builder templates.
+	 */
+	private function find_elementor_pro_templates(): array {
+		$results = array(
+			'headers' => array(),
+			'footers' => array(),
+		);
+
+		$query = new WP_Query(
+			array(
+				'post_type'      => 'elementor_library',
+				'post_status'    => array( 'publish', 'draft', 'pending', 'future', 'private' ),
+				'posts_per_page' => -1,
+				'meta_query'     => array(
+					array(
+						'key'     => '_elementor_template_type',
+						'value'   => array( 'header', 'footer' ),
+						'compare' => 'IN',
+					),
+				),
+			)
+		);
+
+		foreach ( $query->posts as $post ) {
+			if ( ! $post instanceof WP_Post ) {
+				continue;
+			}
+
+			$type = get_post_meta( $post->ID, '_elementor_template_type', true );
+			if ( 'header' !== $type && 'footer' !== $type ) {
+				continue;
+			}
+
+			$is_global = $this->is_elementor_pro_template_global( (int) $post->ID );
+			$mapped    = $this->map_template_post_to_array( $post, self::TEMPLATE_SOURCE_ELEMENTOR_PRO, $type, $is_global );
+
+			if ( 'header' === $type ) {
+				$results['headers'][] = $mapped;
+			} else {
+				$results['footers'][] = $mapped;
+			}
+		}
+
+		wp_reset_postdata();
+
+		return $results;
+	}
+
+	/**
+	 * Detect templates from Header Footer Elementor plugin.
+	 */
+	private function find_header_footer_elementor_templates(): array {
+		$results = array(
+			'headers' => array(),
+			'footers' => array(),
+		);
+
+		$query = new WP_Query(
+			array(
+				'post_type'      => 'elementor-hf',
+				'post_status'    => array( 'publish', 'draft', 'pending', 'future', 'private' ),
+				'posts_per_page' => -1,
+				'meta_query'     => array(
+					array(
+						'key'     => 'ehf_template_type',
+						'value'   => array( 'type_header', 'type_footer' ),
+						'compare' => 'IN',
+					),
+				),
+			)
+		);
+
+		foreach ( $query->posts as $post ) {
+			if ( ! $post instanceof WP_Post ) {
+				continue;
+			}
+
+			$type_meta = get_post_meta( $post->ID, 'ehf_template_type', true );
+			if ( 'type_header' !== $type_meta && 'type_footer' !== $type_meta ) {
+				continue;
+			}
+
+			$type      = 'type_header' === $type_meta ? 'header' : 'footer';
+			$is_global = $this->is_header_footer_elementor_global( (int) $post->ID );
+			$mapped    = $this->map_template_post_to_array( $post, self::TEMPLATE_SOURCE_HEADER_FOOTER, $type, $is_global );
+
+			if ( 'header' === $type ) {
+				$results['headers'][] = $mapped;
+			} else {
+				$results['footers'][] = $mapped;
+			}
+		}
+
+		wp_reset_postdata();
+
+		return $results;
+	}
+
+	/**
+	 * Map a template post to an internal array structure.
+	 */
+	private function map_template_post_to_array( WP_Post $post, string $source, string $type, bool $is_global ): array {
+		$last_result = get_post_meta( $post->ID, '_ele2gb_last_result', true );
+		$status_key  = is_array( $last_result ) && isset( $last_result['status'] ) ? (string) $last_result['status'] : '';
+		$last_time   = is_array( $last_result ) && ! empty( $last_result['time'] ) ? (string) $last_result['time'] : '';
+
+		$conversion_status = $this->map_status_to_badge( $status_key );
+
+		$last_converted = '';
+		if ( '' !== $last_time ) {
+			$timestamp = strtotime( $last_time );
+			if ( false !== $timestamp ) {
+				$last_converted = date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $timestamp );
+			}
+		}
+
+		return array(
+			'id'                 => (int) $post->ID,
+			'title'              => get_the_title( $post ),
+			'status'             => get_post_status( $post ),
+			'conversion_status'  => $conversion_status,
+			'last_result_status' => $status_key,
+			'last_result_message' => is_array( $last_result ) && isset( $last_result['message'] ) ? (string) $last_result['message'] : '',
+			'last_converted'     => $last_converted,
+			'source'             => $source,
+			'type'               => $type,
+			'post_type'          => get_post_type( $post ),
+			'is_global'          => $is_global,
+			'modified'           => $this->get_post_modified_timestamp( $post ),
+		);
+	}
+
+	/**
+	 * Determine if an Elementor Pro template targets the entire site.
+	 */
+	private function is_elementor_pro_template_global( int $post_id ): bool {
+		$conditions = get_post_meta( $post_id, '_elementor_conditions', true );
+
+		if ( is_string( $conditions ) && '' !== $conditions ) {
+			$decoded = json_decode( $conditions, true );
+			if ( is_array( $decoded ) ) {
+				$conditions = $decoded;
+			}
+		}
+
+		if ( ! is_array( $conditions ) ) {
+			return false;
+		}
+
+		foreach ( $conditions as $group ) {
+			if ( ! is_array( $group ) ) {
+				continue;
+			}
+
+			foreach ( $group as $condition ) {
+				if ( ! is_array( $condition ) ) {
+					continue;
+				}
+
+				$type = isset( $condition['type'] ) ? (string) $condition['type'] : 'include';
+				if ( 'include' !== $type ) {
+					continue;
+				}
+
+				$value = $condition['value'] ?? $condition['sub_name'] ?? $condition['name'] ?? '';
+				if ( is_string( $value ) && $this->value_matches_entire_site( $value ) ) {
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Determine if a Header Footer Elementor template targets the entire site.
+	 */
+	private function is_header_footer_elementor_global( int $post_id ): bool {
+		$include_locations = get_post_meta( $post_id, 'ehf_target_include_locations', true );
+		$include_locations = maybe_unserialize( $include_locations );
+
+		if ( $this->contains_entire_site_flag( $include_locations ) ) {
+			$exclude_locations = get_post_meta( $post_id, 'ehf_target_exclude_locations', true );
+			$exclude_locations = maybe_unserialize( $exclude_locations );
+
+			if ( ! $this->contains_entire_site_flag( $exclude_locations ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Check if a value includes an entire site flag.
+	 *
+	 * @param mixed $value Value to inspect.
+	 */
+	private function contains_entire_site_flag( $value ): bool {
+		if ( empty( $value ) ) {
+			return false;
+		}
+
+		if ( is_array( $value ) ) {
+			foreach ( $value as $item ) {
+				if ( $this->contains_entire_site_flag( $item ) ) {
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		if ( is_string( $value ) ) {
+			return $this->value_matches_entire_site( $value );
+		}
+
+		return false;
+	}
+
+	/**
+	 * Determine whether a string indicates entire site coverage.
+	 */
+	private function value_matches_entire_site( string $value ): bool {
+		$normalized = strtolower( $value );
+
+		return false !== strpos( $normalized, 'entire_site' )
+		       || false !== strpos( $normalized, 'entire-site' )
+		       || false !== strpos( $normalized, 'entire site' )
+		       || false !== strpos( $normalized, 'global' );
+	}
+
+	/**
+	 * Retrieve a human readable label for template source.
+	 */
+	private function get_template_source_label( string $source ): string {
+		switch ( $source ) {
+			case self::TEMPLATE_SOURCE_HEADER_FOOTER:
+				return esc_html__( 'Header Footer Elementor', 'elementor-to-gutenberg' );
+			case self::TEMPLATE_SOURCE_ELEMENTOR_PRO:
+			default:
+				return esc_html__( 'Elementor Pro', 'elementor-to-gutenberg' );
+		}
+	}
+
+	/**
+	 * Safely retrieve the modified timestamp for a post.
+	 */
+	private function get_post_modified_timestamp( WP_Post $post ): int {
+		$timestamp = strtotime( (string) $post->post_modified_gmt );
+		if ( false === $timestamp || $timestamp <= 0 ) {
+			$timestamp = strtotime( (string) $post->post_modified );
+		}
+
+		if ( false === $timestamp || $timestamp <= 0 ) {
+			$timestamp = time();
+		}
+
+		return (int) $timestamp;
+	}
+
+	/**
+	 * Map a WP_Post instance to the structure expected by the wizard.
+	 *
+	 * @param WP_Post $post Post object.
+	 */
+	private function map_page_to_array( WP_Post $post ): array {
+		$last_result = get_post_meta( $post->ID, '_ele2gb_last_result', true );
+		$status_key  = is_array( $last_result ) && isset( $last_result['status'] ) ? (string) $last_result['status'] : '';
+		$last_time   = is_array( $last_result ) && ! empty( $last_result['time'] ) ? (string) $last_result['time'] : '';
+		$target_id   = is_array( $last_result ) && ! empty( $last_result['target'] ) ? absint( $last_result['target'] ) : 0;
+
+		$conversion_status = $this->map_status_to_badge( $status_key );
+
+		$last_converted = '';
+		if ( '' !== $last_time ) {
+			$timestamp = strtotime( $last_time );
+			if ( false !== $timestamp ) {
+				$last_converted = date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $timestamp );
+			}
+		}
+
+		$view_converted = $target_id ? get_permalink( $target_id ) : '';
+
+		return array(
+			'id'                    => (int) $post->ID,
+			'title'                 => get_the_title( $post ),
+			'status'                => get_post_status( $post ),
+			'conversionStatus'      => $conversion_status,
+			'lastResultStatus'      => $status_key,
+			'lastResultMessage'     => is_array( $last_result ) && isset( $last_result['message'] ) ? (string) $last_result['message'] : '',
+			'lastConverted'         => $last_converted,
+			'hasConflict'           => $target_id > 0,
+			'targetId'              => $target_id,
+			'viewConvertedUrl'      => $view_converted,
+			'editUrl'               => get_edit_post_link( $post ),
+			'slug'                  => $post->post_name,
+		);
+	}
+
+	/**
+	 * Prepare job pages configuration.
+	 *
+	 * @param array $page_ids        Selected page IDs.
+	 * @param array $disabled_meta   Page IDs where meta copy is disabled.
+	 */
+	private function prepare_job_pages( array $page_ids, array $disabled_meta ): array {
+		$pages = array();
+
+		foreach ( $page_ids as $page_id ) {
+			$post = get_post( $page_id );
+			if ( ! $post instanceof WP_Post || 'page' !== get_post_type( $post ) ) {
+				continue;
+			}
+
+			$pages[] = array(
+				'id'        => (int) $page_id,
+				'title'     => get_the_title( $post ),
+				'keep_meta' => ! in_array( (int) $page_id, $disabled_meta, true ),
+			);
+		}
+
+		return $pages;
+	}
+
+	/**
+	 * Normalize template selection payload.
+	 *
+	 * @param mixed $raw Raw selection data from the request.
+	 */
+	private function normalize_template_selection( $raw ): array {
+		if ( is_string( $raw ) && '' !== $raw ) {
+			$decoded = json_decode( $raw, true );
+			if ( is_array( $decoded ) ) {
+				$raw = $decoded;
+			} else {
+				$raw = array( $raw );
+			}
+		}
+
+		if ( ! is_array( $raw ) ) {
+			return array();
+		}
+
+		$ids = array();
+		foreach ( $raw as $value ) {
+			if ( is_array( $value ) && isset( $value['id'] ) ) {
+				$ids[] = absint( $value['id'] );
+			} else {
+				$ids[] = absint( $value );
+			}
+		}
+
+		$ids = array_values( array_unique( array_filter( $ids ) ) );
+
+		return $ids;
+	}
+
+	/**
+	 * Prepare job templates configuration.
+	 */
+	private function prepare_job_templates( string $mode, array $selected_headers, array $selected_footers, int $default_header, int $default_footer ): array {
+		$detected = $this->get_header_footer_templates_raw();
+
+		$header_index = array();
+		foreach ( $detected['headers'] as $template ) {
+			$header_index[ (int) $template['id'] ] = $template;
+		}
+
+		$footer_index = array();
+		foreach ( $detected['footers'] as $template ) {
+			$footer_index[ (int) $template['id'] ] = $template;
+		}
+
+		$headers = array();
+		$footers = array();
+		$header_default_id = 0;
+		$footer_default_id = 0;
+
+		if ( 'auto' === $mode ) {
+			$header_default_id = $this->pick_default_template_id( $detected['headers'] );
+			$footer_default_id = $this->pick_default_template_id( $detected['footers'] );
+
+			if ( $header_default_id && isset( $header_index[ $header_default_id ] ) ) {
+				$headers[] = $this->build_job_template_entry( $header_index[ $header_default_id ], true );
+			}
+
+			if ( $footer_default_id && isset( $footer_index[ $footer_default_id ] ) ) {
+				$footers[] = $this->build_job_template_entry( $footer_index[ $footer_default_id ], true );
+			}
+		} else {
+			$header_default_id = $this->determine_custom_default( $selected_headers, $header_index, $default_header );
+			$footer_default_id = $this->determine_custom_default( $selected_footers, $footer_index, $default_footer );
+
+			foreach ( $selected_headers as $header_id ) {
+				if ( ! isset( $header_index[ $header_id ] ) ) {
+					continue;
+				}
+
+				$headers[] = $this->build_job_template_entry( $header_index[ $header_id ], $header_default_id === $header_id );
+			}
+
+			foreach ( $selected_footers as $footer_id ) {
+				if ( ! isset( $footer_index[ $footer_id ] ) ) {
+					continue;
+				}
+
+				$footers[] = $this->build_job_template_entry( $footer_index[ $footer_id ], $footer_default_id === $footer_id );
+			}
+		}
+
+		return array(
+			'headers'        => $headers,
+			'footers'        => $footers,
+			'default_header' => $header_default_id,
+			'default_footer' => $footer_default_id,
+		);
+	}
+
+	/**
+	 * Pick the default template ID prioritizing global matches.
+	 */
+	private function pick_default_template_id( array $templates ): int {
+		if ( empty( $templates ) ) {
+			return 0;
+		}
+
+		$global = array_filter(
+			$templates,
+			static function ( array $template ): bool {
+				return ! empty( $template['is_global'] );
+			}
+		);
+
+		if ( ! empty( $global ) ) {
+			usort(
+				$global,
+				static function ( array $a, array $b ): int {
+					return ( $b['modified'] ?? 0 ) <=> ( $a['modified'] ?? 0 );
+				}
+			);
+
+			return (int) $global[0]['id'];
+		}
+
+		usort(
+			$templates,
+			static function ( array $a, array $b ): int {
+				return ( $b['modified'] ?? 0 ) <=> ( $a['modified'] ?? 0 );
+			}
+		);
+
+		return (int) $templates[0]['id'];
+	}
+
+	/**
+	 * Build a job template entry for queue processing.
+	 */
+	private function build_job_template_entry( array $template, bool $is_default ): array {
+		$type = 'header' === $template['type'] ? 'header' : 'footer';
+		$role = $is_default
+			? ( 'header' === $type ? self::TEMPLATE_ROLE_DEFAULT_HEADER : self::TEMPLATE_ROLE_DEFAULT_FOOTER )
+			: self::TEMPLATE_ROLE_EXTRA;
+
+		return array(
+			'id'         => (int) $template['id'],
+			'title'      => $template['title'],
+			'source'     => $template['source'],
+			'type'       => $type,
+			'is_default' => $is_default,
+			'role'       => $role,
+		);
+	}
+
+	/**
+	 * Determine default selection for custom mode.
+	 */
+	private function determine_custom_default( array $selected_ids, array $index, int $preferred ): int {
+		if ( $preferred && in_array( $preferred, $selected_ids, true ) && isset( $index[ $preferred ] ) ) {
+			return $preferred;
+		}
+
+		foreach ( $selected_ids as $id ) {
+			if ( isset( $index[ $id ] ) && ! empty( $index[ $id ]['is_global'] ) ) {
+				return (int) $id;
+			}
+		}
+
+		return $selected_ids[0] ?? 0;
+	}
+
+	/**
+	 * Build job options based on mode and conflict policy.
+	 */
+	private function build_job_options( string $mode, string $conflict_policy, bool $skip_converted ): array {
+		$options = array(
+			'mode'            => 'create',
+			'wrap_full_width' => false,
+			'assign_template' => false,
+			'keep_meta'       => true,
+			'skip_converted'  => $skip_converted,
+		);
+
+		if ( 'overwrite' === $conflict_policy ) {
+			$options['mode']           = 'update';
+			$options['skip_converted'] = false;
+		} elseif ( 'duplicate' === $conflict_policy ) {
+			$options['mode']           = 'create';
+			$options['skip_converted'] = false;
+		}
+
+		return $options;
+	}
+
+	/**
+	 * Convert a header/footer template into a Gutenberg template part.
+	 */
+	private function process_template_conversion( array $template_info, array $options ): array {
+		$result = array(
+			'status'  => 'skipped',
+			'message' => '',
+			'target'  => 0,
+			'view_url'=> '',
+		);
+
+		$post = get_post( (int) $template_info['id'] );
+		if ( ! $post instanceof WP_Post ) {
+			$result['message'] = esc_html__( 'Skipped: template not found.', 'elementor-to-gutenberg' );
+			return $result;
+		}
+
+		$existing_target = $this->find_existing_template_part( (int) $template_info['id'], (string) $template_info['source'] );
+
+		$last_result = get_post_meta( $post->ID, '_ele2gb_last_result', true );
+		if ( ! $existing_target && is_array( $last_result ) && ! empty( $last_result['target'] ) ) {
+			$existing_target = absint( $last_result['target'] );
+		}
+
+		$last_status = is_array( $last_result ) && isset( $last_result['status'] ) ? (string) $last_result['status'] : '';
+
+		if ( ! empty( $options['skip_converted'] ) && 'success' === $last_status && $existing_target ) {
+			$this->update_template_part_role( $existing_target, (string) $template_info['role'], (string) $template_info['type'] );
+			$message = esc_html__( 'Skipped: template already converted.', 'elementor-to-gutenberg' );
+			Admin_Settings::instance()->record_conversion_result( (int) $template_info['id'], 'skipped', $message, $existing_target );
+
+			$edit_link = $existing_target ? get_edit_post_link( $existing_target, '' ) : '';
+			if ( $existing_target && ! $edit_link ) {
+				$edit_link = admin_url( 'post.php?post=' . $existing_target . '&action=edit' );
+			}
+
+			$result['message']  = $message;
+			$result['target']   = $existing_target;
+			$result['view_url'] = (string) $edit_link;
+
+			return $result;
+		}
+
+		$json_data = get_post_meta( $post->ID, '_elementor_data', true );
+		if ( empty( $json_data ) ) {
+			$message = esc_html__( 'Skipped: Elementor data not found.', 'elementor-to-gutenberg' );
+			Admin_Settings::instance()->record_conversion_result( (int) $template_info['id'], 'skipped', $message, $existing_target );
+			$edit_link = $existing_target ? get_edit_post_link( $existing_target, '' ) : '';
+			if ( $existing_target && ! $edit_link ) {
+				$edit_link = admin_url( 'post.php?post=' . $existing_target . '&action=edit' );
+			}
+
+			$result['message'] = $message;
+			$result['target']  = $existing_target;
+			$result['view_url'] = (string) $edit_link;
+			return $result;
+		}
+
+		$decoded = json_decode( $json_data, true );
+		if ( null === $decoded && JSON_ERROR_NONE !== json_last_error() ) {
+			$message = esc_html__( 'Failed: invalid Elementor JSON data.', 'elementor-to-gutenberg' );
+			Admin_Settings::instance()->record_conversion_result( (int) $template_info['id'], 'error', $message, $existing_target );
+			$edit_link = $existing_target ? get_edit_post_link( $existing_target, '' ) : '';
+			if ( $existing_target && ! $edit_link ) {
+				$edit_link = admin_url( 'post.php?post=' . $existing_target . '&action=edit' );
+			}
+
+			$result['status']  = 'error';
+			$result['message'] = $message;
+			$result['target']  = $existing_target;
+			$result['view_url'] = (string) $edit_link;
+			return $result;
+		}
+
+		$content = Admin_Settings::instance()->convert_json_to_gutenberg_content( array( 'content' => $decoded ) );
+		if ( '' === trim( $content ) ) {
+			$message = esc_html__( 'Failed: conversion produced no Gutenberg content.', 'elementor-to-gutenberg' );
+			Admin_Settings::instance()->record_conversion_result( (int) $template_info['id'], 'error', $message, $existing_target );
+			$edit_link = $existing_target ? get_edit_post_link( $existing_target, '' ) : '';
+			if ( $existing_target && ! $edit_link ) {
+				$edit_link = admin_url( 'post.php?post=' . $existing_target . '&action=edit' );
+			}
+
+			$result['status']  = 'error';
+			$result['message'] = $message;
+			$result['target']  = $existing_target;
+			$result['view_url'] = (string) $edit_link;
+			return $result;
+		}
+
+		$target_id = $this->save_template_part( $template_info, $post, $content, $existing_target );
+		if ( ! $target_id ) {
+			$message = esc_html__( 'Failed: could not save Gutenberg template.', 'elementor-to-gutenberg' );
+			Admin_Settings::instance()->record_conversion_result( (int) $template_info['id'], 'error', $message, $existing_target );
+			$result['status']  = 'error';
+			$result['message'] = $message;
+			$result['target']  = $existing_target;
+			return $result;
+		}
+
+		$this->store_template_part_meta( $target_id, $template_info );
+		$this->update_template_part_role( $target_id, (string) $template_info['role'], (string) $template_info['type'] );
+
+		$label   = 'header' === $template_info['type'] ? esc_html__( 'header', 'elementor-to-gutenberg' ) : esc_html__( 'footer', 'elementor-to-gutenberg' );
+		$title   = get_the_title( $post );
+		$message = sprintf( esc_html__( 'Converted %1$s “%2$s”.', 'elementor-to-gutenberg' ), $label, $title );
+
+		Admin_Settings::instance()->record_conversion_result( (int) $template_info['id'], 'success', $message, $target_id );
+
+		$edit_link = get_edit_post_link( $target_id, '' );
+		if ( ! $edit_link ) {
+			$edit_link = admin_url( 'post.php?post=' . $target_id . '&action=edit' );
+		}
+
+		$result['status']   = 'success';
+		$result['message']  = $message;
+		$result['target']   = $target_id;
+		$result['view_url'] = (string) $edit_link;
+
+		return $result;
+	}
+
+	/**
+	 * Create or update a template part post for the converted template.
+	 */
+	private function save_template_part( array $template_info, WP_Post $source_post, string $content, int $existing_target ): int {
+		$slug = sanitize_title( sprintf( 'converted-%s-%d', $template_info['type'], $source_post->ID ) );
+
+		$title_format = esc_html__( 'Converted %1$s: %2$s', 'elementor-to-gutenberg' );
+		$label        = 'header' === $template_info['type'] ? esc_html__( 'Header', 'elementor-to-gutenberg' ) : esc_html__( 'Footer', 'elementor-to-gutenberg' );
+		$post_title   = sprintf( $title_format, $label, get_the_title( $source_post ) );
+
+		$postarr = array(
+			'post_title'   => $post_title,
+			'post_name'    => $slug,
+			'post_content' => $content,
+			'post_status'  => 'publish',
+			'post_type'    => 'wp_template_part',
+			'post_author'  => (int) $source_post->post_author,
+		);
+
+		if ( $existing_target ) {
+			$postarr['ID'] = $existing_target;
+			$saved         = wp_update_post( $postarr, true );
+		} else {
+			$saved = wp_insert_post( $postarr, true );
+		}
+
+		if ( is_wp_error( $saved ) || ! $saved ) {
+			return 0;
+		}
+
+		$target_id = (int) $saved;
+
+		$theme = get_stylesheet();
+		if ( $theme ) {
+			wp_set_post_terms( $target_id, array( $theme ), 'wp_theme', false );
+		}
+
+		wp_set_post_terms( $target_id, array( $template_info['type'] ), 'wp_template_part_area', false );
+
+		return $target_id;
+	}
+
+	/**
+	 * Persist meta for a converted template part.
+	 */
+	private function store_template_part_meta( int $target_id, array $template_info ): void {
+		update_post_meta( $target_id, '_ele2gb_source_id', (int) $template_info['id'] );
+		update_post_meta( $target_id, '_ele2gb_source_type', (string) $template_info['source'] );
+		update_post_meta( $target_id, '_ele2gb_template_kind', (string) $template_info['type'] );
+	}
+
+	/**
+	 * Update the role meta for a converted template part.
+	 */
+	private function update_template_part_role( int $target_id, string $role, string $type ): void {
+		if ( ! $target_id ) {
+			return;
+		}
+
+		if ( self::TEMPLATE_ROLE_DEFAULT_HEADER === $role || self::TEMPLATE_ROLE_DEFAULT_FOOTER === $role ) {
+			$this->clear_existing_template_role( $target_id, $role, $type );
+		}
+
+		update_post_meta( $target_id, '_ele2gb_template_role', $role );
+	}
+
+	/**
+	 * Ensure only one template part keeps a default role.
+	 */
+	private function clear_existing_template_role( int $target_id, string $role, string $type ): void {
+		$query = new WP_Query(
+			array(
+				'post_type'      => 'wp_template_part',
+				'post_status'    => array( 'publish', 'draft', 'pending', 'future', 'private' ),
+				'posts_per_page' => -1,
+				'fields'         => 'ids',
+				'meta_query'     => array(
+					array(
+						'key'   => '_ele2gb_template_role',
+						'value' => $role,
+					),
+					array(
+						'key'   => '_ele2gb_template_kind',
+						'value' => $type,
+					),
+				),
+			)
+		);
+
+		foreach ( $query->posts as $other_id ) {
+			$other_id = (int) $other_id;
+			if ( $other_id === $target_id ) {
+				continue;
+			}
+
+			update_post_meta( $other_id, '_ele2gb_template_role', self::TEMPLATE_ROLE_EXTRA );
+		}
+
+		wp_reset_postdata();
+	}
+
+	/**
+	 * Locate an existing converted template part for a source template.
+	 */
+	private function find_existing_template_part( int $source_id, string $source_type ): int {
+		$query = new WP_Query(
+			array(
+				'post_type'      => 'wp_template_part',
+				'post_status'    => array( 'publish', 'draft', 'pending', 'future', 'private' ),
+				'posts_per_page' => 1,
+				'fields'         => 'ids',
+				'meta_query'     => array(
+					array(
+						'key'   => '_ele2gb_source_id',
+						'value' => $source_id,
+					),
+					array(
+						'key'   => '_ele2gb_source_type',
+						'value' => $source_type,
+					),
+				),
+			)
+		);
+
+		$existing = $query->have_posts() ? (int) $query->posts[0] : 0;
+
+		wp_reset_postdata();
+
+		return $existing;
+	}
+
+	/**
+	 * Store job in a transient.
+	 *
+	 * @param array $job Job data.
+	 */
+	private function store_job( array $job ): void {
+		set_transient( self::JOB_TRANSIENT_PREFIX . $job['id'], $job, self::JOB_TRANSIENT_TTL );
+	}
+
+	/**
+	 * Retrieve a stored job.
+	 */
+	private function get_job( string $job_id ): array {
+		$job = get_transient( self::JOB_TRANSIENT_PREFIX . $job_id );
+		if ( ! is_array( $job ) ) {
+			return array();
+		}
+
+		return $job;
+	}
+
+	/**
+	 * Count the total number of items (pages + templates) in a job.
+	 */
+	private function count_job_items( array $job ): int {
+		return count( $this->get_job_queue( $job ) );
+	}
+
+	/**
+	 * Flatten the job items into a sequential queue.
+	 */
+	private function get_job_queue( array $job ): array {
+		$queue = array();
+
+		foreach ( $job['pages'] as $page ) {
+			$queue[] = array(
+				'type' => 'page',
+				'data' => $page,
+			);
+		}
+
+		$templates = $job['templates'] ?? array();
+		foreach ( $templates['headers'] ?? array() as $header ) {
+			$queue[] = array(
+				'type' => 'header',
+				'data' => $header,
+			);
+		}
+
+		foreach ( $templates['footers'] ?? array() as $footer ) {
+			$queue[] = array(
+				'type' => 'footer',
+				'data' => $footer,
+			);
+		}
+
+		return $queue;
+	}
+
+	/**
+	 * Format job data for JSON responses.
+	 *
+	 * @param array $job Job data.
+	 */
+	private function format_job_for_response( array $job ): array {
+		$total     = $this->count_job_items( $job );
+		$processed = min( (int) $job['processed'], $total );
+
+		$duration = 0;
+		if ( ! empty( $job['started_at'] ) ) {
+			$end_time = ! empty( $job['completed_at'] ) ? (int) $job['completed_at'] : time();
+			$duration = max( 0, $end_time - (int) $job['started_at'] );
+		}
+
+		$results = array_map(
+			static function ( array $item ): array {
+				return array(
+					'id'        => (int) $item['id'],
+					'title'     => $item['title'],
+					'status'    => $item['status'],
+					'message'   => $item['message'],
+					'target'    => $item['target'],
+					'duration'  => $item['duration'],
+					'viewUrl'   => $item['view_url'],
+					'keepMeta'  => ! empty( $item['keep_meta'] ),
+					'type'      => isset( $item['type'] ) ? (string) $item['type'] : 'page',
+					'role'      => isset( $item['role'] ) ? (string) $item['role'] : '',
+					'source'    => isset( $item['source'] ) ? (string) $item['source'] : '',
+				);
+			},
+			$job['results']
+		);
+
+		$templates = array(
+			'headers' => array_map(
+				static function ( array $item ): array {
+					return array(
+						'id'        => (int) $item['id'],
+						'title'     => $item['title'],
+						'source'    => $item['source'],
+						'type'      => $item['type'],
+						'isDefault' => ! empty( $item['is_default'] ),
+						'role'      => $item['role'],
+					);
+				},
+				$job['templates']['headers'] ?? array()
+			),
+			'footers' => array_map(
+				static function ( array $item ): array {
+					return array(
+						'id'        => (int) $item['id'],
+						'title'     => $item['title'],
+						'source'    => $item['source'],
+						'type'      => $item['type'],
+						'isDefault' => ! empty( $item['is_default'] ),
+						'role'      => $item['role'],
+					);
+				},
+				$job['templates']['footers'] ?? array()
+			),
+			'defaults' => array(
+				'header' => isset( $job['templates']['default_header'] ) ? (int) $job['templates']['default_header'] : 0,
+				'footer' => isset( $job['templates']['default_footer'] ) ? (int) $job['templates']['default_footer'] : 0,
+			),
+		);
+
+		return array(
+			'id'              => $job['id'],
+			'status'          => $job['status'],
+			'mode'            => $job['mode'],
+			'conflictPolicy'  => $job['conflict_policy'],
+			'skipConverted'   => ! empty( $job['options']['skip_converted'] ),
+			'total'           => $total,
+			'processed'       => $processed,
+			'counts'          => $job['counts'],
+			'results'         => $results,
+			'templates'       => $templates,
+			'createdAt'       => (int) $job['created_at'],
+			'startedAt'       => (int) $job['started_at'],
+			'completedAt'     => (int) $job['completed_at'],
+			'duration'        => $duration,
+		);
+	}
+
+	/**
+	 * Map status value to a badge slug.
+	 */
+	private function map_status_to_badge( string $status ): string {
+		switch ( $status ) {
+			case 'success':
+				return 'converted';
+			case 'partial':
+				return 'partial';
+			case 'error':
+				return 'error';
+			case 'skipped':
+				return 'skipped';
+			default:
+				return 'not_converted';
+		}
+	}
+
+	/**
+	 * Retrieve localized strings for the UI.
+	 */
+	private function get_strings(): array {
+		return array(
+			'step'                   => esc_html__( 'Step %1$s of %2$s — %3$s', 'elementor-to-gutenberg' ),
+			'modeTitle'              => esc_html__( 'Choose Mode', 'elementor-to-gutenberg' ),
+			'modeAutoTitle'          => esc_html__( 'Convert all pages automatically', 'elementor-to-gutenberg' ),
+			'modeAutoDesc'           => esc_html__( 'Run with smart defaults: copy meta & featured image, skip pages already converted.', 'elementor-to-gutenberg' ),
+			'modeCustomTitle'        => esc_html__( 'Choose specific pages', 'elementor-to-gutenberg' ),
+			'modeCustomDesc'         => esc_html__( 'Pick exactly which pages to convert and fine-tune options per page.', 'elementor-to-gutenberg' ),
+			'continue'               => esc_html__( 'Continue', 'elementor-to-gutenberg' ),
+			'back'                   => esc_html__( 'Back', 'elementor-to-gutenberg' ),
+			'selectPagesTitle'       => esc_html__( 'Select Pages', 'elementor-to-gutenberg' ),
+			'selectAll'              => esc_html__( 'Select all', 'elementor-to-gutenberg' ),
+			'selectionSummary'       => esc_html__( '%1$d selected / %2$d total', 'elementor-to-gutenberg' ),
+			'noPagesFound'           => esc_html__( 'No Elementor pages found for conversion.', 'elementor-to-gutenberg' ),
+			'skipConverted'          => esc_html__( 'Skip pages that were already converted', 'elementor-to-gutenberg' ),
+			'disableMeta'            => esc_html__( 'Don’t copy meta fields & featured image', 'elementor-to-gutenberg' ),
+			'conflictsTitle'         => esc_html__( 'Resolve Conflicts', 'elementor-to-gutenberg' ),
+			'conflictDetected'       => esc_html__( '%1$d selected pages already have a converted version.', 'elementor-to-gutenberg' ),
+			'conflictOverwrite'      => esc_html__( 'Update existing pages in place (overwrite)', 'elementor-to-gutenberg' ),
+			'conflictSkip'           => esc_html__( 'Skip those pages', 'elementor-to-gutenberg' ),
+			'conflictDuplicate'      => esc_html__( 'Create duplicates with “(Converted)” suffix', 'elementor-to-gutenberg' ),
+			'reviewTitle'            => esc_html__( 'Review & Confirm', 'elementor-to-gutenberg' ),
+			'reviewSummary'          => esc_html__( '%1$d pages selected — %2$d will be converted, %3$d skipped.', 'elementor-to-gutenberg' ),
+			'metaDisabled'           => esc_html__( '%1$d pages will be converted without copying meta fields or featured image.', 'elementor-to-gutenberg' ),
+			'startConversion'        => esc_html__( 'Start Conversion', 'elementor-to-gutenberg' ),
+			'backgroundInfo'         => esc_html__( 'Conversion runs in the background. You can safely close this page.', 'elementor-to-gutenberg' ),
+			'progressTitle'          => esc_html__( 'Progress & Results', 'elementor-to-gutenberg' ),
+			'converted'              => esc_html__( 'Converted', 'elementor-to-gutenberg' ),
+			'skipped'                => esc_html__( 'Skipped', 'elementor-to-gutenberg' ),
+			'errors'                 => esc_html__( 'Errors', 'elementor-to-gutenberg' ),
+			'duration'               => esc_html__( 'Duration', 'elementor-to-gutenberg' ),
+			'viewConverted'          => esc_html__( 'View converted', 'elementor-to-gutenberg' ),
+			'retry'                  => esc_html__( 'Retry', 'elementor-to-gutenberg' ),
+			'viewPages'              => esc_html__( 'View converted pages', 'elementor-to-gutenberg' ),
+			'startNew'               => esc_html__( 'Start new conversion', 'elementor-to-gutenberg' ),
+			'statusConverted'        => esc_html__( 'Converted', 'elementor-to-gutenberg' ),
+			'statusNotConverted'     => esc_html__( 'Not converted', 'elementor-to-gutenberg' ),
+			'statusPartial'          => esc_html__( 'Partial', 'elementor-to-gutenberg' ),
+			'statusError'            => esc_html__( 'Error', 'elementor-to-gutenberg' ),
+			'statusSkipped'          => esc_html__( 'Skipped', 'elementor-to-gutenberg' ),
+			'statusUnknown'          => esc_html__( 'Unknown', 'elementor-to-gutenberg' ),
+			'tableTitle'             => esc_html__( 'Title', 'elementor-to-gutenberg' ),
+			'tableStatus'            => esc_html__( 'Status', 'elementor-to-gutenberg' ),
+			'tableConversionStatus'  => esc_html__( 'Conversion status', 'elementor-to-gutenberg' ),
+			'tableLastConverted'     => esc_html__( 'Last converted', 'elementor-to-gutenberg' ),
+			'tableActions'           => esc_html__( 'Actions', 'elementor-to-gutenberg' ),
+			'jobCompleted'           => esc_html__( 'Conversion completed successfully in %s.', 'elementor-to-gutenberg' ),
+			'jobCompletedWithErrors' => esc_html__( 'Conversion finished with issues in %s.', 'elementor-to-gutenberg' ),
+			'jobRunning'             => esc_html__( 'Conversion in progress…', 'elementor-to-gutenberg' ),
+			'resumeJob'              => esc_html__( 'Resuming an active conversion job.', 'elementor-to-gutenberg' ),
+			'processing'             => esc_html__( 'Processing…', 'elementor-to-gutenberg' ),
+			'noSelectionError'       => esc_html__( 'Select at least one page or template before continuing.', 'elementor-to-gutenberg' ),
+			'retryFailed'            => esc_html__( 'Unable to retry conversion. Please try again.', 'elementor-to-gutenberg' ),
+			'headerFooterStepTitle'  => esc_html__( 'Header & Footer Templates', 'elementor-to-gutenberg' ),
+			'headersLabel'           => esc_html__( 'Headers', 'elementor-to-gutenberg' ),
+			'footersLabel'           => esc_html__( 'Footers', 'elementor-to-gutenberg' ),
+			'defaultHeaderLabel'     => esc_html__( 'Default header after conversion', 'elementor-to-gutenberg' ),
+			'defaultFooterLabel'     => esc_html__( 'Default footer after conversion', 'elementor-to-gutenberg' ),
+			'headerFooterSummary'    => esc_html__( '%1$d headers and %2$d footers selected for conversion.', 'elementor-to-gutenberg' ),
+			'headerFooterDefaults'   => esc_html__( 'Default header: %1$s — Default footer: %2$s', 'elementor-to-gutenberg' ),
+		);
+	}
+
+	/**
+	 * Retrieve active job info for current user if any.
+	 */
+	private function get_active_job_for_user(): array {
+		$job_id = get_user_meta( get_current_user_id(), '_ele2gb_job', true );
+		if ( empty( $job_id ) ) {
+			return array();
+		}
+
+		$job = $this->get_job( (string) $job_id );
+		if ( empty( $job ) ) {
+			delete_user_meta( get_current_user_id(), '_ele2gb_job' );
+			return array();
+		}
+
+		return $this->format_job_for_response( $job );
+	}
 }
