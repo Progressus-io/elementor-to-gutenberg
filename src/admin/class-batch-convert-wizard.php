@@ -1079,7 +1079,6 @@ class Batch_Convert_Wizard {
 
 		if ( ! $post || 'page' !== $post->post_type ) {
 			$message = esc_html__( 'Skipped: only pages can be converted.', 'elementor-to-gutenberg' );
-			Admin_Settings::instance()->record_conversion_result( $post_id, 'skipped', $message );
 			$result['message'] = $message;
 			return $result;
 		}
@@ -1088,7 +1087,6 @@ class Batch_Convert_Wizard {
 		if ( ! empty( $options['skip_converted'] ) && $this->has_been_converted( $post_id, $target_id ) ) {
 			$title   = get_the_title( $post_id );
 			$message = sprintf( esc_html__( 'Skipped: “%s” is already converted.', 'elementor-to-gutenberg' ), $title );
-			Admin_Settings::instance()->record_conversion_result( $post_id, 'skipped', $message, $target_id );
 			$result['message'] = $message;
 			$result['target']  = $target_id;
 			return $result;
@@ -1097,7 +1095,6 @@ class Batch_Convert_Wizard {
 		$json_data = get_post_meta( $post_id, '_elementor_data', true );
 		if ( empty( $json_data ) ) {
 			$message = esc_html__( 'Skipped: Elementor data not found.', 'elementor-to-gutenberg' );
-			Admin_Settings::instance()->record_conversion_result( $post_id, 'skipped', $message );
 			$result['message'] = $message;
 			return $result;
 		}
@@ -1105,7 +1102,6 @@ class Batch_Convert_Wizard {
 		$decoded = json_decode( $json_data, true );
 		if ( null === $decoded && JSON_ERROR_NONE !== json_last_error() ) {
 			$message = esc_html__( 'Failed: invalid Elementor JSON data.', 'elementor-to-gutenberg' );
-			Admin_Settings::instance()->record_conversion_result( $post_id, 'error', $message );
 			$result['status']  = 'error';
 			$result['message'] = $message;
 			return $result;
@@ -1114,7 +1110,6 @@ class Batch_Convert_Wizard {
 		$content = Admin_Settings::instance()->convert_json_to_gutenberg_content( array( 'content' => $decoded ) );
 		if ( '' === trim( $content ) ) {
 			$message = esc_html__( 'Failed: conversion produced no Gutenberg content.', 'elementor-to-gutenberg' );
-			Admin_Settings::instance()->record_conversion_result( $post_id, 'error', $message );
 			$result['status']  = 'error';
 			$result['message'] = $message;
 			return $result;
@@ -1154,7 +1149,6 @@ class Batch_Convert_Wizard {
 
 		if ( empty( $target_id ) ) {
 			$message = esc_html__( 'Failed: could not save Gutenberg content.', 'elementor-to-gutenberg' );
-			Admin_Settings::instance()->record_conversion_result( $post_id, 'error', $message );
 			$result['status']  = 'error';
 			$result['message'] = $message;
 			return $result;
@@ -1170,7 +1164,6 @@ class Batch_Convert_Wizard {
 
 		$title   = get_the_title( $post_id );
 		$message = sprintf( esc_html__( 'Converted “%s” to Gutenberg blocks.', 'elementor-to-gutenberg' ), $title );
-		Admin_Settings::instance()->record_conversion_result( $post_id, 'success', $message, $target_id );
 
 		$result['status']  = 'success';
 		$result['message'] = $message;
@@ -1299,7 +1292,6 @@ class Batch_Convert_Wizard {
 		if ( ! empty( $options['skip_converted'] ) && 'success' === $last_status && $existing_target ) {
 			$this->update_template_part_role( $existing_target, (string) $template_info['role'], (string) $template_info['type'] );
 			$message = esc_html__( 'Skipped: template already converted.', 'elementor-to-gutenberg' );
-			Admin_Settings::instance()->record_conversion_result( (int) $template_info['id'], 'skipped', $message, $existing_target );
 
 			$edit_link = $existing_target ? get_edit_post_link( $existing_target, '' ) : '';
 			if ( $existing_target && ! $edit_link ) {
@@ -1316,7 +1308,6 @@ class Batch_Convert_Wizard {
 		$json_data = get_post_meta( $post->ID, '_elementor_data', true );
 		if ( empty( $json_data ) ) {
 			$message = esc_html__( 'Skipped: Elementor data not found.', 'elementor-to-gutenberg' );
-			Admin_Settings::instance()->record_conversion_result( (int) $template_info['id'], 'skipped', $message, $existing_target );
 			$edit_link = $existing_target ? get_edit_post_link( $existing_target, '' ) : '';
 			if ( $existing_target && ! $edit_link ) {
 				$edit_link = admin_url( 'post.php?post=' . $existing_target . '&action=edit' );
@@ -1331,7 +1322,6 @@ class Batch_Convert_Wizard {
 		$decoded = json_decode( $json_data, true );
 		if ( null === $decoded && JSON_ERROR_NONE !== json_last_error() ) {
 			$message = esc_html__( 'Failed: invalid Elementor JSON data.', 'elementor-to-gutenberg' );
-			Admin_Settings::instance()->record_conversion_result( (int) $template_info['id'], 'error', $message, $existing_target );
 			$edit_link = $existing_target ? get_edit_post_link( $existing_target, '' ) : '';
 			if ( $existing_target && ! $edit_link ) {
 				$edit_link = admin_url( 'post.php?post=' . $existing_target . '&action=edit' );
@@ -1347,7 +1337,6 @@ class Batch_Convert_Wizard {
 		$content = Admin_Settings::instance()->convert_json_to_gutenberg_content( array( 'content' => $decoded ) );
 		if ( '' === trim( $content ) ) {
 			$message = esc_html__( 'Failed: conversion produced no Gutenberg content.', 'elementor-to-gutenberg' );
-			Admin_Settings::instance()->record_conversion_result( (int) $template_info['id'], 'error', $message, $existing_target );
 			$edit_link = $existing_target ? get_edit_post_link( $existing_target, '' ) : '';
 			if ( $existing_target && ! $edit_link ) {
 				$edit_link = admin_url( 'post.php?post=' . $existing_target . '&action=edit' );
@@ -1363,7 +1352,6 @@ class Batch_Convert_Wizard {
 		$target_id = $this->save_template_part( $template_info, $post, $content, $existing_target );
 		if ( ! $target_id ) {
 			$message = esc_html__( 'Failed: could not save Gutenberg template.', 'elementor-to-gutenberg' );
-			Admin_Settings::instance()->record_conversion_result( (int) $template_info['id'], 'error', $message, $existing_target );
 			$result['status']  = 'error';
 			$result['message'] = $message;
 			$result['target']  = $existing_target;
@@ -1377,7 +1365,6 @@ class Batch_Convert_Wizard {
 		$title   = get_the_title( $post );
 		$message = sprintf( esc_html__( 'Converted %1$s “%2$s”.', 'elementor-to-gutenberg' ), $label, $title );
 
-		Admin_Settings::instance()->record_conversion_result( (int) $template_info['id'], 'success', $message, $target_id );
 
 		$edit_link = get_edit_post_link( $target_id, '' );
 		if ( ! $edit_link ) {
