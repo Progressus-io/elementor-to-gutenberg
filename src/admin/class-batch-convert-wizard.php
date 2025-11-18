@@ -26,6 +26,7 @@ use function get_option;
 use function get_permalink;
 use function get_post;
 use function get_post_meta;
+use function get_post_field;
 use function get_post_status;
 use function get_post_type;
 use function get_the_title;
@@ -226,12 +227,12 @@ class Batch_Convert_Wizard {
 		$conflict_policy = isset( $_POST['conflictPolicy'] ) ? sanitize_key( wp_unslash( $_POST['conflictPolicy'] ) ) : 'skip';
 		$skip_converted  = ! empty( $_POST['skipConverted'] );
 
-		$raw_pages      = isset( $_POST['pages'] ) ? wp_unslash( $_POST['pages'] ) : array();
-		$raw_disabled   = isset( $_POST['disabledMeta'] ) ? wp_unslash( $_POST['disabledMeta'] ) : array();
-		$raw_headers    = isset( $_POST['headerTemplates'] ) ? wp_unslash( $_POST['headerTemplates'] ) : array();
-		$raw_footers    = isset( $_POST['footerTemplates'] ) ? wp_unslash( $_POST['footerTemplates'] ) : array();
-		$default_header = isset( $_POST['defaultHeader'] ) ? absint( wp_unslash( $_POST['defaultHeader'] ) ) : 0;
-		$default_footer = isset( $_POST['defaultFooter'] ) ? absint( wp_unslash( $_POST['defaultFooter'] ) ) : 0;
+		$raw_pages         = isset( $_POST['pages'] ) ? wp_unslash( $_POST['pages'] ) : array();
+		$raw_disabled      = isset( $_POST['disabledMeta'] ) ? wp_unslash( $_POST['disabledMeta'] ) : array();
+		$raw_headers       = isset( $_POST['headerTemplates'] ) ? wp_unslash( $_POST['headerTemplates'] ) : array();
+		$raw_footers       = isset( $_POST['footerTemplates'] ) ? wp_unslash( $_POST['footerTemplates'] ) : array();
+		$default_header    = isset( $_POST['defaultHeader'] ) ? absint( wp_unslash( $_POST['defaultHeader'] ) ) : 0;
+		$default_footer    = isset( $_POST['defaultFooter'] ) ? absint( wp_unslash( $_POST['defaultFooter'] ) ) : 0;
 		$selected_page_ids = array_map( 'absint', (array) $raw_pages );
 		$disabled_meta_ids = array_map( 'absint', (array) $raw_disabled );
 		$selected_headers  = $this->normalize_template_selection( $raw_headers );
@@ -245,7 +246,7 @@ class Batch_Convert_Wizard {
 				},
 				$all_pages
 			);
-			$skip_converted = true;
+			$skip_converted    = true;
 		}
 
 		$selected_page_ids = array_values( array_unique( array_filter( $selected_page_ids ) ) );
@@ -346,7 +347,7 @@ class Batch_Convert_Wizard {
 
 		$items       = $this->get_job_queue( $job );
 		$total_items = count( $items );
-		for ( $i = 0; $i < $batch_size; $i++ ) {
+		for ( $i = 0; $i < $batch_size; $i ++ ) {
 			if ( $job['processed'] >= $total_items ) {
 				break;
 			}
@@ -365,7 +366,7 @@ class Batch_Convert_Wizard {
 			if ( 'page' === $item['type'] ) {
 				$page_info = $item['data'];
 
-				$options = $job['options'];
+				$options              = $job['options'];
 				$options['keep_meta'] = ! empty( $page_info['keep_meta'] );
 
 				$start_time = microtime( true );
@@ -385,10 +386,13 @@ class Batch_Convert_Wizard {
 					'keep_meta' => $keep_meta,
 					'type'      => 'page',
 				);
+
+				$this->store_page_conversion_result( (int) $page_info['id'], $result_entry );
+
 			} else {
 				$template_info = $item['data'];
 
-				$start_time = microtime( true );
+				$start_time      = microtime( true );
 				$template_result = $this->process_template_conversion( $template_info, $job['options'] );
 				$duration        = max( 0, microtime( true ) - $start_time );
 				$result          = $template_result;
@@ -407,15 +411,17 @@ class Batch_Convert_Wizard {
 					'role'      => $template_info['role'],
 					'source'    => $template_info['source'],
 				);
+
+				$this->store_template_conversion_result( (int) $template_info['id'], $result_entry );
 			}
 
 			$job['results'][] = $result_entry;
 
 			if ( isset( $job['counts'][ $result['status'] ] ) ) {
-				$job['counts'][ $result['status'] ]++;
+				$job['counts'][ $result['status'] ] ++;
 			}
 
-			$job['processed']++;
+			$job['processed'] ++;
 		}
 
 		if ( $job['processed'] >= $total_items ) {
@@ -477,7 +483,7 @@ class Batch_Convert_Wizard {
 				$accumulated[] = $this->map_page_to_array( $post );
 			}
 
-			$paged++;
+			$paged ++;
 			$max_pages = (int) $query->max_num_pages;
 			wp_reset_postdata();
 		} while ( $paged <= $max_pages );
@@ -561,7 +567,7 @@ class Batch_Convert_Wizard {
 			array(
 				'post_type'      => 'elementor_library',
 				'post_status'    => array( 'publish', 'draft', 'pending', 'future', 'private' ),
-				'posts_per_page' => -1,
+				'posts_per_page' => - 1,
 				'meta_query'     => array(
 					array(
 						'key'     => '_elementor_template_type',
@@ -610,7 +616,7 @@ class Batch_Convert_Wizard {
 			array(
 				'post_type'      => 'elementor-hf',
 				'post_status'    => array( 'publish', 'draft', 'pending', 'future', 'private' ),
-				'posts_per_page' => -1,
+				'posts_per_page' => - 1,
 				'meta_query'     => array(
 					array(
 						'key'     => 'ehf_template_type',
@@ -651,6 +657,16 @@ class Batch_Convert_Wizard {
 	 * Map a template post to an internal array structure.
 	 */
 	private function map_template_post_to_array( WP_Post $post, string $source, string $type, bool $is_global ): array {
+		$target_pages = array();
+
+		if ( self::TEMPLATE_SOURCE_ELEMENTOR_PRO === $source ) {
+			$targets      = $this->get_elementor_pro_template_targets( (int) $post->ID );
+			$target_pages = $targets['pages'] ?? array();
+		} elseif ( self::TEMPLATE_SOURCE_HEADER_FOOTER === $source ) {
+			$targets      = $this->get_header_footer_elementor_template_targets( (int) $post->ID );
+			$target_pages = $targets['pages'] ?? array();
+		}
+
 		$last_result = get_post_meta( $post->ID, '_ele2gb_last_result', true );
 		$status_key  = is_array( $last_result ) && isset( $last_result['status'] ) ? (string) $last_result['status'] : '';
 		$last_time   = is_array( $last_result ) && ! empty( $last_result['time'] ) ? (string) $last_result['time'] : '';
@@ -666,19 +682,147 @@ class Batch_Convert_Wizard {
 		}
 
 		return array(
-			'id'                 => (int) $post->ID,
-			'title'              => get_the_title( $post ),
-			'status'             => get_post_status( $post ),
-			'conversion_status'  => $conversion_status,
-			'last_result_status' => $status_key,
+			'id'                  => (int) $post->ID,
+			'title'               => get_the_title( $post ),
+			'status'              => get_post_status( $post ),
+			'conversion_status'   => $conversion_status,
+			'last_result_status'  => $status_key,
 			'last_result_message' => is_array( $last_result ) && isset( $last_result['message'] ) ? (string) $last_result['message'] : '',
-			'last_converted'     => $last_converted,
-			'source'             => $source,
-			'type'               => $type,
-			'post_type'          => get_post_type( $post ),
-			'is_global'          => $is_global,
-			'modified'           => $this->get_post_modified_timestamp( $post ),
+			'last_converted'      => $last_converted,
+			'source'              => $source,
+			'type'                => $type,
+			'post_type'           => get_post_type( $post ),
+			'is_global'           => $is_global,
+			'target_pages'        => array_values( array_unique( array_filter( array_map( 'absint', $target_pages ) ) ) ),
+			'modified'            => $this->get_post_modified_timestamp( $post ),
 		);
+	}
+
+	/**
+	 * Extract page-specific targets for an Elementor Pro template.
+	 */
+	private function get_elementor_pro_template_targets( int $post_id ): array {
+		$conditions = get_post_meta( $post_id, '_elementor_conditions', true );
+
+		if ( is_string( $conditions ) && '' !== $conditions ) {
+			$decoded = json_decode( $conditions, true );
+			if ( is_array( $decoded ) ) {
+				$conditions = $decoded;
+			}
+		}
+
+		if ( ! is_array( $conditions ) ) {
+			return array( 'pages' => array() );
+		}
+
+		$pages = array();
+
+		foreach ( $conditions as $group ) {
+			if ( ! is_array( $group ) ) {
+				continue;
+			}
+
+			foreach ( $group as $condition ) {
+				if ( ! is_array( $condition ) ) {
+					continue;
+				}
+
+				$type = isset( $condition['type'] ) ? (string) $condition['type'] : 'include';
+				if ( 'include' !== $type ) {
+					continue;
+				}
+
+				foreach ( array( 'id', 'post_id', 'sub_id' ) as $key ) {
+					if ( ! empty( $condition[ $key ] ) ) {
+						$pages[] = absint( $condition[ $key ] );
+					}
+				}
+
+				if ( isset( $condition['value'] ) ) {
+					$this->collect_page_ids_from_value( $condition['value'], $pages );
+				}
+
+				if ( isset( $condition['name'] ) ) {
+					$this->collect_page_ids_from_value( $condition['name'], $pages );
+				}
+
+				if ( isset( $condition['sub_name'] ) ) {
+					$this->collect_page_ids_from_value( $condition['sub_name'], $pages );
+				}
+			}
+		}
+
+		$pages = array_values( array_unique( array_filter( array_map( 'absint', $pages ) ) ) );
+
+		return array(
+			'pages' => $pages,
+		);
+	}
+
+	/**
+	 * Extract page-specific targets for a Header Footer Elementor template.
+	 */
+	private function get_header_footer_elementor_template_targets( int $post_id ): array {
+		$include_locations = get_post_meta( $post_id, 'ehf_target_include_locations', true );
+		$include_locations = maybe_unserialize( $include_locations );
+
+		$pages = array();
+
+		if ( is_array( $include_locations ) ) {
+			foreach ( $include_locations as $location ) {
+				$this->collect_page_ids_from_value( $location, $pages );
+			}
+		}
+
+		$exclude_locations = get_post_meta( $post_id, 'ehf_target_exclude_locations', true );
+		$exclude_locations = maybe_unserialize( $exclude_locations );
+
+		if ( is_array( $exclude_locations ) && ! empty( $pages ) ) {
+			$excluded = array();
+			foreach ( $exclude_locations as $location ) {
+				$this->collect_page_ids_from_value( $location, $excluded );
+			}
+
+			if ( ! empty( $excluded ) ) {
+				$pages = array_diff( $pages, $excluded );
+			}
+		}
+
+		$pages = array_values( array_unique( array_filter( array_map( 'absint', $pages ) ) ) );
+
+		return array(
+			'pages' => $pages,
+		);
+	}
+
+	/**
+	 * Collect page IDs from a mixed value.
+	 *
+	 * @param mixed $value Value to inspect.
+	 * @param array $pages Accumulator for page IDs.
+	 */
+	private function collect_page_ids_from_value( $value, array &$pages ): void {
+		if ( is_array( $value ) ) {
+			foreach ( $value as $item ) {
+				$this->collect_page_ids_from_value( $item, $pages );
+			}
+
+			return;
+		}
+
+		if ( is_numeric( $value ) ) {
+			$pages[] = absint( $value );
+
+			return;
+		}
+
+		if ( is_string( $value ) ) {
+			if ( preg_match_all( '/\d+/', $value, $matches ) && ! empty( $matches[0] ) ) {
+				foreach ( $matches[0] as $match ) {
+					$pages[] = absint( $match );
+				}
+			}
+		}
 	}
 
 	/**
@@ -834,26 +978,26 @@ class Batch_Convert_Wizard {
 		$view_converted = $target_id ? get_permalink( $target_id ) : '';
 
 		return array(
-			'id'                    => (int) $post->ID,
-			'title'                 => get_the_title( $post ),
-			'status'                => get_post_status( $post ),
-			'conversionStatus'      => $conversion_status,
-			'lastResultStatus'      => $status_key,
-			'lastResultMessage'     => is_array( $last_result ) && isset( $last_result['message'] ) ? (string) $last_result['message'] : '',
-			'lastConverted'         => $last_converted,
-			'hasConflict'           => $target_id > 0,
-			'targetId'              => $target_id,
-			'viewConvertedUrl'      => $view_converted,
-			'editUrl'               => get_edit_post_link( $post ),
-			'slug'                  => $post->post_name,
+			'id'                => (int) $post->ID,
+			'title'             => get_the_title( $post ),
+			'status'            => get_post_status( $post ),
+			'conversionStatus'  => $conversion_status,
+			'lastResultStatus'  => $status_key,
+			'lastResultMessage' => is_array( $last_result ) && isset( $last_result['message'] ) ? (string) $last_result['message'] : '',
+			'lastConverted'     => $last_converted,
+			'hasConflict'       => $target_id > 0,
+			'targetId'          => $target_id,
+			'viewConvertedUrl'  => $view_converted,
+			'editUrl'           => get_edit_post_link( $post ),
+			'slug'              => $post->post_name,
 		);
 	}
 
 	/**
 	 * Prepare job pages configuration.
 	 *
-	 * @param array $page_ids        Selected page IDs.
-	 * @param array $disabled_meta   Page IDs where meta copy is disabled.
+	 * @param array $page_ids Selected page IDs.
+	 * @param array $disabled_meta Page IDs where meta copy is disabled.
 	 */
 	private function prepare_job_pages( array $page_ids, array $disabled_meta ): array {
 		$pages = array();
@@ -911,7 +1055,7 @@ class Batch_Convert_Wizard {
 	 * Prepare job templates configuration.
 	 */
 	private function prepare_job_templates( string $mode, array $selected_headers, array $selected_footers, int $default_header, int $default_footer ): array {
-		$detected = $this->get_header_footer_templates_raw();
+		$detected     = $this->get_header_footer_templates_raw();
 		$header_index = array();
 		foreach ( $detected['headers'] as $template ) {
 			$header_index[ (int) $template['id'] ] = $template;
@@ -922,8 +1066,8 @@ class Batch_Convert_Wizard {
 			$footer_index[ (int) $template['id'] ] = $template;
 		}
 
-		$headers = array();
-		$footers = array();
+		$headers           = array();
+		$footers           = array();
 		$header_default_id = 0;
 		$footer_default_id = 0;
 
@@ -1013,12 +1157,14 @@ class Batch_Convert_Wizard {
 			: self::TEMPLATE_ROLE_EXTRA;
 
 		return array(
-			'id'         => (int) $template['id'],
-			'title'      => $template['title'],
-			'source'     => $template['source'],
-			'type'       => $type,
-			'is_default' => $is_default,
-			'role'       => $role,
+			'id'           => (int) $template['id'],
+			'title'        => $template['title'],
+			'source'       => $template['source'],
+			'type'         => $type,
+			'is_default'   => $is_default,
+			'role'         => $role,
+			'is_global'    => ! empty( $template['is_global'] ),
+			'target_pages' => $template['target_pages'] ?? array(),
 		);
 	}
 
@@ -1065,7 +1211,7 @@ class Batch_Convert_Wizard {
 	/**
 	 * Process a single page conversion.
 	 *
-	 * @param int   $post_id Post ID.
+	 * @param int $post_id Post ID.
 	 * @param array $options Conversion options.
 	 */
 	public function process_single_post( int $post_id, array $options ): array {
@@ -1078,40 +1224,45 @@ class Batch_Convert_Wizard {
 		);
 
 		if ( ! $post || 'page' !== $post->post_type ) {
-			$message = esc_html__( 'Skipped: only pages can be converted.', 'elementor-to-gutenberg' );
+			$message           = esc_html__( 'Skipped: only pages can be converted.', 'elementor-to-gutenberg' );
 			$result['message'] = $message;
+
 			return $result;
 		}
 
 		$target_id = $this->get_existing_target_id( $post_id );
 		if ( ! empty( $options['skip_converted'] ) && $this->has_been_converted( $post_id, $target_id ) ) {
-			$title   = get_the_title( $post_id );
-			$message = sprintf( esc_html__( 'Skipped: “%s” is already converted.', 'elementor-to-gutenberg' ), $title );
+			$title             = get_the_title( $post_id );
+			$message           = sprintf( esc_html__( 'Skipped: “%s” is already converted.', 'elementor-to-gutenberg' ), $title );
 			$result['message'] = $message;
 			$result['target']  = $target_id;
+
 			return $result;
 		}
 
 		$json_data = get_post_meta( $post_id, '_elementor_data', true );
 		if ( empty( $json_data ) ) {
-			$message = esc_html__( 'Skipped: Elementor data not found.', 'elementor-to-gutenberg' );
+			$message           = esc_html__( 'Skipped: Elementor data not found.', 'elementor-to-gutenberg' );
 			$result['message'] = $message;
+
 			return $result;
 		}
 
 		$decoded = json_decode( $json_data, true );
 		if ( null === $decoded && JSON_ERROR_NONE !== json_last_error() ) {
-			$message = esc_html__( 'Failed: invalid Elementor JSON data.', 'elementor-to-gutenberg' );
+			$message           = esc_html__( 'Failed: invalid Elementor JSON data.', 'elementor-to-gutenberg' );
 			$result['status']  = 'error';
 			$result['message'] = $message;
+
 			return $result;
 		}
 
 		$content = Admin_Settings::instance()->convert_json_to_gutenberg_content( array( 'content' => $decoded ) );
 		if ( '' === trim( $content ) ) {
-			$message = esc_html__( 'Failed: conversion produced no Gutenberg content.', 'elementor-to-gutenberg' );
+			$message           = esc_html__( 'Failed: conversion produced no Gutenberg content.', 'elementor-to-gutenberg' );
 			$result['status']  = 'error';
 			$result['message'] = $message;
+
 			return $result;
 		}
 
@@ -1120,7 +1271,7 @@ class Batch_Convert_Wizard {
 		}
 
 		if ( 'update' === $options['mode'] ) {
-			$save = wp_update_post(
+			$save      = wp_update_post(
 				array(
 					'ID'           => $post_id,
 					'post_content' => $content,
@@ -1129,7 +1280,7 @@ class Batch_Convert_Wizard {
 			);
 			$target_id = is_wp_error( $save ) ? 0 : (int) $save;
 		} else {
-			$save = wp_insert_post(
+			$save      = wp_insert_post(
 				array(
 					'post_title'   => get_the_title( $post_id ) . ' (Gutenberg)',
 					'post_type'    => get_post_type( $post_id ),
@@ -1148,9 +1299,10 @@ class Batch_Convert_Wizard {
 		}
 
 		if ( empty( $target_id ) ) {
-			$message = esc_html__( 'Failed: could not save Gutenberg content.', 'elementor-to-gutenberg' );
+			$message           = esc_html__( 'Failed: could not save Gutenberg content.', 'elementor-to-gutenberg' );
 			$result['status']  = 'error';
 			$result['message'] = $message;
+
 			return $result;
 		}
 
@@ -1175,8 +1327,8 @@ class Batch_Convert_Wizard {
 	/**
 	 * Copy non-Elementor meta values to the target post.
 	 *
-	 * @param int  $source_id Source post ID.
-	 * @param int  $target_id Target post ID.
+	 * @param int $source_id Source post ID.
+	 * @param int $target_id Target post ID.
 	 * @param bool $update_mode Whether we are updating the same post.
 	 */
 	private function copy_post_meta( int $source_id, int $target_id, bool $update_mode = false ): void {
@@ -1195,6 +1347,7 @@ class Batch_Convert_Wizard {
 			if ( $thumbnail_id ) {
 				set_post_thumbnail( $target_id, $thumbnail_id );
 			}
+
 			return;
 		}
 
@@ -1268,15 +1421,16 @@ class Batch_Convert_Wizard {
 	 */
 	private function process_template_conversion( array $template_info, array $options ): array {
 		$result = array(
-			'status'  => 'skipped',
-			'message' => '',
-			'target'  => 0,
-			'view_url'=> '',
+			'status'   => 'skipped',
+			'message'  => '',
+			'target'   => 0,
+			'view_url' => '',
 		);
 
 		$post = get_post( (int) $template_info['id'] );
 		if ( ! $post instanceof WP_Post ) {
 			$result['message'] = esc_html__( 'Skipped: template not found.', 'elementor-to-gutenberg' );
+
 			return $result;
 		}
 
@@ -1307,54 +1461,58 @@ class Batch_Convert_Wizard {
 
 		$json_data = get_post_meta( $post->ID, '_elementor_data', true );
 		if ( empty( $json_data ) ) {
-			$message = esc_html__( 'Skipped: Elementor data not found.', 'elementor-to-gutenberg' );
+			$message   = esc_html__( 'Skipped: Elementor data not found.', 'elementor-to-gutenberg' );
 			$edit_link = $existing_target ? get_edit_post_link( $existing_target, '' ) : '';
 			if ( $existing_target && ! $edit_link ) {
 				$edit_link = admin_url( 'post.php?post=' . $existing_target . '&action=edit' );
 			}
 
-			$result['message'] = $message;
-			$result['target']  = $existing_target;
+			$result['message']  = $message;
+			$result['target']   = $existing_target;
 			$result['view_url'] = (string) $edit_link;
+
 			return $result;
 		}
 
 		$decoded = json_decode( $json_data, true );
 		if ( null === $decoded && JSON_ERROR_NONE !== json_last_error() ) {
-			$message = esc_html__( 'Failed: invalid Elementor JSON data.', 'elementor-to-gutenberg' );
+			$message   = esc_html__( 'Failed: invalid Elementor JSON data.', 'elementor-to-gutenberg' );
 			$edit_link = $existing_target ? get_edit_post_link( $existing_target, '' ) : '';
 			if ( $existing_target && ! $edit_link ) {
 				$edit_link = admin_url( 'post.php?post=' . $existing_target . '&action=edit' );
 			}
 
-			$result['status']  = 'error';
-			$result['message'] = $message;
-			$result['target']  = $existing_target;
+			$result['status']   = 'error';
+			$result['message']  = $message;
+			$result['target']   = $existing_target;
 			$result['view_url'] = (string) $edit_link;
+
 			return $result;
 		}
 
 		$content = Admin_Settings::instance()->convert_json_to_gutenberg_content( array( 'content' => $decoded ) );
 		if ( '' === trim( $content ) ) {
-			$message = esc_html__( 'Failed: conversion produced no Gutenberg content.', 'elementor-to-gutenberg' );
+			$message   = esc_html__( 'Failed: conversion produced no Gutenberg content.', 'elementor-to-gutenberg' );
 			$edit_link = $existing_target ? get_edit_post_link( $existing_target, '' ) : '';
 			if ( $existing_target && ! $edit_link ) {
 				$edit_link = admin_url( 'post.php?post=' . $existing_target . '&action=edit' );
 			}
 
-			$result['status']  = 'error';
-			$result['message'] = $message;
-			$result['target']  = $existing_target;
+			$result['status']   = 'error';
+			$result['message']  = $message;
+			$result['target']   = $existing_target;
 			$result['view_url'] = (string) $edit_link;
+
 			return $result;
 		}
 
 		$target_id = $this->save_template_part( $template_info, $post, $content, $existing_target );
 		if ( ! $target_id ) {
-			$message = esc_html__( 'Failed: could not save Gutenberg template.', 'elementor-to-gutenberg' );
+			$message           = esc_html__( 'Failed: could not save Gutenberg template.', 'elementor-to-gutenberg' );
 			$result['status']  = 'error';
 			$result['message'] = $message;
 			$result['target']  = $existing_target;
+
 			return $result;
 		}
 
@@ -1362,12 +1520,20 @@ class Batch_Convert_Wizard {
 		$this->update_template_part_role( $target_id, (string) $template_info['role'], (string) $template_info['type'] );
 
         // force it to become the actual default template part in the active block theme.
+		$is_global   = ! empty( $template_info['is_global'] );
+		$has_targets = ! empty( $template_info['target_pages'] ) && is_array( $template_info['target_pages'] );
+
 		if ( self::TEMPLATE_ROLE_DEFAULT_HEADER === $template_info['role'] && 'header' === $template_info['type'] ) {
 			$this->force_block_theme_default_header( $target_id );
 		}
 
 		if ( self::TEMPLATE_ROLE_DEFAULT_FOOTER === $template_info['role'] && 'footer' === $template_info['type'] ) {
 			$this->force_block_theme_default_footer( $target_id );
+		}
+
+		if (  $has_targets ) {
+
+			$this->link_template_part_to_target_pages( $target_id, $template_info );
 		}
 
 		$label   = 'header' === $template_info['type'] ? esc_html__( 'header', 'elementor-to-gutenberg' ) : esc_html__( 'footer', 'elementor-to-gutenberg' );
@@ -1456,6 +1622,7 @@ class Batch_Convert_Wizard {
 
 	/**
 	 * Force a converted template part to act as the default FSE header.
+	 *
 	 * @param int $target_id Template part post ID.
 	 */
 	private function force_block_theme_default_header( int $target_id ): void {
@@ -1586,6 +1753,171 @@ class Batch_Convert_Wizard {
 	}
 
 	/**
+	 * Link a template part to specific converted pages via page templates.
+	 *
+	 * @param int $target_id Template part post ID.
+	 * @param array $template_info Template info array.
+	 */
+	private function link_template_part_to_target_pages( int $target_id, array $template_info ): void {
+		if ( ! $target_id || empty( $template_info['target_pages'] ) || ! is_array( $template_info['target_pages'] ) ) {
+			return;
+		}
+
+		$linked_pages = array();
+
+		foreach ( $template_info['target_pages'] as $source_page_id ) {
+			$source_page_id = absint( $source_page_id );
+			if ( ! $source_page_id ) {
+				continue;
+			}
+
+			$converted_page_id = $this->get_existing_target_id( $source_page_id );
+			if ( ! $converted_page_id ) {
+				continue;
+			}
+
+			$template_id = $this->ensure_page_template_for_page( $converted_page_id, $template_info, $target_id );
+
+			if ( $template_id ) {
+				$linked_pages[] = $converted_page_id;
+			}
+		}
+
+		if ( ! empty( $linked_pages ) ) {
+			update_post_meta( $target_id, '_ele2gb_linked_pages', array_values( array_unique( $linked_pages ) ) );
+		}
+	}
+
+	/**
+	 * Create or update a page-specific template for a converted page.
+	 *
+	 * @param int $converted_page_id Converted Gutenberg page ID.
+	 * @param array $template_info Template info array.
+	 * @param int $target_id Template part ID to link.
+	 */
+	private function ensure_page_template_for_page( int $converted_page_id, array $template_info, int $target_id ): int {
+		$theme = get_stylesheet();
+		$slug  = sanitize_title( 'page-' . $converted_page_id );
+
+		$existing_id = $this->find_page_template_for_page( $slug, $theme );
+
+		$header_part_id = $existing_id ? (int) get_post_meta( $existing_id, '_ele2gb_header_part', true ) : 0;
+		$footer_part_id = $existing_id ? (int) get_post_meta( $existing_id, '_ele2gb_footer_part', true ) : 0;
+
+		if ( 'header' === $template_info['type'] ) {
+			$header_part_id = $target_id;
+		} elseif ( 'footer' === $template_info['type'] ) {
+			$footer_part_id = $target_id;
+		}
+
+		$header_slug = $header_part_id ? (string) get_post_field( 'post_name', $header_part_id ) : '';
+		$footer_slug = $footer_part_id ? (string) get_post_field( 'post_name', $footer_part_id ) : '';
+
+		$content = $this->build_page_template_content( $header_slug, $footer_slug );
+
+		$title_format = esc_html__( 'Page Template: %s', 'elementor-to-gutenberg' );
+		$post_title   = sprintf( $title_format, get_the_title( $converted_page_id ) );
+
+		$postarr = array(
+			'post_title'   => $post_title,
+			'post_name'    => $slug,
+			'post_content' => $content,
+			'post_status'  => 'publish',
+			'post_type'    => 'wp_template',
+			'post_author'  => (int) get_post_field( 'post_author', $converted_page_id ),
+		);
+
+		if ( $existing_id ) {
+			$postarr['ID'] = $existing_id;
+			$saved         = wp_update_post( $postarr, true );
+		} else {
+			$saved = wp_insert_post( $postarr, true );
+		}
+
+		if ( is_wp_error( $saved ) || ! $saved ) {
+			return 0;
+		}
+
+		$template_id = (int) $saved;
+
+		if ( $theme ) {
+			wp_set_post_terms( $template_id, array( $theme ), 'wp_theme', false );
+		}
+
+		update_post_meta( $template_id, '_ele2gb_header_part', $header_part_id );
+		update_post_meta( $template_id, '_ele2gb_footer_part', $footer_part_id );
+		update_post_meta( $template_id, '_ele2gb_page_id', $converted_page_id );
+
+		update_post_meta( $converted_page_id, '_wp_page_template', $slug );
+
+		return $template_id;
+	}
+
+	/**
+	 * Find an existing page-specific template for a page and theme.
+	 *
+	 * @param string $slug Template slug.
+	 * @param string $theme Current theme slug.
+	 */
+	private function find_page_template_for_page( string $slug, string $theme ): int {
+		$query_args = array(
+			'post_type'      => 'wp_template',
+			'post_status'    => array( 'publish', 'draft', 'pending', 'future', 'private' ),
+			'posts_per_page' => 1,
+			'fields'         => 'ids',
+			'name'           => $slug,
+		);
+
+		if ( $theme ) {
+			$query_args['tax_query'] = array(
+				array(
+					'taxonomy' => 'wp_theme',
+					'field'    => 'slug',
+					'terms'    => array( $theme ),
+				),
+			);
+		}
+
+		$query = new WP_Query( $query_args );
+		$found = $query->have_posts() ? (int) $query->posts[0] : 0;
+
+		wp_reset_postdata();
+
+		return $found;
+	}
+
+	/**
+	 * Build block content for a page template with optional header/footer parts.
+	 *
+	 * @param string $header_slug Header template part slug.
+	 * @param string $footer_slug Footer template part slug.
+	 */
+	private function build_page_template_content( string $header_slug, string $footer_slug ): string {
+		$theme  = get_stylesheet();
+		$blocks = array();
+
+		if ( '' !== $header_slug ) {
+			$blocks[] = sprintf(
+				'<!-- wp:template-part {"slug":"%1$s","theme":"%2$s","tagName":"header"} /-->',
+				$header_slug,
+				$theme
+			);
+		}
+
+		$blocks[] = '<!-- wp:post-content /-->';
+
+		if ( '' !== $footer_slug ) {
+			$blocks[] = sprintf(
+				'<!-- wp:template-part {"slug":"%1$s","theme":"%2$s","tagName":"footer"} /-->',
+				$footer_slug,
+				$theme
+			);
+		}
+
+		return implode( "\n", $blocks );
+	}
+
+	/**
 	 * Ensure only one template part keeps a default role.
 	 */
 	private function clear_existing_template_role( int $target_id, string $role, string $type ): void {
@@ -1593,7 +1925,7 @@ class Batch_Convert_Wizard {
 			array(
 				'post_type'      => 'wp_template_part',
 				'post_status'    => array( 'publish', 'draft', 'pending', 'future', 'private' ),
-				'posts_per_page' => -1,
+				'posts_per_page' => - 1,
 				'fields'         => 'ids',
 				'meta_query'     => array(
 					array(
@@ -1727,24 +2059,24 @@ class Batch_Convert_Wizard {
 		$results = array_map(
 			static function ( array $item ): array {
 				return array(
-					'id'        => (int) $item['id'],
-					'title'     => $item['title'],
-					'status'    => $item['status'],
-					'message'   => $item['message'],
-					'target'    => $item['target'],
-					'duration'  => $item['duration'],
-					'viewUrl'   => $item['view_url'],
-					'keepMeta'  => ! empty( $item['keep_meta'] ),
-					'type'      => isset( $item['type'] ) ? (string) $item['type'] : 'page',
-					'role'      => isset( $item['role'] ) ? (string) $item['role'] : '',
-					'source'    => isset( $item['source'] ) ? (string) $item['source'] : '',
+					'id'       => (int) $item['id'],
+					'title'    => $item['title'],
+					'status'   => $item['status'],
+					'message'  => $item['message'],
+					'target'   => $item['target'],
+					'duration' => $item['duration'],
+					'viewUrl'  => $item['view_url'],
+					'keepMeta' => ! empty( $item['keep_meta'] ),
+					'type'     => isset( $item['type'] ) ? (string) $item['type'] : 'page',
+					'role'     => isset( $item['role'] ) ? (string) $item['role'] : '',
+					'source'   => isset( $item['source'] ) ? (string) $item['source'] : '',
 				);
 			},
 			$job['results']
 		);
 
 		$templates = array(
-			'headers' => array_map(
+			'headers'  => array_map(
 				static function ( array $item ): array {
 					return array(
 						'id'        => (int) $item['id'],
@@ -1757,7 +2089,7 @@ class Batch_Convert_Wizard {
 				},
 				$job['templates']['headers'] ?? array()
 			),
-			'footers' => array_map(
+			'footers'  => array_map(
 				static function ( array $item ): array {
 					return array(
 						'id'        => (int) $item['id'],
@@ -1777,20 +2109,20 @@ class Batch_Convert_Wizard {
 		);
 
 		return array(
-			'id'              => $job['id'],
-			'status'          => $job['status'],
-			'mode'            => $job['mode'],
-			'conflictPolicy'  => $job['conflict_policy'],
-			'skipConverted'   => ! empty( $job['options']['skip_converted'] ),
-			'total'           => $total,
-			'processed'       => $processed,
-			'counts'          => $job['counts'],
-			'results'         => $results,
-			'templates'       => $templates,
-			'createdAt'       => (int) $job['created_at'],
-			'startedAt'       => (int) $job['started_at'],
-			'completedAt'     => (int) $job['completed_at'],
-			'duration'        => $duration,
+			'id'             => $job['id'],
+			'status'         => $job['status'],
+			'mode'           => $job['mode'],
+			'conflictPolicy' => $job['conflict_policy'],
+			'skipConverted'  => ! empty( $job['options']['skip_converted'] ),
+			'total'          => $total,
+			'processed'      => $processed,
+			'counts'         => $job['counts'],
+			'results'        => $results,
+			'templates'      => $templates,
+			'createdAt'      => (int) $job['created_at'],
+			'startedAt'      => (int) $job['started_at'],
+			'completedAt'    => (int) $job['completed_at'],
+			'duration'       => $duration,
 		);
 	}
 
@@ -1894,6 +2226,7 @@ class Batch_Convert_Wizard {
 		$job = $this->get_job( (string) $job_id );
 		if ( empty( $job ) ) {
 			delete_user_meta( get_current_user_id(), '_ele2gb_job' );
+
 			return array();
 		}
 
@@ -1908,6 +2241,7 @@ class Batch_Convert_Wizard {
 	private function delete_job( string $job_id ): void {
 		delete_transient( self::JOB_TRANSIENT_PREFIX . $job_id );
 	}
+
 	/**
 	 * Cancel an existing conversion job via AJAX.
 	 */
@@ -1949,6 +2283,62 @@ class Batch_Convert_Wizard {
 				'job' => $this->format_job_for_response( $job ),
 			)
 		);
+	}
+	/**
+	 * Store conversion result meta for a normal page.
+	 *
+	 * @param int   $source_id Source Elementor page ID.
+	 * @param array $result_entry Result entry from the job.
+	 */
+	private function store_page_conversion_result( int $source_id, array $result_entry ): void {
+		$time = gmdate( 'Y-m-d H:i:s' );
+
+		$data = array(
+			'status'  => $result_entry['status'],
+			'message' => $result_entry['message'],
+			'target'  => $result_entry['target'],
+			'time'    => $time,
+		);
+
+		// Store on the original Elementor page.
+		update_post_meta( $source_id, '_ele2gb_last_result', $data );
+
+		// Store also on the converted page (if any).
+		if ( ! empty( $result_entry['target'] ) ) {
+			update_post_meta( $result_entry['target'], '_ele2gb_last_result', $data );
+		}
+
+		// Mark as "converted" only when success.
+		if ( 'success' === $result_entry['status'] ) {
+			update_post_meta( $source_id, '_ele2gb_last_converted', $time );
+
+			if ( ! empty( $result_entry['target'] ) ) {
+				update_post_meta( $result_entry['target'], '_ele2gb_last_converted', $time );
+			}
+		}
+	}
+
+	/**
+	 * Store conversion result meta for a header/footer template.
+	 *
+	 * @param int   $template_id Source Elementor template ID.
+	 * @param array $result_entry Result entry from the job.
+	 */
+	private function store_template_conversion_result( int $template_id, array $result_entry ): void {
+		$time = gmdate( 'Y-m-d H:i:s' );
+
+		$data = array(
+			'status'  => $result_entry['status'],
+			'message' => $result_entry['message'],
+			'target'  => $result_entry['target'],
+			'time'    => $time,
+		);
+
+		update_post_meta( $template_id, '_ele2gb_last_result', $data );
+
+		if ( 'success' === $result_entry['status'] ) {
+			update_post_meta( $template_id, '_ele2gb_last_converted', $time );
+		}
 	}
 
 }
