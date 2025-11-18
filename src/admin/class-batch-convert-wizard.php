@@ -386,6 +386,9 @@ class Batch_Convert_Wizard {
 					'keep_meta' => $keep_meta,
 					'type'      => 'page',
 				);
+
+				$this->store_page_conversion_result( (int) $page_info['id'], $result_entry );
+
 			} else {
 				$template_info = $item['data'];
 
@@ -408,6 +411,8 @@ class Batch_Convert_Wizard {
 					'role'      => $template_info['role'],
 					'source'    => $template_info['source'],
 				);
+
+				$this->store_template_conversion_result( (int) $template_info['id'], $result_entry );
 			}
 
 			$job['results'][] = $result_entry;
@@ -1514,23 +1519,20 @@ class Batch_Convert_Wizard {
 		$this->store_template_part_meta( $target_id, $template_info );
 		$this->update_template_part_role( $target_id, (string) $template_info['role'], (string) $template_info['type'] );
 
-// force it to become the actual default template part in the active block theme.
+        // force it to become the actual default template part in the active block theme.
 		$is_global   = ! empty( $template_info['is_global'] );
 		$has_targets = ! empty( $template_info['target_pages'] ) && is_array( $template_info['target_pages'] );
 
 		if ( self::TEMPLATE_ROLE_DEFAULT_HEADER === $template_info['role'] && 'header' === $template_info['type'] ) {
-			if ( $is_global ) {
-				$this->force_block_theme_default_header( $target_id );
-			}
+			$this->force_block_theme_default_header( $target_id );
 		}
 
 		if ( self::TEMPLATE_ROLE_DEFAULT_FOOTER === $template_info['role'] && 'footer' === $template_info['type'] ) {
-			if ( $is_global ) {
-				$this->force_block_theme_default_footer( $target_id );
-			}
+			$this->force_block_theme_default_footer( $target_id );
 		}
 
-		if ( ! $is_global && $has_targets ) {
+		if (  $has_targets ) {
+
 			$this->link_template_part_to_target_pages( $target_id, $template_info );
 		}
 
@@ -2281,6 +2283,62 @@ class Batch_Convert_Wizard {
 				'job' => $this->format_job_for_response( $job ),
 			)
 		);
+	}
+	/**
+	 * Store conversion result meta for a normal page.
+	 *
+	 * @param int   $source_id Source Elementor page ID.
+	 * @param array $result_entry Result entry from the job.
+	 */
+	private function store_page_conversion_result( int $source_id, array $result_entry ): void {
+		$time = gmdate( 'Y-m-d H:i:s' );
+
+		$data = array(
+			'status'  => $result_entry['status'],
+			'message' => $result_entry['message'],
+			'target'  => $result_entry['target'],
+			'time'    => $time,
+		);
+
+		// Store on the original Elementor page.
+		update_post_meta( $source_id, '_ele2gb_last_result', $data );
+
+		// Store also on the converted page (if any).
+		if ( ! empty( $result_entry['target'] ) ) {
+			update_post_meta( $result_entry['target'], '_ele2gb_last_result', $data );
+		}
+
+		// Mark as "converted" only when success.
+		if ( 'success' === $result_entry['status'] ) {
+			update_post_meta( $source_id, '_ele2gb_last_converted', $time );
+
+			if ( ! empty( $result_entry['target'] ) ) {
+				update_post_meta( $result_entry['target'], '_ele2gb_last_converted', $time );
+			}
+		}
+	}
+
+	/**
+	 * Store conversion result meta for a header/footer template.
+	 *
+	 * @param int   $template_id Source Elementor template ID.
+	 * @param array $result_entry Result entry from the job.
+	 */
+	private function store_template_conversion_result( int $template_id, array $result_entry ): void {
+		$time = gmdate( 'Y-m-d H:i:s' );
+
+		$data = array(
+			'status'  => $result_entry['status'],
+			'message' => $result_entry['message'],
+			'target'  => $result_entry['target'],
+			'time'    => $time,
+		);
+
+		update_post_meta( $template_id, '_ele2gb_last_result', $data );
+
+		if ( 'success' === $result_entry['status'] ) {
+			update_post_meta( $template_id, '_ele2gb_last_converted', $time );
+		}
 	}
 
 }
