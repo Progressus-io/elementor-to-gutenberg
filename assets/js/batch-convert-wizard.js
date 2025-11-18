@@ -12,18 +12,18 @@
     }
 
     const STATUS_BADGES = {
-        converted: { labelKey: 'statusConverted', className: 'ele2gb-status-converted' },
-        not_converted: { labelKey: 'statusNotConverted', className: 'ele2gb-status-not_converted' },
-        partial: { labelKey: 'statusPartial', className: 'ele2gb-status-partial' },
-        error: { labelKey: 'statusError', className: 'ele2gb-status-error' },
-        skipped: { labelKey: 'statusSkipped', className: 'ele2gb-status-skipped' },
+        converted: {labelKey: 'statusConverted', className: 'ele2gb-status-converted'},
+        not_converted: {labelKey: 'statusNotConverted', className: 'ele2gb-status-not_converted'},
+        partial: {labelKey: 'statusPartial', className: 'ele2gb-status-partial'},
+        error: {labelKey: 'statusError', className: 'ele2gb-status-error'},
+        skipped: {labelKey: 'statusSkipped', className: 'ele2gb-status-skipped'},
     };
 
     const RESULT_STATUS = {
-        success: { labelKey: 'statusConverted', badge: 'converted' },
-        error: { labelKey: 'statusError', badge: 'error' },
-        skipped: { labelKey: 'statusSkipped', badge: 'skipped' },
-        partial: { labelKey: 'statusPartial', badge: 'partial' },
+        success: {labelKey: 'statusConverted', badge: 'converted'},
+        error: {labelKey: 'statusError', badge: 'error'},
+        skipped: {labelKey: 'statusSkipped', badge: 'skipped'},
+        partial: {labelKey: 'statusPartial', badge: 'partial'},
     };
 
     function formatString(template, ...values) {
@@ -77,11 +77,12 @@
             this.config = config;
             this.strings = config.strings || {};
             this.pages = Array.isArray(config.pages) ? config.pages.slice() : [];
+            this.themes = config.themes || {currentTheme: null, installedBlockThemes: [], suggestedCoreThemes: []};
             this.templates = config.templates || {
                 headers: [],
                 footers: [],
-                defaults: { header: 0, footer: 0 },
-                counts: { headers: 0, footers: 0 },
+                defaults: {header: 0, footer: 0},
+                counts: {headers: 0, footers: 0},
             };
             this.state = {
                 currentStep: 'mode',
@@ -104,6 +105,9 @@
                 lastPayload: null,
                 resumed: false,
                 refreshing: false,
+                selectedThemeSlug: this.getCurrentThemeSlug(),
+                changeTheme: false,
+                copyCustomCss: true,
             };
 
             if (config.activeJob && config.activeJob.id) {
@@ -200,6 +204,49 @@
             }
         }
 
+        resetThemeSelection() {
+            this.state.selectedThemeSlug = this.getCurrentThemeSlug();
+            this.state.changeTheme = false;
+            this.state.copyCustomCss = true;
+        }
+
+        getCurrentThemeSlug() {
+            return (this.themes.currentTheme && this.themes.currentTheme.slug) || '';
+        }
+
+        getCurrentThemeName() {
+            return (this.themes.currentTheme && this.themes.currentTheme.name) || '';
+        }
+
+        isCurrentThemeBlock() {
+            return !!(this.themes.currentTheme && this.themes.currentTheme.isBlockTheme);
+        }
+
+        willChangeTheme() {
+            const targetSlug = this.state.selectedThemeSlug || this.getCurrentThemeSlug();
+            return !!(targetSlug && targetSlug !== this.getCurrentThemeSlug());
+        }
+
+        shouldCopyCss() {
+            if (!this.willChangeTheme()) {
+                return false;
+            }
+
+            if (this.state.mode === 'auto') {
+                return true;
+            }
+
+            return !!this.state.copyCustomCss;
+        }
+
+        getSelectedTheme() {
+            const slug = this.state.selectedThemeSlug || this.getCurrentThemeSlug();
+            const installed = Array.isArray(this.themes.installedBlockThemes) ? this.themes.installedBlockThemes : [];
+            const suggested = Array.isArray(this.themes.suggestedCoreThemes) ? this.themes.suggestedCoreThemes : [];
+
+            return installed.find((theme) => theme.slug === slug) || suggested.find((theme) => theme.slug === slug) || null;
+        }
+
         toggleTemplateSelection(type, id, checked) {
             const templateId = Number(id);
             const set = type === 'header' ? this.state.selectedHeaderIds : this.state.selectedFooterIds;
@@ -268,7 +315,7 @@
                 return ['progress'];
             }
 
-            const steps = ['mode'];
+            const steps = ['mode', 'theme'];
             if (this.state.mode === 'custom') {
                 steps.push('select');
                 steps.push('templates');
@@ -293,6 +340,8 @@
             switch (step) {
                 case 'mode':
                     return this.strings.modeTitle || 'Choose Mode';
+                case 'theme':
+                    return this.strings.themeStepTitle || 'Theme compatibility';
                 case 'select': {
                     const summary = formatString(this.strings.selectionSummary || '%1$d selected / %2$d total', this.state.selectedPageIds.size, this.pages.length);
                     return (this.strings.selectPagesTitle || 'Select Pages') + ' (' + summary + ')';
@@ -314,7 +363,7 @@
             if (!message) {
                 this.state.notice = null;
             } else {
-                this.state.notice = { type: type || 'info', message };
+                this.state.notice = {type: type || 'info', message};
             }
             this.render();
         }
@@ -395,7 +444,7 @@
             }
             this.stopPolling();
             const poll = () => {
-                this.request('ele2gb_poll_job', { jobId: this.state.job.id })
+                this.request('ele2gb_poll_job', {jobId: this.state.job.id})
                     .then((response) => {
                         if (response && response.job) {
                             this.state.job = response.job;
@@ -434,7 +483,7 @@
 
             this.stopPolling();
 
-            this.request('ele2gb_cancel_job', { jobId: this.state.job.id })
+            this.request('ele2gb_cancel_job', {jobId: this.state.job.id})
                 .then((response) => {
                     // If PHP returns the cancelled job, keep it for display; otherwise clear.
                     if (response && response.job) {
@@ -486,6 +535,20 @@
                 });
         }
 
+        getThemePayload() {
+            const willChange = this.willChangeTheme();
+            const payload = {
+                changeTheme: willChange ? 1 : 0,
+            };
+
+            if (willChange) {
+                payload.newTheme = this.state.selectedThemeSlug || this.getCurrentThemeSlug();
+                payload.copyCustomCss = this.shouldCopyCss() ? 1 : 0;
+            }
+
+            return payload;
+        }
+
         startConversion() {
             const selected = Array.from(this.state.selectedPageIds);
             const selectedHeaders = this.getSelectedTemplateIds('header');
@@ -505,6 +568,9 @@
                 skipConverted: this.state.skipConverted ? 1 : 0,
                 conflictPolicy: this.state.conflictPolicy,
             };
+
+            const themePayload = this.getThemePayload();
+            Object.assign(payload, themePayload);
 
             if (this.state.mode === 'custom') {
                 payload.headerTemplates = selectedHeaders;
@@ -611,6 +677,7 @@
                 resumed: false,
             });
             this.resetSelectionForMode('auto');
+            this.resetThemeSelection();
             this.clearNotice();
             this.render();
         }
@@ -690,6 +757,109 @@
                 this.resetSelectionForMode(this.state.modeSelection);
                 this.goToNext();
             });
+            buttons.appendChild(continueBtn);
+            container.appendChild(buttons);
+
+            return container;
+        }
+
+        renderThemeOption(theme, radioName) {
+            const label = document.createElement('label');
+            label.className = 'ele2gb-theme-card';
+            const input = document.createElement('input');
+            input.type = 'radio';
+            input.name = radioName;
+            input.value = theme.slug;
+            input.checked = (this.state.selectedThemeSlug || this.getCurrentThemeSlug()) === theme.slug;
+            input.addEventListener('change', () => {
+                this.state.selectedThemeSlug = theme.slug;
+                this.state.changeTheme = theme.slug !== this.getCurrentThemeSlug();
+                if (this.state.mode === 'auto' && this.state.changeTheme) {
+                    this.state.copyCustomCss = true;
+                }
+                this.clearNotice();
+                this.render();
+            });
+            label.appendChild(input);
+
+            const title = createElement('h3', null, theme.name || theme.slug);
+            label.appendChild(title);
+            if (theme.isActive) {
+                label.appendChild(createElement('span', 'ele2gb-status-badge ele2gb-status-converted', this.strings.themeActiveLabel || 'Active'));
+            }
+            return label;
+        }
+
+        renderThemeStep() {
+            const container = createElement('div');
+            container.appendChild(createElement('h2', 'ele2gb-wizard-step-title', this.strings.themeStepTitle || 'Theme compatibility'));
+            if (this.strings.themeStepDesc) {
+                container.appendChild(createElement('p', 'ele2gb-step-description', this.strings.themeStepDesc));
+            }
+
+            const radioName = 'ele2gb-theme-choice';
+            const optionsWrapper = createElement('div', 'ele2gb-theme-options');
+
+            const currentTheme = {
+                slug: this.getCurrentThemeSlug(),
+                name: this.getCurrentThemeName(),
+                isActive: true,
+            };
+            optionsWrapper.appendChild(this.renderThemeOption(currentTheme, radioName));
+
+            const installed = Array.isArray(this.themes.installedBlockThemes) ? this.themes.installedBlockThemes : [];
+            const suggested = Array.isArray(this.themes.suggestedCoreThemes) ? this.themes.suggestedCoreThemes : [];
+
+            if (installed.length) {
+                optionsWrapper.appendChild(createElement('h3', null, this.strings.themeInstalledList || 'Installed block themes'));
+                installed
+                    .filter((theme) => theme.slug !== currentTheme.slug)
+                    .forEach((theme) => {
+                        optionsWrapper.appendChild(this.renderThemeOption(theme, radioName));
+                    });
+            } else {
+                optionsWrapper.appendChild(createElement('p', 'ele2gb-step-description', this.strings.themeNoInstalled || 'No compatible block themes are installed.'));
+            }
+
+            if (suggested.length) {
+                optionsWrapper.appendChild(createElement('h3', null, this.strings.themeSuggestedCore || 'Suggested core block themes'));
+                suggested.forEach((theme) => {
+                    optionsWrapper.appendChild(this.renderThemeOption(theme, radioName));
+                });
+            }
+
+            container.appendChild(optionsWrapper);
+
+            if (this.isCurrentThemeBlock()) {
+                container.appendChild(createElement('p', 'ele2gb-step-description', this.strings.themeCurrentGood || 'Your current theme already supports Gutenberg and block templates.'));
+            } else {
+                container.appendChild(createElement('p', 'ele2gb-step-description', this.strings.themeSelectPrompt || 'Select a block theme for best compatibility.'));
+            }
+
+            if (this.willChangeTheme() && this.state.mode === 'custom') {
+                const cssWrapper = document.createElement('label');
+                cssWrapper.className = 'ele2gb-inline-toggle';
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = this.state.copyCustomCss;
+                checkbox.addEventListener('change', () => {
+                    this.state.copyCustomCss = checkbox.checked;
+                    this.render();
+                });
+                cssWrapper.appendChild(checkbox);
+                cssWrapper.appendChild(createElement('span', null, this.strings.copyAdditionalCss || 'Copy Additional CSS from the current theme'));
+                container.appendChild(cssWrapper);
+            } else if (this.willChangeTheme() && this.state.mode === 'auto') {
+                container.appendChild(createElement('p', 'ele2gb-step-description', this.strings.copyAdditionalCss || 'Copy Additional CSS from the current theme'));
+            }
+
+            const buttons = createElement('div', 'ele2gb-wizard-buttons');
+            const backBtn = createButton(this.strings.back || 'Back', 'button button-secondary');
+            backBtn.addEventListener('click', () => this.goToPrevious());
+            buttons.appendChild(backBtn);
+
+            const continueBtn = createButton(this.strings.continue || 'Continue', 'button button-primary');
+            continueBtn.addEventListener('click', () => this.goToNext());
             buttons.appendChild(continueBtn);
             container.appendChild(buttons);
 
@@ -1039,9 +1209,15 @@
             container.appendChild(createElement('p', 'ele2gb-step-description', summary));
 
             const options = [
-                { key: 'overwrite', label: this.strings.conflictOverwrite || 'Update existing pages in place (overwrite)' },
-                { key: 'skip', label: this.strings.conflictSkip || 'Skip those pages' },
-                { key: 'duplicate', label: this.strings.conflictDuplicate || 'Create duplicates with “(Converted)” suffix' },
+                {
+                    key: 'overwrite',
+                    label: this.strings.conflictOverwrite || 'Update existing pages in place (overwrite)'
+                },
+                {key: 'skip', label: this.strings.conflictSkip || 'Skip those pages'},
+                {
+                    key: 'duplicate',
+                    label: this.strings.conflictDuplicate || 'Create duplicates with “(Converted)” suffix'
+                },
             ];
 
             const wrapper = createElement('div', 'ele2gb-conflict-options');
@@ -1090,6 +1266,17 @@
 
             const modeLabel = this.state.mode === 'auto' ? (this.strings.modeAutoTitle || 'Convert all pages automatically') : (this.strings.modeCustomTitle || 'Choose specific pages');
             list.appendChild(createElement('li', null, modeLabel));
+
+            const selectedTheme = this.getSelectedTheme();
+            if (this.willChangeTheme()) {
+                const themeName = (selectedTheme && selectedTheme.name) || (this.state.selectedThemeSlug || '');
+                list.appendChild(createElement('li', null, (this.strings.themeSelectPrompt || 'Select a block theme for best compatibility.') + ': ' + themeName));
+                if (this.shouldCopyCss()) {
+                    list.appendChild(createElement('li', null, this.strings.copyAdditionalCss || 'Copy Additional CSS from the current theme'));
+                }
+            } else if (this.getCurrentThemeName()) {
+                list.appendChild(createElement('li', null, (this.strings.themeKeepCurrent || 'Keep current theme') + ': ' + this.getCurrentThemeName()));
+            }
 
             if (this.shouldShowConflictStep()) {
                 let policyLabel = '';
@@ -1267,7 +1454,10 @@
 
                 const statusTd = document.createElement('td');
                 statusTd.className = 'status';
-                const resultConfig = RESULT_STATUS[result.status] || { badge: 'not_converted', labelKey: 'statusUnknown' };
+                const resultConfig = RESULT_STATUS[result.status] || {
+                    badge: 'not_converted',
+                    labelKey: 'statusUnknown'
+                };
                 const badgeInfo = STATUS_BADGES[resultConfig.badge] || STATUS_BADGES.not_converted;
                 const badge = createElement('span', 'ele2gb-status-badge ' + badgeInfo.className, this.strings[resultConfig.labelKey] || result.status);
                 statusTd.appendChild(badge);
@@ -1322,6 +1512,9 @@
             switch (this.state.currentStep) {
                 case 'mode':
                     stepContent = this.renderModeStep();
+                    break;
+                case 'theme':
+                    stepContent = this.renderThemeStep();
                     break;
                 case 'select':
                     stepContent = this.renderSelectStep();

@@ -8,6 +8,7 @@
 namespace Progressus\Gutenberg\Admin;
 
 use Progressus\Gutenberg\Admin\Admin_Settings;
+use WP_Error;
 use WP_Post;
 use WP_Query;
 
@@ -32,6 +33,7 @@ use function get_post_type;
 use function get_the_title;
 use function get_user_meta;
 use function get_stylesheet;
+use function wp_get_theme;
 use function is_array;
 use function maybe_unserialize;
 use function plugins_url;
@@ -50,17 +52,23 @@ use function wp_die;
 use function delete_post_meta;
 use function wp_enqueue_script;
 use function wp_enqueue_style;
+use function wp_get_custom_css;
+use function wp_get_themes;
 use function wp_localize_script;
 use function wp_set_post_terms;
 use function wp_reset_postdata;
+use function wp_update_custom_css_post;
 use function wp_send_json_error;
 use function wp_send_json_success;
 use function wp_unslash;
 use function strtotime;
+use function switch_theme;
 use function wp_insert_post;
+use function wp_install_theme;
 use function wp_update_post;
 use function is_wp_error;
 use function delete_transient;
+use function wp_is_block_theme;
 
 use const HOUR_IN_SECONDS;
 
@@ -93,6 +101,17 @@ class Batch_Convert_Wizard {
 	private const TEMPLATE_ROLE_DEFAULT_FOOTER = 'default_footer';
 
 	private const TEMPLATE_ROLE_EXTRA = 'extra';
+
+	private const SUGGESTED_BLOCK_THEMES = array(
+		array(
+			'slug' => 'twentytwentyfive',
+			'name' => 'Twenty Twenty-Five',
+		),
+		array(
+			'slug' => 'twentytwentyfour',
+			'name' => 'Twenty Twenty-Four',
+		),
+	);
 
 	/**
 	 * Singleton instance.
@@ -179,6 +198,7 @@ class Batch_Convert_Wizard {
 				'pages'        => $this->get_elementor_pages_data(),
 				'strings'      => $this->get_strings(),
 				'templates'    => $this->get_header_footer_templates_data(),
+				'themes'       => $this->get_theme_compatibility_data(),
 				'activeJob'    => $this->get_active_job_for_user(),
 				'userCanEdit'  => current_user_can( 'edit_pages' ),
 				'maxBatchSize' => 1,
@@ -233,6 +253,9 @@ class Batch_Convert_Wizard {
 		$raw_footers       = isset( $_POST['footerTemplates'] ) ? wp_unslash( $_POST['footerTemplates'] ) : array();
 		$default_header    = isset( $_POST['defaultHeader'] ) ? absint( wp_unslash( $_POST['defaultHeader'] ) ) : 0;
 		$default_footer    = isset( $_POST['defaultFooter'] ) ? absint( wp_unslash( $_POST['defaultFooter'] ) ) : 0;
+		$change_theme      = ! empty( $_POST['changeTheme'] );
+		$new_theme         = isset( $_POST['newTheme'] ) ? sanitize_text_field( wp_unslash( $_POST['newTheme'] ) ) : '';
+		$copy_custom_css   = ! empty( $_POST['copyCustomCss'] );
 		$selected_page_ids = array_map( 'absint', (array) $raw_pages );
 		$disabled_meta_ids = array_map( 'absint', (array) $raw_disabled );
 		$selected_headers  = $this->normalize_template_selection( $raw_headers );
@@ -250,6 +273,23 @@ class Batch_Convert_Wizard {
 		}
 
 		$selected_page_ids = array_values( array_unique( array_filter( $selected_page_ids ) ) );
+
+		if ( $change_theme && '' === $new_theme ) {
+			wp_send_json_error(
+				array(
+					'message' => esc_html__( 'Select a theme before starting the conversion.', 'elementor-to-gutenberg' ),
+				)
+			);
+		}
+
+		$theme_result = $this->maybe_switch_theme( $change_theme, $new_theme, $copy_custom_css, $mode );
+		if ( is_wp_error( $theme_result ) ) {
+			wp_send_json_error(
+				array(
+					'message' => $theme_result->get_error_message(),
+				)
+			);
+		}
 
 		$pages     = $this->prepare_job_pages( $selected_page_ids, $disabled_meta_ids );
 		$templates = $this->prepare_job_templates(
@@ -527,6 +567,53 @@ class Batch_Convert_Wizard {
 				'headers' => count( $raw['headers'] ),
 				'footers' => count( $raw['footers'] ),
 			),
+		);
+	}
+
+	/**
+	 * Retrieve theme compatibility information for the wizard.
+	 */
+	private function get_theme_compatibility_data(): array {
+		$current_stylesheet = get_stylesheet();
+		$current_theme      = wp_get_theme( $current_stylesheet );
+
+		$current = array(
+			'name'         => $current_theme->get( 'Name' ),
+			'slug'         => $current_stylesheet,
+			'isBlockTheme' => method_exists( $current_theme, 'is_block_theme' ) ? (bool) $current_theme->is_block_theme() : (bool) wp_is_block_theme(),
+		);
+
+		$installed = array();
+		foreach ( wp_get_themes() as $slug => $theme ) {
+			if ( method_exists( $theme, 'is_block_theme' ) && $theme->is_block_theme() ) {
+				$installed[] = array(
+					'name'     => $theme->get( 'Name' ),
+					'slug'     => $slug,
+					'isActive' => $slug === $current_stylesheet,
+				);
+			}
+		}
+
+		$suggested       = array();
+		$installed_slugs = array_map(
+			static function ( array $theme ): string {
+				return (string) $theme['slug'];
+			},
+			$installed
+		);
+
+		foreach ( self::SUGGESTED_BLOCK_THEMES as $theme ) {
+			if ( in_array( $theme['slug'], $installed_slugs, true ) ) {
+				continue;
+			}
+
+			$suggested[] = $theme;
+		}
+
+		return array(
+			'currentTheme'         => $current,
+			'installedBlockThemes' => $installed,
+			'suggestedCoreThemes'  => $suggested,
 		);
 	}
 
@@ -1209,6 +1296,96 @@ class Batch_Convert_Wizard {
 	}
 
 	/**
+	 * Handle requested theme switch and optional Additional CSS migration.
+	 *
+	 * @param bool $change_theme Whether a theme switch was requested.
+	 * @param string $new_theme Target theme slug/stylesheet.
+	 * @param bool $copy_custom_css Whether to copy Additional CSS.
+	 * @param string $mode Wizard mode (auto/custom).
+	 */
+	private function maybe_switch_theme( bool $change_theme, string $new_theme, bool $copy_custom_css, string $mode ) {
+		if ( ! $change_theme || '' === $new_theme ) {
+			return true;
+		}
+
+		$current_stylesheet = get_stylesheet();
+		if ( $new_theme === $current_stylesheet ) {
+			return true;
+		}
+
+		$should_copy_css = $copy_custom_css || 'auto' === $mode;
+		$existing_css    = '';
+
+		if ( $should_copy_css ) {
+			$existing_css = (string) wp_get_custom_css( $current_stylesheet );
+		}
+
+		$themes = wp_get_themes();
+		if ( ! isset( $themes[ $new_theme ] ) ) {
+			$install = $this->install_theme_if_needed( $new_theme );
+			if ( is_wp_error( $install ) ) {
+				return $install;
+			}
+			$themes = wp_get_themes();
+			if ( ! isset( $themes[ $new_theme ] ) ) {
+				return new WP_Error( 'ele2gb-theme-missing', esc_html__( 'The selected theme is not available.', 'elementor-to-gutenberg' ) );
+			}
+		}
+
+		switch_theme( $new_theme );
+
+		if ( get_stylesheet() !== $new_theme ) {
+			return new WP_Error( 'ele2gb-theme-switch-failed', esc_html__( 'Unable to switch to the selected theme.', 'elementor-to-gutenberg' ) );
+		}
+
+		if ( $should_copy_css && '' !== trim( $existing_css ) ) {
+			$new_theme_css = (string) wp_get_custom_css( $new_theme );
+			$comment       = '/* Migrated from ' . $current_stylesheet . ' */';
+			$combined_css  = $new_theme_css;
+
+			if ( '' !== trim( $combined_css ) ) {
+				$combined_css .= "\n\n";
+			}
+
+			$combined_css .= $comment . "\n" . $existing_css;
+
+			$result = wp_update_custom_css_post(
+				$combined_css,
+				array(
+					'stylesheet' => $new_theme,
+				)
+			);
+
+			if ( is_wp_error( $result ) ) {
+				return $result;
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Install a theme if it is not already available.
+	 *
+	 * @param string $slug Theme slug.
+	 *
+	 * @return true|WP_Error
+	 */
+	private function install_theme_if_needed( string $slug ) {
+		require_once ABSPATH . 'wp-admin/includes/theme.php';
+		require_once ABSPATH . 'wp-admin/includes/file.php';
+		require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
+
+		$result = wp_install_theme( $slug, array( 'overwrite' => true ) );
+
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+
+		return true;
+	}
+
+	/**
 	 * Process a single page conversion.
 	 *
 	 * @param int $post_id Post ID.
@@ -1519,7 +1696,7 @@ class Batch_Convert_Wizard {
 		$this->store_template_part_meta( $target_id, $template_info );
 		$this->update_template_part_role( $target_id, (string) $template_info['role'], (string) $template_info['type'] );
 
-        // force it to become the actual default template part in the active block theme.
+		// force it to become the actual default template part in the active block theme.
 		$is_global   = ! empty( $template_info['is_global'] );
 		$has_targets = ! empty( $template_info['target_pages'] ) && is_array( $template_info['target_pages'] );
 
@@ -1531,7 +1708,7 @@ class Batch_Convert_Wizard {
 			$this->force_block_theme_default_footer( $target_id );
 		}
 
-		if (  $has_targets ) {
+		if ( $has_targets ) {
 
 			$this->link_template_part_to_target_pages( $target_id, $template_info );
 		}
@@ -2170,6 +2347,17 @@ class Batch_Convert_Wizard {
 			'conflictOverwrite'      => esc_html__( 'Update existing pages in place (overwrite)', 'elementor-to-gutenberg' ),
 			'conflictSkip'           => esc_html__( 'Skip those pages', 'elementor-to-gutenberg' ),
 			'conflictDuplicate'      => esc_html__( 'Create duplicates with “(Converted)” suffix', 'elementor-to-gutenberg' ),
+			'themeStepTitle'         => esc_html__( 'Theme compatibility', 'elementor-to-gutenberg' ),
+			'themeStepDesc'          => esc_html__( 'Block themes work best with Gutenberg. You can keep your current theme or switch to a compatible one before conversion.', 'elementor-to-gutenberg' ),
+			'themeCurrentGood'       => esc_html__( 'Your current theme already supports Gutenberg and block templates.', 'elementor-to-gutenberg' ),
+			'themeSelectPrompt'      => esc_html__( 'Select a block theme for best compatibility.', 'elementor-to-gutenberg' ),
+			'themeKeepCurrent'       => esc_html__( 'Keep current theme', 'elementor-to-gutenberg' ),
+			'themeSuggestedCore'     => esc_html__( 'Suggested core block themes', 'elementor-to-gutenberg' ),
+			'themeInstalledList'     => esc_html__( 'Installed block themes', 'elementor-to-gutenberg' ),
+			'themeNoInstalled'       => esc_html__( 'No compatible block themes are installed.', 'elementor-to-gutenberg' ),
+			'copyAdditionalCss'      => esc_html__( 'Copy Additional CSS from the current theme', 'elementor-to-gutenberg' ),
+			'themeSwitchError'       => esc_html__( 'Unable to switch themes. Please try again or choose a different theme.', 'elementor-to-gutenberg' ),
+			'themeActiveLabel'       => esc_html__( 'Active', 'elementor-to-gutenberg' ),
 			'reviewTitle'            => esc_html__( 'Review & Confirm', 'elementor-to-gutenberg' ),
 			'reviewSummary'          => esc_html__( '%1$d pages selected — %2$d will be converted, %3$d skipped.', 'elementor-to-gutenberg' ),
 			'metaDisabled'           => esc_html__( '%1$d pages will be converted without copying meta fields or featured image.', 'elementor-to-gutenberg' ),
@@ -2284,10 +2472,11 @@ class Batch_Convert_Wizard {
 			)
 		);
 	}
+
 	/**
 	 * Store conversion result meta for a normal page.
 	 *
-	 * @param int   $source_id Source Elementor page ID.
+	 * @param int $source_id Source Elementor page ID.
 	 * @param array $result_entry Result entry from the job.
 	 */
 	private function store_page_conversion_result( int $source_id, array $result_entry ): void {
@@ -2321,7 +2510,7 @@ class Batch_Convert_Wizard {
 	/**
 	 * Store conversion result meta for a header/footer template.
 	 *
-	 * @param int   $template_id Source Elementor template ID.
+	 * @param int $template_id Source Elementor template ID.
 	 * @param array $result_entry Result entry from the job.
 	 */
 	private function store_template_conversion_result( int $template_id, array $result_entry ): void {
