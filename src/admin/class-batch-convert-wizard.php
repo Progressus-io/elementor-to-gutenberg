@@ -64,7 +64,7 @@ use function wp_unslash;
 use function strtotime;
 use function switch_theme;
 use function wp_insert_post;
-use function wp_install_theme;
+use function wp_ajax_install_theme;
 use function wp_update_post;
 use function is_wp_error;
 use function delete_transient;
@@ -1372,14 +1372,72 @@ class Batch_Convert_Wizard {
 	 * @return true|WP_Error
 	 */
 	private function install_theme_if_needed( string $slug ) {
+		// If the theme is already installed, nothing to do.
+		$themes = wp_get_themes();
+		if ( isset( $themes[ $slug ] ) ) {
+			return true;
+		}
+
+		if ( ! current_user_can( 'install_themes' ) ) {
+			return new WP_Error(
+				'ele2gb-theme-install-permissions',
+				esc_html__( 'You do not have permission to install themes.', 'elementor-to-gutenberg' )
+			);
+		}
+
+		// Load required admin helpers.
 		require_once ABSPATH . 'wp-admin/includes/theme.php';
 		require_once ABSPATH . 'wp-admin/includes/file.php';
 		require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
 
-		$result = wp_install_theme( $slug, array( 'overwrite' => true ) );
+		if ( ! function_exists( 'themes_api' ) ) {
+			return new WP_Error(
+				'ele2gb-theme-install-missing-api',
+				esc_html__( 'Theme installation API is not available on this site.', 'elementor-to-gutenberg' )
+			);
+		}
+
+		// Fetch theme information from WordPress.org.
+		$api = themes_api(
+			'theme_information',
+			array(
+				'slug'   => $slug,
+				'fields' => array(
+					'sections' => false,
+				),
+			)
+		);
+
+		if ( is_wp_error( $api ) ) {
+			return $api;
+		}
+
+		if ( empty( $api->download_link ) ) {
+			return new WP_Error(
+				'ele2gb-theme-install-no-download',
+				esc_html__( 'Could not find a download link for the selected theme.', 'elementor-to-gutenberg' )
+			);
+		}
+
+		// Use Theme_Upgrader to download and install the theme.
+		$upgrader = new \Theme_Upgrader( new \Automatic_Upgrader_Skin() );
+
+		$result = $upgrader->install( $api->download_link );
 
 		if ( is_wp_error( $result ) ) {
 			return $result;
+		}
+
+		if ( ! $result ) {
+			return new WP_Error(
+				'ele2gb-theme-install-failed',
+				esc_html__( 'Theme installation failed.', 'elementor-to-gutenberg' )
+			);
+		}
+
+		// Refresh the theme cache so wp_get_themes() can see the new theme.
+		if ( function_exists( 'wp_clean_themes_cache' ) ) {
+			wp_clean_themes_cache();
 		}
 
 		return true;
