@@ -12,7 +12,8 @@ use Progressus\Gutenberg\Admin\Helper\Style_Parser;
 use Progressus\Gutenberg\Admin\Widget_Handler_Interface;
 
 use function esc_attr;
-use function sanitize_html_class;
+use function esc_html;
+use function wp_kses_post;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -20,196 +21,152 @@ defined( 'ABSPATH' ) || exit;
  * Widget handler for Elementor icon box widget.
  */
 class Icon_Box_Widget_Handler implements Widget_Handler_Interface {
+
 	/**
-	 * Handle conversion of Elementor icon box widget.
+	 * Handle conversion of Elementor icon box to Gutenberg block.
 	 *
-	 * @param array $element Elementor widget data.
+	 * @param array $element The Elementor element data.
+	 *
+	 * @return string The Gutenberg block content.
 	 */
 	public function handle( array $element ): string {
-		$settings     = is_array( $element['settings'] ?? null ) ? $element['settings'] : array();
-		$custom_css   = isset( $settings['custom_css'] ) ? (string) $settings['custom_css'] : '';
-		$child_blocks = array();
+		$settings       = is_array( $element['settings'] ?? null ) ? $element['settings'] : array();
+		$custom_css     = isset( $settings['custom_css'] ) ? (string) $settings['custom_css'] : '';
+		$custom_id      = isset( $settings['_element_id'] ) ? trim( (string) $settings['_element_id'] ) : '';
+		$custom_classes = $this->sanitize_custom_classes( trim( isset( $settings['_css_classes'] ) ? (string) $settings['_css_classes'] : '' ) );
 
-		$icon_block = $this->render_icon_block( $settings );
-		if ( '' !== $icon_block ) {
-			$child_blocks[] = $icon_block;
+		list( $icon_value, $icon_library ) = $this->resolve_icon_data( $settings );
+		$size        = $this->sanitize_slider_value( $settings['size'] ?? null, 24 );
+		$title       = isset( $settings['title_text'] ) ? (string) $settings['title_text'] : '';
+		$description = isset( $settings['description_text'] ) ? (string) $settings['description_text'] : '';
+		$tooltip     = isset( $settings['premium_tooltip_text'] ) ? (string) $settings['premium_tooltip_text'] : '';
+		$tooltip_pos = $this->sanitize_tooltip_position( $settings['premium_tooltip_position'] ?? '' );
+
+		$icon_style_class = $this->resolve_icon_style_class( $icon_library );
+		$icon_html        = '';
+
+		if ( '' !== $icon_value ) {
+			$icon_html = sprintf(
+				'<i class="%1$s %2$s" style="font-size:%3$dpx;"></i>',
+				esc_attr( $icon_style_class ),
+				esc_attr( $icon_value ),
+				$size
+			);
+
+			if ( '' !== $tooltip ) {
+				$icon_html = sprintf(
+					'<span class="tooltip-wrapper" data-tooltip="%1$s" data-tooltip-position="%2$s">%3$s</span>',
+					esc_attr( $tooltip ),
+					esc_attr( $tooltip_pos ),
+					$icon_html
+				);
+			}
 		}
 
-		$heading_block = $this->render_heading_block( $settings );
-		if ( '' !== $heading_block ) {
-			$child_blocks[] = $heading_block;
+		$segments = array();
+		if ( '' !== $icon_html ) {
+			$segments[] = '<div class="icon-box-icon">' . $icon_html . '</div>';
+		}
+		if ( '' !== trim( $title ) ) {
+			$segments[] = '<h3 class="icon-box-title">' . esc_html( $title ) . '</h3>';
+		}
+		if ( '' !== trim( $description ) ) {
+			$segments[] = '<div class="icon-box-description">' . wp_kses_post( $description ) . '</div>';
 		}
 
-		$description_block = $this->render_description_block( $settings );
-		if ( '' !== $description_block ) {
-			$child_blocks[] = $description_block;
+		$wrapper_classes = array_merge( array( 'wp-block-icon-box' ), $custom_classes );
+		$wrapper_attrs   = array( 'class="' . esc_attr( implode( ' ', array_unique( array_filter( $wrapper_classes ) ) ) ) . '"' );
+		if ( '' !== $custom_id ) {
+			$wrapper_attrs[] = 'id="' . esc_attr( $custom_id ) . '"';
 		}
 
-		if ( empty( $child_blocks ) ) {
-			return '';
-		}
+		$content = '<div ' . implode( ' ', $wrapper_attrs ) . '>' . implode( '', $segments ) . '</div>';
 
 		if ( '' !== $custom_css ) {
 			Style_Parser::save_custom_css( $custom_css );
 		}
 
-		$attributes           = Style_Parser::parse_container_styles( $settings );
-		$attributes['layout'] = array( 'type' => 'constrained' );
-
-		return Block_Builder::build( 'group', $attributes, implode( '', $child_blocks ) );
+		return Block_Builder::build( 'html', array(), $content );
 	}
 
 	/**
-	 * Render the icon portion of the widget.
-	 *
-	 * @param array $settings Widget settings.
+	 * Resolve the icon data from Elementor settings.
 	 */
-	private function render_icon_block( array $settings ): string {
-		$icon_data = $settings['selected_icon'] ?? null;
-		if ( is_array( $icon_data ) && isset( $icon_data['value'] ) && '' !== $icon_data['value'] ) {
-			return $this->render_icon_html_block( $icon_data['value'], $settings );
+	private function resolve_icon_data( array $settings ): array {
+		$icon_value   = '';
+		$icon_library = 'fa-solid';
+
+		if ( isset( $settings['selected_icon'] ) && is_array( $settings['selected_icon'] ) ) {
+			$icon_value   = isset( $settings['selected_icon']['value'] ) ? (string) $settings['selected_icon']['value'] : '';
+			$icon_library = isset( $settings['selected_icon']['library'] ) ? (string) $settings['selected_icon']['library'] : 'fa-solid';
+		} elseif ( isset( $settings['icon'] ) ) {
+			$icon_value = (string) $settings['icon'];
 		}
 
-		$fallback_icon = isset( $settings['icon'] ) ? (string) $settings['icon'] : '';
-		if ( '' !== $fallback_icon ) {
-			return $this->render_icon_html_block( $fallback_icon, $settings );
-		}
-
-		$icon_image = $settings['icon_image'] ?? null;
-		if ( is_array( $icon_image ) && ! empty( $icon_image['url'] ) ) {
-			$image_settings = array(
-				'image' => $icon_image,
-				'link'  => $settings['link'] ?? array(),
-			);
-
-			$image_handler = new Image_Widget_Handler();
-
-			return $image_handler->handle( array( 'settings' => $image_settings ) );
-		}
-
-		return '';
+		return array( $icon_value, $icon_library );
 	}
 
 	/**
-	 * Render the icon markup as an HTML block.
-	 *
-	 * @param string $icon_class Icon class string.
-	 * @param array $settings Widget settings.
+	 * Determine Font Awesome style class based on Elementor library value.
 	 */
-	private function render_icon_html_block( string $icon_class, array $settings ): string {
-		$classes      = array( 'wp-block-group__icon', 'elementor-icon-box-icon' );
-		$icon_classes = array( 'elementor-icon' );
-
-		foreach ( preg_split( '/\s+/', $icon_class ) as $class ) {
-			$class = trim( $class );
-			if ( '' !== $class ) {
-				$icon_classes[] = sanitize_html_class( $class );
-			}
+	private function resolve_icon_style_class( string $library ): string {
+		switch ( $library ) {
+			case 'fa-regular':
+				return 'far';
+			case 'fa-brands':
+				return 'fab';
+			default:
+				return 'fas';
 		}
-
-		$style_rules = array();
-		if ( isset( $settings['icon_size']['size'] ) && is_numeric( $settings['icon_size']['size'] ) ) {
-			$unit          = $settings['icon_size']['unit'] ?? 'px';
-			$style_rules[] = 'font-size:' . ( (float) $settings['icon_size']['size'] ) . $unit . ';';
-		}
-
-		if ( isset( $settings['icon_color'] ) ) {
-			$color = strtolower( (string) $settings['icon_color'] );
-			if ( '' !== $color ) {
-				$style_rules[] = 'color:' . $color . ';';
-			}
-		}
-
-		$icon_markup = sprintf(
-			'<span class="%s"%s aria-hidden="true"></span>',
-			esc_attr( implode( ' ', array_unique( $icon_classes ) ) ),
-			empty( $style_rules ) ? '' : ' style="' . esc_attr( implode( '', $style_rules ) ) . '"'
-		);
-
-		$inner_html = sprintf(
-			'<div class="%s">%s</div>',
-			esc_attr( implode( ' ', $classes ) ),
-			$icon_markup
-		);
-
-		return Block_Builder::build( 'html', array(), $inner_html );
 	}
 
 	/**
-	 * Render the title block.
-	 *
-	 * @param array $settings Widget settings.
+	 * Sanitize tooltip position value.
 	 */
-	private function render_heading_block( array $settings ): string {
-		$title = isset( $settings['title_text'] ) ? (string) $settings['title_text'] : (string) ( $settings['title'] ?? '' );
-		if ( '' === trim( $title ) ) {
-			return '';
+	private function sanitize_tooltip_position( $value ): string {
+		$positions = array( 'top', 'bottom', 'left', 'right' );
+		if ( ! is_string( $value ) ) {
+			return 'top';
 		}
 
-		$heading_settings = array(
-			'title'        => $title,
-			'header_size'  => $settings['title_size'] ?? $settings['title_tag'] ?? 'h4',
-			'title_color'  => $settings['title_color'] ?? '',
-			'_css_classes' => $settings['title_css_classes'] ?? '',
-			'_element_id'  => $settings['title_element_id'] ?? '',
-		);
+		$parts = explode( ',', $value );
+		$first = trim( strtolower( $parts[0] ?? '' ) );
 
-		$heading_settings += $this->remap_typography_settings( $settings, 'title_' );
-
-		$handler = new Heading_Widget_Handler();
-
-		return $handler->handle( array( 'settings' => $heading_settings ) );
+		return in_array( $first, $positions, true ) ? $first : 'top';
 	}
 
 	/**
-	 * Render the description block.
-	 *
-	 * @param array $settings Widget settings.
+	 * Sanitize custom class string into individual classes.
 	 */
-	private function render_description_block( array $settings ): string {
-		$description = isset( $settings['description_text'] ) ? (string) $settings['description_text'] : (string) ( $settings['description'] ?? '' );
-		if ( '' === trim( $description ) ) {
-			return '';
-		}
-
-		$text_settings = array(
-			'editor'       => $description,
-			'text_color'   => $settings['description_color'] ?? '',
-			'_css_classes' => $settings['description_css_classes'] ?? '',
-			'_element_id'  => $settings['description_element_id'] ?? '',
-		);
-
-		$text_settings += $this->remap_typography_settings( $settings, 'description_' );
-
-		$handler = new Text_Editor_Widget_Handler();
-
-		return $handler->handle( array( 'settings' => $text_settings ) );
-	}
-
-	/**
-	 * Remap prefixed typography settings.
-	 *
-	 * @param array $settings Widget settings.
-	 * @param string $prefix Prefix to strip.
-	 */
-	private function remap_typography_settings( array $settings, string $prefix ): array {
-		$mapped      = array();
-		$prefix_base = $prefix . 'typography_';
-		$prefix_len  = strlen( $prefix_base );
-
-		foreach ( $settings as $key => $value ) {
-			if ( 0 !== strpos( $key, $prefix_base ) ) {
+	private function sanitize_custom_classes( string $class_string ): array {
+		$classes = array();
+		foreach ( preg_split( '/\s+/', $class_string ) as $class ) {
+			$clean = Style_Parser::clean_class( $class );
+			if ( '' === $clean ) {
 				continue;
 			}
-
-			$suffix = substr( $key, $prefix_len );
-			if ( false === $suffix ) {
-				continue;
-			}
-
-			$mapped[ 'typography_' . $suffix ] = $value;
+			$classes[] = $clean;
 		}
 
-		return $mapped;
+		return array_values( array_unique( $classes ) );
+	}
+
+	/**
+	 * Sanitize slider or numeric values from Elementor settings.
+	 */
+	private function sanitize_slider_value( $value, int $default ): int {
+		if ( is_array( $value ) ) {
+			if ( isset( $value['size'] ) && is_numeric( $value['size'] ) ) {
+				return (int) round( $value['size'] );
+			}
+			if ( isset( $value['value'] ) && is_numeric( $value['value'] ) ) {
+				return (int) round( $value['value'] );
+			}
+		}
+		if ( is_numeric( $value ) ) {
+			return (int) round( $value );
+		}
+
+		return $default;
 	}
 }
