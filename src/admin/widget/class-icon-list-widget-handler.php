@@ -7,13 +7,8 @@
 
 namespace Progressus\Gutenberg\Admin\Widget;
 
-use Progressus\Gutenberg\Admin\Helper\Block_Builder;
-use Progressus\Gutenberg\Admin\Helper\Style_Parser;
 use Progressus\Gutenberg\Admin\Widget_Handler_Interface;
-
-use function esc_attr;
-use function esc_html;
-use function esc_url;
+use Progressus\Gutenberg\Admin\Helper\Style_Parser;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -22,133 +17,95 @@ defined( 'ABSPATH' ) || exit;
  */
 class Icon_List_Widget_Handler implements Widget_Handler_Interface {
 	/**
-	 * Handle conversion of Elementor icon list widget.
+	 * Handle conversion of Elementor icon list to Gutenberg block.
 	 *
-	 * @param array $element Elementor widget data.
+	 * @param array $element The Elementor element data.
+	 * @return string The Gutenberg block content.
 	 */
 	public function handle( array $element ): string {
-		$settings   = is_array( $element['settings'] ?? null ) ? $element['settings'] : array();
-		$items      = is_array( $settings['icon_list'] ?? null ) ? $settings['icon_list'] : array();
-		$custom_css = isset( $settings['custom_css'] ) ? (string) $settings['custom_css'] : '';
-		$custom_id  = isset( $settings['_element_id'] ) ? trim( (string) $settings['_element_id'] ) : '';
-		$custom_raw = isset( $settings['_css_classes'] ) ? trim( (string) $settings['_css_classes'] ) : '';
-		$text_color = isset( $settings['text_color'] ) ? strtolower( (string) $settings['text_color'] ) : '';
+		$settings       = $element['settings'] ?? array();
+		$icon_list      = $settings['icon_list'] ?? array();
+		$block_content  = '';
+		$custom_class  = $settings['_css_classes'] ?? '';
+		$custom_id     = $settings['_element_id'] ?? '';
+		$custom_css    = $settings['custom_css'] ?? '';
 
-		if ( empty( $items ) ) {
-			return '';
-		}
+		if ( ! empty( $icon_list ) ) {
+			// Build icon list attributes
+			$icon_list_attrs = array(
+				'itemCount' => count( $icon_list ),
+			);
 
-		$custom_classes = array();
-		if ( '' !== $custom_raw ) {
-			foreach ( preg_split( '/\s+/', $custom_raw ) as $class ) {
-				$clean = Style_Parser::clean_class( $class );
-				if ( '' === $clean ) {
-					continue;
+			// Add tooltip if present
+			if ( ! empty( $settings['premium_tooltip_text'] ) ) {
+				$icon_list_attrs['tooltip'] = $settings['premium_tooltip_text'];
+			}
+			if ( isset( $settings['premium_tooltip_position'] ) ) {
+				$icon_list_attrs['tooltipPosition'] = $settings['premium_tooltip_position'];
+			}
+
+			$attrs = wp_json_encode( $icon_list_attrs );
+
+			// Generate icon list content
+			$icon_list_content = '<ul class="icon-list">';
+
+			foreach ( $icon_list as $list_item ) {
+				$item_text         = $list_item['text'] ?? '';
+				$item_icon_value   = '';
+				$item_icon_library = '';
+
+				// Handle icon structure for each item
+				if ( isset( $list_item['selected_icon']['value'] ) ) {
+					$item_icon_value   = $list_item['selected_icon']['value'];
+					$item_icon_library = $list_item['selected_icon']['library'] ?? 'fa-solid';
 				}
-				$custom_classes[] = $clean;
-			}
-		}
 
-		$attributes = array();
-		if ( ! empty( $custom_classes ) ) {
-			$attributes['className'] = implode( ' ', array_unique( $custom_classes ) );
-		}
+				$icon_list_content .= '<li class="icon-list-item">';
 
-		$markup_classes = $custom_classes;
-		$style_color    = '';
-
-		if ( '' !== $text_color ) {
-			if ( $this->is_preset_color_slug( $text_color ) ) {
-				$attributes['textColor'] = $text_color;
-				$markup_classes[]        = 'has-text-color';
-				$markup_classes[]        = 'has-' . Style_Parser::clean_class( $text_color ) . '-color';
-			} elseif ( $this->is_hex_color( $text_color ) ) {
-				$attributes['style']['color']['text'] = $text_color;
-				$markup_classes[]                     = 'has-text-color';
-				$style_color                          = 'color:' . $text_color . ';';
-			}
-		}
-
-		if ( '' !== $custom_id ) {
-			$attributes['anchor'] = $custom_id;
-		}
-
-		$list_items = array();
-		foreach ( $items as $item ) {
-			if ( ! is_array( $item ) ) {
-				continue;
-			}
-
-			$text = isset( $item['text'] ) ? (string) $item['text'] : (string) ( $item['title'] ?? '' );
-			if ( '' === trim( $text ) ) {
-				continue;
-			}
-
-			$url      = is_array( $item['link'] ?? null ) ? (string) ( $item['link']['url'] ?? '' ) : '';
-			$icon_val = '';
-
-			if ( isset( $item['selected_icon']['value'] ) ) {
-				$icon_val = (string) $item['selected_icon']['value'];
-			} elseif ( isset( $item['icon'] ) ) {
-				$icon_val = (string) $item['icon'];
-			}
-
-			$icon_markup = '';
-			if ( '' !== $icon_val ) {
-				$icon_classes = array( 'icon-list-icon' );
-				foreach ( preg_split( '/\s+/', $icon_val ) as $icon_class ) {
-					$icon_class = Style_Parser::clean_class( $icon_class );
-					if ( '' !== $icon_class ) {
-						$icon_classes[] = $icon_class;
+				// Add icon if present
+				if ( $item_icon_value ) {
+					$icon_class = 'fas';
+					if ( $item_icon_library === 'fa-solid' ) {
+						$icon_class = 'fas';
+					} elseif ( $item_icon_library === 'fa-regular' ) {
+						$icon_class = 'far';
+					} elseif ( $item_icon_library === 'fa-brands' ) {
+						$icon_class = 'fab';
 					}
+
+					$item_icon_html = '<i class="' . esc_attr( $icon_class ) . ' ' . esc_attr( $item_icon_value ) . '"></i>';
+
+					// Add tooltip wrapper if tooltip is present
+					if ( isset( $icon_list_attrs['tooltip'] ) ) {
+						$tooltip_position = $icon_list_attrs['tooltipPosition'] ?? 'top';
+						$item_icon_html = '<span class="tooltip-wrapper" data-tooltip="' . esc_attr( $icon_list_attrs['tooltip'] ) . '" data-tooltip-position="' . esc_attr( $tooltip_position ) . '">' . $item_icon_html . '</span>';
+					}
+
+					$icon_list_content .= '<span class="icon-list-icon">' . $item_icon_html . '</span>';
 				}
-				$icon_markup = sprintf( '<span class="%s" aria-hidden="true"></span>', esc_attr( implode( ' ', array_unique( $icon_classes ) ) ) );
+
+				// Add text
+				if ( $item_text ) {
+					$icon_list_content .= '<span class="icon-list-text">' . esc_html( $item_text ) . '</span>';
+				}
+
+				$icon_list_content .= '</li>';
 			}
 
-			$text_markup = esc_html( $text );
-			if ( '' !== $url ) {
-				$text_markup = sprintf( '<a href="%s">%s</a>', esc_url( $url ), $text_markup );
+			$icon_list_content .= '</ul>';
+
+			$block_content .= sprintf(
+				"<!-- wp:html %s --><div class=\"wp-block-icon-list\">%s</div><!-- /wp:html -->\n",
+				$attrs,
+				$icon_list_content
+			);
+
+			// Save custom CSS to the Customizer's Additional CSS
+			if ( ! empty( $custom_css ) ) {
+				Style_Parser::save_custom_css( $custom_css );
 			}
-
-			$list_items[] = sprintf( '<li>%s%s</li>', $icon_markup, $text_markup );
 		}
 
-		if ( empty( $list_items ) ) {
-			return '';
-		}
-
-		if ( '' !== $custom_css ) {
-			Style_Parser::save_custom_css( $custom_css );
-		}
-
-		$list_attrs = '';
-		if ( '' !== $custom_id ) {
-			$list_attrs .= ' id="' . esc_attr( $custom_id ) . '"';
-		}
-
-		if ( ! empty( $markup_classes ) ) {
-			$list_attrs .= ' class="' . esc_attr( implode( ' ', array_unique( $markup_classes ) ) ) . '"';
-		}
-
-		if ( '' !== $style_color ) {
-			$list_attrs .= ' style="' . esc_attr( $style_color ) . '"';
-		}
-
-		$list_markup = sprintf( '<ul%s>%s</ul>', $list_attrs, implode( '', $list_items ) );
-
-		return Block_Builder::build( 'list', $attributes, $list_markup );
-	}
-
-	/**
-	 * Check if a color value is a preset slug.
-	 *
-	 * @param string $color Color value.
-	 */
-	private function is_preset_color_slug( string $color ): bool {
-		return '' !== $color && false === strpos( $color, '#' ) && false === strpos( $color, 'rgb' );
-	}
-
-	private function is_hex_color( string $color ): bool {
-		return 1 === preg_match( '/^#([0-9a-f]{3}|[0-9a-f]{6})$/i', $color );
+		return $block_content;
 	}
 }

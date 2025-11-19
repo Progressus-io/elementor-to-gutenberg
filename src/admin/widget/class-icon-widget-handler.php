@@ -7,109 +7,254 @@
 
 namespace Progressus\Gutenberg\Admin\Widget;
 
-use Progressus\Gutenberg\Admin\Widget_Handler_Interface;
+use Progressus\Gutenberg\Admin\Helper\Block_Builder;
 use Progressus\Gutenberg\Admin\Helper\Style_Parser;
+use Progressus\Gutenberg\Admin\Widget_Handler_Interface;
+
+use function esc_attr;
+use function esc_url;
 
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Widget handler for Elementor icon widget.
+ * Converts Elementor Icon widget into Gutenberg `gutenberg/icon` block.
  */
 class Icon_Widget_Handler implements Widget_Handler_Interface {
+
 	/**
 	 * Handle conversion of Elementor icon to Gutenberg block.
 	 *
 	 * @param array $element The Elementor element data.
-	 * @return string The Gutenberg block content.
 	 */
 	public function handle( array $element ): string {
-		$settings       = $element['settings'] ?? array();
-		$icon_value     = '';
-		$icon_library   = '';
-		$block_content  = '';
-		$custom_class  = $settings['_css_classes'] ?? '';
-		$custom_id     = $settings['_element_id'] ?? '';
-		$custom_css    = $settings['custom_css'] ?? '';
+		$settings       = is_array( $element['settings'] ?? null ) ? $element['settings'] : array();
+		$custom_css     = isset( $settings['custom_css'] ) ? (string) $settings['custom_css'] : '';
+		$custom_id      = isset( $settings['_element_id'] ) ? trim( (string) $settings['_element_id'] ) : '';
+		$custom_classes = $this->sanitize_custom_classes( isset( $settings['_css_classes'] ) ? (string) $settings['_css_classes'] : '' );
 
-		// Handle the icon structure
-		if ( isset( $settings['selected_icon']['value'] ) ) {
-			$icon_value   = $settings['selected_icon']['value'];
-			$icon_library = $settings['selected_icon']['library'] ?? 'fa-solid';
-		} elseif ( isset( $settings['icon'] ) ) {
-			// Fallback to old structure
-			$icon_value = $settings['icon'];
-		}
+		list( $icon_value, $icon_library ) = $this->resolve_icon_data( $settings );
+		$icon_value = trim( $icon_value );
+		$icon       = $this->extract_icon_slug( $icon_value );
 
-		$size  = isset( $settings['size'] ) ? intval( $settings['size'] ) : 24;
-		$color = $settings['icon_color'] ?? '';
+		$size             = $this->sanitize_slider_value( $settings['size'] ?? null, 24 );
+		$color            = $this->resolve_color_value( $settings['primary_color'] ?? '#333333', '#333333' );
+		$background_color = $this->resolve_color_value( $settings['background_color'] ?? '', '' );
+		$border_radius    = $this->sanitize_slider_value( $settings['border_radius'] ?? null, 0 );
+		$padding          = $this->sanitize_slider_value( $settings['padding'] ?? null, 0 );
+		$hover_color      = $this->resolve_color_value( $settings['hover_color'] ?? '', '' );
+		$hover_effect     = isset( $settings['hover_effect'] ) ? (string) $settings['hover_effect'] : 'scale-up';
+		$link_settings    = is_array( $settings['link'] ?? null ) ? $settings['link'] : array();
+		$link             = isset( $link_settings['url'] ) ? (string) $link_settings['url'] : '';
+		$link_target      = ! empty( $link_settings['is_external'] );
 
-		// Build icon attributes
-		$icon_attrs = array(
-			'icon' => $icon_value,
-			'size' => $size,
+		$icon_style_class = $this->resolve_icon_style_class( $icon_library );
+		$attributes       = array(
+			'icon'            => $icon,
+			'size'            => $size,
+			'color'           => $color,
+			'backgroundColor' => $background_color,
+			'borderRadius'    => $border_radius,
+			'padding'         => $padding,
+			'hoverColor'      => $hover_color,
+			'hoverEffect'     => $hover_effect,
+			'link'            => $link,
+			'linkTarget'      => $link_target,
 		);
 
-		// Add color if present
-		if ( $color ) {
-			$icon_attrs['style']['color'] = $color;
+		if ( ! empty( $custom_classes ) ) {
+			$attributes['className'] = implode( ' ', $custom_classes );
 		}
 
-		// Add tooltip if present
-		if ( ! empty( $settings['premium_tooltip_text'] ) ) {
-			$icon_attrs['tooltip'] = $settings['premium_tooltip_text'];
-		}
-		if ( isset( $settings['premium_tooltip_position'] ) ) {
-			$icon_attrs['tooltipPosition'] = $settings['premium_tooltip_position'];
+		if ( '' !== $custom_id ) {
+			$attributes['anchor'] = $custom_id;
 		}
 
-		$attrs = wp_json_encode( $icon_attrs );
+		$attributes = array_filter(
+			$attributes,
+			static function ( $value ) {
+				return ! ( null === $value || '' === $value );
+			}
+		);
 
-		// Generate icon HTML
-		$icon_class = 'fas';
-		if ( $icon_library === 'fa-solid' ) {
-			$icon_class = 'fas';
-		} elseif ( $icon_library === 'fa-regular' ) {
-			$icon_class = 'far';
-		} elseif ( $icon_library === 'fa-brands' ) {
-			$icon_class = 'fab';
+		$icon_styles = array(
+			'font-size'                      => $size . 'px',
+			'color'                          => $color,
+			'background-color'               => '' !== $background_color ? $background_color : 'transparent',
+			'border-radius'                  => $border_radius . 'px',
+			'padding'                        => $padding . 'px',
+			'display'                        => 'inline-block',
+			'line-height'                    => '1',
+			'transition'                     => 'all 0.3s ease',
+			'width'                          => 'auto',
+			'height'                         => 'auto',
+			'--fontawesome-icon-hover-color' => $hover_color,
+		);
+
+		if ( '' === $hover_color ) {
+			unset( $icon_styles['--fontawesome-icon-hover-color'] );
 		}
 
-		$icon_style = 'font-size: ' . esc_attr( $size ) . 'px;';
-		if ( $color ) {
-			$icon_style .= 'color: ' . esc_attr( $color ) . ';';
-		}
+		$icon_html = sprintf(
+			'<i class="%1$s fontawesome-icon-hover-%2$s" style="%3$s" aria-label="" aria-hidden="true" data-hover-effect="%2$s" data-icon="%4$s" data-icon-style="%5$s"></i>',
+			esc_attr( $icon_value ),
+			esc_attr( $hover_effect ),
+			esc_attr( $this->build_style_string( $icon_styles ) ),
+			esc_attr( $icon ),
+			esc_attr( $icon_style_class )
+		);
 
-		$icon_html = '';
-		if ( $icon_value ) {
+		if ( '' !== $link ) {
+			$rel_attr  = $link_target ? ' rel="noopener noreferrer"' : '';
+			$target    = $link_target ? ' target="_blank"' : '';
 			$icon_html = sprintf(
-				'<i class="%s %s" style="%s"></i>',
-				esc_attr( $icon_class ),
-				esc_attr( $icon_value ),
-				esc_attr( $icon_style )
+				'<a href="%1$s"%2$s%3$s aria-label="">%4$s</a>',
+				esc_url( $link ),
+				$target,
+				$rel_attr,
+				$icon_html
 			);
+		}
 
-			// Add tooltip wrapper if tooltip is present
-			if ( isset( $icon_attrs['tooltip'] ) ) {
-				$tooltip_position = $icon_attrs['tooltipPosition'] ?? 'top';
-				$icon_html = sprintf(
-					'<span class="tooltip-wrapper" data-tooltip="%s" data-tooltip-position="%s">%s</span>',
-					esc_attr( $icon_attrs['tooltip'] ),
-					esc_attr( $tooltip_position ),
-					$icon_html
-				);
+		$wrapper_classes = array_merge( array(
+			'wp-block-gutenberg-icon',
+			'fontawesome-icon-align-left'
+		), $custom_classes );
+		$wrapper_attrs   = array(
+			'class="' . esc_attr( implode( ' ', array_unique( array_filter( $wrapper_classes ) ) ) ) . '"',
+			'style="text-align:left"',
+		);
+
+		if ( '' !== $custom_id ) {
+			$wrapper_attrs[] = 'id="' . esc_attr( $custom_id ) . '"';
+		}
+
+		$inner_html = sprintf( '<div %1$s>%2$s</div>', implode( ' ', $wrapper_attrs ), $icon_html );
+
+		if ( '' !== $custom_css ) {
+			Style_Parser::save_custom_css( $custom_css );
+		}
+
+		return Block_Builder::build( 'gutenberg/icon', $attributes, $inner_html );
+	}
+
+	/**
+	 * Resolve icon value and library from Elementor settings.
+	 */
+	private function resolve_icon_data( array $settings ): array {
+		$icon_value   = '';
+		$icon_library = 'fa-solid';
+
+		if ( isset( $settings['selected_icon'] ) && is_array( $settings['selected_icon'] ) ) {
+			$icon_value   = isset( $settings['selected_icon']['value'] ) ? (string) $settings['selected_icon']['value'] : '';
+			$icon_library = isset( $settings['selected_icon']['library'] ) ? (string) $settings['selected_icon']['library'] : 'fa-solid';
+		} elseif ( isset( $settings['icon'] ) ) {
+			$icon_value = (string) $settings['icon'];
+		}
+
+		return array( $icon_value, $icon_library );
+	}
+
+	/**
+	 * Extract icon slug from a raw Font Awesome value.
+	 */
+	private function extract_icon_slug( string $icon_value ): string {
+		$parts = preg_split( '/\s+/', trim( $icon_value ) );
+		if ( is_array( $parts ) && count( $parts ) > 1 ) {
+			return (string) $parts[1];
+		}
+
+		return $icon_value;
+	}
+
+	/**
+	 * Sanitize custom classes string from Elementor.
+	 */
+	private function sanitize_custom_classes( string $class_string ): array {
+		$classes = array();
+
+		foreach ( preg_split( '/\s+/', $class_string ) as $class ) {
+			$clean = Style_Parser::clean_class( $class );
+			if ( '' === $clean ) {
+				continue;
+			}
+
+			$classes[] = $clean;
+		}
+
+		return array_values( array_unique( $classes ) );
+	}
+
+	/**
+	 * Resolve a color value ensuring hex output where possible.
+	 */
+	private function resolve_color_value( $raw_value, string $fallback ): string {
+		$normalized = Style_Parser::normalize_color_value( $raw_value );
+		if ( '' !== $normalized ) {
+			return $normalized;
+		}
+
+		if ( is_string( $raw_value ) ) {
+			$trimmed = trim( strtolower( $raw_value ) );
+			if ( '' !== $trimmed ) {
+				return $trimmed;
 			}
 		}
 
-		$block_content .= sprintf(
-			"<!-- wp:html %s --><div class=\"wp-block-icon\">%s</div><!-- /wp:html -->\n",
-			$attrs,
-			$icon_html
-		);
+		return $fallback;
+	}
 
-		// Save custom CSS to the Customizer's Additional CSS
-		if ( ! empty( $custom_css ) ) {
-			Style_Parser::save_custom_css( $custom_css );
+	/**
+	 * Sanitize slider/dimension values coming from Elementor controls.
+	 */
+	private function sanitize_slider_value( $value, int $default ): int {
+		if ( is_array( $value ) ) {
+			if ( isset( $value['size'] ) && is_numeric( $value['size'] ) ) {
+				return (int) round( $value['size'] );
+			}
+
+			if ( isset( $value['value'] ) && is_numeric( $value['value'] ) ) {
+				return (int) round( $value['value'] );
+			}
 		}
-		return $block_content;
+
+		if ( is_numeric( $value ) ) {
+			return (int) round( $value );
+		}
+
+		return $default;
+	}
+
+	/**
+	 * Convert associative array of styles into a CSS string.
+	 */
+	private function build_style_string( array $styles ): string {
+		$rules = array();
+
+		foreach ( $styles as $property => $value ) {
+			$property = trim( (string) $property );
+			$value    = trim( (string) $value );
+
+			if ( '' === $property || '' === $value ) {
+				continue;
+			}
+
+			$rules[] = $property . ':' . $value;
+		}
+
+		return implode( ';', $rules );
+	}
+
+	/**
+	 * Map Elementor library names to Font Awesome style classes.
+	 */
+	private function resolve_icon_style_class( string $library ): string {
+		switch ( $library ) {
+			case 'fa-regular':
+				return 'far';
+			case 'fa-brands':
+				return 'fab';
+			default:
+				return 'fas';
+		}
 	}
 }
