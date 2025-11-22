@@ -337,6 +337,7 @@ class Admin_Settings {
 	private function render_container( array $element ): string {
 		$children     = is_array( $element['elements'] ?? null ) ? $element['elements'] : array();
 		$child_blocks = array();
+		$child_data   = array();
 		foreach ( $children as $child ) {
 			if ( ! is_array( $child ) ) {
 				continue;
@@ -353,12 +354,15 @@ class Admin_Settings {
 		$container_attr     = Style_Parser::parse_container_styles( $container_settings );
 		$container_classes  = Container_Classifier::get_element_classes( $element );
 		$container_attr     = $this->apply_container_class_adjustments( $container_attr, $container_classes );
-		$child_blocks       = array_map(
-			static function ( array $data ): string {
-				return $data['content'] ?? '';
-			},
-			$child_data
-		);
+
+		$child_blocks = ! empty( $child_data )
+			? array_map(
+				static function ( array $data ): string {
+					return $data['content'] ?? '';
+				},
+				$child_data
+			)
+			: array();
 
 		if ( Container_Classifier::is_grid( $element ) ) {
 			$columns = Container_Classifier::get_grid_column_count( $element, $child_count );
