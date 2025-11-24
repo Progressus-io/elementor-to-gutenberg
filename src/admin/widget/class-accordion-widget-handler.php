@@ -76,7 +76,7 @@ class Accordion_Widget_Handler implements Widget_Handler_Interface {
 					}
 
 					$accordion_content .= sprintf(
-						"<!-- wp:html -->\n<details class=\"%s\" id=\"%s\" style=\"%s\">\n<summary style=\"padding:0.5em 0;%s\">%s</summary>\n<div style=\"padding:0.5em 1em;%s\">%s</div>\n</details>\n<!-- /wp:html -->\n",
+						"<!-- wp:details -->\n<details class=\"%s\" id=\"%s\" style=\"%s\">\n<summary style=\"padding:0.5em 0;%s\">%s</summary>\n<div style=\"padding:0.5em 1em;%s\">%s</div>\n</details>\n<!-- /wp:details -->\n",
 						$custom_class,
 						$custom_id,
 						implode( '; ', $details_styles ),
