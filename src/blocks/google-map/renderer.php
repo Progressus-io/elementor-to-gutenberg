@@ -55,23 +55,16 @@ function render_google_map_block( $attributes, $content, $block ) {
 
 	// Attach serialized location data when present for richer frontend access.
 	$location_attr = isset( $attributes['location'] ) && is_array( $attributes['location'] ) ? $attributes['location'] : null;
-	$location_json = $location_attr ? \wp_json_encode( $location_attr ) : '';
+	$location_json = $location_attr ? wp_json_encode( $location_attr ) : '';
 
 	$map_type = isset( $attributes['mapType'] ) ? $attributes['mapType'] : '';
 	$zoom_attr = isset( $attributes['zoom'] ) ? intval( $attributes['zoom'] ) : '';
 	$height_attr = isset( $attributes['height'] ) ? intval( $attributes['height'] ) : '';
 
-	// Append data-location attribute to wrapper HTML (wrapper already contains attributes string).
-	// wrapper example: 'class="wp-block-..." data-something="..."'
-	// Build wrapper attributes string. We always append marker/map attributes so
-	// front-end JS can read marker color / visibility even when `location`
-	// wasn't serialized as a single `location` attribute.
 	$wrapper_with_data = rtrim( $wrapper, '>' );
-	// include data-location only when we have serialized location data
 	if ( $location_json ) {
 		$wrapper_with_data .= ' data-location="' . esc_attr( $location_json ) . '"';
 	}
-	// marker color/visibility attributes removed — frontend will not render markers
 	if ( $map_type ) {
 		$wrapper_with_data .= ' data-map-type="' . esc_attr( $map_type ) . '"';
 	}
@@ -83,42 +76,40 @@ function render_google_map_block( $attributes, $content, $block ) {
 	}
 	$wrapper_with_data .= '>'; 
 
-	// Append inline style for margin/padding when attributes present (Elementor-style _margin/_padding)
 	$style_parts = array();
-	if ( isset( $attributes['_margin'] ) && is_array( $attributes['_margin'] ) ) {
-		$m = $attributes['_margin'];
-		if ( isset( $m['unit'] ) ) {
-			$unit = isset( $m['unit'] ) ? $m['unit'] : 'px';
-			$top = isset( $m['top'] ) && $m['top'] !== '' ? $m['top'] : '0';
-			$right = isset( $m['right'] ) && $m['right'] !== '' ? $m['right'] : '0';
-			$bottom = isset( $m['bottom'] ) && $m['bottom'] !== '' ? $m['bottom'] : '0';
-			$left = isset( $m['left'] ) && $m['left'] !== '' ? $m['left'] : '0';
-			$style_parts[] = sprintf( 'margin:%1$s%5$s %2$s%5$s %3$s%5$s %4$s%5$s', esc_attr( $top ), esc_attr( $right ), esc_attr( $bottom ), esc_attr( $left ), esc_attr( $unit ) );
-		} else {
-			// tabs-style numeric shape
-			$top = isset( $m['top'] ) ? $m['top'] : 0;
-			$right = isset( $m['right'] ) ? $m['right'] : 0;
-			$bottom = isset( $m['bottom'] ) ? $m['bottom'] : 0;
-			$left = isset( $m['left'] ) ? $m['left'] : 0;
-			$style_parts[] = sprintf( 'margin:%1$spx %2$spx %3$spx %4$spx', esc_attr( $top ), esc_attr( $right ), esc_attr( $bottom ), esc_attr( $left ) );
+	// Helper: normalize a side value which may be numeric or include units (e.g. '2px' or '1.5%').
+	$normalize = static function( $value ) {
+		if ( $value === '' || $value === null ) {
+			return '0px';
 		}
+		// If it's numeric, append 'px'.
+		if ( is_numeric( $value ) ) {
+			return $value . 'px';
+		}
+		// If it already contains letters/percent/unit, return as-is.
+		if ( is_string( $value ) && preg_match( '/[a-z%]$/i', trim( $value ) ) ) {
+			return $value;
+		}
+		// Fallback: cast to string and append px.
+		return (string) $value . 'px';
+	};
+
+	if ( isset( $attributes['style']['spacing']['margin'] ) && is_array( $attributes['style']['spacing']['margin'] ) ) {
+		$m = $attributes['style']['spacing']['margin'];
+		$top = isset( $m['top'] ) ? $normalize( $m['top'] ) : '0px';
+		$right = isset( $m['right'] ) ? $normalize( $m['right'] ) : '0px';
+		$bottom = isset( $m['bottom'] ) ? $normalize( $m['bottom'] ) : '0px';
+		$left = isset( $m['left'] ) ? $normalize( $m['left'] ) : '0px';
+		$style_parts[] = sprintf( 'margin:%1$s %2$s %3$s %4$s', \esc_attr( $top ), \esc_attr( $right ), \esc_attr( $bottom ), \esc_attr( $left ) );
 	}
-	if ( isset( $attributes['_padding'] ) && is_array( $attributes['_padding'] ) ) {
-		$p = $attributes['_padding'];
-		if ( isset( $p['unit'] ) ) {
-			$unit = isset( $p['unit'] ) ? $p['unit'] : 'px';
-			$top = isset( $p['top'] ) && $p['top'] !== '' ? $p['top'] : '0';
-			$right = isset( $p['right'] ) && $p['right'] !== '' ? $p['right'] : '0';
-			$bottom = isset( $p['bottom'] ) && $p['bottom'] !== '' ? $p['bottom'] : '0';
-			$left = isset( $p['left'] ) && $p['left'] !== '' ? $p['left'] : '0';
-			$style_parts[] = sprintf( 'padding:%1$s%5$s %2$s%5$s %3$s%5$s %4$s%5$s', esc_attr( $top ), esc_attr( $right ), esc_attr( $bottom ), esc_attr( $left ), esc_attr( $unit ) );
-		} else {
-			$top = isset( $p['top'] ) ? $p['top'] : 0;
-			$right = isset( $p['right'] ) ? $p['right'] : 0;
-			$bottom = isset( $p['bottom'] ) ? $p['bottom'] : 0;
-			$left = isset( $p['left'] ) ? $p['left'] : 0;
-			$style_parts[] = sprintf( 'padding:%1$spx %2$spx %3$spx %4$spx', esc_attr( $top ), esc_attr( $right ), esc_attr( $bottom ), esc_attr( $left ) );
-		}
+
+	if ( isset( $attributes['style']['spacing']['padding'] ) && is_array( $attributes['style']['spacing']['padding'] ) ) {
+		$p = $attributes['style']['spacing']['padding'];
+		$pt = isset( $p['top'] ) ? $normalize( $p['top'] ) : '0px';
+		$pr = isset( $p['right'] ) ? $normalize( $p['right'] ) : '0px';
+		$pb = isset( $p['bottom'] ) ? $normalize( $p['bottom'] ) : '0px';
+		$pl = isset( $p['left'] ) ? $normalize( $p['left'] ) : '0px';
+		$style_parts[] = sprintf( 'padding:%1$s %2$s %3$s %4$s', \esc_attr( $pt ), \esc_attr( $pr ), \esc_attr( $pb ), \esc_attr( $pl ) );
 	}
 
 	if ( ! empty( $style_parts ) ) {
@@ -135,6 +126,6 @@ function render_google_map_block( $attributes, $content, $block ) {
 	return sprintf( '<div %1$s><iframe src="%2$s" style="width:100%%;height:%3$spx;border:0" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe></div>', $wrapper_with_data, \esc_attr( $src ), \esc_attr( $height ) );
 }
 
-if ( \function_exists( 'register_block_type' ) ) {
-	\register_block_type( 'progressus/google-map', array( 'render_callback' => __NAMESPACE__ . '\\render_google_map_block' ) );
+if ( function_exists( 'register_block_type' ) ) {
+	register_block_type( 'progressus/google-map', array( 'render_callback' => __NAMESPACE__ . '\\render_google_map_block' ) );
 }

@@ -1,5 +1,3 @@
-// Front-end initializer for google-map block: when Google Maps API is available
-// replace the iframe preview with an interactive map and apply marker settings.
 document.addEventListener("DOMContentLoaded", function () {
   if (typeof window === "undefined" || !window.google || !window.google.maps)
     return;
@@ -64,7 +62,6 @@ document.addEventListener("DOMContentLoaded", function () {
       }
 
       if (center) {
-        // create a default marker at the center; color/visibility options removed
         new window.google.maps.Marker({ map: map, position: center });
       }
     } catch (e) {

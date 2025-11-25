@@ -53,15 +53,29 @@ const Edit = ({ attributes, setAttributes }) => {
   const [suggestions, setSuggestions] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const padding = attributes.padding ||
-    attributes._padding || {
+  // Helper to convert stored spacing values to CSS strings for BoxControl display.
+  const valueToCss = (v) => {
+    if (v === undefined || v === null || v === "") return "0px";
+    if (typeof v === "number") return v + "px";
+    if (typeof v === "string") {
+      const trimmed = v.trim();
+      // If it already ends with a unit, return as-is.
+      if (/[a-z%]$/i.test(trimmed)) return trimmed;
+      // If it's numeric-like, append px.
+      if (!isNaN(parseFloat(trimmed))) return trimmed + "px";
+      return trimmed;
+    }
+    return String(v);
+  };
+  const padding = attributes?.style?.spacing?.padding ||
+    attributes.padding || {
       top: 0,
       right: 0,
       bottom: 0,
       left: 0,
     };
-  const margin = attributes.margin ||
-    attributes._margin || {
+  const margin = attributes?.style?.spacing?.margin ||
+    attributes.margin || {
       top: 0,
       right: 0,
       bottom: 0,
@@ -155,8 +169,6 @@ const Edit = ({ attributes, setAttributes }) => {
     border: "1px solid #ddd",
   };
 
-  // marker behavior removed: frontend will not render a marker
-
   // Initialize Google Maps (editor preview) when API is available.
   useEffect(() => {
     if (typeof window === "undefined" || !window.google || !window.google.maps)
@@ -191,7 +203,6 @@ const Edit = ({ attributes, setAttributes }) => {
         }
       }
 
-      // No marker created in the editor preview anymore.
     } catch (e) {
       // ignore initialization failures in editor
     }
@@ -411,13 +422,14 @@ const Edit = ({ attributes, setAttributes }) => {
             title={__("Dimensions", "progressus-gutenberg")}
             initialOpen={false}
           >
+            {/** Normalize values for BoxControl display: accept '2px' or numeric 2 */}
             <BoxControl
               label={__("Padding", "progressus-gutenberg")}
               values={{
-                top: padding.top + "px",
-                right: padding.right + "px",
-                bottom: padding.bottom + "px",
-                left: padding.left + "px",
+                top: valueToCss(padding.top),
+                right: valueToCss(padding.right),
+                bottom: valueToCss(padding.bottom),
+                left: valueToCss(padding.left),
               }}
               onChange={(value) => {
                 const parsed = {
@@ -426,8 +438,21 @@ const Edit = ({ attributes, setAttributes }) => {
                   bottom: parseInt(value.bottom) || 0,
                   left: parseInt(value.left) || 0,
                 };
-                // keep both `padding` and legacy `_padding` in sync
-                setAttributes({ padding: parsed, _padding: parsed });
+                // keep legacy fields and canonical style.spacing in sync
+                const newStyle = {
+                  ...(attributes.style || {}),
+                  spacing: {
+                    ...(attributes.style?.spacing || {}),
+                    ...(attributes.style?.spacing?.padding
+                      ? { padding: parsed }
+                      : { padding: parsed }),
+                  },
+                };
+                setAttributes({
+                  padding: parsed,
+                  _padding: parsed,
+                  style: newStyle,
+                });
               }}
               __nextHasNoMarginBottom
             />
@@ -435,10 +460,10 @@ const Edit = ({ attributes, setAttributes }) => {
             <BoxControl
               label={__("Margin", "progressus-gutenberg")}
               values={{
-                top: margin.top + "px",
-                right: margin.right + "px",
-                bottom: margin.bottom + "px",
-                left: margin.left + "px",
+                top: valueToCss(margin.top),
+                right: valueToCss(margin.right),
+                bottom: valueToCss(margin.bottom),
+                left: valueToCss(margin.left),
               }}
               onChange={(value) => {
                 const parsed = {
@@ -447,13 +472,25 @@ const Edit = ({ attributes, setAttributes }) => {
                   bottom: parseInt(value.bottom) || 0,
                   left: parseInt(value.left) || 0,
                 };
-                // keep both `margin` and legacy `_margin` in sync
-                setAttributes({ margin: parsed, _margin: parsed });
+                const newStyle = {
+                  ...(attributes.style || {}),
+                  spacing: {
+                    ...(attributes.style?.spacing || {}),
+                    ...(attributes.style?.spacing?.margin
+                      ? { margin: parsed }
+                      : { margin: parsed }),
+                  },
+                };
+                // keep legacy fields and canonical style.spacing in sync
+                setAttributes({
+                  margin: parsed,
+                  _margin: parsed,
+                  style: newStyle,
+                });
               }}
               __nextHasNoMarginBottom
             />
           </PanelBody>
-          {/* Marker color control removed */}
         </PanelBody>
       </InspectorControls>
       <div {...blockProps}>
