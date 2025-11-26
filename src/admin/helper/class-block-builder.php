@@ -34,8 +34,8 @@ class Block_Builder {
 			$attrs = array();
 		}
 
-		$attrs        = self::normalize_attributes( $attrs );
-		$attr_json    = empty( $attrs ) ? '' : ' ' . wp_json_encode( $attrs );
+		$attrs     = self::normalize_attributes( $attrs );
+		$attr_json = empty( $attrs ) ? '' : ' ' . wp_json_encode( $attrs );
 
 		if ( 'button' === $block && '' === trim( $inner_html ) ) {
 			return sprintf( '<!-- wp:%s%s /-->%s', $block, $attr_json, "\n" );
@@ -133,10 +133,6 @@ class Block_Builder {
 			}
 		}
 
-		if ( ! empty( $style['color']['background'] ) ) {
-			$style_rules[] = 'background-color:' . self::normalize_style_value( $style['color']['background'] );
-		}
-
 		if ( ! empty( $style['typography'] ) && is_array( $style['typography'] ) ) {
 			foreach ( $style['typography'] as $property => $value ) {
 				if ( '' === $value ) {
@@ -144,6 +140,32 @@ class Block_Builder {
 				}
 				$style_rules[] = sprintf( '%s:%s', self::camel_to_kebab( $property ), self::normalize_style_value( $value ) );
 			}
+		}
+
+		if ( isset( $style['color']['background'] ) ) {
+			$style_rules[] = 'background-color:' . self::normalize_style_value( $style['color']['background'] );
+		}
+
+		if ( ! empty( $style['background'] ) && is_array( $style['background'] ) ) {
+			if ( ! empty( $style['background']['image'] ) ) {
+				$style_rules[] = 'background-image:url(' . self::normalize_style_value( $style['background']['image'] ) . ')';
+			}
+
+			if ( isset( $style['background']['position'] ) ) {
+				$style_rules[] = 'background-position:' . self::normalize_style_value( $style['background']['position'] );
+			}
+
+			if ( isset( $style['background']['size'] ) ) {
+				$style_rules[] = 'background-size:' . self::normalize_style_value( $style['background']['size'] );
+			}
+
+			if ( isset( $style['background']['repeat'] ) ) {
+				$style_rules[] = 'background-repeat:' . self::normalize_style_value( $style['background']['repeat'] );
+			}
+		}
+
+		if ( isset( $style['dimensions']['minHeight'] ) ) {
+			$style_rules[] = 'min-height:' . self::normalize_style_value( $style['dimensions']['minHeight'] );
 		}
 
 		if ( ! empty( $style['border'] ) && is_array( $style['border'] ) ) {
