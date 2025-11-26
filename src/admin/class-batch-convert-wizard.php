@@ -1476,6 +1476,7 @@ class Batch_Convert_Wizard {
 		}
 
 		$json_data = get_post_meta( $post_id, '_elementor_data', true );
+		$template  = (string) get_page_template_slug( $post_id );
 		if ( empty( $json_data ) ) {
 			$message           = esc_html__( 'Skipped: Elementor data not found.', 'elementor-to-gutenberg' );
 			$result['message'] = $message;
@@ -1544,6 +1545,8 @@ class Batch_Convert_Wizard {
 		if ( ! empty( $options['assign_template'] ) ) {
 			update_post_meta( $target_id, '_wp_page_template', self::TEMPLATE_SLUG );
 		}
+
+		$this->normalize_page_template( $template, $target_id );
 
 		if ( 'update' === $options['mode'] && ! empty( $options['keep_meta'] ) ) {
 			$this->copy_post_meta( $post_id, $target_id, true );
@@ -2563,6 +2566,41 @@ class Batch_Convert_Wizard {
 				update_post_meta( $result_entry['target'], '_ele2gb_last_converted', $time );
 			}
 		}
+	}
+
+	/**
+	 * Ensure Elementor-specific templates are reset to the default template after conversion.
+	 *
+	 * @param string $source_template Template slug from the source page.
+	 * @param int $target_id Converted page ID.
+	 */
+	private function normalize_page_template( string $source_template, int $target_id ): void {
+		if ( ! $target_id ) {
+			return;
+		}
+
+		if ( '' === $source_template || 'default' === $source_template ) {
+			return;
+		}
+
+		if ( ! $this->is_elementor_template_slug( $source_template ) ) {
+			return;
+		}
+
+		update_post_meta( $target_id, '_wp_page_template', 'default' );
+	}
+
+	/**
+	 * Determine whether the template slug belongs to an Elementor template.
+	 *
+	 * @param string $template_slug Template slug to check.
+	 */
+	private function is_elementor_template_slug( string $template_slug ): bool {
+		if ( '' === $template_slug ) {
+			return false;
+		}
+
+		return 0 === strpos( $template_slug, 'elementor' );
 	}
 
 	/**
