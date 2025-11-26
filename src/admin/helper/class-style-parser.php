@@ -4,6 +4,7 @@
  *
  * @package Progressus\Gutenberg
  */
+
 namespace Progressus\Gutenberg\Admin\Helper;
 
 use function sanitize_html_class;
@@ -35,6 +36,7 @@ class Style_Parser {
 	 * Parse typography settings from Elementor settings.
 	 *
 	 * @param array $settings The Elementor settings array.
+	 *
 	 * @return array Array containing 'attributes' and 'style' keys.
 	 */
 	public static function parse_typography( array $settings ): array {
@@ -759,6 +761,7 @@ class Style_Parser {
 	 * Parse border settings from Elementor settings.
 	 *
 	 * @param array $settings The Elementor settings array.
+	 *
 	 * @return array Array containing 'attributes' and 'style' keys.
 	 */
 	public static function parse_border( array $settings ): array {
@@ -843,8 +846,16 @@ class Style_Parser {
 		$attributes = array();
 
 		$spacing = self::parse_spacing( $settings );
-		if ( ! empty( $spacing['attributes'] ) ) {
-			$attributes['style']['spacing'] = $spacing['attributes'];
+		if ( ! empty( $spacing['attributes']['padding'] ) ) {
+			$attributes['style']['spacing']['padding'] = $spacing['attributes']['padding'];
+		}
+
+		if ( ! empty( $spacing['attributes']['margin'] ) ) {
+			$attributes['style']['spacing']['margin'] = $spacing['attributes']['margin'];
+		}
+
+		if ( ! empty( $spacing['attributes']['blockGap'] ) ) {
+			$attributes['style']['spacing']['blockGap'] = $spacing['attributes']['blockGap'];
 		}
 
 		$border = self::parse_border( $settings );
@@ -861,6 +872,34 @@ class Style_Parser {
 				$attributes['style']['color']['background'] = $background;
 				$attributes['className']                    = self::append_class( $attributes['className'] ?? '', 'has-background' );
 			}
+		}
+
+		$background_type = self::sanitize_scalar( $settings['background_background'] ?? $settings['_background_background'] ?? '' );
+		$image_data      = $settings['background_image'] ?? $settings['_background_image'] ?? null;
+		$image_url       = self::extract_image_url( $image_data );
+
+		if ( 'classic' === $background_type && '' !== $image_url ) {
+			$attributes['style']['background']['image'] = $image_url;
+
+			$position = self::sanitize_scalar( $settings['background_position'] ?? $settings['_background_position'] ?? '' );
+			if ( '' !== $position ) {
+				$attributes['style']['background']['position'] = $position;
+			}
+
+			$size = self::sanitize_scalar( $settings['background_size'] ?? $settings['_background_size'] ?? '' );
+			if ( '' !== $size ) {
+				$attributes['style']['background']['size'] = $size;
+			}
+
+			$repeat = self::sanitize_scalar( $settings['background_repeat'] ?? $settings['_background_repeat'] ?? '' );
+			if ( '' !== $repeat ) {
+				$attributes['style']['background']['repeat'] = $repeat;
+			}
+		}
+
+		$min_height = self::parse_min_height( $settings );
+		if ( null !== $min_height ) {
+			$attributes['style']['dimensions']['minHeight'] = $min_height;
 		}
 
 		$custom_classes = self::sanitize_class_string( $settings['_css_classes'] ?? '' );
@@ -956,6 +995,45 @@ class Style_Parser {
 		}
 
 		return null;
+	}
+
+	/**
+	 * Parse min-height values from Elementor settings.
+	 *
+	 * @param array $settings Elementor settings array.
+	 */
+	private static function parse_min_height( array $settings ): ?string {
+		foreach ( array( 'min_height', 'min_height_tablet', 'min_height_mobile' ) as $key ) {
+			$value = self::normalize_dimension( $settings[ $key ] ?? null, 'px' );
+			if ( null !== $value ) {
+				return $value;
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * Extract image URL from Elementor image data.
+	 *
+	 * @param mixed $value Raw image value.
+	 */
+	private static function extract_image_url( $value ): string {
+		if ( is_array( $value ) ) {
+			if ( ! empty( $value['url'] ) ) {
+				return esc_url_raw( (string) $value['url'] );
+			}
+
+			if ( ! empty( $value['value'] ) ) {
+				return esc_url_raw( (string) $value['value'] );
+			}
+		}
+
+		if ( is_string( $value ) ) {
+			return esc_url_raw( $value );
+		}
+
+		return '';
 	}
 
 	/**
