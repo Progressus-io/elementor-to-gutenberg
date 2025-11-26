@@ -51,7 +51,7 @@ class Text_Editor_Widget_Handler implements Widget_Handler_Interface {
 		$attrs        = wp_json_encode( $attrs_array );
 
 		$block_content  = sprintf(
-			'<!-- wp:html %s --><div class="wp-block-paragraph %s" id="%s" style="%s">%s</div><!-- /wp:html -->' . "\n",
+			'<!-- wp:paragraph %s --><div class="wp-block-paragraph %s" id="%s" style="%s">%s</div><!-- /wp:paragraph -->' . "\n",
 			$attrs,
 			$class,
 			$custom_id,

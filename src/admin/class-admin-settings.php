@@ -167,7 +167,11 @@ class Admin_Settings {
 	 */
 	public function handle_json_upload( $option ): string {
 		if ( empty( $_FILES['json_upload']['tmp_name'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing
-			return $option;
+			// return a string to satisfy the declared return type.
+			if ( is_string( $option ) ) {
+				return $option;
+			}
+			return get_option( 'gutenberg_json_data', '' );
 		}
 
 		$json_content = File_Upload_Service::upload_file( $_FILES['json_upload'], 'json' ); // phpcs:ignore WordPress.Security.NonceVerification.Missing
