@@ -33,6 +33,13 @@ class Style_Parser {
 	private static ?array $font_sizes = null;
 
 	/**
+	 * Cached Elementor kit settings.
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	private static ?array $elementor_kit_settings = null;
+
+	/**
 	 * Parse typography settings from Elementor settings.
 	 *
 	 * @param array $settings The Elementor settings array.
@@ -93,6 +100,143 @@ class Style_Parser {
 			'attributes' => $attributes,
 			'style'      => implode( '', $style_parts ),
 		);
+	}
+
+	/**
+	 * Parse button-specific colors from widget and kit settings.
+	 *
+	 * @param array $settings Elementor widget settings.
+	 *
+	 * @return array{
+	 *     attributes: array,
+	 *     anchor_classes: array,
+	 *     anchor_styles: array
+	 * }
+	 */
+	public static function parse_button_styles( array $settings ): array {
+		$attributes     = array();
+		$anchor_classes = array();
+		$anchor_styles  = array();
+
+		$kit_settings = self::get_elementor_kit_settings();
+
+		$text_color = self::extract_color_from_sources(
+			array(
+				$settings['button_text_color'] ?? '',
+				$settings['text_color'] ?? '',
+				$kit_settings['button_text_color'] ?? '',
+				$kit_settings['button_typography_text_color'] ?? '',
+				$kit_settings['button_typography_color'] ?? '',
+			)
+		);
+
+		$background_color = self::extract_color_from_sources(
+			array(
+				$settings['background_color'] ?? '',
+				$settings['button_background_color'] ?? '',
+				$kit_settings['button_background_color'] ?? '',
+				$kit_settings['button_background'] ?? '',
+			)
+		);
+
+		if ( '' !== $text_color['slug'] ) {
+			$attributes['textColor'] = $text_color['slug'];
+			$anchor_classes[]        = 'has-text-color';
+			$anchor_classes[]        = 'has-' . self::clean_class( $text_color['slug'] ) . '-color';
+		} elseif ( '' !== $text_color['color'] ) {
+			$attributes['style']['color']['text'] = $text_color['color'];
+			$anchor_classes[]                     = 'has-text-color';
+			$anchor_styles[]                      = 'color:' . $text_color['color'];
+		}
+
+		if ( '' !== $background_color['slug'] ) {
+			$attributes['backgroundColor'] = $background_color['slug'];
+			$anchor_classes[]              = 'has-background';
+			$anchor_classes[]              = 'has-' . self::clean_class( $background_color['slug'] ) . '-background-color';
+		} elseif ( '' !== $background_color['color'] ) {
+			$attributes['style']['color']['background'] = $background_color['color'];
+			$anchor_classes[]                           = 'has-background';
+			$anchor_styles[]                            = 'background-color:' . $background_color['color'];
+		}
+
+		return array(
+			'attributes'     => $attributes,
+			'anchor_classes' => $anchor_classes,
+			'anchor_styles'  => $anchor_styles,
+		);
+	}
+
+	/**
+	 * Extract a normalized color from a list of potential sources.
+	 *
+	 * @param array<int, mixed> $sources Potential color values.
+	 *
+	 * @return array{slug: string, color: string}
+	 */
+	private static function extract_color_from_sources( array $sources ): array {
+		foreach ( $sources as $source ) {
+			$raw = self::sanitize_color( $source );
+			if ( '' === $raw ) {
+				continue;
+			}
+
+			$normalized = self::normalize_color_value( $raw );
+			if ( '' !== $normalized ) {
+				$matched_slug = self::match_theme_color_slug( $normalized );
+				if ( null !== $matched_slug ) {
+					return array(
+						'slug'  => self::clean_class( $matched_slug ),
+						'color' => self::resolve_theme_color_value( $matched_slug ) ?: $normalized,
+					);
+				}
+
+				return array(
+					'slug'  => '',
+					'color' => $normalized,
+				);
+			}
+
+			if ( self::is_preset_slug( $raw ) ) {
+				$slug = self::clean_class( $raw );
+
+				return array(
+					'slug'  => $slug,
+					'color' => self::resolve_theme_color_value( $slug ),
+				);
+			}
+		}
+
+		return array(
+			'slug'  => '',
+			'color' => '',
+		);
+	}
+
+	/**
+	 * Fetch Elementor kit settings.
+	 */
+	private static function get_elementor_kit_settings(): array {
+		if ( null !== self::$elementor_kit_settings ) {
+			return self::$elementor_kit_settings;
+		}
+
+		self::$elementor_kit_settings = array();
+
+		if ( ! function_exists( 'get_option' ) || ! function_exists( 'get_post_meta' ) ) {
+			return self::$elementor_kit_settings;
+		}
+
+		$kit_id = (int) get_option( 'elementor_active_kit' );
+		if ( $kit_id <= 0 ) {
+			return self::$elementor_kit_settings;
+		}
+
+		$settings = get_post_meta( $kit_id, '_elementor_page_settings', true );
+		if ( is_array( $settings ) ) {
+			self::$elementor_kit_settings = $settings;
+		}
+
+		return self::$elementor_kit_settings;
 	}
 
 	/**

@@ -34,8 +34,7 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 		$url        = isset( $link_data['url'] ) ? esc_url( (string) $link_data['url'] ) : '';
 		$custom_css = isset( $settings['custom_css'] ) ? (string) $settings['custom_css'] : '';
 		$custom_raw = isset( $settings['_css_classes'] ) ? (string) $settings['_css_classes'] : '';
-		$text_color = isset( $settings['button_text_color'] ) ? strtolower( (string) $settings['button_text_color'] ) : '';
-		$background = isset( $settings['background_color'] ) ? strtolower( (string) $settings['background_color'] ) : '';
+		$color_map  = Style_Parser::parse_button_styles( $settings );
 
 		if ( '' === $text ) {
 			$text = isset( $link_data['custom_text'] ) ? trim( (string) $link_data['custom_text'] ) : '';
@@ -56,37 +55,24 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 			}
 		}
 
-		$button_attributes = array();
+		$button_attributes = $color_map['attributes'] ?? array();
 		if ( ! empty( $custom_classes ) ) {
-			$button_attributes['className'] = implode( ' ', array_unique( $custom_classes ) );
-		}
+			$existing_classnames = array();
+			if ( ! empty( $button_attributes['className'] ) ) {
+				$existing_classnames = preg_split( '/\s+/', (string) $button_attributes['className'] );
+			}
 
-		$anchor_classes = array( 'wp-block-button__link', 'wp-element-button' );
-		$anchor_style   = array();
-
-		if ( '' !== $text_color ) {
-			if ( $this->is_preset_color_slug( $text_color ) ) {
-				$button_attributes['textColor'] = $text_color;
-				$anchor_classes[]               = 'has-text-color';
-				$anchor_classes[]               = 'has-' . Style_Parser::clean_class( $text_color ) . '-color';
-			} elseif ( $this->is_hex_color( $text_color ) ) {
-				$button_attributes['style']['color']['text'] = $text_color;
-				$anchor_classes[]                            = 'has-text-color';
-				$anchor_style[]                              = 'color:' . $text_color;
+			$combined_classes = array_filter( array_unique( array_merge( $existing_classnames, $custom_classes ) ) );
+			if ( ! empty( $combined_classes ) ) {
+				$button_attributes['className'] = implode( ' ', $combined_classes );
 			}
 		}
 
-		if ( '' !== $background ) {
-			if ( $this->is_preset_color_slug( $background ) ) {
-				$button_attributes['backgroundColor'] = $background;
-				$anchor_classes[]                     = 'has-background';
-				$anchor_classes[]                     = 'has-' . Style_Parser::clean_class( $background ) . '-background-color';
-			} elseif ( $this->is_hex_color( $background ) ) {
-				$button_attributes['style']['color']['background'] = $background;
-				$anchor_classes[]                                  = 'has-background';
-				$anchor_style[]                                    = 'background-color:' . $background;
-			}
-		}
+		$anchor_classes = array_merge(
+			array( 'wp-block-button__link', 'wp-element-button' ),
+			$color_map['anchor_classes'] ?? array()
+		);
+		$anchor_style   = $color_map['anchor_styles'] ?? array();
 
 		if ( '' !== $url ) {
 			$button_attributes['url'] = $url;
@@ -140,17 +126,4 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 		return Block_Builder::build( 'buttons', array(), $button_block );
 	}
 
-	/**
-	 * Check if a given color value is a Gutenberg preset slug.
-	 */
-	private function is_preset_color_slug( string $color ): bool {
-		return '' !== $color && false === strpos( $color, '#' );
-	}
-
-	/**
-	 * Determine if the provided color string is hexadecimal.
-	 */
-	private function is_hex_color( string $color ): bool {
-		return 1 === preg_match( '/^#([0-9a-f]{3}|[0-9a-f]{6})$/i', $color );
-	}
 }
