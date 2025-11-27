@@ -97,7 +97,7 @@ class Container_Classifier {
 		}
 
 		if ( self::is_repeating_card_layout( $element ) ) {
-			return self::clamp_columns( min( 3, $child_count ), $child_count );
+			return self::clamp_columns( $child_count, $child_count );
 		}
 
 		return min( 4, $child_count );
@@ -153,7 +153,15 @@ class Container_Classifier {
 	 * @param int $child_count Number of child elements.
 	 */
 	public static function is_row( array $element, int $child_count ): bool {
+		$settings = is_array( $element['settings'] ?? null ) ? $element['settings'] : array();
+
 		if ( self::has_class( $element, 'e-con-child' ) ) {
+			return false;
+		}
+
+		$direction = self::get_flex_direction( $settings );
+
+		if ( in_array( $direction, array( 'column', 'column-reverse' ), true ) ) {
 			return false;
 		}
 
@@ -169,10 +177,12 @@ class Container_Classifier {
 			return false;
 		}
 
-		$settings   = is_array( $element['settings'] ?? null ) ? $element['settings'] : array();
-		$direction  = self::get_flex_direction( $settings );
 		$has_row    = in_array( $direction, array( 'row', 'row-reverse' ), true );
 		$wrap_value = strtolower( (string) ( $settings['flex_wrap'] ?? $settings['flex_wrap_tablet'] ?? $settings['flex_wrap_mobile'] ?? '' ) );
+
+		if ( self::is_vertical_stack( $element ) ) {
+			return false;
+		}
 
 		if ( $has_row ) {
 			return true;
@@ -190,7 +200,11 @@ class Container_Classifier {
 		$children    = self::get_children( $element );
 		$child_count = count( $children );
 
-		if ( $child_count < 3 || $child_count > 4 ) {
+		if ( $child_count < 2 || $child_count > 6 ) {
+			return false;
+		}
+
+		if ( self::is_vertical_stack( $element ) ) {
 			return false;
 		}
 
@@ -200,6 +214,59 @@ class Container_Classifier {
 
 		foreach ( $children as $child ) {
 			if ( 'container' !== ( $child['elType'] ?? '' ) ) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Determine if the container represents a simple vertical stack of block-level widgets.
+	 *
+	 * @param array $element Elementor container element.
+	 */
+	public static function is_vertical_stack( array $element ): bool {
+		$children    = self::get_children( $element );
+		$child_count = count( $children );
+
+		if ( $child_count < 2 ) {
+			return false;
+		}
+
+		if ( self::is_grid( $element ) ) {
+			return false;
+		}
+
+		$settings  = is_array( $element['settings'] ?? null ) ? $element['settings'] : array();
+		$direction = self::get_flex_direction( $settings );
+		$has_row   = in_array( $direction, array( 'row', 'row-reverse' ), true );
+		$stackable = array(
+			'heading',
+			'text-editor',
+			'button',
+			'spacer',
+			'divider',
+			'icon-list',
+			'html',
+			'shortcode',
+			'image',
+			'video',
+			'counter',
+			'progress'
+		);
+
+		if ( $has_row ) {
+			return false;
+		}
+
+		foreach ( $children as $child ) {
+			if ( 'widget' !== ( $child['elType'] ?? '' ) ) {
+				return false;
+			}
+
+			$widget_type = $child['widgetType'] ?? '';
+			if ( ! in_array( $widget_type, $stackable, true ) ) {
 				return false;
 			}
 		}
