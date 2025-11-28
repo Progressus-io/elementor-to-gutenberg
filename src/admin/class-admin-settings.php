@@ -4,7 +4,9 @@
  *
  * @package Progressus\Gutenberg
  */
+
 namespace Progressus\Gutenberg\Admin;
+
 use Progressus\Gutenberg\Admin\Helper\File_Upload_Service;
 use Progressus\Gutenberg\Admin\Helper\Block_Builder;
 use Progressus\Gutenberg\Admin\Layout\Container_Classifier;
@@ -19,6 +21,9 @@ use function update_option;
 use function sanitize_text_field;
 use function wp_strip_all_tags;
 use function wp_unslash;
+use function esc_attr;
+use function wp_json_encode;
+
 defined( 'ABSPATH' ) || exit;
 /**
  * Main admin settings class for Elementor to Gutenberg conversion.
@@ -40,6 +45,7 @@ class Admin_Settings {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
 		}
+
 		return self::$instance;
 	}
 
@@ -59,12 +65,13 @@ class Admin_Settings {
 			if ( empty( $json_data ) ) {
 				return $actions;
 			}
-			$url = wp_nonce_url(
+			$url                             = wp_nonce_url(
 				admin_url( 'admin-post.php?action=myplugin_convert_page&page_id=' . $post->ID ),
 				'myplugin_convert_page_' . $post->ID
 			);
 			$actions['convert_to_gutenberg'] = '<a href="' . esc_url( $url ) . '">Convert to Gutenberg</a>';
 		}
+
 		return $actions;
 	}
 
@@ -105,7 +112,7 @@ class Admin_Settings {
 	 *
 	 * @param int $page_id Page ID.
 	 * @param array $blocks Gutenberg blocks.
-	 * 
+	 *
 	 * @return int New page ID.
 	 */
 	public function insert_new_page( $page_id, $blocks ): int {
@@ -113,7 +120,7 @@ class Admin_Settings {
 				'post_title'   => get_the_title( $page_id ) . ' (Gutenberg)',
 				'post_type'    => 'page',
 				'post_status'  => 'publish',
-				'post_content' =>  $blocks,
+				'post_content' => $blocks,
 			)
 		);
 
@@ -168,7 +175,7 @@ class Admin_Settings {
 	 */
 	public function json_upload_field_callback(): void {
 		?>
-		<input type="file" name="json_upload" accept=".json" />
+        <input type="file" name="json_upload" accept=".json"/>
 		<?php
 	}
 
@@ -176,6 +183,7 @@ class Admin_Settings {
 	 * Handle JSON file upload and conversion.
 	 *
 	 * @param mixed $option The option value.
+	 *
 	 * @return string The processed Gutenberg content or existing option.
 	 */
 	public function handle_json_upload( $option ): string {
@@ -188,7 +196,7 @@ class Admin_Settings {
 			return get_option( 'gutenberg_json_data', '' );
 		}
 
-		$data = json_decode( $json_content, true );
+		$data              = json_decode( $json_content, true );
 		$gutenberg_content = $this->convert_json_to_gutenberg_content( $data );
 
 		$post_title = $data['title'] ?? 'Untitled';
@@ -225,6 +233,7 @@ class Admin_Settings {
 				esc_html__( 'Failed to create new page.', 'elementor-to-gutenberg' ),
 				'error'
 			);
+
 			return get_option( 'gutenberg_json_data', '' );
 		}
 
@@ -234,6 +243,7 @@ class Admin_Settings {
 			esc_html__( 'JSON file uploaded and page created successfully!', 'elementor-to-gutenberg' ),
 			'updated'
 		);
+
 		return $gutenberg_content;
 	}
 
@@ -242,34 +252,35 @@ class Admin_Settings {
 	 */
 	public function settings_page_content(): void {
 		?>
-		<div class="wrap">
-			<h1><?php esc_html_e( 'Gutenberg Settings', 'elementor-to-gutenberg' ); ?></h1>
+        <div class="wrap">
+            <h1><?php esc_html_e( 'Gutenberg Settings', 'elementor-to-gutenberg' ); ?></h1>
 			<?php settings_errors( 'gutenberg_json_data' ); ?>
-			<form method="post" action="options.php" enctype="multipart/form-data" id="json-upload-form">
+            <form method="post" action="options.php" enctype="multipart/form-data" id="json-upload-form">
 				<?php
 				settings_fields( 'gutenberg_settings_group' );
 				do_settings_sections( 'gutenberg-settings' );
 				submit_button( esc_html__( 'Upload JSON File', 'elementor-to-gutenberg' ), 'primary', 'json-upload-btn' );
 				?>
-				<span id="json-upload-spinner" style="display:none;margin-left:10px;">
-					<img src="<?php echo esc_url( admin_url( 'images/spinner.gif' ) ); ?>" alt="<?php esc_attr_e( 'Loading', 'elementor-to-gutenberg' ); ?>" /> <?php esc_html_e( 'Uploading...', 'elementor-to-gutenberg' ); ?>
+                <span id="json-upload-spinner" style="display:none;margin-left:10px;">
+					<img src="<?php echo esc_url( admin_url( 'images/spinner.gif' ) ); ?>"
+                         alt="<?php esc_attr_e( 'Loading', 'elementor-to-gutenberg' ); ?>"/> <?php esc_html_e( 'Uploading...', 'elementor-to-gutenberg' ); ?>
 				</span>
-			</form>
-			<script>
-				( function() {
-					'use strict';
-					var form = document.getElementById( 'json-upload-form' );
-					var button = document.getElementById( 'json-upload-btn' );
-					var spinner = document.getElementById( 'json-upload-spinner' );
-					if ( form && button && spinner ) {
-						form.addEventListener( 'submit', function() {
-							button.disabled = true;
-							spinner.style.display = 'inline-block';
-						} );
-					}
-				} )();
-			</script>
-		</div>
+            </form>
+            <script>
+                (function () {
+                    'use strict';
+                    var form = document.getElementById('json-upload-form');
+                    var button = document.getElementById('json-upload-btn');
+                    var spinner = document.getElementById('json-upload-spinner');
+                    if (form && button && spinner) {
+                        form.addEventListener('submit', function () {
+                            button.disabled = true;
+                            spinner.style.display = 'inline-block';
+                        });
+                    }
+                })();
+            </script>
+        </div>
 		<?php
 	}
 
@@ -277,12 +288,14 @@ class Admin_Settings {
 	 * Convert JSON data to Gutenberg blocks.
 	 *
 	 * @param array $json_data The JSON data to convert.
+	 *
 	 * @return string The converted Gutenberg content.
 	 */
 	public function convert_json_to_gutenberg_content( array $json_data ): string {
 		if ( empty( $json_data['content'] ) || ! is_array( $json_data['content'] ) ) {
 			return '';
 		}
+
 		return $this->parse_elementor_elements( $json_data['content'] );
 	}
 
@@ -290,6 +303,7 @@ class Admin_Settings {
 	 * Parse Elementor elements to Gutenberg blocks.
 	 *
 	 * @param array $elements The Elementor elements array.
+	 *
 	 * @return string The converted Gutenberg block content.
 	 */
 	public function parse_elementor_elements( array $elements ): string {
@@ -452,10 +466,109 @@ class Admin_Settings {
 		$inner_html = '';
 
 		foreach ( $child_data as $child ) {
-			$inner_html .= Block_Builder::build( 'column', array(), $child['content'] ?? '' );
+			$content = isset( $child['content'] ) ? $child['content'] : '';
+			if ( '' === $content ) {
+				continue;
+			}
+
+			$element = isset( $child['element'] ) && is_array( $child['element'] ) ? $child['element'] : array();
+			$width   = $this->get_column_width( $element );
+
+			$column_attrs = array();
+			if ( null !== $width ) {
+				$column_attrs['width'] = $width;
+			}
+
+			// JSON attributes
+			$attrs_json = '';
+			if ( ! empty( $column_attrs ) ) {
+				$attrs_json = ' ' . wp_json_encode( $column_attrs );
+			}
+
+			$style_attr = '';
+			if ( null !== $width ) {
+				$style_attr = ' style="flex-basis:' . esc_attr( $width ) . '"';
+			}
+
+			$inner_html .= sprintf(
+				'<!-- wp:column%s --><div class="wp-block-column"%s>%s</div><!-- /wp:column -->',
+				$attrs_json,
+				$style_attr,
+				$content
+			);
+		}
+
+		if ( '' === $inner_html ) {
+			return '';
 		}
 
 		return Block_Builder::build( 'columns', $attributes, $inner_html );
+	}
+
+	/**
+	 * Infer a core/column width attribute from an Elementor container element.
+	 *
+	 * Returns values like "33.33%" when possible.
+	 *
+	 * @param array $element Elementor container element.
+	 *
+	 * @return string|null
+	 */
+	private function get_column_width( array $element ): ?string {
+		$settings = is_array( $element['settings'] ?? null ) ? $element['settings'] : array();
+		if ( empty( $settings ) ) {
+			return null;
+		}
+
+		$candidates = array( 'width', 'column_width', 'container_width' );
+
+		foreach ( $candidates as $key ) {
+			if ( ! isset( $settings[ $key ] ) ) {
+				continue;
+			}
+
+			$value = $settings[ $key ];
+
+			if ( is_array( $value ) ) {
+				$size = isset( $value['size'] ) ? $value['size'] : ( isset( $value['value'] ) ? $value['value'] : null );
+				$unit = isset( $value['unit'] ) ? (string) $value['unit'] : '%';
+
+				if ( null === $size || '' === $size ) {
+					continue;
+				}
+
+				$size = trim( (string) $size );
+				if ( '' === $size || ! is_numeric( $size ) ) {
+					continue;
+				}
+
+				if ( '' === $unit ) {
+					$unit = '%';
+				}
+
+				// For now we only trust percentage widths. Other units are ignored.
+				if ( '%' !== $unit ) {
+					continue;
+				}
+
+				return $size . $unit;
+			}
+
+			$string_value = trim( (string) $value );
+			if ( '' === $string_value ) {
+				continue;
+			}
+
+			if ( false !== strpos( $string_value, '%' ) ) {
+				return $string_value;
+			}
+
+			if ( is_numeric( $string_value ) ) {
+				return $string_value . '%';
+			}
+		}
+
+		return null;
 	}
 
 	/**
