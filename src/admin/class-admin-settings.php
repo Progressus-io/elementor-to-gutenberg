@@ -463,7 +463,8 @@ class Admin_Settings {
 	 * @param array $child_data Child element data with rendered content.
 	 */
 	private function render_columns_group( array $attributes, array $child_data ): string {
-		$inner_html = '';
+		$inner_html          = '';
+		$columns_alignments  = array();
 
 		foreach ( $child_data as $child ) {
 			$content = isset( $child['content'] ) ? $child['content'] : '';
@@ -474,25 +475,43 @@ class Admin_Settings {
 			$element = isset( $child['element'] ) && is_array( $child['element'] ) ? $child['element'] : array();
 			$width   = $this->get_column_width( $element );
 
+			// اقرأ computed styles من Elementor
+			$computed_styles = Style_Parser::get_computed_styles( $element );
+			$vertical_align  = null;
+
+			if ( isset( $computed_styles['align-self'] ) ) {
+				$vertical_align = $this->map_align_self_to_vertical_alignment( $computed_styles['align-self'] );
+			}
+
 			$column_attrs = array();
 			if ( null !== $width ) {
 				$column_attrs['width'] = $width;
 			}
+			if ( null !== $vertical_align ) {
+				$column_attrs['verticalAlignment'] = $vertical_align;
+				$columns_alignments[]              = $vertical_align;
+			}
 
-			// JSON attributes
 			$attrs_json = '';
 			if ( ! empty( $column_attrs ) ) {
 				$attrs_json = ' ' . wp_json_encode( $column_attrs );
 			}
 
-			$style_attr = '';
+			$style_attr  = '';
+			$class_names = array( 'wp-block-column' );
+
 			if ( null !== $width ) {
 				$style_attr = ' style="flex-basis:' . esc_attr( $width ) . '"';
 			}
 
+			if ( null !== $vertical_align ) {
+				$class_names[] = 'is-vertically-aligned-' . sanitize_html_class( $vertical_align );
+			}
+
 			$inner_html .= sprintf(
-				'<!-- wp:column%s --><div class="wp-block-column"%s>%s</div><!-- /wp:column -->',
+				'<!-- wp:column%s --><div class="%s"%s>%s</div><!-- /wp:column -->',
 				$attrs_json,
+				esc_attr( implode( ' ', $class_names ) ),
 				$style_attr,
 				$content
 			);
@@ -502,8 +521,24 @@ class Admin_Settings {
 			return '';
 		}
 
+		if ( ! empty( $columns_alignments ) ) {
+			$unique = array_unique( $columns_alignments );
+			if ( 1 === count( $unique ) ) {
+				$alignment                   = reset( $unique ); // top/center/bottom
+				$attributes['verticalAlignment'] = $alignment;
+
+				$class = 'are-vertically-aligned-' . sanitize_html_class( $alignment );
+				if ( empty( $attributes['className'] ) ) {
+					$attributes['className'] = $class;
+				} else {
+					$attributes['className'] .= ' ' . $class;
+				}
+			}
+		}
+
 		return Block_Builder::build( 'columns', $attributes, $inner_html );
 	}
+
 
 	/**
 	 * Infer a core/column width attribute from an Elementor container element.
@@ -623,6 +658,29 @@ class Admin_Settings {
 		$attributes['className'] = implode( ' ', array_keys( $unique ) );
 
 		return $attributes;
+	}
+
+	/**
+	 * Map CSS align-self to Gutenberg verticalAlignment value.
+	 *
+	 * @param string $align_self
+	 * @return string|null
+	 */
+	private function map_align_self_to_vertical_alignment( string $align_self ): ?string {
+		$align_self = strtolower( trim( $align_self ) );
+
+		switch ( $align_self ) {
+			case 'flex-start':
+			case 'start':
+				return 'top';
+			case 'center':
+				return 'center';
+			case 'flex-end':
+			case 'end':
+				return 'bottom';
+			default:
+				return null;
+		}
 	}
 
 	/**

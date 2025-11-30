@@ -1146,16 +1146,60 @@ class Style_Parser {
 	 *
 	 * @param array $settings Elementor settings array.
 	 */
-	private static function parse_min_height( array $settings ): ?string {
-		foreach ( array( 'min_height', 'min_height_tablet', 'min_height_mobile' ) as $key ) {
-			$value = self::normalize_dimension( $settings[ $key ] ?? null, 'px' );
-			if ( null !== $value ) {
-				return $value;
+	/**
+	 * Parse min-height values from Elementor settings.
+	 *
+	 * @param array $settings Elementor settings array.
+	 */
+	/**
+	 * Parse min-height values from Elementor settings.
+	 *
+	 * @param array $settings Elementor settings array.
+	 *
+	 * @return string|null CSS value like "88vh" or "600px" or null when not set.
+	 */
+	private static function parse_min_height( $settings ) {
+		if ( ! is_array( $settings ) ) {
+			return null;
+		}
+
+		// Elementor may store min-height separately for desktop / tablet / mobile.
+		$candidates = array(
+			$settings['min_height'] ?? null,
+			$settings['min_height_tablet'] ?? null,
+			$settings['min_height_mobile'] ?? null,
+		);
+
+		foreach ( $candidates as $candidate ) {
+			if ( ! is_array( $candidate ) ) {
+				continue;
 			}
+
+			if ( ! isset( $candidate['size'] ) || '' === $candidate['size'] || null === $candidate['size'] ) {
+				continue;
+			}
+
+			$unit = isset( $candidate['unit'] ) && '' !== $candidate['unit'] ? $candidate['unit'] : 'px';
+
+			// Use existing normalize_dimension helper so units like vh / px are preserved.
+			$value = self::normalize_dimension(
+				array(
+					'size' => $candidate['size'],
+					'unit' => $unit,
+				),
+				$unit
+			);
+
+			if ( null === $value ) {
+				continue;
+			}
+
+			return $value; // e.g. "88vh" or "600px".
 		}
 
 		return null;
 	}
+
 
 	/**
 	 * Extract image URL from Elementor image data.
