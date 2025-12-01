@@ -8,6 +8,7 @@
 namespace Progressus\Gutenberg\Admin\Widget;
 
 use Progressus\Gutenberg\Admin\Helper\Block_Builder;
+use Progressus\Gutenberg\Admin\Helper\Icon_Parser;
 use Progressus\Gutenberg\Admin\Helper\Style_Parser;
 use Progressus\Gutenberg\Admin\Widget_Handler_Interface;
 
@@ -32,9 +33,9 @@ class Icon_Widget_Handler implements Widget_Handler_Interface {
 		$custom_id      = isset( $settings['_element_id'] ) ? trim( (string) $settings['_element_id'] ) : '';
 		$custom_classes = $this->sanitize_custom_classes( isset( $settings['_css_classes'] ) ? (string) $settings['_css_classes'] : '' );
 
-		list( $icon_value, $icon_library ) = $this->resolve_icon_data( $settings );
-		$icon_value = trim( $icon_value );
-		$icon       = $this->extract_icon_slug( $icon_value );
+		$icon_data  = $this->resolve_icon_data( $settings );
+		$icon_value = trim( $icon_data['class_name'] );
+		$icon       = $icon_data['slug'];
 
 		$size             = $this->sanitize_slider_value( $settings['size'] ?? null, 24 );
 		$color            = $this->resolve_color_value( $settings['primary_color'] ?? '#333333', '#333333' );
@@ -47,9 +48,10 @@ class Icon_Widget_Handler implements Widget_Handler_Interface {
 		$link             = isset( $link_settings['url'] ) ? (string) $link_settings['url'] : '';
 		$link_target      = ! empty( $link_settings['is_external'] );
 
-		$icon_style_class = $this->resolve_icon_style_class( $icon_library );
+		$icon_style_class = $icon_data['style_class'];
 		$attributes       = array(
 			'icon'            => $icon,
+			'iconStyle'       => $icon_style_class,
 			'size'            => $size,
 			'color'           => $color,
 			'backgroundColor' => $background_color,
@@ -94,14 +96,32 @@ class Icon_Widget_Handler implements Widget_Handler_Interface {
 			unset( $icon_styles['--fontawesome-icon-hover-color'] );
 		}
 
-		$icon_html = sprintf(
-			'<i class="%1$s fontawesome-icon-hover-%2$s" style="%3$s" aria-label="" aria-hidden="true" data-hover-effect="%2$s" data-icon="%4$s" data-icon-style="%5$s"></i>',
-			esc_attr( $icon_value ),
-			esc_attr( $hover_effect ),
-			esc_attr( $this->build_style_string( $icon_styles ) ),
-			esc_attr( $icon ),
-			esc_attr( $icon_style_class )
-		);
+		if ( 'svg' === $icon_data['type'] && '' !== $icon_data['url'] ) {
+			$svg_styles = array(
+				'width'            => $size . 'px',
+				'height'           => 'auto',
+				'display'          => 'inline-block',
+				'background-color' => '' !== $background_color ? $background_color : '',
+				'padding'          => $padding > 0 ? $padding . 'px' : '',
+			);
+
+			$icon_html = sprintf(
+				'<img src="%1$s" alt="" style="%2$s" class="svg-icon" />',
+				esc_url( $icon_data['url'] ),
+				esc_attr( $this->build_style_string( $svg_styles ) )
+			);
+		} elseif ( '' !== $icon_value ) {
+			$icon_html = sprintf(
+				'<i class="%1$s fontawesome-icon-hover-%2$s" style="%3$s" aria-label="" aria-hidden="true" data-hover-effect="%2$s" data-icon="%4$s" data-icon-style="%5$s"></i>',
+				esc_attr( $icon_value ),
+				esc_attr( $hover_effect ),
+				esc_attr( $this->build_style_string( $icon_styles ) ),
+				esc_attr( $icon ),
+				esc_attr( $icon_style_class )
+			);
+		} else {
+			$icon_html = '';
+		}
 
 		if ( '' !== $link ) {
 			$rel_attr  = $link_target ? ' rel="noopener noreferrer"' : '';
@@ -138,32 +158,22 @@ class Icon_Widget_Handler implements Widget_Handler_Interface {
 	}
 
 	/**
-	 * Resolve icon value and library from Elementor settings.
+	 * Resolve icon data from Elementor settings.
 	 */
 	private function resolve_icon_data( array $settings ): array {
-		$icon_value   = '';
-		$icon_library = 'fa-solid';
+		$icon_setting = isset( $settings['selected_icon'] ) && is_array( $settings['selected_icon'] ) ? $settings['selected_icon'] : null;
+		$icon_data    = Icon_Parser::parse_selected_icon( $icon_setting );
 
-		if ( isset( $settings['selected_icon'] ) && is_array( $settings['selected_icon'] ) ) {
-			$icon_value   = isset( $settings['selected_icon']['value'] ) ? (string) $settings['selected_icon']['value'] : '';
-			$icon_library = isset( $settings['selected_icon']['library'] ) ? (string) $settings['selected_icon']['library'] : 'fa-solid';
-		} elseif ( isset( $settings['icon'] ) ) {
-			$icon_value = (string) $settings['icon'];
+		if ( '' === $icon_data['class_name'] && '' === $icon_data['url'] && isset( $settings['icon'] ) ) {
+			$icon_data = Icon_Parser::parse_selected_icon(
+				array(
+					'value'   => $settings['icon'],
+					'library' => 'fa-solid',
+				)
+			);
 		}
 
-		return array( $icon_value, $icon_library );
-	}
-
-	/**
-	 * Extract icon slug from a raw Font Awesome value.
-	 */
-	private function extract_icon_slug( string $icon_value ): string {
-		$parts = preg_split( '/\s+/', trim( $icon_value ) );
-		if ( is_array( $parts ) && count( $parts ) > 1 ) {
-			return (string) $parts[1];
-		}
-
-		return $icon_value;
+		return $icon_data;
 	}
 
 	/**

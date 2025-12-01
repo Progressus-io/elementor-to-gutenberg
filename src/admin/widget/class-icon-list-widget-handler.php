@@ -8,6 +8,7 @@
 namespace Progressus\Gutenberg\Admin\Widget;
 
 use Progressus\Gutenberg\Admin\Widget_Handler_Interface;
+use Progressus\Gutenberg\Admin\Helper\Icon_Parser;
 use Progressus\Gutenberg\Admin\Helper\Style_Parser;
 
 defined( 'ABSPATH' ) || exit;
@@ -20,12 +21,13 @@ class Icon_List_Widget_Handler implements Widget_Handler_Interface {
 	 * Handle conversion of Elementor icon list to Gutenberg block.
 	 *
 	 * @param array $element The Elementor element data.
+	 *
 	 * @return string The Gutenberg block content.
 	 */
 	public function handle( array $element ): string {
-		$settings       = $element['settings'] ?? array();
-		$icon_list      = $settings['icon_list'] ?? array();
-		$block_content  = '';
+		$settings      = $element['settings'] ?? array();
+		$icon_list     = $settings['icon_list'] ?? array();
+		$block_content = '';
 		$custom_class  = $settings['_css_classes'] ?? '';
 		$custom_id     = $settings['_element_id'] ?? '';
 		$custom_css    = $settings['custom_css'] ?? '';
@@ -50,35 +52,23 @@ class Icon_List_Widget_Handler implements Widget_Handler_Interface {
 			$icon_list_content = '<ul class="icon-list">';
 
 			foreach ( $icon_list as $list_item ) {
-				$item_text         = $list_item['text'] ?? '';
-				$item_icon_value   = '';
-				$item_icon_library = '';
-
-				// Handle icon structure for each item
-				if ( isset( $list_item['selected_icon']['value'] ) ) {
-					$item_icon_value   = $list_item['selected_icon']['value'];
-					$item_icon_library = $list_item['selected_icon']['library'] ?? 'fa-solid';
-				}
+				$item_text      = $list_item['text'] ?? '';
+				$item_icon_data = Icon_Parser::parse_selected_icon( $list_item['selected_icon'] ?? null );
 
 				$icon_list_content .= '<li class="icon-list-item">';
 
 				// Add icon if present
-				if ( $item_icon_value ) {
-					$icon_class = 'fas';
-					if ( $item_icon_library === 'fa-solid' ) {
-						$icon_class = 'fas';
-					} elseif ( $item_icon_library === 'fa-regular' ) {
-						$icon_class = 'far';
-					} elseif ( $item_icon_library === 'fa-brands' ) {
-						$icon_class = 'fab';
+				if ( '' !== $item_icon_data['class_name'] || '' !== $item_icon_data['url'] ) {
+					if ( 'svg' === $item_icon_data['type'] && '' !== $item_icon_data['url'] ) {
+						$item_icon_html = '<img src="' . esc_url( $item_icon_data['url'] ) . '" alt="" class="svg-icon" />';
+					} else {
+						$item_icon_html = '<i class="' . esc_attr( $item_icon_data['class_name'] ) . '"></i>';
 					}
-
-					$item_icon_html = '<i class="' . esc_attr( $icon_class ) . ' ' . esc_attr( $item_icon_value ) . '"></i>';
 
 					// Add tooltip wrapper if tooltip is present
 					if ( isset( $icon_list_attrs['tooltip'] ) ) {
 						$tooltip_position = $icon_list_attrs['tooltipPosition'] ?? 'top';
-						$item_icon_html = '<span class="tooltip-wrapper" data-tooltip="' . esc_attr( $icon_list_attrs['tooltip'] ) . '" data-tooltip-position="' . esc_attr( $tooltip_position ) . '">' . $item_icon_html . '</span>';
+						$item_icon_html   = '<span class="tooltip-wrapper" data-tooltip="' . esc_attr( $icon_list_attrs['tooltip'] ) . '" data-tooltip-position="' . esc_attr( $tooltip_position ) . '">' . $item_icon_html . '</span>';
 					}
 
 					$icon_list_content .= '<span class="icon-list-icon">' . $item_icon_html . '</span>';
