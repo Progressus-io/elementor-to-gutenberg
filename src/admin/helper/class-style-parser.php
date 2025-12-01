@@ -7,6 +7,7 @@
 
 namespace Progressus\Gutenberg\Admin\Helper;
 
+use Elementor\Plugin;
 use function sanitize_html_class;
 use function sanitize_hex_color;
 use function wp_get_global_settings;
@@ -40,6 +41,13 @@ class Style_Parser {
 	private static ?array $elementor_kit_settings = null;
 
 	/**
+	 * Cached Elementor global typography definitions.
+	 *
+	 * @var array<string, array>|null
+	 */
+	private static ?array $elementor_global_typography = null;
+
+	/**
 	 * Parse typography settings from Elementor settings.
 	 *
 	 * @param array $settings The Elementor settings array.
@@ -47,6 +55,7 @@ class Style_Parser {
 	 * @return array Array containing 'attributes' and 'style' keys.
 	 */
 	public static function parse_typography( array $settings ): array {
+		$settings    = self::apply_global_typography( $settings );
 		$attributes  = array();
 		$style_parts = array();
 		$fields      = array(
@@ -215,6 +224,9 @@ class Style_Parser {
 	/**
 	 * Fetch Elementor kit settings.
 	 */
+	/**
+	 * Fetch Elementor kit settings.
+	 */
 	private static function get_elementor_kit_settings(): array {
 		if ( null !== self::$elementor_kit_settings ) {
 			return self::$elementor_kit_settings;
@@ -222,21 +234,190 @@ class Style_Parser {
 
 		self::$elementor_kit_settings = array();
 
-		if ( ! function_exists( 'get_option' ) || ! function_exists( 'get_post_meta' ) ) {
-			return self::$elementor_kit_settings;
+		// Prefer Elementor's Kit API when available.
+		if ( class_exists( '\Elementor\Plugin' ) ) {
+			$plugin = Plugin::instance();
+
+			// Newer Elementor: get_active_kit_for_frontend().
+			if ( isset( $plugin->kits_manager ) && method_exists( $plugin->kits_manager, 'get_active_kit_for_frontend' ) ) {
+				$kit = $plugin->kits_manager->get_active_kit_for_frontend();
+
+				if ( $kit && method_exists( $kit, 'get_settings_for_display' ) ) {
+					self::$elementor_kit_settings = (array) $kit->get_settings_for_display();
+
+					return self::$elementor_kit_settings;
+				}
+			}
+
+			// Fallback: older API.
+			if ( isset( $plugin->kits_manager ) && method_exists( $plugin->kits_manager, 'get_current_settings' ) ) {
+				self::$elementor_kit_settings = (array) $plugin->kits_manager->get_current_settings();
+
+				return self::$elementor_kit_settings;
+			}
 		}
 
-		$kit_id = (int) get_option( 'elementor_active_kit' );
-		if ( $kit_id <= 0 ) {
-			return self::$elementor_kit_settings;
-		}
-
-		$settings = get_post_meta( $kit_id, '_elementor_page_settings', true );
-		if ( is_array( $settings ) ) {
-			self::$elementor_kit_settings = $settings;
+		if ( function_exists( 'get_option' ) && function_exists( 'get_post_meta' ) ) {
+			$kit_id = (int) get_option( 'elementor_active_kit' );
+			if ( $kit_id > 0 ) {
+				$settings = get_post_meta( $kit_id, '_elementor_page_settings', true );
+				if ( is_array( $settings ) ) {
+					self::$elementor_kit_settings = $settings;
+				}
+			}
 		}
 
 		return self::$elementor_kit_settings;
+	}
+
+	/**
+	 * Build a map of Elementor global typography definitions keyed by handle (_id).
+	 *
+	 * @return array<string, array> Map: handle => typography settings array.
+	 */
+	private static function get_elementor_global_typography_map(): array {
+		if ( null !== self::$elementor_global_typography ) {
+			return self::$elementor_global_typography;
+		}
+
+		self::$elementor_global_typography = array();
+
+		$kit_settings = self::get_elementor_kit_settings();
+		if ( empty( $kit_settings ) || ! is_array( $kit_settings ) ) {
+			return self::$elementor_global_typography;
+		}
+
+		$groups = array( 'system_typography', 'custom_typography' );
+
+		foreach ( $groups as $group ) {
+			if ( empty( $kit_settings[ $group ] ) || ! is_array( $kit_settings[ $group ] ) ) {
+				continue;
+			}
+
+			foreach ( $kit_settings[ $group ] as $item ) {
+				if ( ! is_array( $item ) || empty( $item['_id'] ) ) {
+					continue;
+				}
+
+				$handle = (string) $item['_id'];
+
+				self::$elementor_global_typography[ $handle ] = $item;
+			}
+		}
+
+		return self::$elementor_global_typography;
+	}
+
+	/**
+	 * Extract global typography handle from Elementor __globals__ reference.
+	 *
+	 * Example input:  "globals/typography?id=primary"
+	 * Example output: "primary"
+	 *
+	 * @param string $reference Raw global reference string.
+	 *
+	 * @return string Handle ID or empty string when it cannot be parsed.
+	 */
+	private static function extract_global_typography_handle( string $reference ): string {
+		$reference = trim( $reference );
+		if ( '' === $reference ) {
+			return '';
+		}
+
+		$pos = strpos( $reference, 'id=' );
+		if ( false === $pos ) {
+			return '';
+		}
+
+		$handle = substr( $reference, $pos + 3 );
+
+		$amp_pos = strpos( $handle, '&' );
+		if ( false !== $amp_pos ) {
+			$handle = substr( $handle, 0, $amp_pos );
+		}
+
+		return trim( $handle );
+	}
+
+	/**
+	 * Resolve global typography reference (typography_typography = global) into concrete values.
+	 *
+	 * Expects the usual "typography_*" keys in $settings.
+	 *
+	 * @param array $settings Settings passed from widget handler.
+	 *
+	 * @return array Settings with global values merged in when applicable.
+	 */
+	private static function apply_global_typography( array $settings ): array {
+		if (
+			( ! isset( $settings['typography_typography'] ) || '' === self::sanitize_scalar( $settings['typography_typography'] ) )
+			&& isset( $settings['__globals__'] )
+			&& is_array( $settings['__globals__'] )
+			&& ! empty( $settings['__globals__']['typography_typography'] )
+		) {
+			$global_handle = self::extract_global_typography_handle(
+				self::sanitize_scalar( $settings['__globals__']['typography_typography'] )
+			);
+
+			if ( '' !== $global_handle ) {
+				$settings['typography_typography']        = 'global';
+				$settings['typography_global_typography'] = $global_handle;
+			}
+		}
+
+		$mode = isset( $settings['typography_typography'] )
+			? self::sanitize_scalar( $settings['typography_typography'] )
+			: '';
+
+		if ( 'global' !== $mode ) {
+			return $settings;
+		}
+
+		$global_key = isset( $settings['typography_global_typography'] )
+			? self::sanitize_scalar( $settings['typography_global_typography'] )
+			: '';
+
+		if ( '' === $global_key ) {
+			return $settings;
+		}
+
+		$map    = self::get_elementor_global_typography_map();
+		$global = isset( $map[ $global_key ] ) ? $map[ $global_key ] : null;
+
+		if ( ! is_array( $global ) ) {
+			return $settings;
+		}
+
+		// Scalar fields we want to inherit from the global definition.
+		$scalar_keys = array(
+			'typography_font_family',
+			'typography_text_transform',
+			'typography_font_style',
+			'typography_font_weight',
+			'typography_text_decoration',
+		);
+
+		foreach ( $scalar_keys as $key ) {
+			if ( '' === self::sanitize_scalar( $settings[ $key ] ?? '' ) && isset( $global[ $key ] ) ) {
+				$settings[ $key ] = $global[ $key ];
+			}
+		}
+
+		// Dimension-like values (arrays with size/unit) we also want to inherit.
+		$dimension_keys = array(
+			'typography_font_size',
+			'typography_line_height',
+			'typography_letter_spacing',
+			'typography_word_spacing',
+		);
+
+		foreach ( $dimension_keys as $key ) {
+			if ( ! isset( $settings[ $key ] ) && isset( $global[ $key ] ) ) {
+				$settings[ $key ] = $global[ $key ];
+			}
+		}
+
+		return $settings;
 	}
 
 	/**

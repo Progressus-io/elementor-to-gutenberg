@@ -11,6 +11,10 @@ use Progressus\Gutenberg\Admin\Widget_Handler_Interface;
 use Progressus\Gutenberg\Admin\Helper\Icon_Parser;
 use Progressus\Gutenberg\Admin\Helper\Style_Parser;
 
+use function esc_attr;
+use function esc_html;
+use function esc_url;
+
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -25,18 +29,34 @@ class Icon_List_Widget_Handler implements Widget_Handler_Interface {
 	 * @return string The Gutenberg block content.
 	 */
 	public function handle( array $element ): string {
-		$settings      = $element['settings'] ?? array();
+		$settings      = isset( $element['settings'] ) && is_array( $element['settings'] ) ? $element['settings'] : array();
 		$icon_list     = $settings['icon_list'] ?? array();
 		$block_content = '';
 		$custom_class  = $settings['_css_classes'] ?? '';
 		$custom_id     = $settings['_element_id'] ?? '';
 		$custom_css    = $settings['custom_css'] ?? '';
 
+		$spacing      = Style_Parser::parse_spacing( $settings );
+		$spacing_attr = isset( $spacing['attributes'] ) ? $spacing['attributes'] : array();
+		$spacing_css  = isset( $spacing['style'] ) ? $spacing['style'] : '';
+
+		$typography      = Style_Parser::parse_typography( $settings );
+		$typography_attr = isset( $typography['attributes'] ) ? $typography['attributes'] : array();
+		$typography_css  = isset( $typography['style'] ) ? $typography['style'] : '';
+
 		if ( ! empty( $icon_list ) ) {
 			// Build icon list attributes
 			$icon_list_attrs = array(
 				'itemCount' => count( $icon_list ),
 			);
+
+			if ( ! empty( $spacing_attr ) ) {
+				$icon_list_attrs['style']['spacing'] = $spacing_attr;
+			}
+
+			if ( ! empty( $typography_attr ) ) {
+				$icon_list_attrs['style']['typography'] = $typography_attr;
+			}
 
 			// Add tooltip if present
 			if ( ! empty( $settings['premium_tooltip_text'] ) ) {
@@ -50,6 +70,21 @@ class Icon_List_Widget_Handler implements Widget_Handler_Interface {
 
 			// Generate icon list content
 			$icon_list_content = '<ul class="icon-list">';
+
+			$style_parts = array();
+
+			if ( '' !== $spacing_css ) {
+				$style_parts[] = $spacing_css;
+			}
+
+			if ( '' !== $typography_css ) {
+				$style_parts[] = $typography_css;
+			}
+
+			$style_attr = '';
+			if ( ! empty( $style_parts ) ) {
+				$style_attr = ' style="' . esc_attr( implode( '', $style_parts ) ) . '"';
+			}
 
 			foreach ( $icon_list as $list_item ) {
 				$item_text      = $list_item['text'] ?? '';
@@ -76,7 +111,7 @@ class Icon_List_Widget_Handler implements Widget_Handler_Interface {
 
 				// Add text
 				if ( $item_text ) {
-					$icon_list_content .= '<span class="icon-list-text">' . esc_html( $item_text ) . '</span>';
+					$icon_list_content .= '<span class="icon-list-text"' . $style_attr . '>' . esc_html( $item_text ) . '</span>';
 				}
 
 				$icon_list_content .= '</li>';

@@ -29,7 +29,7 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 	 * @param array $element The Elementor element data.
 	 */
 	public function handle( array $element ): string {
-		$settings   = is_array( $element['settings'] ?? null ) ? $element['settings'] : array();
+		$settings   = isset( $element['settings'] ) && is_array( $element['settings'] ) ? $element['settings'] : array();
 		$text       = isset( $settings['text'] ) ? trim( (string) $settings['text'] ) : '';
 		$icon_data  = Icon_Parser::parse_selected_icon( $settings['selected_icon'] ?? null );
 		$link_data  = is_array( $settings['link'] ?? null ) ? $settings['link'] : array();
@@ -37,6 +37,14 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 		$custom_css = isset( $settings['custom_css'] ) ? (string) $settings['custom_css'] : '';
 		$custom_raw = isset( $settings['_css_classes'] ) ? (string) $settings['_css_classes'] : '';
 		$color_map  = Style_Parser::parse_button_styles( $settings );
+
+		$spacing      = Style_Parser::parse_spacing( $settings );
+		$spacing_attr = isset( $spacing['attributes'] ) ? $spacing['attributes'] : array();
+		$spacing_css  = isset( $spacing['style'] ) ? $spacing['style'] : '';
+
+		$typography      = Style_Parser::parse_typography( $settings );
+		$typography_attr = isset( $typography['attributes'] ) ? $typography['attributes'] : array();
+		$typography_css  = isset( $typography['style'] ) ? $typography['style'] : '';
 
 		if ( '' === $text ) {
 			$text = isset( $link_data['custom_text'] ) ? trim( (string) $link_data['custom_text'] ) : '';
@@ -58,6 +66,14 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 		}
 
 		$button_attributes = $color_map['attributes'] ?? array();
+
+		if ( ! empty( $spacing_attr ) ) {
+			$button_attributes['style']['spacing'] = $spacing_attr;
+		}
+
+		if ( ! empty( $typography_attr ) ) {
+			$button_attributes['style']['typography'] = $typography_attr;
+		}
 		if ( ! empty( $custom_classes ) ) {
 			$existing_classnames = array();
 			if ( ! empty( $button_attributes['className'] ) ) {
@@ -113,8 +129,22 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 			$anchor_attrs[] = 'rel="' . esc_attr( implode( ' ', array_unique( $rel_tokens ) ) ) . '"';
 		}
 
+		$style_parts = array();
+
+		if ( '' !== $spacing_css ) {
+			$style_parts[] = $spacing_css;
+		}
+
+		if ( '' !== $typography_css ) {
+			$style_parts[] = $typography_css;
+		}
+
 		if ( ! empty( $anchor_style ) ) {
-			$anchor_attrs[] = 'style="' . esc_attr( implode( ';', $anchor_style ) ) . '"';
+			$style_parts[] = implode( ';', array_filter( $anchor_style ) );
+		}
+
+		if ( ! empty( $style_parts ) ) {
+			$anchor_attrs[] = 'style="' . esc_attr( implode( '', $style_parts ) ) . '"';
 		}
 
 		if ( '' !== $icon_data['class_name'] ) {
