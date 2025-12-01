@@ -38,6 +38,7 @@ class Widget_Handler_Factory {
 		'image-gallery'    => 'Progressus\Gutenberg\Admin\Widget\Gallery_Widget_Handler',
 		'divider'          => 'Progressus\Gutenberg\Admin\Widget\Divider_Widget_Handler',
 		'tabs'             => 'Progressus\Gutenberg\Admin\Widget\Tabs_Widget_Handler',
+		'nav-menu'         => 'Progressus\Gutenberg\Admin\Widget\Menu_Widget_Handler',
 	);
 
 	/**
