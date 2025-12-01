@@ -8,6 +8,7 @@
 namespace Progressus\Gutenberg\Admin\Widget;
 
 use Progressus\Gutenberg\Admin\Helper\Block_Builder;
+use Progressus\Gutenberg\Admin\Helper\Icon_Parser;
 use Progressus\Gutenberg\Admin\Helper\Style_Parser;
 use Progressus\Gutenberg\Admin\Widget_Handler_Interface;
 
@@ -30,6 +31,7 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 	public function handle( array $element ): string {
 		$settings   = is_array( $element['settings'] ?? null ) ? $element['settings'] : array();
 		$text       = isset( $settings['text'] ) ? trim( (string) $settings['text'] ) : '';
+		$icon_data  = Icon_Parser::parse_selected_icon( $settings['selected_icon'] ?? null );
 		$link_data  = is_array( $settings['link'] ?? null ) ? $settings['link'] : array();
 		$url        = isset( $link_data['url'] ) ? esc_url( (string) $link_data['url'] ) : '';
 		$custom_css = isset( $settings['custom_css'] ) ? (string) $settings['custom_css'] : '';
@@ -114,6 +116,16 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 		if ( ! empty( $anchor_style ) ) {
 			$anchor_attrs[] = 'style="' . esc_attr( implode( ';', $anchor_style ) ) . '"';
 		}
+
+		if ( '' !== $icon_data['class_name'] ) {
+			$anchor_attrs[] = 'data-icon-class="' . esc_attr( $icon_data['class_name'] ) . '"';
+		}
+
+		if ( '' !== $icon_data['url'] ) {
+			$anchor_attrs[] = 'data-icon-url="' . esc_url( $icon_data['url'] ) . '"';
+		}
+
+		$anchor_attrs[] = 'data-icon-type="' . esc_attr( $icon_data['type'] ) . '"';
 
 		$anchor_html = sprintf(
 			'<a %s>%s</a>',
