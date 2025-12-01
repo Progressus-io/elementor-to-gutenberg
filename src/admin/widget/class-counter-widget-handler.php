@@ -24,10 +24,17 @@ class Counter_Widget_Handler implements Widget_Handler_Interface {
 	 * Handle conversion of Elementor counter to Gutenberg block.
 	 *
 	 * @param array $element The Elementor element data.
+	 *
 	 * @return string The Gutenberg block content.
 	 */
 	public function handle( array $element ): string {
-		$settings = $element['settings'] ?? array();
+		$settings        = isset( $element['settings'] ) && is_array( $element['settings'] ) ? $element['settings'] : array();
+		$spacing         = Style_Parser::parse_spacing( $settings );
+		$spacing_attr    = isset( $spacing['attributes'] ) ? $spacing['attributes'] : array();
+		$spacing_css     = isset( $spacing['style'] ) ? $spacing['style'] : '';
+		$typography      = Style_Parser::parse_typography( $settings );
+		$typography_attr = isset( $typography['attributes'] ) ? $typography['attributes'] : array();
+		$typography_css  = isset( $typography['style'] ) ? $typography['style'] : '';
 
 		// Extract counter settings.
 		$starting_number = isset( $settings['starting_number'] ) ? intval( $settings['starting_number'] ) : 0;
@@ -63,23 +70,54 @@ class Counter_Widget_Handler implements Widget_Handler_Interface {
 			'alignment'   => $align,
 		);
 
+		if ( ! empty( $spacing_attr ) ) {
+			$attrs['style']['spacing'] = $spacing_attr;
+		}
+
+		if ( ! empty( $typography_attr ) ) {
+			$attrs['style']['typography'] = $typography_attr;
+		}
+
 		// Convert attributes to JSON
 		$attrs_json = \wp_json_encode( $attrs );
 
 		// Generate block styles
-		$counter_style = sprintf(
-			'text-align:%s;color:%s;font-size:%dpx',
-			\esc_attr( $align ),
-			\esc_attr( $number_color ),
-			$number_size
-		);
+		$base_styles = array();
 
-		$title_style = sprintf(
-			'color:%s;font-size:%dpx;text-align:%s',
-			\esc_attr( $title_color ),
-			$title_size,
-			\esc_attr( $align )
-		);
+		if ( '' !== $spacing_css ) {
+			$base_styles[] = $spacing_css;
+		}
+
+		if ( '' !== $typography_css ) {
+			$base_styles[] = $typography_css;
+		}
+
+		$counter_style_parts   = $base_styles;
+		$counter_style_parts[] = sprintf( 'text-align:%s;', \esc_attr( $align ) );
+
+		if ( '' !== $number_color ) {
+			$counter_style_parts[] = sprintf( 'color:%s;', \esc_attr( $number_color ) );
+		}
+
+		if ( $number_size > 0 ) {
+			$counter_style_parts[] = sprintf( 'font-size:%dpx;', $number_size );
+		}
+
+		$counter_style = implode( '', $counter_style_parts );
+
+		$title_style_parts = $base_styles;
+
+		if ( '' !== $title_color ) {
+			$title_style_parts[] = sprintf( 'color:%s;', \esc_attr( $title_color ) );
+		}
+
+		if ( $title_size > 0 ) {
+			$title_style_parts[] = sprintf( 'font-size:%dpx;', $title_size );
+		}
+
+		$title_style_parts[] = sprintf( 'text-align:%s;', \esc_attr( $align ) );
+
+		$title_style = implode( '', $title_style_parts );
 
 		// Generate block content
 		$block_content = sprintf(

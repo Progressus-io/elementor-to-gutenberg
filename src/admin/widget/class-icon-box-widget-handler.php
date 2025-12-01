@@ -36,6 +36,14 @@ class Icon_Box_Widget_Handler implements Widget_Handler_Interface {
 		$custom_id      = isset( $settings['_element_id'] ) ? trim( (string) $settings['_element_id'] ) : '';
 		$custom_classes = $this->sanitize_custom_classes( trim( isset( $settings['_css_classes'] ) ? (string) $settings['_css_classes'] : '' ) );
 
+		$spacing      = Style_Parser::parse_spacing( $settings );
+		$spacing_attr = isset( $spacing['attributes'] ) ? $spacing['attributes'] : array();
+		$spacing_css  = isset( $spacing['style'] ) ? $spacing['style'] : '';
+
+		$typography      = Style_Parser::parse_typography( $settings );
+		$typography_attr = isset( $typography['attributes'] ) ? $typography['attributes'] : array();
+		$typography_css  = isset( $typography['style'] ) ? $typography['style'] : '';
+
 		$icon_data   = $this->resolve_icon_data( $settings );
 		$size        = $this->sanitize_slider_value( $settings['size'] ?? null, 24 );
 		$title       = isset( $settings['title_text'] ) ? (string) $settings['title_text'] : '';
@@ -72,11 +80,27 @@ class Icon_Box_Widget_Handler implements Widget_Handler_Interface {
 		if ( '' !== $icon_html ) {
 			$segments[] = '<div class="icon-box-icon">' . $icon_html . '</div>';
 		}
+
+		$style_parts = array();
+
+		if ( '' !== $spacing_css ) {
+			$style_parts[] = $spacing_css;
+		}
+
+		if ( '' !== $typography_css ) {
+			$style_parts[] = $typography_css;
+		}
+
+		$style_attr = '';
+		if ( ! empty( $style_parts ) ) {
+			$style_attr = ' style="' . esc_attr( implode( '', $style_parts ) ) . '"';
+		}
+
 		if ( '' !== trim( $title ) ) {
-			$segments[] = '<h3 class="icon-box-title">' . esc_html( $title ) . '</h3>';
+			$segments[] = '<h3 class="icon-box-title"' . $style_attr . '>' . esc_html( $title ) . '</h3>';
 		}
 		if ( '' !== trim( $description ) ) {
-			$segments[] = '<div class="icon-box-description">' . wp_kses_post( $description ) . '</div>';
+			$segments[] = '<div class="icon-box-description"' . $style_attr . '>' . wp_kses_post( $description ) . '</div>';
 		}
 
 		$wrapper_classes = array_merge( array( 'wp-block-icon-box' ), $custom_classes );
