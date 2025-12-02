@@ -24,7 +24,6 @@ class Widget_Handler_Factory {
 		'heading'          => 'Progressus\Gutenberg\Admin\Widget\Heading_Widget_Handler',
 		'text-editor'      => 'Progressus\Gutenberg\Admin\Widget\Text_Editor_Widget_Handler',
 		'image'            => 'Progressus\Gutenberg\Admin\Widget\Image_Widget_Handler',
-		'image-box'        => 'Progressus\Gutenberg\Admin\Widget\Image_Box_Widget_Handler',
 		'button'           => 'Progressus\Gutenberg\Admin\Widget\Button_Widget_Handler',
 		'video'            => 'Progressus\Gutenberg\Admin\Widget\Video_Widget_Handler',
 		'accordion'        => 'Progressus\Gutenberg\Admin\Widget\Accordion_Widget_Handler',
@@ -38,6 +37,7 @@ class Widget_Handler_Factory {
 		'image-gallery'    => 'Progressus\Gutenberg\Admin\Widget\Gallery_Widget_Handler',
 		'divider'          => 'Progressus\Gutenberg\Admin\Widget\Divider_Widget_Handler',
 		'tabs'             => 'Progressus\Gutenberg\Admin\Widget\Tabs_Widget_Handler',
+		'theme-site-logo'  => 'Progressus\Gutenberg\Admin\Widget\Site_Logo_Widget_Handler',
 	);
 
 	/**
