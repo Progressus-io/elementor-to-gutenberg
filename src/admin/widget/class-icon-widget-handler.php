@@ -7,6 +7,7 @@
 
 namespace Progressus\Gutenberg\Admin\Widget;
 
+use Progressus\Gutenberg\Admin\Helper\Alignment_Helper;
 use Progressus\Gutenberg\Admin\Helper\Block_Builder;
 use Progressus\Gutenberg\Admin\Helper\Icon_Parser;
 use Progressus\Gutenberg\Admin\Helper\Style_Parser;
@@ -124,10 +125,10 @@ class Icon_Widget_Handler implements Widget_Handler_Interface {
 		}
 
 		if ( '' !== $link ) {
-			$rel_attr  = $link_target ? ' rel="noopener noreferrer"' : '';
-			$target    = $link_target ? ' target="_blank"' : '';
+			$rel_attr  = $link_target ? ' rel=\"noopener noreferrer\"' : '';
+			$target    = $link_target ? ' target=\"_blank\"' : '';
 			$icon_html = sprintf(
-				'<a href="%1$s"%2$s%3$s aria-label="">%4$s</a>',
+				'<a href=\"%1$s\"%2$s%3$s aria-label=\"\">%4$s</a>',
 				esc_url( $link ),
 				$target,
 				$rel_attr,
@@ -135,14 +136,23 @@ class Icon_Widget_Handler implements Widget_Handler_Interface {
 			);
 		}
 
-		$wrapper_classes = array_merge( array(
-			'wp-block-gutenberg-icon',
-			'fontawesome-icon-align-left'
-		), $custom_classes );
+		$alignment       = Alignment_Helper::detect_alignment( $settings, array( 'align', 'alignment', 'icon_align' ) );
+		$alignment_value = '' === $alignment ? 'left' : $alignment;
+		$align_class     = Style_Parser::clean_class( 'fontawesome-icon-align-' . $alignment_value );
+		$wrapper_style   = 'text-align:' . $alignment_value;
+
+		$wrapper_classes = array_merge(
+			array(
+				'wp-block-gutenberg-icon',
+				$align_class,
+			),
+			$custom_classes
+		);
 		$wrapper_attrs   = array(
 			'class="' . esc_attr( implode( ' ', array_unique( array_filter( $wrapper_classes ) ) ) ) . '"',
-			'style="text-align:left"',
+			'style="' . esc_attr( $wrapper_style ) . '"',
 		);
+
 
 		if ( '' !== $custom_id ) {
 			$wrapper_attrs[] = 'id="' . esc_attr( $custom_id ) . '"';

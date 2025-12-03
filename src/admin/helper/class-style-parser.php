@@ -1345,37 +1345,29 @@ class Style_Parser {
 		}
 
 		// Elementor may store min-height separately for desktop / tablet / mobile.
-		$candidates = array(
-			$settings['min_height'] ?? null,
-			$settings['min_height_tablet'] ?? null,
-			$settings['min_height_mobile'] ?? null,
-		);
+		$candidate = $settings['min_height'] ?? null;
 
-		foreach ( $candidates as $candidate ) {
-			if ( ! is_array( $candidate ) ) {
-				continue;
-			}
-
+		if ( is_array( $candidate ) ) {
 			if ( ! isset( $candidate['size'] ) || '' === $candidate['size'] || null === $candidate['size'] ) {
-				continue;
+				return null;
 			}
 
 			$unit = isset( $candidate['unit'] ) && '' !== $candidate['unit'] ? $candidate['unit'] : 'px';
 
-			// Use existing normalize_dimension helper so units like vh / px are preserved.
-			$value = self::normalize_dimension(
+			return self::normalize_dimension(
 				array(
 					'size' => $candidate['size'],
 					'unit' => $unit,
 				),
 				$unit
 			);
+		}
 
-			if ( null === $value ) {
-				continue;
+		if ( null !== $candidate && '' !== $candidate ) {
+			$value = self::normalize_dimension( $candidate, 'px' );
+			if ( null !== $value ) {
+				return $value;
 			}
-
-			return $value; // e.g. "88vh" or "600px".
 		}
 
 		return null;

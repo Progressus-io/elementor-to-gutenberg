@@ -7,6 +7,7 @@
 
 namespace Progressus\Gutenberg\Admin\Widget;
 
+use Progressus\Gutenberg\Admin\Helper\Alignment_Helper;
 use Progressus\Gutenberg\Admin\Helper\Block_Builder;
 use Progressus\Gutenberg\Admin\Helper\Style_Parser;
 use Progressus\Gutenberg\Admin\Widget_Handler_Interface;
@@ -256,11 +257,21 @@ class Text_Editor_Widget_Handler implements Widget_Handler_Interface {
 			$base_attributes['style']['spacing'] = $spacing;
 		}
 
-		$text_align = $this->sanitize_text_align( $computed['text-align'] ?? ( $settings['align'] ?? '' ) );
-		if ( '' !== $text_align ) {
-			$base_attributes['textAlign'] = $text_align;
-			$markup_classes[]             = 'has-text-align-' . $text_align;
-			$inline_styles['text-align']  = $text_align;
+		$align_payload = Alignment_Helper::build_text_alignment_payload(
+			Alignment_Helper::detect_alignment(
+				$settings,
+				array( 'align', 'alignment', 'text_align' ),
+				array( $computed['text-align'] ?? '' )
+			)
+		);
+		if ( ! empty( $align_payload['attributes'] ) ) {
+			$base_attributes = array_merge( $base_attributes, $align_payload['attributes'] );
+		}
+		if ( ! empty( $align_payload['classes'] ) ) {
+			$markup_classes = array_merge( $markup_classes, $align_payload['classes'] );
+		}
+		if ( '' !== $align_payload['style'] && isset( $align_payload['attributes']['textAlign'] ) ) {
+			$inline_styles['text-align'] = $align_payload['attributes']['textAlign'];
 		}
 
 		$segments = $this->extract_structured_segments( $content );
