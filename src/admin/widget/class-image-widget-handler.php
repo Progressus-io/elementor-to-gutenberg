@@ -7,6 +7,7 @@
 
 namespace Progressus\Gutenberg\Admin\Widget;
 
+use Progressus\Gutenberg\Admin\Helper\Alignment_Helper;
 use Progressus\Gutenberg\Admin\Helper\Block_Builder;
 use Progressus\Gutenberg\Admin\Helper\File_Upload_Service;
 use Progressus\Gutenberg\Admin\Helper\Style_Parser;
@@ -14,7 +15,6 @@ use Progressus\Gutenberg\Admin\Widget_Handler_Interface;
 
 use function esc_attr;
 use function esc_url;
-use function sanitize_html_class;
 use function wp_kses_post;
 
 defined( 'ABSPATH' ) || exit;
@@ -32,16 +32,18 @@ class Image_Widget_Handler implements Widget_Handler_Interface {
 	 * @return string The Gutenberg block content.
 	 */
 	public function handle( array $element ): string {
-		$settings   = is_array( $element['settings'] ?? null ) ? $element['settings'] : array();
-		$image      = is_array( $settings['image'] ?? null ) ? $settings['image'] : array();
-		$image_url  = isset( $image['url'] ) ? (string) $image['url'] : '';
-		$alt_text   = isset( $image['alt'] ) ? (string) $image['alt'] : '';
-		$attachment = isset( $image['id'] ) ? (int) $image['id'] : 0;
-		$custom_id  = isset( $settings['_element_id'] ) ? trim( (string) $settings['_element_id'] ) : '';
-		$custom_css = isset( $settings['custom_css'] ) ? (string) $settings['custom_css'] : '';
-		$custom_raw = isset( $settings['_css_classes'] ) ? trim( (string) $settings['_css_classes'] ) : '';
-		$align      = isset( $settings['align'] ) ? trim( (string) $settings['align'] ) : '';
-		$caption    = isset( $settings['caption'] ) ? (string) $settings['caption'] : '';
+		$settings      = is_array( $element['settings'] ?? null ) ? $element['settings'] : array();
+		$image         = is_array( $settings['image'] ?? null ) ? $settings['image'] : array();
+		$image_url     = isset( $image['url'] ) ? (string) $image['url'] : '';
+		$alt_text      = isset( $image['alt'] ) ? (string) $image['alt'] : '';
+		$attachment    = isset( $image['id'] ) ? (int) $image['id'] : 0;
+		$custom_id     = isset( $settings['_element_id'] ) ? trim( (string) $settings['_element_id'] ) : '';
+		$custom_css    = isset( $settings['custom_css'] ) ? (string) $settings['custom_css'] : '';
+		$custom_raw    = isset( $settings['_css_classes'] ) ? trim( (string) $settings['_css_classes'] ) : '';
+		$align_payload = Alignment_Helper::build_block_alignment_payload(
+			Alignment_Helper::detect_alignment( $settings, array( 'align', 'image_align' ) )
+		);
+		$caption       = isset( $settings['caption'] ) ? (string) $settings['caption'] : '';
 
 		if ( '' === $image_url ) {
 			return '';
@@ -58,11 +60,10 @@ class Image_Widget_Handler implements Widget_Handler_Interface {
 		}
 
 		$figure_classes = array( 'wp-block-image', 'size-full' );
-		$custom_classes = array();
-
-		if ( '' !== $align ) {
-			$figure_classes[] = 'align' . sanitize_html_class( $align );
+		if ( ! empty( $align_payload['classes'] ) ) {
+			$figure_classes = array_merge( $figure_classes, $align_payload['classes'] );
 		}
+		$custom_classes = array();
 
 		if ( '' !== $custom_raw ) {
 			foreach ( preg_split( '/\s+/', $custom_raw ) as $class ) {
@@ -86,8 +87,8 @@ class Image_Widget_Handler implements Widget_Handler_Interface {
 		if ( '' !== $image_url ) {
 			$image_attrs['url'] = $image_url;
 		}
-		if ( '' !== $align ) {
-			$image_attrs['align'] = $align;
+		if ( ! empty( $align_payload['attributes'] ) ) {
+			$image_attrs = array_merge( $image_attrs, $align_payload['attributes'] );
 		}
 
 		if ( ! empty( $custom_classes ) ) {

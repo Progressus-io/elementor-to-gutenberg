@@ -7,6 +7,7 @@
 
 namespace Progressus\Gutenberg\Admin\Widget;
 
+use Progressus\Gutenberg\Admin\Helper\Alignment_Helper;
 use Progressus\Gutenberg\Admin\Helper\Block_Builder;
 use Progressus\Gutenberg\Admin\Helper\Style_Parser;
 use Progressus\Gutenberg\Admin\Widget_Handler_Interface;
@@ -42,12 +43,9 @@ class Heading_Widget_Handler implements Widget_Handler_Interface {
 			$header_size = 'h2';
 		}
 		$level = (int) substr( $header_size, 1 );
-
 		// Alignment.
-		$align = isset( $settings['align'] ) ? (string) $settings['align'] : '';
-		if ( '' === $align && isset( $settings['align_mobile'] ) ) {
-			$align = (string) $settings['align_mobile'];
-		}
+		$align = Alignment_Helper::detect_alignment( $settings, array( 'align' ) );
+		$align_payload = Alignment_Helper::build_text_alignment_payload( $align );
 
 		// Spacing (margin / padding).
 		$spacing      = Style_Parser::parse_spacing( $settings );
@@ -65,8 +63,13 @@ class Heading_Widget_Handler implements Widget_Handler_Interface {
 			'className' => 'wp-block-heading',
 		);
 
-		if ( '' !== $align ) {
-			$attrs['textAlign'] = $align;
+		$heading_classes = array( 'wp-block-heading' );
+		if ( ! empty( $align_payload['attributes'] ) ) {
+			$attrs = array_merge( $attrs, $align_payload['attributes'] );
+		}
+
+		if ( ! empty( $align_payload['classes'] ) ) {
+			$heading_classes = array_merge( $heading_classes, $align_payload['classes'] );
 		}
 
 		if ( ! empty( $spacing_attr ) ) {
@@ -88,16 +91,21 @@ class Heading_Widget_Handler implements Widget_Handler_Interface {
 			$style_parts[] = $typography_css;
 		}
 
+		if ( '' !== $align_payload['style'] ) {
+			$style_parts[] = $align_payload['style'];
+		}
+
 		$style_attr = '';
 		if ( ! empty( $style_parts ) ) {
 			$style_attr = ' style="' . esc_attr( implode( '', $style_parts ) ) . '"';
 		}
 
 		$inner_html = sprintf(
-			'<%1$s class="wp-block-heading"%3$s>%2$s</%1$s>',
+			'<%1$s class="%4$s"%3$s>%2$s</%1$s>',
 			$header_size,
 			esc_html( $title ),
-			$style_attr
+			$style_attr,
+			esc_attr( implode( ' ', array_unique( $heading_classes ) ) )
 		);
 
 		return Block_Builder::build( 'heading', $attrs, $inner_html );

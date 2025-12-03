@@ -7,6 +7,7 @@
 
 namespace Progressus\Gutenberg\Admin\Widget;
 
+use Progressus\Gutenberg\Admin\Helper\Alignment_Helper;
 use Progressus\Gutenberg\Admin\Widget_Handler_Interface;
 use Progressus\Gutenberg\Admin\Helper\Style_Parser;
 
@@ -21,6 +22,7 @@ class Divider_Widget_Handler implements Widget_Handler_Interface {
 	 * Handle conversion of Elementor divider to Gutenberg block.
 	 *
 	 * @param array $element The Elementor element data.
+	 *
 	 * @return string The Gutenberg block content.
 	 */
 	public function handle( array $element ): string {
@@ -36,8 +38,9 @@ class Divider_Widget_Handler implements Widget_Handler_Interface {
 
 		// Alignment → group wrapper.
 		$group_attrs = array();
-		if ( isset( $settings['align'] ) ) {
-			$group_attrs['align'] = $settings['align'];
+		$alignment   = Alignment_Helper::detect_alignment( $settings, array( 'align', 'alignment' ) );
+		if ( '' !== $alignment ) {
+			$group_attrs['align'] = $alignment;
 		}
 
 		// Separator attributes.
@@ -52,10 +55,10 @@ class Divider_Widget_Handler implements Widget_Handler_Interface {
 
 		// Color.
 		if ( isset( $settings['color'] ) ) {
-			$color = strtolower( $settings['color'] );
+			$color                                           = strtolower( $settings['color'] );
 			$separator_attrs['style']['color']['background'] = $color;
-			$separator_attrs['className']                   .= ' has-text-color has-background has-alpha-channel-opacity';
-			$inline_style                                   .= 'background-color:' . esc_attr( $color ) . ';color:' . esc_attr( $color ) . ';';
+			$separator_attrs['className']                    .= ' has-text-color has-background has-alpha-channel-opacity';
+			$inline_style                                    .= 'background-color:' . esc_attr( $color ) . ';color:' . esc_attr( $color ) . ';';
 		}
 
 		// Style (solid/dashed/dotted).
@@ -67,7 +70,7 @@ class Divider_Widget_Handler implements Widget_Handler_Interface {
 		$spacing = Style_Parser::parse_spacing( $settings );
 		if ( ! empty( $spacing['attributes'] ) ) {
 			$separator_attrs['style']['spacing'] = $spacing['attributes'];
-			$inline_style                       .= $spacing['style'];
+			$inline_style                        .= $spacing['style'];
 		}
 
 		// Build block content.
@@ -98,7 +101,7 @@ class Divider_Widget_Handler implements Widget_Handler_Interface {
 			);
 
 			// Second separator (with css opacity).
-			$second_attrs = array(
+			$second_attrs  = array(
 				'opacity'   => 'css',
 				'className' => trim( $unique_class ),
 			);
@@ -123,7 +126,7 @@ class Divider_Widget_Handler implements Widget_Handler_Interface {
 		// Save inline CSS.
 		if ( $inline_style ) {
 			$element_selector = '.' . $unique_class;
-			$custom_css      .= sprintf( '%s{ %s }', $element_selector, $inline_style );
+			$custom_css       .= sprintf( '%s{ %s }', $element_selector, $inline_style );
 		}
 		if ( ! empty( $custom_css ) ) {
 			Style_Parser::save_custom_css( $custom_css );

@@ -7,6 +7,7 @@
 
 namespace Progressus\Gutenberg\Admin\Widget;
 
+use Progressus\Gutenberg\Admin\Helper\Alignment_Helper;
 use Progressus\Gutenberg\Admin\Helper\Block_Builder;
 use Progressus\Gutenberg\Admin\Helper\Icon_Parser;
 use Progressus\Gutenberg\Admin\Helper\Style_Parser;
@@ -44,12 +45,15 @@ class Icon_Box_Widget_Handler implements Widget_Handler_Interface {
 		$typography_attr = isset( $typography['attributes'] ) ? $typography['attributes'] : array();
 		$typography_css  = isset( $typography['style'] ) ? $typography['style'] : '';
 
-		$icon_data   = $this->resolve_icon_data( $settings );
-		$size        = $this->sanitize_slider_value( $settings['size'] ?? null, 24 );
-		$title       = isset( $settings['title_text'] ) ? (string) $settings['title_text'] : '';
-		$description = isset( $settings['description_text'] ) ? (string) $settings['description_text'] : '';
-		$tooltip     = isset( $settings['premium_tooltip_text'] ) ? (string) $settings['premium_tooltip_text'] : '';
-		$tooltip_pos = $this->sanitize_tooltip_position( $settings['premium_tooltip_position'] ?? '' );
+		$icon_data     = $this->resolve_icon_data( $settings );
+		$size          = $this->sanitize_slider_value( $settings['size'] ?? null, 24 );
+		$title         = isset( $settings['title_text'] ) ? (string) $settings['title_text'] : '';
+		$description   = isset( $settings['description_text'] ) ? (string) $settings['description_text'] : '';
+		$tooltip       = isset( $settings['premium_tooltip_text'] ) ? (string) $settings['premium_tooltip_text'] : '';
+		$tooltip_pos   = $this->sanitize_tooltip_position( $settings['premium_tooltip_position'] ?? '' );
+		$align_payload = Alignment_Helper::build_text_alignment_payload(
+			Alignment_Helper::detect_alignment( $settings, array( 'align', 'alignment', 'text_align' ) )
+		);
 
 		$icon_html = '';
 
@@ -91,6 +95,10 @@ class Icon_Box_Widget_Handler implements Widget_Handler_Interface {
 			$style_parts[] = $typography_css;
 		}
 
+		if ( '' !== $align_payload['style'] ) {
+			$style_parts[] = $align_payload['style'];
+		}
+
 		$style_attr = '';
 		if ( ! empty( $style_parts ) ) {
 			$style_attr = ' style="' . esc_attr( implode( '', $style_parts ) ) . '"';
@@ -103,10 +111,13 @@ class Icon_Box_Widget_Handler implements Widget_Handler_Interface {
 			$segments[] = '<div class="icon-box-description"' . $style_attr . '>' . wp_kses_post( $description ) . '</div>';
 		}
 
-		$wrapper_classes = array_merge( array( 'wp-block-icon-box' ), $custom_classes );
+		$wrapper_classes = array_merge( array( 'wp-block-icon-box' ), $align_payload['classes'], $custom_classes );
 		$wrapper_attrs   = array( 'class="' . esc_attr( implode( ' ', array_unique( array_filter( $wrapper_classes ) ) ) ) . '"' );
 		if ( '' !== $custom_id ) {
 			$wrapper_attrs[] = 'id="' . esc_attr( $custom_id ) . '"';
+		}
+		if ( '' !== $align_payload['style'] ) {
+			$wrapper_attrs[] = 'style="' . esc_attr( $align_payload['style'] ) . '"';
 		}
 
 		$content = '<div ' . implode( ' ', $wrapper_attrs ) . '>' . implode( '', $segments ) . '</div>';

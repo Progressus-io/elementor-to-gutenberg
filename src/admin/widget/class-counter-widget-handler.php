@@ -7,6 +7,7 @@
 
 namespace Progressus\Gutenberg\Admin\Widget;
 
+use Progressus\Gutenberg\Admin\Helper\Alignment_Helper;
 use Progressus\Gutenberg\Admin\Widget_Handler_Interface;
 use Progressus\Gutenberg\Admin\Helper\Style_Parser;
 
@@ -47,7 +48,8 @@ class Counter_Widget_Handler implements Widget_Handler_Interface {
 		// Extract styles.
 		$number_color = isset( $settings['number_color'] ) ? $settings['number_color'] : '';
 		$title_color  = isset( $settings['title_color'] ) ? $settings['title_color'] : '';
-		$align        = isset( $settings['align'] ) ? $settings['align'] : 'center';
+		$alignment    = Alignment_Helper::detect_alignment( $settings, array( 'align', 'alignment', 'text_align' ) );
+		$align        = '' === $alignment ? 'center' : $alignment;
 
 		// Font sizes.
 		$number_typography = $settings['number_typography'] ?? array();

@@ -7,6 +7,7 @@
 
 namespace Progressus\Gutenberg\Admin\Widget;
 
+use Progressus\Gutenberg\Admin\Helper\Alignment_Helper;
 use Progressus\Gutenberg\Admin\Helper\Block_Builder;
 use Progressus\Gutenberg\Admin\Helper\Icon_Parser;
 use Progressus\Gutenberg\Admin\Helper\Style_Parser;
@@ -45,6 +46,19 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 		$typography      = Style_Parser::parse_typography( $settings );
 		$typography_attr = isset( $typography['attributes'] ) ? $typography['attributes'] : array();
 		$typography_css  = isset( $typography['style'] ) ? $typography['style'] : '';
+
+		$alignment      = Alignment_Helper::detect_alignment( $settings, array(
+			'button_align',
+			'align',
+			'alignment'
+		) );
+		$buttons_layout = array();
+		if ( '' !== $alignment ) {
+			$buttons_layout = array(
+				'type'           => 'flex',
+				'justifyContent' => Alignment_Helper::map_justify_content( $alignment ),
+			);
+		}
 
 		if ( '' === $text ) {
 			$text = isset( $link_data['custom_text'] ) ? trim( (string) $link_data['custom_text'] ) : '';
@@ -165,7 +179,11 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 
 		$button_block = Block_Builder::build( 'button', $button_attributes, $anchor_html );
 
-		return Block_Builder::build( 'buttons', array(), $button_block );
+		return Block_Builder::build(
+			'buttons',
+			empty( $buttons_layout ) ? array() : array( 'layout' => $buttons_layout ),
+			$button_block
+		);
 	}
 
 }
