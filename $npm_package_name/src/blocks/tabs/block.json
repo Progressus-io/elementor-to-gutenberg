@@ -1,0 +1,135 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "progressus/tabs",
+  "version": "1.0.0",
+  "title": "Tabs",
+  "category": "design",
+  "description": "Display content in tabs",
+  "supports": {
+    "html": false,
+    "align": ["wide", "full"]
+  },
+  "attributes": {
+    "tabs": {
+      "type": "array",
+      "default": [
+        {
+          "title": "Tab 1",
+          "content": "Content for tab 1"
+        },
+        {
+          "title": "Tab 2",
+          "content": "Content for tab 2"
+        }
+      ]
+    },
+    "activeTab": {
+      "type": "number",
+      "default": 0
+    },
+    "tabStyle": {
+      "type": "string",
+      "default": "horizontal"
+    },
+    "tabColor": {
+      "type": "string",
+      "default": ""
+    },
+    "activeTabColor": {
+      "type": "string",
+      "default": ""
+    },
+    "contentBackgroundColor": {
+      "type": "string",
+      "default": ""
+    },
+    "borderColor": {
+      "type": "string",
+      "default": ""
+    },
+    "borderWidth": {
+      "type": "number",
+      "default": 1
+    },
+    "borderStyle": {
+      "type": "string",
+      "default": "solid"
+    },
+    "borderRadius": {
+      "type": "number",
+      "default": 4
+    },
+    "tabsPadding": {
+      "type": "object",
+      "default": {
+        "top": 12,
+        "right": 16,
+        "bottom": 12,
+        "left": 16
+      }
+    },
+    "contentPadding": {
+      "type": "object",
+      "default": {
+        "top": 20,
+        "right": 20,
+        "bottom": 20,
+        "left": 20
+      }
+    },
+    "tabsMargin": {
+      "type": "object",
+      "default": {
+        "top": 0,
+        "right": 2,
+        "bottom": 0,
+        "left": 0
+      }
+    },
+    "contentMargin": {
+      "type": "object",
+      "default": {
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      }
+    },
+    "tabTextColor": {
+      "type": "string",
+      "default": ""
+    },
+    "activeTabTextColor": {
+      "type": "string",
+      "default": ""
+    },
+    "contentTextColor": {
+      "type": "string",
+      "default": ""
+    },
+    "tabTypography": {
+      "type": "object",
+      "default": {
+        "fontSize": 16,
+        "fontWeight": "normal",
+        "lineHeight": 1.5,
+        "fontFamily": ""
+      }
+    },
+    "contentTypography": {
+      "type": "object",
+      "default": {
+        "fontSize": 14,
+        "fontWeight": "normal",
+        "lineHeight": 1.6,
+        "fontFamily": ""
+      }
+    }
+  },
+  "textdomain": "progressus-gutenberg",
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./index.css",
+  "style": "file:./style-index.css",
+  "viewScript": "file:./view.js"
+}

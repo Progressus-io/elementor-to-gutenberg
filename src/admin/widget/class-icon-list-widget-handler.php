@@ -8,8 +8,8 @@
 namespace Progressus\Gutenberg\Admin\Widget;
 
 use Progressus\Gutenberg\Admin\Widget_Handler_Interface;
-use Progressus\Gutenberg\Admin\Helper\Icon_Parser;
 use Progressus\Gutenberg\Admin\Helper\Style_Parser;
+use Progressus\Gutenberg\Admin\Helper\Alignment_Helper;
 
 use function esc_attr;
 use function esc_html;
@@ -21,6 +21,7 @@ defined( 'ABSPATH' ) || exit;
  * Widget handler for Elementor icon list widget.
  */
 class Icon_List_Widget_Handler implements Widget_Handler_Interface {
+
 	/**
 	 * Handle conversion of Elementor icon list to Gutenberg block.
 	 *
@@ -29,108 +30,186 @@ class Icon_List_Widget_Handler implements Widget_Handler_Interface {
 	 * @return string The Gutenberg block content.
 	 */
 	public function handle( array $element ): string {
-		$settings      = isset( $element['settings'] ) && is_array( $element['settings'] ) ? $element['settings'] : array();
-		$icon_list     = $settings['icon_list'] ?? array();
-		$block_content = '';
-		$custom_class  = $settings['_css_classes'] ?? '';
-		$custom_id     = $settings['_element_id'] ?? '';
-		$custom_css    = $settings['custom_css'] ?? '';
+		$settings     = isset( $element['settings'] ) && is_array( $element['settings'] ) ? $element['settings'] : array();
+		$custom_class = isset( $settings['_css_classes'] ) ? (string) $settings['_css_classes'] : '';
+		$custom_css   = isset( $settings['custom_css'] ) ? (string) $settings['custom_css'] : '';
 
-		$spacing      = Style_Parser::parse_spacing( $settings );
-		$spacing_attr = isset( $spacing['attributes'] ) ? $spacing['attributes'] : array();
-		$spacing_css  = isset( $spacing['style'] ) ? $spacing['style'] : '';
+		// Icon list items can be stored under different keys.
+		$items = array();
+		if ( isset( $settings['icon_list'] ) && is_array( $settings['icon_list'] ) ) {
+			$items = $settings['icon_list'];
+		} elseif ( isset( $settings['icon_list_items'] ) && is_array( $settings['icon_list_items'] ) ) {
+			$items = $settings['icon_list_items'];
+		}
 
-		$typography      = Style_Parser::parse_typography( $settings );
-		$typography_attr = isset( $typography['attributes'] ) ? $typography['attributes'] : array();
-		$typography_css  = isset( $typography['style'] ) ? $typography['style'] : '';
+		if ( empty( $items ) ) {
+			return '';
+		}
 
-		if ( ! empty( $icon_list ) ) {
-			// Build icon list attributes
-			$icon_list_attrs = array(
-				'itemCount' => count( $icon_list ),
-			);
+		$attrs              = array();
+		$classes            = array();
+		$resolved_color     = null;
+		$anchor_color_style = '';
+		$parts              = array();
 
-			if ( ! empty( $spacing_attr ) ) {
-				$icon_list_attrs['style']['spacing'] = $spacing_attr;
-			}
+		// ----- COLOR -----
+		$color_sources = array();
+		if ( isset( $settings['text_color'] ) ) {
+			$color_sources[] = $settings['text_color'];
+		}
+		if (
+			isset( $settings['__globals__'] ) &&
+			is_array( $settings['__globals__'] ) &&
+			isset( $settings['__globals__']['text_color'] )
+		) {
+			$color_sources[] = $settings['__globals__']['text_color'];
+		}
 
-			if ( ! empty( $typography_attr ) ) {
-				$icon_list_attrs['style']['typography'] = $typography_attr;
-			}
-
-			// Add tooltip if present
-			if ( ! empty( $settings['premium_tooltip_text'] ) ) {
-				$icon_list_attrs['tooltip'] = $settings['premium_tooltip_text'];
-			}
-			if ( isset( $settings['premium_tooltip_position'] ) ) {
-				$icon_list_attrs['tooltipPosition'] = $settings['premium_tooltip_position'];
-			}
-
-			$attrs = wp_json_encode( $icon_list_attrs );
-
-			// Generate icon list content
-			$icon_list_content = '<ul class="icon-list">';
-
-			$style_parts = array();
-
-			if ( '' !== $spacing_css ) {
-				$style_parts[] = $spacing_css;
-			}
-
-			if ( '' !== $typography_css ) {
-				$style_parts[] = $typography_css;
-			}
-
-			$style_attr = '';
-			if ( ! empty( $style_parts ) ) {
-				$style_attr = ' style="' . esc_attr( implode( '', $style_parts ) ) . '"';
-			}
-
-			foreach ( $icon_list as $list_item ) {
-				$item_text      = $list_item['text'] ?? '';
-				$item_icon_data = Icon_Parser::parse_selected_icon( $list_item['selected_icon'] ?? null );
-
-				$icon_list_content .= '<li class="icon-list-item">';
-
-				// Add icon if present
-				if ( '' !== $item_icon_data['class_name'] || '' !== $item_icon_data['url'] ) {
-					if ( 'svg' === $item_icon_data['type'] && '' !== $item_icon_data['url'] ) {
-						$item_icon_html = '<img src="' . esc_url( $item_icon_data['url'] ) . '" alt="" class="svg-icon" />';
-					} else {
-						$item_icon_html = '<i class="' . esc_attr( $item_icon_data['class_name'] ) . '"></i>';
-					}
-
-					// Add tooltip wrapper if tooltip is present
-					if ( isset( $icon_list_attrs['tooltip'] ) ) {
-						$tooltip_position = $icon_list_attrs['tooltipPosition'] ?? 'top';
-						$item_icon_html   = '<span class="tooltip-wrapper" data-tooltip="' . esc_attr( $icon_list_attrs['tooltip'] ) . '" data-tooltip-position="' . esc_attr( $tooltip_position ) . '">' . $item_icon_html . '</span>';
-					}
-
-					$icon_list_content .= '<span class="icon-list-icon">' . $item_icon_html . '</span>';
-				}
-
-				// Add text
-				if ( $item_text ) {
-					$icon_list_content .= '<span class="icon-list-text"' . $style_attr . '>' . esc_html( $item_text ) . '</span>';
-				}
-
-				$icon_list_content .= '</li>';
-			}
-
-			$icon_list_content .= '</ul>';
-
-			$block_content .= sprintf(
-				"<!-- wp:html %s --><div class=\"wp-block-icon-list\">%s</div><!-- /wp:html -->\n",
-				$attrs,
-				$icon_list_content
-			);
-
-			// Save custom CSS to the Customizer's Additional CSS
-			if ( ! empty( $custom_css ) ) {
-				Style_Parser::save_custom_css( $custom_css );
+		foreach ( $color_sources as $source ) {
+			$data = Style_Parser::resolve_elementor_color_reference( $source );
+			if ( '' !== $data['slug'] || '' !== $data['color'] ) {
+				$resolved_color = $data;
+				break;
 			}
 		}
 
-		return $block_content;
+		if ( null !== $resolved_color ) {
+			if ( '' !== $resolved_color['slug'] ) {
+				$attrs['textColor'] = $resolved_color['slug'];
+				$classes[]          = 'has-text-color';
+				$classes[]          = 'has-' . Style_Parser::clean_class( $resolved_color['slug'] ) . '-color';
+			} elseif ( '' !== $resolved_color['color'] ) {
+				$attrs['style']['color']['text'] = $resolved_color['color'];
+				$classes[]                       = 'has-text-color';
+			}
+
+			if ( '' !== $resolved_color['color'] ) {
+				$anchor_color_style = ' style="color:' . esc_attr( $resolved_color['color'] ) . ';"';
+			}
+		}
+
+		$typography_settings = array();
+		$map_keys            = array(
+			'icon_typography_font_family'       => 'typography_font_family',
+			'icon_typography_text_transform'    => 'typography_text_transform',
+			'icon_typography_font_style'        => 'typography_font_style',
+			'icon_typography_font_weight'       => 'typography_font_weight',
+			'icon_typography_text_decoration'   => 'typography_text_decoration',
+			'icon_typography_font_size'         => 'typography_font_size',
+			'icon_typography_line_height'       => 'typography_line_height',
+			'icon_typography_letter_spacing'    => 'typography_letter_spacing',
+			'icon_typography_word_spacing'      => 'typography_word_spacing',
+			'icon_typography_typography'        => 'typography_typography',
+			'icon_typography_global_typography' => 'typography_global_typography',
+		);
+
+		foreach ( $map_keys as $source => $target ) {
+			if ( isset( $settings[ $source ] ) ) {
+				$typography_settings[ $target ] = $settings[ $source ];
+			}
+		}
+
+		if (
+			isset( $settings['__globals__'] ) &&
+			is_array( $settings['__globals__'] ) &&
+			! empty( $settings['__globals__']['icon_typography_typography'] )
+		) {
+			$typography_settings['__globals__']['typography_typography']
+				= $settings['__globals__']['icon_typography_typography'];
+		}
+
+		if ( ! empty( $typography_settings ) ) {
+			$typo = Style_Parser::parse_typography( $typography_settings );
+
+			if ( ! empty( $typo['attributes'] ) ) {
+				// Gutenberg expects style.typography.{fontFamily,fontSize,...}.
+				$attrs['style']['typography'] = $typo['attributes'];
+			}
+		}
+
+		$align = Alignment_Helper::detect_alignment( $settings, array( 'align', 'alignment' ) );
+		if ( '' !== $align ) {
+			$attrs['textAlign'] = $align;
+
+			switch ( $align ) {
+				case 'center':
+					$classes[] = 'has-text-align-center';
+					break;
+				case 'right':
+					$classes[] = 'has-text-align-right';
+					break;
+				case 'left':
+				default:
+					$classes[] = 'has-text-align-left';
+					break;
+			}
+		}
+
+		if ( '' !== $custom_class ) {
+			$classes[] = $custom_class;
+		}
+
+		foreach ( $items as $item ) {
+			if ( ! is_array( $item ) ) {
+				continue;
+			}
+
+			$label_raw = isset( $item['text'] ) ? trim( (string) $item['text'] ) : '';
+			if ( '' === $label_raw ) {
+				continue;
+			}
+
+			// Match the design: uppercase social names.
+			$label = strtoupper( $label_raw );
+
+			$url = '';
+			if (
+				isset( $item['link'] ) &&
+				is_array( $item['link'] ) &&
+				! empty( $item['link']['url'] )
+			) {
+				$url = (string) $item['link']['url'];
+			}
+
+			if ( '' !== $url ) {
+				$parts[] = sprintf(
+					'<a href="%s"%s>%s</a>',
+					esc_url( $url ),
+					$anchor_color_style,
+					esc_html( $label )
+				);
+			} else {
+				$parts[] = esc_html( $label );
+			}
+		}
+
+		if ( empty( $parts ) ) {
+			return '';
+		}
+
+		// Join items with non-breaking spaces so they stay visually grouped inline.
+		$html_text = implode( '&nbsp;&nbsp;&nbsp;', $parts );
+
+		// Save custom CSS if present.
+		if ( '' !== $custom_css ) {
+			Style_Parser::save_custom_css( $custom_css );
+		}
+
+		$attrs_json = '';
+		if ( ! empty( $attrs ) ) {
+			$attrs_json = ' ' . wp_json_encode( $attrs );
+		}
+
+		$class_attr = '';
+		if ( ! empty( $classes ) ) {
+			$class_attr = ' class="' . esc_attr( implode( ' ', $classes ) ) . '"';
+		}
+
+		return sprintf(
+			'<!-- wp:paragraph%s --><p%s>%s</p><!-- /wp:paragraph -->' . "\n",
+			$attrs_json,
+			$class_attr,
+			$html_text
+		);
 	}
 }

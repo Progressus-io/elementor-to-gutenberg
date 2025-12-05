@@ -220,10 +220,107 @@ class Style_Parser {
 			'color' => '',
 		);
 	}
-
 	/**
-	 * Fetch Elementor kit settings.
+	 * Resolve an Elementor color reference (raw hex or globals/colors?id=xxx)
+	 * into a normalized hex color and an optional matching theme slug.
+	 *
+	 * @param mixed $value Raw color value or Elementor global reference.
+	 *
+	 * @return array{slug:string,color:string}
 	 */
+	public static function resolve_elementor_color_reference( $value ): array {
+		if ( is_array( $value ) ) {
+			if ( isset( $value['value'] ) ) {
+				$value = $value['value'];
+			} elseif ( isset( $value['color'] ) ) {
+				$value = $value['color'];
+			}
+		}
+
+		$value = self::sanitize_scalar( $value );
+		if ( '' === $value ) {
+			return array(
+				'slug'  => '',
+				'color' => '',
+			);
+		}
+
+		$normalized = self::normalize_color_value( $value );
+		if ( '' !== $normalized ) {
+			$slug = self::match_theme_color_slug( $normalized );
+
+			return array(
+				'slug'  => null === $slug ? '' : $slug,
+				'color' => $normalized,
+			);
+		}
+
+		$handle = '';
+		if ( 0 === strpos( $value, 'globals/colors?id=' ) ) {
+			$handle = substr( $value, strlen( 'globals/colors?id=' ) );
+		} else {
+			$handle = $value;
+		}
+
+		$handle = trim( $handle );
+		if ( '' === $handle ) {
+			return array(
+				'slug'  => '',
+				'color' => '',
+			);
+		}
+
+		// Try to read the color from the active Elementor kit.
+		$kit = self::get_elementor_kit_settings();
+		if ( ! empty( $kit ) && is_array( $kit ) ) {
+			$groups = array( 'system_colors', 'custom_colors' );
+
+			foreach ( $groups as $group ) {
+				if ( empty( $kit[ $group ] ) || ! is_array( $kit[ $group ] ) ) {
+					continue;
+				}
+
+				foreach ( $kit[ $group ] as $item ) {
+					if ( ! is_array( $item ) ) {
+						continue;
+					}
+
+					if ( empty( $item['_id'] ) || (string) $item['_id'] !== $handle ) {
+						continue;
+					}
+
+					$color = self::normalize_color_value( $item['color'] ?? '' );
+					if ( '' === $color ) {
+						continue;
+					}
+
+					$slug = self::match_theme_color_slug( $color );
+					if ( null === $slug ) {
+						$slug = '';
+					}
+
+					return array(
+						'slug'  => $slug,
+						'color' => $color,
+					);
+				}
+			}
+		}
+
+		$preset_color = self::resolve_theme_color_value( $handle );
+		if ( '' !== $preset_color ) {
+			return array(
+				'slug'  => $handle,
+				'color' => $preset_color,
+			);
+		}
+
+		return array(
+			'slug'  => '',
+			'color' => '',
+		);
+	}
+
 	/**
 	 * Fetch Elementor kit settings.
 	 */
@@ -1169,7 +1266,7 @@ class Style_Parser {
 	 */
 	public static function parse_container_styles( array $settings ): array {
 		$attributes = array();
-
+		$style      = array();
 		$spacing = self::parse_spacing( $settings );
 		if ( ! empty( $spacing['attributes']['padding'] ) ) {
 			$attributes['style']['spacing']['padding'] = $spacing['attributes']['padding'];
@@ -1197,6 +1294,30 @@ class Style_Parser {
 				$attributes['style']['color']['background'] = $background;
 				$attributes['className']                    = self::append_class( $attributes['className'] ?? '', 'has-background' );
 			}
+		}
+		$background_color = self::extract_color_from_sources(
+			array(
+				isset( $settings['background_color'] ) ? $settings['background_color'] : '',
+				isset( $settings['__globals__'] ) && is_array( $settings['__globals__'] )
+					? ( isset( $settings['__globals__']['background_color'] ) ? $settings['__globals__']['background_color'] : '' )
+					: '',
+			)
+		);
+
+		if ( '' !== $background_color['slug'] ) {
+			$attributes['backgroundColor'] = $background_color['slug'];
+
+			if ( '' !== $background_color['color'] ) {
+				if ( ! isset( $style['color'] ) || ! is_array( $style['color'] ) ) {
+					$style['color'] = array();
+				}
+				$style['color']['background'] = $background_color['color'];
+			}
+		} elseif ( '' !== $background_color['color'] ) {
+			if ( ! isset( $style['color'] ) || ! is_array( $style['color'] ) ) {
+				$style['color'] = array();
+			}
+			$style['color']['background'] = $background_color['color'];
 		}
 
 		$background_type = self::sanitize_scalar( $settings['background_background'] ?? $settings['_background_background'] ?? '' );
@@ -1230,6 +1351,42 @@ class Style_Parser {
 		$custom_classes = self::sanitize_class_string( $settings['_css_classes'] ?? '' );
 		if ( '' !== $custom_classes ) {
 			$attributes['className'] = self::append_class( $attributes['className'] ?? '', $custom_classes );
+		}
+		if (
+			isset( $settings['box_shadow_box_shadow_type'], $settings['box_shadow_box_shadow'] )
+			&& 'yes' === $settings['box_shadow_box_shadow_type']
+			&& is_array( $settings['box_shadow_box_shadow'] )
+		) {
+			$shadow = $settings['box_shadow_box_shadow'];
+
+			$horizontal = isset( $shadow['horizontal'] ) ? (float) $shadow['horizontal'] : 0.0;
+			$vertical   = isset( $shadow['vertical'] ) ? (float) $shadow['vertical'] : 0.0;
+			$blur       = isset( $shadow['blur'] ) ? (float) $shadow['blur'] : 0.0;
+			$spread     = isset( $shadow['spread'] ) ? (float) $shadow['spread'] : 0.0;
+			$color_raw  = isset( $shadow['color'] ) ? $shadow['color'] : '';
+			$color      = self::normalize_color_value( $color_raw );
+
+			$parts = array(
+				$horizontal . 'px',
+				$vertical . 'px',
+				$blur . 'px',
+				$spread . 'px',
+			);
+
+			if ( '' !== $color ) {
+				$parts[] = $color;
+			}
+
+			$box_shadow = trim( implode( ' ', $parts ) );
+			if ( '' !== $box_shadow ) {
+				$style['boxShadow'] = $box_shadow;
+			}
+		}
+
+		if ( ! empty( $style ) ) {
+			$attributes['style'] = isset( $attributes['style'] ) && is_array( $attributes['style'] )
+				? array_replace_recursive( $attributes['style'], $style )
+				: $style;
 		}
 
 		return $attributes;
