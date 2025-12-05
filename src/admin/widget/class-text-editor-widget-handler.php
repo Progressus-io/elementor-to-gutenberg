@@ -22,12 +22,10 @@ defined( 'ABSPATH' ) || exit;
  * Widget handler for Elementor text-editor widget.
  */
 class Text_Editor_Widget_Handler implements Widget_Handler_Interface {
-
 	/**
 	 * Handle conversion of Elementor text-editor to Gutenberg block.
 	 *
 	 * @param array $element The Elementor element data.
-	 *
 	 * @return string The Gutenberg block content.
 	 */
 	public function handle( array $element ): string {

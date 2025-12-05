@@ -1,0 +1,76 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "progressus/google-map",
+  "version": "1.0.0",
+  "title": "Google Map",
+  "icon": "location",
+  "category": "design",
+  "description": "Embed a Google Map by address or coordinates.",
+  "supports": {
+    "html": false,
+    "align": ["wide", "full"]
+  },
+  "attributes": {
+    "location": {
+      "type": "object",
+      "default": {
+        "address": "",
+        "formatted_address": "",
+        "lat": null,
+        "lng": null,
+        "place_id": "",
+        "components": {},
+        "viewport": null
+      }
+    },
+    "address": { "type": "string", "default": "" },
+    "lat": { "type": "number", "default": null },
+    "lng": { "type": "number", "default": null },
+    "zoom": { "type": "number", "default": 14 },
+    "height": { "type": "number", "default": 400 },
+    "mapType": { "type": "string", "default": "roadmap" },
+    "_margin": {
+      "type": "object",
+      "default": {
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      }
+    },
+    "_padding": {
+      "type": "object",
+      "default": {
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      }
+    },
+    "style": {
+      "type": "object",
+      "default": {
+        "spacing": {
+          "margin": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "padding": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          }
+        }
+      }
+    }
+  },
+  "textdomain": "elementor-to-gutenberg",
+  "editorScript": "file:./index.js",
+  "viewScript": "file:./view.js",
+  "editorStyle": "file:./index.css",
+  "style": "file:./style-index.css"
+}
