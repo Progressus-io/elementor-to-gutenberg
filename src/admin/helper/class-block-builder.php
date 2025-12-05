@@ -167,7 +167,9 @@ class Block_Builder {
 		if ( isset( $style['dimensions']['minHeight'] ) ) {
 			$style_rules[] = 'min-height:' . self::normalize_style_value( $style['dimensions']['minHeight'] );
 		}
-
+		if ( isset( $style['boxShadow'] ) && '' !== trim( (string) $style['boxShadow'] ) ) {
+			$style_rules[] = 'box-shadow:' . trim( (string) $style['boxShadow'] );
+		}
 		if ( ! empty( $style['border'] ) && is_array( $style['border'] ) ) {
 			$style_rules = array_merge( $style_rules, self::build_border_rules( $style['border'] ) );
 		}

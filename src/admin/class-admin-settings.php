@@ -6,7 +6,6 @@
  */
 
 namespace Progressus\Gutenberg\Admin;
-
 use Progressus\Gutenberg\Admin\Helper\File_Upload_Service;
 use Progressus\Gutenberg\Admin\Helper\Block_Builder;
 use Progressus\Gutenberg\Admin\Layout\Container_Classifier;
@@ -26,7 +25,6 @@ use function esc_attr;
 use function wp_json_encode;
 
 defined( 'ABSPATH' ) || exit;
-
 /**
  * Main admin settings class for Elementor to Gutenberg conversion.
  */
@@ -47,7 +45,6 @@ class Admin_Settings {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
 		}
-
 		return self::$instance;
 	}
 
@@ -73,7 +70,6 @@ class Admin_Settings {
 			);
 			$actions['convert_to_gutenberg'] = '<a href="' . esc_url( $url ) . '">Convert to Gutenberg</a>';
 		}
-
 		return $actions;
 	}
 
@@ -114,7 +110,7 @@ class Admin_Settings {
 	 *
 	 * @param int $page_id Page ID.
 	 * @param array $blocks Gutenberg blocks.
-	 *
+	 * 
 	 * @return int New page ID.
 	 */
 	public function insert_new_page( $page_id, $blocks ): int {
@@ -185,7 +181,6 @@ class Admin_Settings {
 	 * Handle JSON file upload and conversion.
 	 *
 	 * @param mixed $option The option value.
-	 *
 	 * @return string The processed Gutenberg content or existing option.
 	 */
 	public function handle_json_upload( $option ): string {
@@ -240,7 +235,6 @@ class Admin_Settings {
 				esc_html__( 'Failed to create new page.', 'elementor-to-gutenberg' ),
 				'error'
 			);
-
 			return get_option( 'gutenberg_json_data', '' );
 		}
 
@@ -250,7 +244,6 @@ class Admin_Settings {
 			esc_html__( 'JSON file uploaded and page created successfully!', 'elementor-to-gutenberg' ),
 			'updated'
 		);
-
 		return $gutenberg_content;
 	}
 
@@ -295,7 +288,6 @@ class Admin_Settings {
 	 * Convert JSON data to Gutenberg blocks.
 	 *
 	 * @param array $json_data The JSON data to convert.
-	 *
 	 * @return string The converted Gutenberg content.
 	 */
 	public function convert_json_to_gutenberg_content( array $json_data ): string {
@@ -356,12 +348,42 @@ class Admin_Settings {
 	 * @param array $element Elementor container element.
 	 */
 	private function render_container( array $element ): string {
-		$children     = is_array( $element['elements'] ?? null ) ? $element['elements'] : array();
+		$children           = is_array( $element['elements'] ?? null ) ? $element['elements'] : array();
+		$container_settings = is_array( $element['settings'] ?? null ) ? $element['settings'] : array();
+		$container_attr     = Style_Parser::parse_container_styles( $container_settings );
+
+		$min_height_setting = $container_settings['min_height'] ?? null;
+
+		$has_min_height = false;
+		if ( is_array( $min_height_setting ) ) {
+			$has_min_height = isset( $min_height_setting['size'] ) && '' !== $min_height_setting['size'];
+		} elseif ( null !== $min_height_setting && '' !== $min_height_setting ) {
+			$has_min_height = true;
+		}
+
+		$parent_has_background = ! empty( $container_settings['background_image'] )
+		                         || ! empty( $container_settings['_background_image'] );
+
+		$propagate_min_height = $has_min_height && ! $parent_has_background;
+
 		$child_blocks = array();
 		$child_data   = array();
+
 		foreach ( $children as $child ) {
 			if ( ! is_array( $child ) ) {
 				continue;
+			}
+
+			if ( $propagate_min_height && isset( $child['elType'] ) && 'container' === $child['elType'] ) {
+				$child_settings = is_array( $child['settings'] ?? null ) ? $child['settings'] : array();
+
+				$child_has_background = ! empty( $child_settings['background_image'] )
+				                        || ! empty( $child_settings['_background_image'] );
+
+				if ( $child_has_background && empty( $child_settings['min_height'] ) ) {
+					$child_settings['min_height'] = $min_height_setting;
+					$child['settings']            = $child_settings;
+				}
 			}
 
 			$child_data[] = array(
@@ -370,10 +392,9 @@ class Admin_Settings {
 			);
 		}
 
-		$child_count        = count( $children );
-		$container_settings = is_array( $element['settings'] ?? null ) ? $element['settings'] : array();
-		$container_attr     = Style_Parser::parse_container_styles( $container_settings );
-		$container_classes  = Container_Classifier::get_element_classes( $element );
+		$child_count       = count( $children );
+		$container_classes = Container_Classifier::get_element_classes( $element );
+
 		$container_attr     = $this->apply_container_class_adjustments( $container_attr, $container_classes );
 		$justify_content    = $this->detect_container_justify_content( $container_settings );
 		$vertical_alignment = $this->detect_container_vertical_alignment( $container_settings );
@@ -411,6 +432,10 @@ class Admin_Settings {
 			return $this->render_row_group( $container_attr, $child_blocks, $justify_content );
 		}
 
+		if ( Container_Classifier::is_vertical_stack( $element ) ) {
+			return $this->render_vertical_stack_group( $container_attr, $child_blocks, $justify_content );
+		}
+
 		$layout_type = in_array( 'e-con-full', $container_classes, true ) ? 'default' : 'constrained';
 
 		return $this->render_group( $container_attr, $child_blocks, $layout_type );
@@ -444,6 +469,27 @@ class Admin_Settings {
 			'type'           => 'flex',
 			'justifyContent' => $justify_content,
 			'flexWrap'       => 'wrap',
+		);
+
+		return Block_Builder::build( 'group', $attributes, implode( '', $child_blocks ) );
+	}
+
+	/**
+	 * Render a Gutenberg group for vertical flex stacks (Elementor column-direction containers).
+	 *
+	 * @param array $attributes Block attributes.
+	 * @param array $child_blocks Rendered child blocks.
+	 * @param string|null $justify_content Optional content justification (left/center/right/space-between).
+	 */
+	private function render_vertical_stack_group( array $attributes, array $child_blocks, ?string $justify_content = null ): string {
+		if ( null === $justify_content || '' === $justify_content ) {
+			$justify_content = 'left';
+		}
+
+		$attributes['layout'] = array(
+			'type'           => 'flex',
+			'orientation'    => 'vertical',
+			'justifyContent' => $justify_content,
 		);
 
 		return Block_Builder::build( 'group', $attributes, implode( '', $child_blocks ) );
@@ -830,14 +876,7 @@ class Admin_Settings {
 	 * @param string $type Widget type.
 	 */
 	private function render_unknown_widget( string $type ): string {
-		$message   = sprintf( /* translators: %s widget type */ esc_html__( 'Unknown widget: %s', 'elementor-to-gutenberg' ), esc_html( $type ) );
-		$paragraph = sprintf( '<p>%s</p>', $message );
-
-		return Block_Builder::build(
-			'group',
-			array( 'layout' => array( 'type' => 'constrained' ) ),
-			'<!-- wp:paragraph -->' . $paragraph . '<!-- /wp:paragraph -->' . "\n"
-		);
+		return sprintf( "<!-- Unknown widget skipped: %s -->\n", esc_html( $type ) );
 	}
 
 	/**
