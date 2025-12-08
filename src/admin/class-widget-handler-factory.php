@@ -39,6 +39,7 @@ class Widget_Handler_Factory {
 		'divider'          => 'Progressus\Gutenberg\Admin\Widget\Divider_Widget_Handler',
 		'tabs'             => 'Progressus\Gutenberg\Admin\Widget\Tabs_Widget_Handler',
 		'testimonial-carousel' => 'Progressus\Gutenberg\Admin\Widget\Testimonial_Carousel_Widget_Handler',
+		'form'             => 'Progressus\Gutenberg\Admin\Widget\Form_Widget_Handler',
 	);
 
 	/**

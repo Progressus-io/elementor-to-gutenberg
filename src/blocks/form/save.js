@@ -7,6 +7,8 @@ const Save = ({ attributes }) => {
     inputSize,
     buttonText,
     buttonAlign,
+    successMessage,
+    errorMessage,
     columnGap,
     rowGap,
     labelSpacing,
@@ -51,6 +53,8 @@ const Save = ({ attributes }) => {
       <form
         className="progressus-form"
         data-form-name={formName}
+        data-success-message={successMessage}
+        data-error-message={errorMessage}
         style={{ display: "grid", gap: `${rowGap}px` }}
       >
         {formFields.map((field, index) => (

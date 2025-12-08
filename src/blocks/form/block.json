@@ -10,6 +10,9 @@
     "html": false,
     "align": ["wide", "full"]
   },
+  "editorScript": "file:./index.js",
+  "style": "file:./style-index.css",
+  "viewScript": "file:./view.js",
   "attributes": {
     "formName": {
       "type": "string",
@@ -140,7 +143,5 @@
     }
   },
   "textdomain": "progressus-gutenberg",
-  "editorScript": "file:./index.js",
-  "editorStyle": "file:./index.css",
-  "style": "file:./style-index.css"
+  "editorStyle": "file:./index.css"
 }

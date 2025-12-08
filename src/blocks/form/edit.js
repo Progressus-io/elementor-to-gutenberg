@@ -413,6 +413,9 @@ const Edit = ({ attributes, setAttributes }) => {
       <div {...blockProps} style={formStyle}>
         <form
           className="progressus-form"
+          data-form-name={formName}
+          data-success-message={successMessage}
+          data-error-message={errorMessage}
           style={{ display: "grid", gap: `${rowGap}px` }}
         >
           {formFields.map((field, index) => (

@@ -151,6 +151,8 @@ class Form_Widget_Handler implements Widget_Handler_Interface {
 		$input_size             = $attributes['inputSize'] ?? 'md';
 		$button_text            = $attributes['buttonText'] ?? 'Send';
 		$button_align           = $attributes['buttonAlign'] ?? 'start';
+		$success_message        = $attributes['successMessage'] ?? 'Your submission was successful.';
+		$error_message          = $attributes['errorMessage'] ?? 'Your submission failed because of an error.';
 		$row_gap                = $attributes['rowGap'] ?? 20;
 		$label_spacing          = $attributes['labelSpacing'] ?? 8;
 		$label_typography       = $attributes['labelTypography'] ?? array();
@@ -199,7 +201,7 @@ class Form_Widget_Handler implements Widget_Handler_Interface {
 		);
 
 		$html  = '<div class="wp-block-progressus-form ' . esc_attr( $custom_class ) . '" id="' . esc_attr( $custom_id ) . '" style="' . esc_attr( $form_style ) . '">';
-		$html .= '<form class="progressus-form" data-form-name="' . esc_attr( $form_name ) . '" style="display:grid;gap:' . esc_attr( $row_gap ) . 'px">';
+		$html .= '<form class="progressus-form" data-form-name="' . esc_attr( $form_name ) . '" data-success-message="' . esc_attr( $success_message ) . '" data-error-message="' . esc_attr( $error_message ) . '" style="display:grid;gap:' . esc_attr( $row_gap ) . 'px">';
 
 		foreach ( $form_fields as $field ) {
 			$html .= '<div class="form-field">';
