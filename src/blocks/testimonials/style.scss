@@ -1,0 +1,96 @@
+.wp-block-progressus-testimonials {
+  .progressus-testimonials-carousel {
+    position: relative;
+    width: 100%;
+    
+    .swiper {
+      width: 100%;
+      padding-bottom: 50px;
+    }
+
+    .testimonial-slide {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+
+      img {
+        display: block;
+        margin: 0 auto;
+      }
+
+      .testimonial-content {
+        margin-bottom: 20px;
+      }
+
+      .testimonial-name {
+        font-weight: bold;
+        margin-bottom: 5px;
+      }
+
+      .testimonial-title {
+        font-size: 14px;
+        opacity: 0.8;
+      }
+    }
+
+    .swiper-button-prev,
+    .swiper-button-next {
+      color: inherit;
+    }
+
+    .swiper-pagination {
+      position: absolute;
+      bottom: 0;
+    }
+
+    .swiper-pagination-bullet {
+      opacity: 0.5;
+      
+      &.swiper-pagination-bullet-active {
+        opacity: 1;
+      }
+    }
+  }
+
+  // Editor styles
+  .progressus-testimonials-editor {
+    padding: 20px;
+    background: #f0f0f0;
+    border-radius: 4px;
+
+    .testimonial-slides {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 20px;
+
+      .testimonial-slide {
+        padding: 15px;
+        background: white;
+        border-radius: 4px;
+        position: relative;
+
+        &.editing {
+          border: 2px solid #007cba;
+        }
+
+        .slide-controls {
+          margin-top: 10px;
+          display: flex;
+          gap: 10px;
+        }
+      }
+    }
+
+    .testimonial-editor {
+      margin-top: 20px;
+      padding: 20px;
+      background: white;
+      border-radius: 4px;
+
+      h3 {
+        margin-top: 0;
+      }
+    }
+  }
+}

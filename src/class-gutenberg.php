@@ -122,6 +122,23 @@ class Gutenberg {
 		if ( has_block( 'progressus/icon' ) ) {
 			wp_enqueue_style( 'dashicons' );
 		}
+
+		if ( has_block( 'progressus/testimonials' ) ) {
+			wp_enqueue_style(
+				'swiper-css',
+				'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css',
+				array(),
+				'11.0.0'
+			);
+
+			wp_enqueue_script(
+				'swiper-js',
+				'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js',
+				array(),
+				'11.0.0',
+				true
+			);
+		}
 	}
 
 	/**

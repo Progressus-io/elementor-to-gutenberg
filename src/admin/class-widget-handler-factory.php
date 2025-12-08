@@ -36,8 +36,9 @@ class Widget_Handler_Factory {
 		'social-icons'     => 'Progressus\Gutenberg\Admin\Widget\Social_Icons_Widget_Handler',
 		'spacer'           => 'Progressus\Gutenberg\Admin\Widget\Spacer_Widget_Handler',
 		'image-gallery'    => 'Progressus\Gutenberg\Admin\Widget\Gallery_Widget_Handler',
-		'divider'          => 'Progressus\Gutenberg\Admin\Widget\Divider_Widget_Handler',
-		'tabs'             => 'Progressus\Gutenberg\Admin\Widget\Tabs_Widget_Handler',
+		'divider'              => 'Progressus\Gutenberg\Admin\Widget\Divider_Widget_Handler',
+		'tabs'                 => 'Progressus\Gutenberg\Admin\Widget\Tabs_Widget_Handler',
+		'testimonial-carousel' => 'Progressus\Gutenberg\Admin\Widget\Testimonial_Carousel_Widget_Handler',
 	);
 
 	/**
