@@ -49,4 +49,4 @@ function bumpPluginVersion( path ) {
 	fs.writeFileSync( path, fileContent );
 }
 
-bumpPluginVersion( './mighty-kids-plugin.php' );
+bumpPluginVersion( './gutenberg-plugin.php' );

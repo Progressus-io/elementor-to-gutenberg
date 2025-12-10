@@ -1,0 +1,173 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "progressus/testimonials",
+  "version": "1.0.0",
+  "title": "Testimonials Carousel",
+  "category": "design",
+  "description": "Display testimonials in a carousel slider",
+  "supports": {
+    "html": false,
+    "align": ["wide", "full"]
+  },
+  "attributes": {
+    "slides": {
+      "type": "array",
+      "default": [
+        {
+          "content": "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+          "name": "John Doe",
+          "title": "CEO",
+          "imageUrl": "",
+          "imageId": 0
+        }
+      ]
+    },
+    "layout": {
+      "type": "string",
+      "default": "image_above"
+    },
+    "alignment": {
+      "type": "string",
+      "default": "left"
+    },
+    "slidesPerView": {
+      "type": "number",
+      "default": 1
+    },
+    "slidesToScroll": {
+      "type": "number",
+      "default": 1
+    },
+    "width": {
+      "type": "number",
+      "default": 100
+    },
+    "spaceBetween": {
+      "type": "number",
+      "default": 20
+    },
+    "slideBackgroundColor": {
+      "type": "string",
+      "default": ""
+    },
+    "slideBorderSize": {
+      "type": "object",
+      "default": {
+        "top": 1,
+        "right": 1,
+        "bottom": 1,
+        "left": 1
+      }
+    },
+    "slideBorderRadius": {
+      "type": "number",
+      "default": 0
+    },
+    "slideBorderColor": {
+      "type": "string",
+      "default": ""
+    },
+    "slidePadding": {
+      "type": "object",
+      "default": {
+        "top": 20,
+        "right": 20,
+        "bottom": 20,
+        "left": 20
+      }
+    },
+    "contentGap": {
+      "type": "number",
+      "default": 20
+    },
+    "contentColor": {
+      "type": "string",
+      "default": ""
+    },
+    "contentTypography": {
+      "type": "object",
+      "default": {
+        "fontSize": 16,
+        "fontWeight": "normal",
+        "fontStyle": "normal",
+        "textDecoration": "none",
+        "lineHeight": 1.5,
+        "letterSpacing": 0,
+        "wordSpacing": 0,
+        "fontFamily": ""
+      }
+    },
+    "nameColor": {
+      "type": "string",
+      "default": ""
+    },
+    "titleColor": {
+      "type": "string",
+      "default": ""
+    },
+    "imageSize": {
+      "type": "number",
+      "default": 80
+    },
+    "imageGap": {
+      "type": "number",
+      "default": 20
+    },
+    "imageBorderRadius": {
+      "type": "number",
+      "default": 50
+    },
+    "arrowsSize": {
+      "type": "number",
+      "default": 20
+    },
+    "arrowsColor": {
+      "type": "string",
+      "default": ""
+    },
+    "paginationGap": {
+      "type": "number",
+      "default": 10
+    },
+    "paginationSize": {
+      "type": "number",
+      "default": 10
+    },
+    "paginationColorInactive": {
+      "type": "string",
+      "default": ""
+    },
+    "_margin": {
+      "type": "object",
+      "default": {
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      }
+    },
+    "_padding": {
+      "type": "object",
+      "default": {
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      }
+    },
+    "customId": {
+      "type": "string",
+      "default": ""
+    },
+    "customClass": {
+      "type": "string",
+      "default": ""
+    }
+  },
+  "textdomain": "progressus-gutenberg",
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./index.css",
+  "style": "file:./style-index.css",
+  "viewScript": "file:./view.js"
+}
