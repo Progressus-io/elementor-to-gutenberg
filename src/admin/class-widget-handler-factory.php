@@ -41,6 +41,8 @@ class Widget_Handler_Factory {
 		'tabs'                 => 'Progressus\Gutenberg\Admin\Widget\Tabs_Widget_Handler',
 		'nav-menu'             => 'Progressus\Gutenberg\Admin\Widget\Menu_Widget_Handler',
 		'theme-site-logo'      => 'Progressus\Gutenberg\Admin\Widget\Site_Logo_Widget_Handler',
+		'form'                 => 'Progressus\Gutenberg\Admin\Widget\Form_Widget_Handler',
+
 	);
 
 	/**
