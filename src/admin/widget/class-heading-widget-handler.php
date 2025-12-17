@@ -46,7 +46,7 @@ class Heading_Widget_Handler implements Widget_Handler_Interface {
 
 		$typography  = Style_Parser::parse_typography( $settings );
 		$border      = Style_Parser::parse_border( $settings );
-		$spacing	 = Style_Parser::parse_spacing( $settings );
+		$spacing     = Style_Parser::parse_spacing( $settings );
 
 		$attrs_array['level'] = (int) $level;
 		// Handle text + link color.
