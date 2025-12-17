@@ -11,6 +11,7 @@ defined( 'ABSPATH' ) || exit;
 
 use Progressus\Gutenberg\Admin\Admin_Settings;
 use Progressus\Gutenberg\Admin\Batch_Convert_Wizard;
+
 /**
  * Class Gutenberg
  *
@@ -42,7 +43,6 @@ class Gutenberg {
 	public function register_blocks() {
 		// auto-register all blocks inside build/blocks:
 		$blocks_dir = GUTENBERG_PLUGIN_DIR_PATH . '/build/blocks';
-
 		foreach ( glob( $blocks_dir . '/*', GLOB_ONLYDIR ) as $block_dir ) {
 			register_block_type( $block_dir );
 		}
@@ -89,10 +89,22 @@ class Gutenberg {
 	public function init_hooks(): void {
 		add_action( 'init', array( $this, 'init' ), 1 );
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
-        add_action( 'admin_enqueue_scripts', array( $this, 'fontawesome_icon_block_enqueue_fontawesome' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'fontawesome_icon_block_enqueue_fontawesome' ) );
 		add_action( 'wp_ajax_progressus_form_submit', array( $this, 'handle_form_submission' ) );
 		add_action( 'wp_ajax_nopriv_progressus_form_submit', array( $this, 'handle_form_submission' ) );
-		add_action( 'admin_enqueue_scripts', array( $this, 'fontawesome_icon_block_enqueue_fontawesome' ) );
+		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_editor_assets' ) );
+	}
+
+	/**
+	 * Enqueue styles for the block editor.
+	 */
+	public function enqueue_editor_assets(): void {
+		wp_enqueue_style(
+			'gutenberg-plugin-layout-fixes',
+			GUTENBERG_PLUGIN_DIR_URL . '/assets/css/layout-fixes.css',
+			array(),
+			GUTENBERG_PLUGIN_VERSION
+		);
 		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_editor_assets' ) );
 	}
 
