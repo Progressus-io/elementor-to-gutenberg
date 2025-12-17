@@ -10,7 +10,6 @@ namespace Progressus\Gutenberg;
 defined( 'ABSPATH' ) || exit;
 
 use Progressus\Gutenberg\Admin\Admin_Settings;
-use Progressus\Gutenberg\Admin\Batch_Convert_Wizard;
 
 /**
  * Class Gutenberg
@@ -52,6 +51,9 @@ class Gutenberg {
 	/**
 	 * Gutenberg Customization.
 	 *
+	 * Ensures only one instance is loaded or can be loaded.
+	 *
+	 * @static
 	 * @return Gutenberg|null Gutenberg instance.
 	 */
 	public static function instance(): ?Gutenberg {
@@ -126,7 +128,7 @@ class Gutenberg {
 	}
 
 	/**
-	 * Enqueue scripts and styles on the frontend.
+	 * Enqueue scripts and styles.
 	 */
 	public function enqueue_scripts(): void {
 		wp_enqueue_style(
@@ -155,18 +157,6 @@ class Gutenberg {
 			wp_enqueue_style( 'dashicons' );
 		}
 
-		// Enqueue form submission script if form block is present
-		if ( has_block( 'progressus/form' ) ) {
-			wp_localize_script(
-				'gutenberg-plugin-scripts',
-				'progressusFormData',
-				array(
-					'ajaxUrl' => admin_url( 'admin-ajax.php' ),
-					'nonce'   => wp_create_nonce( 'progressus_form_nonce' ),
-				)
-			);
-		}
-
 		if ( has_block( 'progressus/testimonials' ) ) {
 			wp_enqueue_style(
 				'swiper-css',
@@ -181,6 +171,18 @@ class Gutenberg {
 				array(),
 				'11.0.0',
 				true
+			);
+		}
+
+		// Enqueue form submission script if form block is present
+		if ( has_block( 'progressus/form' ) ) {
+			wp_localize_script(
+				'gutenberg-plugin-scripts',
+				'progressusFormData',
+				array(
+					'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+					'nonce'   => wp_create_nonce( 'progressus_form_nonce' ),
+				)
 			);
 		}
 	}
