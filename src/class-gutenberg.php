@@ -10,6 +10,7 @@ namespace Progressus\Gutenberg;
 defined( 'ABSPATH' ) || exit;
 
 use Progressus\Gutenberg\Admin\Admin_Settings;
+use Progressus\Gutenberg\Admin\Batch_Convert_Wizard;
 
 /**
  * Class Gutenberg
@@ -17,6 +18,7 @@ use Progressus\Gutenberg\Admin\Admin_Settings;
  * @package Progressus\Gutenberg
  */
 class Gutenberg {
+
 
 	/**
 	 * Instance to call certain functions globally within the plugin
@@ -41,7 +43,6 @@ class Gutenberg {
 	public function register_blocks() {
 		// auto-register all blocks inside build/blocks:
 		$blocks_dir = GUTENBERG_PLUGIN_DIR_PATH . '/build/blocks';
-
 		foreach ( glob( $blocks_dir . '/*', GLOB_ONLYDIR ) as $block_dir ) {
 			register_block_type( $block_dir );
 		}
@@ -50,6 +51,9 @@ class Gutenberg {
 	/**
 	 * Gutenberg Customization.
 	 *
+	 * Ensures only one instance is loaded or can be loaded.
+	 *
+	 * @static
 	 * @return Gutenberg|null Gutenberg instance.
 	 */
 	public static function instance(): ?Gutenberg {
@@ -86,6 +90,8 @@ class Gutenberg {
 		add_action( 'init', array( $this, 'init' ), 1 );
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'fontawesome_icon_block_enqueue_fontawesome' ) );
+		add_action( 'wp_ajax_progressus_form_submit', array( $this, 'handle_form_submission' ) );
+		add_action( 'wp_ajax_nopriv_progressus_form_submit', array( $this, 'handle_form_submission' ) );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_editor_assets' ) );
 	}
 
@@ -121,7 +127,7 @@ class Gutenberg {
 	}
 
 	/**
-	 * Enqueue scripts and styles on the frontend.
+	 * Enqueue scripts and styles.
 	 */
 	public function enqueue_scripts(): void {
 		wp_enqueue_style(
@@ -149,12 +155,100 @@ class Gutenberg {
 		if ( has_block( 'progressus/icon' ) ) {
 			wp_enqueue_style( 'dashicons' );
 		}
+
+		if ( has_block( 'progressus/testimonials' ) ) {
+			wp_enqueue_style(
+				'swiper-css',
+				'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css',
+				array(),
+				'11.0.0'
+			);
+
+			wp_enqueue_script(
+				'swiper-js',
+				'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js',
+				array(),
+				'11.0.0',
+				true
+			);
+		}
+
+		// Enqueue form submission script if form block is present
+		if ( has_block( 'progressus/form' ) ) {
+			wp_localize_script(
+				'gutenberg-plugin-scripts',
+				'progressusFormData',
+				array(
+					'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+					'nonce'   => wp_create_nonce( 'progressus_form_nonce' ),
+				)
+			);
+		}
 	}
 
 	/**
 	 * Initialize the plugin.
 	 */
 	public function init(): void {
-		new Admin_Settings();
+		Admin_Settings::instance();
+		Batch_Convert_Wizard::instance();
+	}
+
+	/**
+	 * Handle form submission via AJAX
+	 */
+	public function handle_form_submission() {
+		// Verify nonce
+		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'progressus_form_nonce' ) ) {
+			wp_send_json_error(
+				array(
+					'message' => __( 'Security verification failed.', 'progressus-gutenberg' ),
+				)
+			);
+		}
+
+		// Get form data
+		$form_name = isset( $_POST['form_name'] ) ? sanitize_text_field( wp_unslash( $_POST['form_name'] ) ) : '';
+		$form_data = array();
+
+		// Collect all form fields
+		foreach ( $_POST as $key => $value ) {
+			if ( ! in_array( $key, array( 'action', 'nonce', 'form_name' ), true ) ) {
+				$form_data[ sanitize_key( $key ) ] = sanitize_text_field( wp_unslash( $value ) );
+			}
+		}
+
+		// Get admin email
+		$admin_email = get_option( 'admin_email' );
+
+		// Prepare email content
+		$subject = sprintf( __( 'New Form Submission: %s', 'progressus-gutenberg' ), $form_name );
+		$message = sprintf( __( "You have received a new form submission from %s:\n\n", 'progressus-gutenberg' ), get_bloginfo( 'name' ) );
+
+		foreach ( $form_data as $field => $value ) {
+			$message .= sprintf( "%s: %s\n", ucfirst( str_replace( array( '_', '-' ), ' ', $field ) ), $value );
+		}
+
+		$message .= sprintf( "\n\n" . __( 'Submitted at: %s', 'progressus-gutenberg' ), current_time( 'mysql' ) );
+
+		// Set email headers
+		$headers = array( 'Content-Type: text/plain; charset=UTF-8' );
+
+		// Try to send email
+		$email_sent = wp_mail( $admin_email, $subject, $message, $headers );
+
+		if ( $email_sent ) {
+			wp_send_json_success(
+				array(
+					'message' => __( 'Your submission was successful. We will get back to you soon!', 'progressus-gutenberg' ),
+				)
+			);
+		} else {
+			wp_send_json_error(
+				array(
+					'message' => __( 'Your submission failed because of an error. Please try again.', 'progressus-gutenberg' ),
+				)
+			);
+		}
 	}
 }
