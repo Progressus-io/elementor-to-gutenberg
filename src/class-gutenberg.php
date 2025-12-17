@@ -89,6 +89,8 @@ class Gutenberg {
 		add_action( 'init', array( $this, 'init' ), 1 );
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
         add_action( 'admin_enqueue_scripts', array( $this, 'fontawesome_icon_block_enqueue_fontawesome' ) );
+		add_action( 'wp_ajax_progressus_form_submit', array( $this, 'handle_form_submission' ) );
+		add_action( 'wp_ajax_nopriv_progressus_form_submit', array( $this, 'handle_form_submission' ) );
 	}
 
     public function fontawesome_icon_block_enqueue_fontawesome() {
@@ -122,6 +124,18 @@ class Gutenberg {
 		if ( has_block( 'progressus/icon' ) ) {
 			wp_enqueue_style( 'dashicons' );
 		}
+
+		// Enqueue form submission script if form block is present
+		if ( has_block( 'progressus/form' ) ) {
+			wp_localize_script(
+				'gutenberg-plugin-scripts',
+				'progressusFormData',
+				array(
+					'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+					'nonce'   => wp_create_nonce( 'progressus_form_nonce' ),
+				)
+			);
+		}
 	}
 
 	/**
@@ -129,5 +143,63 @@ class Gutenberg {
 	 */
 	public function init(): void {
 		new Admin_Settings();
+	}
+
+	/**
+	 * Handle form submission via AJAX
+	 */
+	public function handle_form_submission() {
+		// Verify nonce
+		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'progressus_form_nonce' ) ) {
+			wp_send_json_error(
+				array(
+					'message' => __( 'Security verification failed.', 'progressus-gutenberg' ),
+				)
+			);
+		}
+
+		// Get form data
+		$form_name = isset( $_POST['form_name'] ) ? sanitize_text_field( wp_unslash( $_POST['form_name'] ) ) : '';
+		$form_data = array();
+
+		// Collect all form fields
+		foreach ( $_POST as $key => $value ) {
+			if ( ! in_array( $key, array( 'action', 'nonce', 'form_name' ), true ) ) {
+				$form_data[ sanitize_key( $key ) ] = sanitize_text_field( wp_unslash( $value ) );
+			}
+		}
+
+		// Get admin email
+		$admin_email = get_option( 'admin_email' );
+
+		// Prepare email content
+		$subject = sprintf( __( 'New Form Submission: %s', 'progressus-gutenberg' ), $form_name );
+		$message = sprintf( __( "You have received a new form submission from %s:\n\n", 'progressus-gutenberg' ), get_bloginfo( 'name' ) );
+
+		foreach ( $form_data as $field => $value ) {
+			$message .= sprintf( "%s: %s\n", ucfirst( str_replace( array( '_', '-' ), ' ', $field ) ), $value );
+		}
+
+		$message .= sprintf( "\n\n" . __( 'Submitted at: %s', 'progressus-gutenberg' ), current_time( 'mysql' ) );
+
+		// Set email headers
+		$headers = array( 'Content-Type: text/plain; charset=UTF-8' );
+
+		// Try to send email
+		$email_sent = wp_mail( $admin_email, $subject, $message, $headers );
+
+		if ( $email_sent ) {
+			wp_send_json_success(
+				array(
+					'message' => __( 'Your submission was successful. We will get back to you soon!', 'progressus-gutenberg' ),
+				)
+			);
+		} else {
+			wp_send_json_error(
+				array(
+					'message' => __( 'Your submission failed because of an error. Please try again.', 'progressus-gutenberg' ),
+				)
+			);
+		}
 	}
 }

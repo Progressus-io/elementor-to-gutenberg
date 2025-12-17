@@ -1,0 +1,147 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "progressus/form",
+  "version": "1.0.0",
+  "title": "Form",
+  "category": "design",
+  "description": "Create custom forms with multiple field types",
+  "supports": {
+    "html": false,
+    "align": ["wide", "full"]
+  },
+  "editorScript": "file:./index.js",
+  "style": "file:./style-index.css",
+  "viewScript": "file:./view.js",
+  "attributes": {
+    "formName": {
+      "type": "string",
+      "default": "contact-form"
+    },
+    "formFields": {
+      "type": "array",
+      "default": [
+        {
+          "customId": "name",
+          "fieldType": "text",
+          "required": true,
+          "fieldLabel": "Name",
+          "placeholder": "Your Name"
+        },
+        {
+          "customId": "email",
+          "fieldType": "email",
+          "required": true,
+          "fieldLabel": "Email",
+          "placeholder": "Your Email"
+        },
+        {
+          "customId": "message",
+          "fieldType": "textarea",
+          "required": true,
+          "fieldLabel": "Message",
+          "placeholder": "Your Message"
+        }
+      ]
+    },
+    "inputSize": {
+      "type": "string",
+      "default": "md"
+    },
+    "buttonText": {
+      "type": "string",
+      "default": "Send"
+    },
+    "buttonAlign": {
+      "type": "string",
+      "default": "start"
+    },
+    "successMessage": {
+      "type": "string",
+      "default": "Your submission was successful."
+    },
+    "errorMessage": {
+      "type": "string",
+      "default": "Your submission failed because of an error."
+    },
+    "requiredFieldMessage": {
+      "type": "string",
+      "default": "This field is required."
+    },
+    "columnGap": {
+      "type": "number",
+      "default": 16
+    },
+    "rowGap": {
+      "type": "number",
+      "default": 20
+    },
+    "labelSpacing": {
+      "type": "number",
+      "default": 8
+    },
+    "labelTypography": {
+      "type": "object",
+      "default": {
+        "fontFamily": "",
+        "fontWeight": "normal",
+        "letterSpacing": 0,
+        "wordSpacing": 0
+      }
+    },
+    "buttonBackgroundColor": {
+      "type": "string",
+      "default": ""
+    },
+    "buttonTextColor": {
+      "type": "string",
+      "default": ""
+    },
+    "buttonBorderRadius": {
+      "type": "object",
+      "default": {
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      }
+    },
+    "buttonPadding": {
+      "type": "object",
+      "default": {
+        "top": 12,
+        "right": 24,
+        "bottom": 12,
+        "left": 24
+      }
+    },
+    "_margin": {
+      "type": "object",
+      "default": {
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      }
+    },
+    "_padding": {
+      "type": "object",
+      "default": {
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      }
+    },
+    "customId": {
+      "type": "string",
+      "default": ""
+    },
+    "customClass": {
+      "type": "string",
+      "default": ""
+    }
+  },
+  "textdomain": "progressus-gutenberg",
+  "editorStyle": "file:./index.css"
+}
