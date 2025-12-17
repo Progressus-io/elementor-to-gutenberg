@@ -89,19 +89,42 @@ class Gutenberg {
 	public function init_hooks(): void {
 		add_action( 'init', array( $this, 'init' ), 1 );
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
-        add_action( 'admin_enqueue_scripts', array( $this, 'fontawesome_icon_block_enqueue_fontawesome' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'fontawesome_icon_block_enqueue_fontawesome' ) );
 		add_action( 'wp_ajax_progressus_form_submit', array( $this, 'handle_form_submission' ) );
 		add_action( 'wp_ajax_nopriv_progressus_form_submit', array( $this, 'handle_form_submission' ) );
+		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_editor_assets' ) );
 	}
 
-    public function fontawesome_icon_block_enqueue_fontawesome() {
-        wp_enqueue_style(
-            'font-awesome-custom',
-            'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css',
-            array(),
-            '6.5.0'
-        );
-    }
+	/**
+	 * Enqueue styles for the block editor.
+	 */
+	public function enqueue_editor_assets(): void {
+		wp_enqueue_style(
+			'gutenberg-plugin-layout-fixes',
+			GUTENBERG_PLUGIN_DIR_URL . '/assets/css/layout-fixes.css',
+			array(),
+			GUTENBERG_PLUGIN_VERSION
+		);
+	}
+
+	/**
+	 * Enqueue styles for admin screens.
+	 */
+	public function fontawesome_icon_block_enqueue_fontawesome() {
+		wp_enqueue_style(
+			'font-awesome-custom',
+			'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css',
+			array(),
+			'6.5.0'
+		);
+
+		wp_enqueue_style(
+			'gutenberg-plugin-layout-fixes-admin',
+			GUTENBERG_PLUGIN_DIR_URL . '/assets/css/layout-fixes.css',
+			array(),
+			GUTENBERG_PLUGIN_VERSION
+		);
+	}
 
 	/**
 	 * Enqueue scripts and styles.
@@ -112,6 +135,13 @@ class Gutenberg {
 			'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css',
 			array(),
 			'6.5.0'
+		);
+
+		wp_enqueue_style(
+			'gutenberg-plugin-layout-fixes',
+			GUTENBERG_PLUGIN_DIR_URL . '/assets/css/layout-fixes.css',
+			array(),
+			GUTENBERG_PLUGIN_VERSION
 		);
 
 		wp_enqueue_script(

@@ -7,6 +7,7 @@
 
 namespace Progressus\Gutenberg\Admin\Widget;
 
+use Progressus\Gutenberg\Admin\Helper\Alignment_Helper;
 use Progressus\Gutenberg\Admin\Widget_Handler_Interface;
 use Progressus\Gutenberg\Admin\Helper\Style_Parser;
 
@@ -21,11 +22,21 @@ class Divider_Widget_Handler implements Widget_Handler_Interface {
 	 * Handle conversion of Elementor divider to Gutenberg block.
 	 *
 	 * @param array $element The Elementor element data.
+	 *
 	 * @return string The Gutenberg block content.
 	 */
 	public function handle( array $element ): string {
-		$settings      = $element['settings'] ?? array();
-		$text          = $settings['text'] ?? '';
+		$settings = isset( $element['settings'] ) && is_array( $element['settings'] ) ? $element['settings'] : array();
+
+		$text_raw    = isset( $settings['text'] ) ? (string) $settings['text'] : '';
+		$text_normal = strtolower( trim( $text_raw ) );
+
+		if ( '' === $text_normal || 'divider' === $text_normal ) {
+			$text = '';
+		} else {
+			$text = $text_raw;
+		}
+
 		$block_content = '';
 		$inline_style  = '';
 		$custom_class  = $settings['_css_classes'] ?? '';
@@ -36,8 +47,9 @@ class Divider_Widget_Handler implements Widget_Handler_Interface {
 
 		// Alignment → group wrapper.
 		$group_attrs = array();
-		if ( isset( $settings['align'] ) ) {
-			$group_attrs['align'] = $settings['align'];
+		$alignment   = Alignment_Helper::detect_alignment( $settings, array( 'align', 'alignment' ) );
+		if ( '' !== $alignment ) {
+			$group_attrs['align'] = $alignment;
 		}
 
 		// Separator attributes.
@@ -45,18 +57,62 @@ class Divider_Widget_Handler implements Widget_Handler_Interface {
 			'className' => trim( $custom_class ),
 		);
 
+		$has_width = false;
 		// Width.
-		if ( isset( $settings['width']['size'] ) ) {
-			$group_attrs['width'] = esc_attr( $settings['width']['size'] . ( $settings['width']['unit'] ?? 'px' ) ) . ';';
+		if ( isset( $settings['width'] ) && is_array( $settings['width'] ) && isset( $settings['width']['size'] ) ) {
+			$size = trim( (string) $settings['width']['size'] );
+			$unit = isset( $settings['width']['unit'] ) ? (string) $settings['width']['unit'] : '%';
+
+			if ( '' !== $size && is_numeric( $size ) ) {
+				if ( '' === $unit ) {
+					$unit = '%';
+				}
+
+				$inline_style .= 'width:' . esc_attr( $size . $unit ) . ';';
+				$has_width    = true;
+			}
 		}
 
+
 		// Color.
+		$color_sources = array();
+
 		if ( isset( $settings['color'] ) ) {
-			$color = strtolower( $settings['color'] );
-			$separator_attrs['style']['color']['background'] = $color;
-			$separator_attrs['className']                   .= ' has-text-color has-background has-alpha-channel-opacity';
-			$inline_style                                   .= 'background-color:' . esc_attr( $color ) . ';color:' . esc_attr( $color ) . ';';
+			$color_sources[] = $settings['color'];
 		}
+
+		if (
+			isset( $settings['__globals__'] ) &&
+			is_array( $settings['__globals__'] ) &&
+			isset( $settings['__globals__']['color'] )
+		) {
+			$color_sources[] = $settings['__globals__']['color'];
+		}
+
+		$resolved_color = null;
+
+		foreach ( $color_sources as $source ) {
+			$data = Style_Parser::resolve_elementor_color_reference( $source );
+			if ( '' !== $data['slug'] || '' !== $data['color'] ) {
+				$resolved_color = $data;
+				break;
+			}
+		}
+
+		if ( null !== $resolved_color ) {
+			if ( '' !== $resolved_color['slug'] ) {
+				$separator_attrs['className'] = trim(
+					$separator_attrs['className'] .
+					' has-background has-' . Style_Parser::clean_class( $resolved_color['slug'] ) . '-background-color'
+				);
+			}
+
+			if ( '' !== $resolved_color['color'] ) {
+				$separator_attrs['style']['color']['background'] = $resolved_color['color'];
+				$inline_style                                    .= 'background-color:' . esc_attr( $resolved_color['color'] ) . ';color:' . esc_attr( $resolved_color['color'] ) . ';';
+			}
+		}
+
 
 		// Style (solid/dashed/dotted).
 		if ( isset( $settings['style'] ) ) {
@@ -65,9 +121,33 @@ class Divider_Widget_Handler implements Widget_Handler_Interface {
 
 		// Margin / Spacing.
 		$spacing = Style_Parser::parse_spacing( $settings );
-		if ( ! empty( $spacing['attributes'] ) ) {
-			$separator_attrs['style']['spacing'] = $spacing['attributes'];
-			$inline_style                       .= $spacing['style'];
+
+		if ( ! empty( $spacing['attributes']['margin'] ) ) {
+			$separator_attrs['style']['spacing']['margin'] = $spacing['attributes']['margin'];
+
+			if ( ! empty( $spacing['style'] ) ) {
+				$inline_style .= preg_replace( '/gap:[^;]+;?/', '', $spacing['style'] );
+			}
+		}
+
+		if ( isset( $settings['gap'] ) && is_array( $settings['gap'] ) && ! empty( $settings['gap']['size'] ) ) {
+			$size = trim( (string) $settings['gap']['size'] );
+			$unit = ! empty( $settings['gap']['unit'] ) ? (string) $settings['gap']['unit'] : 'px';
+
+			if ( is_numeric( $size ) ) {
+				$value = $size . $unit;
+
+				$separator_attrs['style']['spacing']['margin']['top']    = $value;
+				$separator_attrs['style']['spacing']['margin']['bottom'] = $value;
+
+				$inline_style .= 'margin-top:' . $value . ';margin-bottom:' . $value . ';';
+			}
+		}
+
+		// Border thickness etc.
+		$border = Style_Parser::parse_border( $settings );
+		if ( ! empty( $border['style'] ) ) {
+			$inline_style .= $border['style'];
 		}
 
 		// Build block content.
@@ -98,7 +178,7 @@ class Divider_Widget_Handler implements Widget_Handler_Interface {
 			);
 
 			// Second separator (with css opacity).
-			$second_attrs = array(
+			$second_attrs  = array(
 				'opacity'   => 'css',
 				'className' => trim( $unique_class ),
 			);
@@ -110,7 +190,14 @@ class Divider_Widget_Handler implements Widget_Handler_Interface {
 
 			$block_content .= '</div><!-- /wp:group -->' . "\n";
 		} else {
-			// Simple separator.
+			if ( false === strpos( $separator_attrs['className'], 'is-style-wide' ) ) {
+				$separator_attrs['className'] .= ' is-style-wide';
+			}
+
+			if ( ! $has_width ) {
+				$inline_style .= 'width:100%;';
+			}
+
 			$block_content .= sprintf(
 				'<!-- wp:separator %s --><hr id="%s" class="wp-block-separator %s" style="%s"/><!-- /wp:separator -->' . "\n",
 				$separator_attrs ? wp_json_encode( $separator_attrs ) : '',
@@ -123,7 +210,7 @@ class Divider_Widget_Handler implements Widget_Handler_Interface {
 		// Save inline CSS.
 		if ( $inline_style ) {
 			$element_selector = '.' . $unique_class;
-			$custom_css      .= sprintf( '%s{ %s }', $element_selector, $inline_style );
+			$custom_css       .= sprintf( '%s{ %s }', $element_selector, $inline_style );
 		}
 		if ( ! empty( $custom_css ) ) {
 			Style_Parser::save_custom_css( $custom_css );

@@ -21,10 +21,17 @@ class Progress_Widget_Handler implements Widget_Handler_Interface {
 	 * Handle conversion of Elementor progress to Gutenberg block.
 	 *
 	 * @param array $element The Elementor element data.
+	 *
 	 * @return string The Gutenberg block content.
 	 */
 	public function handle( array $element ): string {
-		$settings = $element['settings'] ?? array();
+		$settings        = isset( $element['settings'] ) && is_array( $element['settings'] ) ? $element['settings'] : array();
+		$spacing         = Style_Parser::parse_spacing( $settings );
+		$spacing_attr    = isset( $spacing['attributes'] ) ? $spacing['attributes'] : array();
+		$spacing_css     = isset( $spacing['style'] ) ? $spacing['style'] : '';
+		$typography      = Style_Parser::parse_typography( $settings );
+		$typography_attr = isset( $typography['attributes'] ) ? $typography['attributes'] : array();
+		$typography_css  = isset( $typography['style'] ) ? $typography['style'] : '';
 
 		// Extract progress settings.
 		// Extract base settings
@@ -41,17 +48,17 @@ class Progress_Widget_Handler implements Widget_Handler_Interface {
 		$text_color       = isset( $settings['bar_inline_color'] ) ? $settings['bar_inline_color'] : '#fff';
 
 		// Extract dimensions
-		$border_radius    = isset( $settings['bar_border_radius']['size'] ) 
-			? intval( $settings['bar_border_radius']['size'] ) 
+		$border_radius = isset( $settings['bar_border_radius']['size'] )
+			? intval( $settings['bar_border_radius']['size'] )
 			: 0;
-		$bar_height       = isset( $settings['bar_height']['size'] ) 
-			? intval( $settings['bar_height']['size'] ) 
+		$bar_height    = isset( $settings['bar_height']['size'] )
+			? intval( $settings['bar_height']['size'] )
 			: 30;
 
 		// Typography settings
 		$title_typography = $settings['title_typography'] ?? array();
-		$title_size      = isset( $title_typography['size']['size']) 
-			? intval( $title_typography['size']['size'] ) 
+		$title_size       = isset( $title_typography['size']['size'] )
+			? intval( $title_typography['size']['size'] )
 			: 16;
 
 		// Prepare block attributes
@@ -63,9 +70,17 @@ class Progress_Widget_Handler implements Widget_Handler_Interface {
 			'barHeight'       => $bar_height,
 			'borderRadius'    => $border_radius,
 			'textColor'       => $text_color,
-            'title'           => $title,
-            'innerText'       => $inner_text,
+			'title'           => $title,
+			'innerText'       => $inner_text,
 		);
+
+		if ( ! empty( $spacing_attr ) ) {
+			$attrs['style']['spacing'] = $spacing_attr;
+		}
+
+		if ( ! empty( $typography_attr ) ) {
+			$attrs['style']['typography'] = $typography_attr;
+		}
 
 		// Convert attributes to JSON for block serialization
 		$attrs_json = wp_json_encode( $attrs );
@@ -73,9 +88,26 @@ class Progress_Widget_Handler implements Widget_Handler_Interface {
 		// Generate styles
 		$wrapper_style = array();
 
-		$wrapper_style = implode( ';', array_filter( $wrapper_style ) );
+		if ( '' !== $spacing_css ) {
+			$wrapper_style[] = $spacing_css;
+		}
+
+		if ( '' !== $typography_css ) {
+			$wrapper_style[] = $typography_css;
+		}
+
+		$wrapper_style = implode( '', array_filter( $wrapper_style ) );
 
 		$title_style = array();
+
+		if ( '' !== $spacing_css ) {
+			$title_style[] = $spacing_css;
+		}
+
+		if ( '' !== $typography_css ) {
+			$title_style[] = $typography_css;
+		}
+
 		if ( $title_color ) {
 			$title_style[] = sprintf( 'color:%s', htmlspecialchars( $title_color, ENT_QUOTES, 'UTF-8' ) );
 		}
@@ -85,7 +117,7 @@ class Progress_Widget_Handler implements Widget_Handler_Interface {
 		$title_style[] = 'margin-bottom:10px';
 		$title_style   = implode( ';', array_filter( $title_style ) );
 
-		$bar_style = sprintf( 
+		$bar_style = sprintf(
 			'background-color:%s;height:%dpx;border-radius:%dpx;position:relative;overflow:hidden',
 			htmlspecialchars( $background_color, ENT_QUOTES, 'UTF-8' ),
 			$bar_height,
@@ -99,17 +131,34 @@ class Progress_Widget_Handler implements Widget_Handler_Interface {
 			100
 		);
 
-		$text_style = sprintf(
-			'position:absolute;right:10px;top:50%%;transform:translateY(-50%%);z-index:1%s',
-			$text_color ? sprintf( ';color:%s', htmlspecialchars( $text_color, ENT_QUOTES, 'UTF-8' ) ) : ''
-		);
+		$text_style_parts = array();
+
+		if ( '' !== $spacing_css ) {
+			$text_style_parts[] = $spacing_css;
+		}
+
+		if ( '' !== $typography_css ) {
+			$text_style_parts[] = $typography_css;
+		}
+
+		$text_style_parts[] = 'position:absolute;';
+		$text_style_parts[] = 'right:10px;';
+		$text_style_parts[] = 'top:50%;';
+		$text_style_parts[] = 'transform:translateY(-50%);';
+		$text_style_parts[] = 'z-index:1;';
+
+		if ( $text_color ) {
+			$text_style_parts[] = sprintf( 'color:%s;', htmlspecialchars( $text_color, ENT_QUOTES, 'UTF-8' ) );
+		}
+
+		$text_style = implode( '', $text_style_parts );
 
 		// Generate block content
 		return sprintf(
 			'<!-- wp:progressus/progress %s --><div class="wp-block-progressus-progress"%s><div class="progressus-progress-bar" style="text-align:left">%s<div class="progressus-progress-bar-container"%s><div class="progressus-progress-bar-fill"%s><div %s>%s<span class="progressus-progress-percentage">%s</span></div></div></div></div></div><!-- /wp:progressus/progress -->',
 			$attrs_json ?: '{}',
 			$wrapper_style ? sprintf( ' style="%s"', $wrapper_style ) : '',
-			$show_title && $title ? sprintf( 
+			$show_title && $title ? sprintf(
 				'<h4 %s>%s</h4>',
 				$title_style ? sprintf( ' style="%s"', $title_style ) : '',
 				htmlspecialchars( $title, ENT_QUOTES, 'UTF-8' )
@@ -117,7 +166,7 @@ class Progress_Widget_Handler implements Widget_Handler_Interface {
 			sprintf( ' style="%s"', $bar_style ),
 			sprintf( ' style="%s"', $progress_style ),
 			$text_style ? sprintf( ' style="%s"', $text_style ) : '',
-			$inner_text ? htmlspecialchars( $inner_text, ENT_QUOTES, 'UTF-8' ) :  '',
+			$inner_text ? htmlspecialchars( $inner_text, ENT_QUOTES, 'UTF-8' ) : '',
 			$show_percent ? $percentage . '%' : ''
 		);
 	}

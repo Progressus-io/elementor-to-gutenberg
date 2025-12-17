@@ -1,0 +1,13 @@
+/* Vertically center CTA-style text groups inside columns */
+.wp-block-columns .wp-block-group.are-vertically-aligned-center {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* Optional: tighten heading spacing inside those groups */
+.wp-block-columns .wp-block-group.are-vertically-aligned-center h2,
+.wp-block-columns .wp-block-group.are-vertically-aligned-center h3 {
+    margin-top: 0;
+    margin-bottom: 0.4em;
+}
