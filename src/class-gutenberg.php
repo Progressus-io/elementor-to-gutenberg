@@ -10,7 +10,7 @@ namespace Progressus\Gutenberg;
 defined( 'ABSPATH' ) || exit;
 
 use Progressus\Gutenberg\Admin\Admin_Settings;
-
+use Progressus\Gutenberg\Admin\Batch_Convert_Wizard;
 /**
  * Class Gutenberg
  *
