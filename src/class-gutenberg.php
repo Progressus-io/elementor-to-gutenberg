@@ -11,6 +11,7 @@ defined( 'ABSPATH' ) || exit;
 
 use Progressus\Gutenberg\Admin\Admin_Settings;
 use Progressus\Gutenberg\Admin\Batch_Convert_Wizard;
+use Progressus\Gutenberg\Admin\Helper\External_CSS_Service;
 
 /**
  * Class Gutenberg
@@ -105,6 +106,11 @@ class Gutenberg {
 			array(),
 			GUTENBERG_PLUGIN_VERSION
 		);
+		global $post;
+		if ( $post && isset( $post->ID ) ) {
+			External_CSS_Service::enqueue_post_css( (int) $post->ID );
+		}
+
 	}
 
 	/**
@@ -184,6 +190,14 @@ class Gutenberg {
 				)
 			);
 		}
+
+		if ( is_singular( 'page' ) ) {
+			$post_id = get_queried_object_id();
+			if ( $post_id > 0 ) {
+				External_CSS_Service::enqueue_post_css( (int) $post_id );
+			}
+		}
+
 	}
 
 	/**

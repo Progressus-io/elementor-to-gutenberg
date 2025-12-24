@@ -6,11 +6,13 @@
  */
 
 namespace Progressus\Gutenberg\Admin;
+
 use Progressus\Gutenberg\Admin\Helper\File_Upload_Service;
 use Progressus\Gutenberg\Admin\Helper\Block_Builder;
 use Progressus\Gutenberg\Admin\Layout\Container_Classifier;
 use Progressus\Gutenberg\Admin\Helper\Style_Parser;
 use Progressus\Gutenberg\Admin\Helper\Alignment_Helper;
+use Progressus\Gutenberg\Admin\Helper\External_CSS_Service;
 
 use function esc_html;
 use function esc_html__;
@@ -25,6 +27,7 @@ use function esc_attr;
 use function wp_json_encode;
 
 defined( 'ABSPATH' ) || exit;
+
 /**
  * Main admin settings class for Elementor to Gutenberg conversion.
  */
@@ -45,6 +48,7 @@ class Admin_Settings {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
 		}
+
 		return self::$instance;
 	}
 
@@ -70,6 +74,7 @@ class Admin_Settings {
 			);
 			$actions['convert_to_gutenberg'] = '<a href="' . esc_url( $url ) . '">Convert to Gutenberg</a>';
 		}
+
 		return $actions;
 	}
 
@@ -96,7 +101,8 @@ class Admin_Settings {
 
 		// Create new page with blocks
 		$new_page_id = $this->insert_new_page( $page_id, $blocks );
-
+		$css         = '.test{backround:red;}';
+		External_CSS_Service::save_post_css( (int) $new_page_id, (string) $css );
 		if ( $new_page_id ) {
 			wp_safe_redirect( admin_url( 'post.php?post=' . $new_page_id . '&action=edit' ) );
 			exit;
@@ -110,7 +116,7 @@ class Admin_Settings {
 	 *
 	 * @param int $page_id Page ID.
 	 * @param array $blocks Gutenberg blocks.
-	 * 
+	 *
 	 * @return int New page ID.
 	 */
 	public function insert_new_page( $page_id, $blocks ): int {
@@ -181,6 +187,7 @@ class Admin_Settings {
 	 * Handle JSON file upload and conversion.
 	 *
 	 * @param mixed $option The option value.
+	 *
 	 * @return string The processed Gutenberg content or existing option.
 	 */
 	public function handle_json_upload( $option ): string {
@@ -235,6 +242,7 @@ class Admin_Settings {
 				esc_html__( 'Failed to create new page.', 'elementor-to-gutenberg' ),
 				'error'
 			);
+
 			return get_option( 'gutenberg_json_data', '' );
 		}
 
@@ -244,6 +252,7 @@ class Admin_Settings {
 			esc_html__( 'JSON file uploaded and page created successfully!', 'elementor-to-gutenberg' ),
 			'updated'
 		);
+
 		return $gutenberg_content;
 	}
 
@@ -288,6 +297,7 @@ class Admin_Settings {
 	 * Convert JSON data to Gutenberg blocks.
 	 *
 	 * @param array $json_data The JSON data to convert.
+	 *
 	 * @return string The converted Gutenberg content.
 	 */
 	public function convert_json_to_gutenberg_content( array $json_data ): string {
