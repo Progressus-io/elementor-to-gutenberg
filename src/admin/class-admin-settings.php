@@ -13,6 +13,7 @@ use Progressus\Gutenberg\Admin\Layout\Container_Classifier;
 use Progressus\Gutenberg\Admin\Helper\Style_Parser;
 use Progressus\Gutenberg\Admin\Helper\Alignment_Helper;
 use Progressus\Gutenberg\Admin\Helper\External_CSS_Service;
+use Progressus\Gutenberg\Admin\Helper\External_Style_Collector;
 
 use function esc_html;
 use function esc_html__;
@@ -38,6 +39,11 @@ class Admin_Settings {
 	 * @var Admin_Settings|null
 	 */
 	private static $instance = null;
+
+	/**
+	 * @var External_Style_Collector|null
+	 */
+	private $external_css_collector = null;
 
 	/**
 	 * Get the singleton instance.
@@ -101,8 +107,11 @@ class Admin_Settings {
 
 		// Create new page with blocks
 		$new_page_id = $this->insert_new_page( $page_id, $blocks );
-		$css         = '.test{backround:red;}';
-		External_CSS_Service::save_post_css( (int) $new_page_id, (string) $css );
+		$css         = $this->get_external_css();
+		if ( '' !== trim( $css ) ) {
+			External_CSS_Service::save_post_css( (int) $new_page_id, (string) $css );
+		}
+
 		if ( $new_page_id ) {
 			wp_safe_redirect( admin_url( 'post.php?post=' . $new_page_id . '&action=edit' ) );
 			exit;
@@ -301,11 +310,21 @@ class Admin_Settings {
 	 * @return string The converted Gutenberg content.
 	 */
 	public function convert_json_to_gutenberg_content( array $json_data ): string {
+		$this->external_css_collector = new External_Style_Collector();
+
 		if ( empty( $json_data['content'] ) || ! is_array( $json_data['content'] ) ) {
 			return '';
 		}
 
 		return $this->parse_elementor_elements( $json_data['content'] );
+	}
+
+	private function get_external_css(): string {
+		if ( null === $this->external_css_collector ) {
+			return '';
+		}
+
+		return $this->external_css_collector->render_css();
 	}
 
 	/**
@@ -459,7 +478,12 @@ class Admin_Settings {
 	 */
 	private function render_group( array $attributes, array $child_blocks, string $layout_type = 'constrained' ): string {
 		$attributes['layout'] = array( 'type' => $layout_type );
-		$inner_html           = implode( '', $child_blocks );
+
+		if ( null !== $this->external_css_collector ) {
+			$attributes = $this->external_css_collector->externalize_attrs( 'group', $attributes );
+		}
+
+		$inner_html = implode( '', $child_blocks );
 
 		return Block_Builder::build( 'group', $attributes, $inner_html );
 	}
