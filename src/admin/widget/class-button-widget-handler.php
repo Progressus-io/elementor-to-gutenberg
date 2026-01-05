@@ -9,6 +9,7 @@ namespace Progressus\Gutenberg\Admin\Widget;
 
 use Progressus\Gutenberg\Admin\Helper\Alignment_Helper;
 use Progressus\Gutenberg\Admin\Helper\Block_Builder;
+use Progressus\Gutenberg\Admin\Helper\Html_Attribute_Builder;
 use Progressus\Gutenberg\Admin\Helper\Icon_Parser;
 use Progressus\Gutenberg\Admin\Helper\Style_Parser;
 use Progressus\Gutenberg\Admin\Widget_Handler_Interface;
@@ -41,11 +42,9 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 
 		$spacing      = Style_Parser::parse_spacing( $settings );
 		$spacing_attr = isset( $spacing['attributes'] ) ? $spacing['attributes'] : array();
-		$spacing_css  = isset( $spacing['style'] ) ? $spacing['style'] : '';
 
 		$typography      = Style_Parser::parse_typography( $settings );
 		$typography_attr = isset( $typography['attributes'] ) ? $typography['attributes'] : array();
-		$typography_css  = isset( $typography['style'] ) ? $typography['style'] : '';
 
 		$alignment      = Alignment_Helper::detect_alignment( $settings, array(
 			'button_align',
@@ -128,52 +127,34 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 			Style_Parser::save_custom_css( $custom_css );
 		}
 
-		$anchor_attrs   = array();
-		$anchor_attrs[] = 'class="' . esc_attr( implode( ' ', array_unique( $anchor_classes ) ) ) . '"';
+		$anchor_attrs = array(
+			'class' => implode( ' ', array_unique( $anchor_classes ) ),
+		);
 
 		if ( '' !== $url ) {
-			$anchor_attrs[] = 'href="' . $url . '"';
+			$anchor_attrs['href'] = $url;
 		}
 
 		if ( ! empty( $link_data['is_external'] ) ) {
-			$anchor_attrs[] = 'target="_blank"';
+			$anchor_attrs['target'] = '_blank';
 		}
 
 		if ( ! empty( $rel_tokens ) ) {
-			$anchor_attrs[] = 'rel="' . esc_attr( implode( ' ', array_unique( $rel_tokens ) ) ) . '"';
+			$anchor_attrs['rel'] = implode( ' ', array_unique( $rel_tokens ) );
 		}
 
-		$style_parts = array();
-
-		if ( '' !== $spacing_css ) {
-			$style_parts[] = $spacing_css;
-		}
-
-		if ( '' !== $typography_css ) {
-			$style_parts[] = $typography_css;
-		}
-
-		if ( ! empty( $anchor_style ) ) {
-			$style_parts[] = implode( ';', array_filter( $anchor_style ) );
-		}
-
-		if ( ! empty( $style_parts ) ) {
-			$anchor_attrs[] = 'style="' . esc_attr( implode( '', $style_parts ) ) . '"';
-		}
-
+		$icon_html = '';
 		if ( '' !== $icon_data['class_name'] ) {
-			$anchor_attrs[] = 'data-icon-class="' . esc_attr( $icon_data['class_name'] ) . '"';
+			$icon_html = '<span class="etg-button-icon ' . esc_attr( $icon_data['class_name'] ) . '" aria-hidden="true"></span>';
+			Style_Parser::save_custom_css( '/* icon class captured for ETG_EXTRA_ATTRS_MAP_V1 */' );
+		} elseif ( '' !== $icon_data['url'] ) {
+			$icon_html = '<span class="etg-button-icon"><img src="' . esc_url( $icon_data['url'] ) . '" alt="" aria-hidden="true" /></span>';
 		}
-
-		if ( '' !== $icon_data['url'] ) {
-			$anchor_attrs[] = 'data-icon-url="' . esc_url( $icon_data['url'] ) . '"';
-		}
-
-		$anchor_attrs[] = 'data-icon-type="' . esc_attr( $icon_data['type'] ) . '"';
 
 		$anchor_html = sprintf(
-			'<a %s>%s</a>',
-			implode( ' ', $anchor_attrs ),
+			'<a %s>%s%s</a>',
+			Html_Attribute_Builder::build( $anchor_attrs ),
+			'' !== $icon_html ? $icon_html : '',
 			wp_strip_all_tags( $text )
 		);
 

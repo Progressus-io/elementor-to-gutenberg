@@ -311,12 +311,37 @@ class Admin_Settings {
 	 */
 	public function convert_json_to_gutenberg_content( array $json_data ): string {
 		$this->external_css_collector = new External_Style_Collector();
+		Block_Builder::bootstrap( $this->external_css_collector );
 
 		if ( empty( $json_data['content'] ) || ! is_array( $json_data['content'] ) ) {
 			return '';
 		}
 
-		return $this->parse_elementor_elements( $json_data['content'] );
+		$content = $this->parse_elementor_elements( $json_data['content'] );
+		$this->log_inventory_summary();
+
+		return $content;
+	}
+
+	private function log_inventory_summary(): void {
+		if ( null === $this->external_css_collector ) {
+			return;
+		}
+
+		$inventory = $this->external_css_collector->get_inventory();
+		if ( empty( $inventory ) ) {
+			return;
+		}
+
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			$summary = array(
+				'externalized' => count( $inventory['externalized'] ?? array() ),
+				'dropped'      => count( $inventory['dropped'] ?? array() ),
+				'conversions'  => count( $inventory['conversions'] ?? array() ),
+			);
+
+			error_log( 'inventory: ' . wp_json_encode( $summary ) );
+		}
 	}
 
 	private function get_external_css(): string {

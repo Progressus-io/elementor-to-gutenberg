@@ -7,12 +7,28 @@
 
 namespace Progressus\Gutenberg\Admin\Helper;
 
+use Progressus\Gutenberg\Admin\Helper\Block_Output_Builder;
+use Progressus\Gutenberg\Admin\Helper\Html_Attribute_Builder;
+use Progressus\Gutenberg\Admin\Helper\Style_Normalizer;
+
 defined( 'ABSPATH' ) || exit;
 
 /**
  * Helper for building block markup with wrapper elements.
  */
 class Block_Builder {
+
+	/**
+	 * Bootstraps the hardening pipeline.
+	 *
+	 * @param External_Style_Collector|null $collector Style collector instance.
+	 *
+	 * @return void
+	 */
+	public static function bootstrap( ?External_Style_Collector $collector ): void {
+		Block_Output_Builder::bootstrap( $collector );
+	}
+
 	/**
 	 * Blocks that require wrapper div output.
 	 *
@@ -34,25 +50,34 @@ class Block_Builder {
 			$attrs = array();
 		}
 
-		$attrs     = self::normalize_attributes( $attrs );
-		$attr_json = empty( $attrs ) ? '' : ' ' . wp_json_encode( $attrs );
+		$block_slug = self::get_block_slug( $block );
+		$attrs      = Block_Output_Builder::prepare_attributes( $block_slug, self::normalize_attributes( $attrs ) );
+		$attr_json  = empty( $attrs ) ? '' : ' ' . wp_json_encode( $attrs );
+
+		$inner_html = Block_Output_Builder::sanitize_inner_html( $block_slug, $inner_html );
 
 		if ( 'button' === $block && '' === trim( $inner_html ) ) {
 			return sprintf( '<!-- wp:%s%s /-->%s', $block, $attr_json, "\n" );
 		}
 		$opening      = sprintf( '<!-- wp:%s%s -->', $block, $attr_json );
 		$closing      = sprintf( '<!-- /wp:%s -->', $block );
-		$block_slug   = self::get_block_slug( $block );
 		$is_wrapper   = in_array( $block_slug, self::$wrapper_blocks, true );
 		$wrapper_html = $inner_html;
 
 		if ( $is_wrapper ) {
-			$wrapper_class = self::build_wrapper_class( $block_slug, $attrs );
-			$style_attr    = self::build_style_attribute( $attrs );
-			$wrapper_html  = sprintf(
-				'<div class="%s"%s>%s</div>',
-				esc_attr( $wrapper_class ),
-				$style_attr,
+			$wrapper_class     = self::build_wrapper_class( $block_slug, $attrs );
+			$style_attr        = self::build_style_attribute( $attrs );
+			$attrs_for_wrapper = array(
+				'class' => $wrapper_class,
+			);
+
+			if ( '' !== $style_attr ) {
+				$attrs_for_wrapper['style'] = trim( $style_attr );
+			}
+
+			$wrapper_html = sprintf(
+				'<div %s>%s</div>',
+				Html_Attribute_Builder::build( $attrs_for_wrapper ),
 				$inner_html
 			);
 		}
@@ -102,7 +127,7 @@ class Block_Builder {
 	 *
 	 * @return string
 	 */
-	private static function build_style_attribute( array $attrs ): string {
+	public static function build_style_attribute( array $attrs ): string {
 		if ( empty( $attrs['style'] ) || ! is_array( $attrs['style'] ) ) {
 			return '';
 		}
@@ -178,7 +203,7 @@ class Block_Builder {
 			return '';
 		}
 
-		return ' style="' . esc_attr( implode( ';', $style_rules ) ) . '"';
+		return esc_attr( implode( ';', $style_rules ) );
 	}
 
 	/**

@@ -14,6 +14,17 @@ class External_Style_Collector {
 	private array $rules = array();
 
 	/**
+	 * Inventory for externalized declarations and drops.
+	 *
+	 * @var array<string, array<string, array>>
+	 */
+	private array $inventory = array(
+		'externalized' => array(),
+		'dropped'      => array(),
+		'conversions'  => array(),
+	);
+
+	/**
 	 * Externalize known risky style leaves from Gutenberg attrs.
 	 *
 	 * - Mutates $attrs by removing extracted style leaves and adding a generated className.
@@ -95,7 +106,102 @@ class External_Style_Collector {
 
 		$this->add_rule( '.' . $class, $extracted );
 
+		$this->inventory['externalized'][] = array(
+			'block'  => $block_slug,
+			'rules'  => $extracted,
+			'reason' => 'style-tree',
+		);
+
 		return $attrs;
+	}
+
+	/**
+	 * Externalize arbitrary declaration set and return generated class.
+	 *
+	 * @param string $block_slug Block slug.
+	 * @param array $declarations CSS declarations.
+	 *
+	 * @return string
+	 */
+	public function externalize_declarations( string $block_slug, array $declarations ): string {
+		$declarations = Style_Normalizer::prune_empty( $declarations );
+		if ( empty( $declarations ) ) {
+			return '';
+		}
+
+		$fingerprint = md5( $block_slug . '|' . wp_json_encode( $declarations ) );
+		$class       = 'etg-ext-' . substr( $fingerprint, 0, 10 );
+
+		$this->add_rule( '.' . $class, $declarations );
+		$this->inventory['externalized'][] = array(
+			'block'  => $block_slug,
+			'rules'  => $declarations,
+			'reason' => 'unsupported-style',
+		);
+
+		return $class;
+	}
+
+	/**
+	 * Record dropped attributes.
+	 *
+	 * @param string $block_slug Block slug.
+	 * @param string $type Drop type.
+	 * @param array $payload Payload.
+	 *
+	 * @return void
+	 */
+	public function record_dropped( string $block_slug, string $type, array $payload ): void {
+		$this->inventory['dropped'][] = array(
+			'block'   => $block_slug,
+			'type'    => $type,
+			'payload' => $payload,
+			'tag'     => 'ETG_EXTRA_ATTRS_MAP_V1',
+		);
+	}
+
+	/**
+	 * Record conversion decision (e.g., group->cover).
+	 *
+	 * @param string $block_slug Block slug.
+	 * @param string $decision Decision code.
+	 * @param array $context Context array.
+	 *
+	 * @return void
+	 */
+	public function record_conversion( string $block_slug, string $decision, array $context = array() ): void {
+		$this->inventory['conversions'][] = array(
+			'block'    => $block_slug,
+			'decision' => $decision,
+			'context'  => $context,
+			'tag'      => 'ETG_EXTRA_ATTRS_MAP_V1',
+		);
+	}
+
+	/**
+	 * Record sanitization of inner HTML.
+	 *
+	 * @param string $block_slug Block slug.
+	 * @param string $result Sanitized output.
+	 *
+	 * @return void
+	 */
+	public function record_inner_sanitization( string $block_slug, string $result ): void {
+		$this->inventory['dropped'][] = array(
+			'block'   => $block_slug,
+			'type'    => 'inner-html',
+			'payload' => $result,
+			'tag'     => 'ETG_EXTRA_ATTRS_MAP_V1',
+		);
+	}
+
+	/**
+	 * Get inventory for debugging/logging.
+	 *
+	 * @return array
+	 */
+	public function get_inventory(): array {
+		return $this->inventory;
 	}
 
 	/**

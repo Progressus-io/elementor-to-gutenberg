@@ -94,6 +94,7 @@ class Gutenberg {
 		add_action( 'wp_ajax_progressus_form_submit', array( $this, 'handle_form_submission' ) );
 		add_action( 'wp_ajax_nopriv_progressus_form_submit', array( $this, 'handle_form_submission' ) );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_editor_assets' ) );
+		add_action( 'enqueue_block_assets', array( $this, 'enqueue_converted_page_css' ), 20 );
 	}
 
 	/**
@@ -106,10 +107,6 @@ class Gutenberg {
 			array(),
 			GUTENBERG_PLUGIN_VERSION
 		);
-		global $post;
-		if ( $post && isset( $post->ID ) ) {
-			External_CSS_Service::enqueue_post_css( (int) $post->ID );
-		}
 
 	}
 
@@ -191,12 +188,6 @@ class Gutenberg {
 			);
 		}
 
-		if ( is_singular( 'page' ) ) {
-			$post_id = get_queried_object_id();
-			if ( $post_id > 0 ) {
-				External_CSS_Service::enqueue_post_css( (int) $post_id );
-			}
-		}
 
 	}
 
@@ -265,4 +256,16 @@ class Gutenberg {
 			);
 		}
 	}
+
+	/**
+	 * Enqueue per-post converted CSS when present.
+	 *
+	 * enqueue_block_assets runs in both frontend and block editor contexts.
+	 *
+	 * @return void
+	 */
+	public function enqueue_converted_page_css(): void {
+		External_CSS_Service::enqueue_current_post_css();
+	}
+
 }
