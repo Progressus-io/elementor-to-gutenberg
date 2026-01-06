@@ -116,7 +116,7 @@ class Gutenberg_Supports_Mapper {
 			}
 
 			if ( is_array( $value ) ) {
-				$external = array_merge( $external, $this->flatten_style_tree( $key, $value ) );
+				$external = array_merge( $external, $this->map_style_tree( $key, $value ) );
 			} else {
 				$external[ $key ] = $value;
 			}
@@ -131,37 +131,103 @@ class Gutenberg_Supports_Mapper {
 	}
 
 	/**
-	 * Flatten a style tree into CSS property => value pairs using kebab-case keys.
+	 * Map a style tree into CSS declarations using explicit schema mappings.
 	 *
 	 * @param string $prefix Style prefix.
 	 * @param array $style Style tree.
 	 *
 	 * @return array
 	 */
-	private function flatten_style_tree( string $prefix, array $style ): array {
+	private function map_style_tree( string $prefix, array $style ): array {
 		$output = array();
 		foreach ( $style as $key => $value ) {
-			$prop = $this->camel_to_kebab( $prefix . '-' . $key );
+			$path = $this->canonicalize_path( array( $prefix, $key ) );
+
 			if ( is_array( $value ) ) {
-				$output = array_merge( $output, $this->flatten_style_tree( $prop, $value ) );
-			} else {
-				$output[ $prop ] = $value;
+				$output = array_merge( $output, $this->map_style_tree( $path, $value ) );
+				continue;
 			}
+
+			$property = $this->map_path_to_property( $path );
+			if ( '' === $property ) {
+				continue;
+			}
+
+			$output[ $property ] = $value;
 		}
 
 		return $output;
 	}
 
 	/**
-	 * Convert camelCase to kebab-case.
+	 * Convert a normalized path string into a CSS property name.
 	 *
-	 * @param string $value Camel string.
+	 * @param string $path Normalized path like "spacing.padding.top".
 	 *
 	 * @return string
 	 */
-	private function camel_to_kebab( string $value ): string {
-		$value = preg_replace( '/([a-z])([A-Z])/', '$1-$2', $value );
+	private function map_path_to_property( string $path ): string {
+		$map = array(
+			'dimensions.minheight'       => 'min-height',
+			'dimensions.width'           => 'width',
+			'spacing.padding.top'        => 'padding-top',
+			'spacing.padding.right'      => 'padding-right',
+			'spacing.padding.bottom'     => 'padding-bottom',
+			'spacing.padding.left'       => 'padding-left',
+			'spacing.margin.top'         => 'margin-top',
+			'spacing.margin.right'       => 'margin-right',
+			'spacing.margin.bottom'      => 'margin-bottom',
+			'spacing.margin.left'        => 'margin-left',
+			'typography.fontfamily'      => 'font-family',
+			'typography.fontsize'        => 'font-size',
+			'typography.fontstyle'       => 'font-style',
+			'typography.fontweight'      => 'font-weight',
+			'typography.letterspacing'   => 'letter-spacing',
+			'typography.lineheight'      => 'line-height',
+			'typography.textdecoration'  => 'text-decoration',
+			'typography.texttransform'   => 'text-transform',
+			'typography.wordspacing'     => 'word-spacing',
+			'color.text'                 => 'color',
+			'color.background'           => 'background-color',
+			'border.color'               => 'border-color',
+			'border.width'               => 'border-width',
+			'border.style'               => 'border-style',
+			'border.radius'              => 'border-radius',
+			'background.image'           => 'background-image',
+			'background.backgroundimage' => 'background-image',
+			'background.position'        => 'background-position',
+			'background.size'            => 'background-size',
+			'background.repeat'          => 'background-repeat',
+			'background.attachment'      => 'background-attachment',
+			'boxshadow'                  => 'box-shadow',
+		);
 
-		return strtolower( (string) $value );
+		return $map[ $path ] ?? '';
+	}
+
+	/**
+	 * Normalize a style path into a canonical dot-notation string.
+	 *
+	 * @param array $segments Path segments.
+	 *
+	 * @return string
+	 */
+	private function canonicalize_path( array $segments ): string {
+		$normalized = array();
+		foreach ( $segments as $segment ) {
+			$parts = explode( '.', (string) $segment );
+			foreach ( $parts as $part ) {
+				$part = trim( $part );
+				if ( '' === $part ) {
+					continue;
+				}
+				$part         = preg_replace( '/([a-z])([A-Z])/', '$1-$2', $part );
+				$part         = strtolower( (string) $part );
+				$part         = str_replace( array( '-', '_' ), '', $part );
+				$normalized[] = $part;
+			}
+		}
+
+		return implode( '.', $normalized );
 	}
 }

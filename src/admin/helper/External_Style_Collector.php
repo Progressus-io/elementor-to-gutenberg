@@ -240,6 +240,8 @@ class External_Style_Collector {
 			$this->rules[ $selector ] = array();
 		}
 
+		$declarations = $this->sanitize_declarations( $declarations );
+
 		foreach ( $declarations as $prop => $val ) {
 			$this->rules[ $selector ][ $prop ] = (string) $val;
 		}
@@ -351,7 +353,10 @@ class External_Style_Collector {
 			return $raw;
 		}
 
-		return 'url(' . $raw . ')';
+		$raw = trim( $raw, "\"'" );
+		$raw = str_replace( '"', '\\"', $raw );
+
+		return 'url("' . $raw . '")';
 	}
 
 	/**
@@ -373,5 +378,30 @@ class External_Style_Collector {
 		}
 
 		return null;
+	}
+
+	/**
+	 * Normalize declarations before persisting them.
+	 *
+	 * @param array $declarations Raw declarations.
+	 *
+	 * @return array
+	 */
+	private function sanitize_declarations( array $declarations ): array {
+		$sanitized = array();
+		foreach ( $declarations as $prop => $val ) {
+			$prop = trim( (string) $prop );
+			if ( '' === $prop ) {
+				continue;
+			}
+
+			if ( 'background-image' === $prop ) {
+				$val = $this->format_background_image( (string) $val );
+			}
+
+			$sanitized[ $prop ] = $val;
+		}
+
+		return $sanitized;
 	}
 }

@@ -1,0 +1,1681 @@
+diff --git a/src/admin/class-admin-settings.php b/src/admin/class-admin-settings.php
+index dea0b23..e64e2b7 100644
+--- a/src/admin/class-admin-settings.php
++++ b/src/admin/class-admin-settings.php
+@@ -6,11 +6,14 @@
+  */
+ 
+ namespace Progressus\Gutenberg\Admin;
++
+ use Progressus\Gutenberg\Admin\Helper\File_Upload_Service;
+ use Progressus\Gutenberg\Admin\Helper\Block_Builder;
+ use Progressus\Gutenberg\Admin\Layout\Container_Classifier;
+ use Progressus\Gutenberg\Admin\Helper\Style_Parser;
+ use Progressus\Gutenberg\Admin\Helper\Alignment_Helper;
++use Progressus\Gutenberg\Admin\Helper\External_CSS_Service;
++use Progressus\Gutenberg\Admin\Helper\External_Style_Collector;
+ 
+ use function esc_html;
+ use function esc_html__;
+@@ -25,6 +28,7 @@ use function esc_attr;
+ use function wp_json_encode;
+ 
+ defined( 'ABSPATH' ) || exit;
++
+ /**
+  * Main admin settings class for Elementor to Gutenberg conversion.
+  */
+@@ -36,6 +40,11 @@ class Admin_Settings {
+ 	 */
+ 	private static $instance = null;
+ 
++	/**
++	 * @var External_Style_Collector|null
++	 */
++	private $external_css_collector = null;
++
+ 	/**
+ 	 * Get the singleton instance.
+ 	 *
+@@ -45,6 +54,7 @@ class Admin_Settings {
+ 		if ( null === self::$instance ) {
+ 			self::$instance = new self();
+ 		}
++
+ 		return self::$instance;
+ 	}
+ 
+@@ -70,6 +80,7 @@ class Admin_Settings {
+ 			);
+ 			$actions['convert_to_gutenberg'] = '<a href="' . esc_url( $url ) . '">Convert to Gutenberg</a>';
+ 		}
++
+ 		return $actions;
+ 	}
+ 
+@@ -96,6 +107,10 @@ class Admin_Settings {
+ 
+ 		// Create new page with blocks
+ 		$new_page_id = $this->insert_new_page( $page_id, $blocks );
++		$css         = $this->get_external_css();
++		if ( '' !== trim( $css ) ) {
++			External_CSS_Service::save_post_css( (int) $new_page_id, (string) $css );
++		}
+ 
+ 		if ( $new_page_id ) {
+ 			wp_safe_redirect( admin_url( 'post.php?post=' . $new_page_id . '&action=edit' ) );
+@@ -110,7 +125,7 @@ class Admin_Settings {
+ 	 *
+ 	 * @param int $page_id Page ID.
+ 	 * @param array $blocks Gutenberg blocks.
+-	 * 
++	 *
+ 	 * @return int New page ID.
+ 	 */
+ 	public function insert_new_page( $page_id, $blocks ): int {
+@@ -181,6 +196,7 @@ class Admin_Settings {
+ 	 * Handle JSON file upload and conversion.
+ 	 *
+ 	 * @param mixed $option The option value.
++	 *
+ 	 * @return string The processed Gutenberg content or existing option.
+ 	 */
+ 	public function handle_json_upload( $option ): string {
+@@ -235,6 +251,7 @@ class Admin_Settings {
+ 				esc_html__( 'Failed to create new page.', 'elementor-to-gutenberg' ),
+ 				'error'
+ 			);
++
+ 			return get_option( 'gutenberg_json_data', '' );
+ 		}
+ 
+@@ -244,6 +261,7 @@ class Admin_Settings {
+ 			esc_html__( 'JSON file uploaded and page created successfully!', 'elementor-to-gutenberg' ),
+ 			'updated'
+ 		);
++
+ 		return $gutenberg_content;
+ 	}
+ 
+@@ -288,14 +306,50 @@ class Admin_Settings {
+ 	 * Convert JSON data to Gutenberg blocks.
+ 	 *
+ 	 * @param array $json_data The JSON data to convert.
++	 *
+ 	 * @return string The converted Gutenberg content.
+ 	 */
+ 	public function convert_json_to_gutenberg_content( array $json_data ): string {
++		$this->external_css_collector = new External_Style_Collector();
++		Block_Builder::bootstrap( $this->external_css_collector );
++
+ 		if ( empty( $json_data['content'] ) || ! is_array( $json_data['content'] ) ) {
+ 			return '';
+ 		}
+ 
+-		return $this->parse_elementor_elements( $json_data['content'] );
++		$content = $this->parse_elementor_elements( $json_data['content'] );
++		$this->log_inventory_summary();
++
++		return $content;
++	}
++
++	private function log_inventory_summary(): void {
++		if ( null === $this->external_css_collector ) {
++			return;
++		}
++
++		$inventory = $this->external_css_collector->get_inventory();
++		if ( empty( $inventory ) ) {
++			return;
++		}
++
++		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
++			$summary = array(
++				'externalized' => count( $inventory['externalized'] ?? array() ),
++				'dropped'      => count( $inventory['dropped'] ?? array() ),
++				'conversions'  => count( $inventory['conversions'] ?? array() ),
++			);
++
++			error_log( 'inventory: ' . wp_json_encode( $summary ) );
++		}
++	}
++
++	private function get_external_css(): string {
++		if ( null === $this->external_css_collector ) {
++			return '';
++		}
++
++		return $this->external_css_collector->render_css();
+ 	}
+ 
+ 	/**
+@@ -449,7 +503,12 @@ class Admin_Settings {
+ 	 */
+ 	private function render_group( array $attributes, array $child_blocks, string $layout_type = 'constrained' ): string {
+ 		$attributes['layout'] = array( 'type' => $layout_type );
+-		$inner_html           = implode( '', $child_blocks );
++
++		if ( null !== $this->external_css_collector ) {
++			$attributes = $this->external_css_collector->externalize_attrs( 'group', $attributes );
++		}
++
++		$inner_html = implode( '', $child_blocks );
+ 
+ 		return Block_Builder::build( 'group', $attributes, $inner_html );
+ 	}
+diff --git a/src/admin/helper/External_Style_Collector.php b/src/admin/helper/External_Style_Collector.php
+new file mode 100644
+index 0000000..24488c6
+--- /dev/null
++++ b/src/admin/helper/External_Style_Collector.php
+@@ -0,0 +1,377 @@
++<?php
++
++namespace Progressus\Gutenberg\Admin\Helper;
++
++defined( 'ABSPATH' ) || exit;
++
++class External_Style_Collector {
++
++	/**
++	 * Map of className => declarations array.
++	 *
++	 * @var array<string, array<string, string>>
++	 */
++	private array $rules = array();
++
++	/**
++	 * Inventory for externalized declarations and drops.
++	 *
++	 * @var array<string, array<string, array>>
++	 */
++	private array $inventory = array(
++		'externalized' => array(),
++		'dropped'      => array(),
++		'conversions'  => array(),
++	);
++
++	/**
++	 * Externalize known risky style leaves from Gutenberg attrs.
++	 *
++	 * - Mutates $attrs by removing extracted style leaves and adding a generated className.
++	 * - Returns the mutated attrs.
++	 *
++	 * @param string $block_slug Block slug like "group", "columns", "button".
++	 * @param array $attrs Block attrs array (will be mutated).
++	 *
++	 * @return array
++	 */
++	public function externalize_attrs( string $block_slug, array $attrs ): array {
++		if ( empty( $attrs['style'] ) || ! is_array( $attrs['style'] ) ) {
++			return $attrs;
++		}
++
++		$extracted = array();
++
++		$image = $this->get_style_leaf( $attrs, array( 'background', 'image' ) );
++		if ( '' !== $image ) {
++			$extracted['background-image'] = $this->format_background_image( $image );
++
++			$pos = $this->get_style_leaf( $attrs, array( 'background', 'position' ) );
++			if ( '' !== $pos ) {
++				$extracted['background-position'] = $pos;
++			}
++
++			$size = $this->get_style_leaf( $attrs, array( 'background', 'size' ) );
++			if ( '' !== $size ) {
++				$extracted['background-size'] = $size;
++			}
++
++			$repeat = $this->get_style_leaf( $attrs, array( 'background', 'repeat' ) );
++			if ( '' !== $repeat ) {
++				$extracted['background-repeat'] = $repeat;
++			}
++
++			$attrs = $this->unset_style_leaf( $attrs, array( 'background', 'image' ) );
++			$attrs = $this->unset_style_leaf( $attrs, array( 'background', 'position' ) );
++			$attrs = $this->unset_style_leaf( $attrs, array( 'background', 'size' ) );
++			$attrs = $this->unset_style_leaf( $attrs, array( 'background', 'repeat' ) );
++		}
++
++		$box_shadow = $this->get_style_leaf( $attrs, array( 'boxShadow' ) );
++		if ( '' !== $box_shadow ) {
++			$extracted['box-shadow'] = $box_shadow;
++			$attrs                   = $this->unset_style_leaf( $attrs, array( 'boxShadow' ) );
++		}
++
++		$letter = $this->get_style_leaf( $attrs, array( 'typography', 'letterSpacing' ) );
++		if ( '' !== $letter ) {
++			$norm = $this->normalize_zero_dimension( $letter );
++			if ( null === $norm ) {
++				$extracted['letter-spacing'] = $letter;
++			}
++			$attrs = $this->unset_style_leaf( $attrs, array( 'typography', 'letterSpacing' ) );
++		}
++
++		$word = $this->get_style_leaf( $attrs, array( 'typography', 'wordSpacing' ) );
++		if ( '' !== $word ) {
++			$norm = $this->normalize_zero_dimension( $word );
++			if ( null === $norm ) {
++				$extracted['word-spacing'] = $word;
++			}
++			$attrs = $this->unset_style_leaf( $attrs, array( 'typography', 'wordSpacing' ) );
++		}
++
++		if ( empty( $extracted ) ) {
++			return $attrs;
++		}
++
++		// Ensure style tree is cleaned up if empty.
++		$attrs = $this->cleanup_empty_style( $attrs );
++
++		// Generate a stable-ish class per extracted set.
++		$fingerprint = md5( $block_slug . '|' . wp_json_encode( $extracted ) );
++		$class       = 'etg-ext-' . substr( $fingerprint, 0, 10 );
++
++		$attrs['className'] = $this->append_class( isset( $attrs['className'] ) ? (string) $attrs['className'] : '', $class );
++
++		$this->add_rule( '.' . $class, $extracted );
++
++		$this->inventory['externalized'][] = array(
++			'block'  => $block_slug,
++			'rules'  => $extracted,
++			'reason' => 'style-tree',
++		);
++
++		return $attrs;
++	}
++
++	/**
++	 * Externalize arbitrary declaration set and return generated class.
++	 *
++	 * @param string $block_slug Block slug.
++	 * @param array $declarations CSS declarations.
++	 *
++	 * @return string
++	 */
++	public function externalize_declarations( string $block_slug, array $declarations ): string {
++		$declarations = Style_Normalizer::prune_empty( $declarations );
++		if ( empty( $declarations ) ) {
++			return '';
++		}
++
++		$fingerprint = md5( $block_slug . '|' . wp_json_encode( $declarations ) );
++		$class       = 'etg-ext-' . substr( $fingerprint, 0, 10 );
++
++		$this->add_rule( '.' . $class, $declarations );
++		$this->inventory['externalized'][] = array(
++			'block'  => $block_slug,
++			'rules'  => $declarations,
++			'reason' => 'unsupported-style',
++		);
++
++		return $class;
++	}
++
++	/**
++	 * Record dropped attributes.
++	 *
++	 * @param string $block_slug Block slug.
++	 * @param string $type Drop type.
++	 * @param array $payload Payload.
++	 *
++	 * @return void
++	 */
++	public function record_dropped( string $block_slug, string $type, array $payload ): void {
++		$this->inventory['dropped'][] = array(
++			'block'   => $block_slug,
++			'type'    => $type,
++			'payload' => $payload,
++			'tag'     => 'ETG_EXTRA_ATTRS_MAP_V1',
++		);
++	}
++
++	/**
++	 * Record conversion decision (e.g., group->cover).
++	 *
++	 * @param string $block_slug Block slug.
++	 * @param string $decision Decision code.
++	 * @param array $context Context array.
++	 *
++	 * @return void
++	 */
++	public function record_conversion( string $block_slug, string $decision, array $context = array() ): void {
++		$this->inventory['conversions'][] = array(
++			'block'    => $block_slug,
++			'decision' => $decision,
++			'context'  => $context,
++			'tag'      => 'ETG_EXTRA_ATTRS_MAP_V1',
++		);
++	}
++
++	/**
++	 * Record sanitization of inner HTML.
++	 *
++	 * @param string $block_slug Block slug.
++	 * @param string $result Sanitized output.
++	 *
++	 * @return void
++	 */
++	public function record_inner_sanitization( string $block_slug, string $result ): void {
++		$this->inventory['dropped'][] = array(
++			'block'   => $block_slug,
++			'type'    => 'inner-html',
++			'payload' => $result,
++			'tag'     => 'ETG_EXTRA_ATTRS_MAP_V1',
++		);
++	}
++
++	/**
++	 * Get inventory for debugging/logging.
++	 *
++	 * @return array
++	 */
++	public function get_inventory(): array {
++		return $this->inventory;
++	}
++
++	/**
++	 * Render collected CSS.
++	 *
++	 * @return string
++	 */
++	public function render_css(): string {
++		if ( empty( $this->rules ) ) {
++			return '';
++		}
++
++		$out = '';
++		foreach ( $this->rules as $selector => $declarations ) {
++			if ( empty( $declarations ) ) {
++				continue;
++			}
++
++			$out .= $selector . " {\n";
++			foreach ( $declarations as $prop => $val ) {
++				$prop = trim( (string) $prop );
++				$val  = trim( (string) $val );
++				if ( '' === $prop || '' === $val ) {
++					continue;
++				}
++				$out .= "\t" . $prop . ': ' . $val . ";\n";
++			}
++			$out .= "}\n";
++		}
++
++		return $out;
++	}
++
++	private function add_rule( string $selector, array $declarations ): void {
++		if ( ! isset( $this->rules[ $selector ] ) ) {
++			$this->rules[ $selector ] = array();
++		}
++
++		foreach ( $declarations as $prop => $val ) {
++			$this->rules[ $selector ][ $prop ] = (string) $val;
++		}
++	}
++
++	private function get_style_leaf( array $attrs, array $path ): string {
++		if ( empty( $attrs['style'] ) || ! is_array( $attrs['style'] ) ) {
++			return '';
++		}
++
++		$node = $attrs['style'];
++		foreach ( $path as $key ) {
++			if ( ! is_array( $node ) || ! array_key_exists( $key, $node ) ) {
++				return '';
++			}
++			$node = $node[ $key ];
++		}
++
++		if ( is_array( $node ) || is_object( $node ) ) {
++			return '';
++		}
++
++		return trim( (string) $node );
++	}
++
++	private function unset_style_leaf( array $attrs, array $path ): array {
++		if ( empty( $attrs['style'] ) || ! is_array( $attrs['style'] ) ) {
++			return $attrs;
++		}
++
++		$ref = &$attrs['style'];
++
++		$last = array_pop( $path );
++		foreach ( $path as $key ) {
++			if ( ! isset( $ref[ $key ] ) || ! is_array( $ref[ $key ] ) ) {
++				return $attrs;
++			}
++			$ref = &$ref[ $key ];
++		}
++
++		if ( is_array( $ref ) && array_key_exists( $last, $ref ) ) {
++			unset( $ref[ $last ] );
++		}
++
++		return $attrs;
++	}
++
++	private function cleanup_empty_style( array $attrs ): array {
++		if ( empty( $attrs['style'] ) || ! is_array( $attrs['style'] ) ) {
++			return $attrs;
++		}
++
++		$attrs['style'] = $this->recursive_prune_empty_arrays( $attrs['style'] );
++
++		if ( empty( $attrs['style'] ) ) {
++			unset( $attrs['style'] );
++		}
++
++		return $attrs;
++	}
++
++	private function recursive_prune_empty_arrays( array $node ): array {
++		foreach ( $node as $k => $v ) {
++			if ( is_array( $v ) ) {
++				$node[ $k ] = $this->recursive_prune_empty_arrays( $v );
++				if ( empty( $node[ $k ] ) ) {
++					unset( $node[ $k ] );
++				}
++			} elseif ( null === $v || '' === $v ) {
++				unset( $node[ $k ] );
++			}
++		}
++
++		return $node;
++	}
++
++	private function append_class( string $existing, string $new_class ): string {
++		$existing  = trim( $existing );
++		$new_class = trim( $new_class );
++		if ( '' === $new_class ) {
++			return $existing;
++		}
++
++		$list = '' === $existing ? array() : preg_split( '/\s+/', $existing );
++		$list = is_array( $list ) ? $list : array();
++
++		$list[] = $new_class;
++
++		$unique = array();
++		foreach ( $list as $c ) {
++			$c = trim( (string) $c );
++			if ( '' === $c ) {
++				continue;
++			}
++			$unique[ $c ] = true;
++		}
++
++		return implode( ' ', array_keys( $unique ) );
++	}
++
++	private function format_background_image( string $raw ): string {
++		$raw = trim( $raw );
++		if ( '' === $raw ) {
++			return '';
++		}
++
++		// If it already looks like url(...), keep it.
++		if ( 0 === strpos( $raw, 'url(' ) ) {
++			return $raw;
++		}
++
++		return 'url(' . $raw . ')';
++	}
++
++	/**
++	 * Returns "0" when the value is zero-ish; null when it is non-zero and should be externalized.
++	 *
++	 * @param string $value
++	 *
++	 * @return string|null
++	 */
++	private function normalize_zero_dimension( string $value ): ?string {
++		$v = strtolower( trim( $value ) );
++
++		if ( '0' === $v || '0px' === $v || '0em' === $v || '0rem' === $v ) {
++			return '0';
++		}
++
++		if ( preg_match( '/^0(\.0+)?(px|em|rem|%)?$/', $v ) ) {
++			return '0';
++		}
++
++		return null;
++	}
++}
+diff --git a/src/admin/helper/class-block-builder.php b/src/admin/helper/class-block-builder.php
+index 7f91712..a2f9547 100644
+--- a/src/admin/helper/class-block-builder.php
++++ b/src/admin/helper/class-block-builder.php
+@@ -7,12 +7,28 @@
+ 
+ namespace Progressus\Gutenberg\Admin\Helper;
+ 
++use Progressus\Gutenberg\Admin\Helper\Block_Output_Builder;
++use Progressus\Gutenberg\Admin\Helper\Html_Attribute_Builder;
++use Progressus\Gutenberg\Admin\Helper\Style_Normalizer;
++
+ defined( 'ABSPATH' ) || exit;
+ 
+ /**
+  * Helper for building block markup with wrapper elements.
+  */
+ class Block_Builder {
++
++	/**
++	 * Bootstraps the hardening pipeline.
++	 *
++	 * @param External_Style_Collector|null $collector Style collector instance.
++	 *
++	 * @return void
++	 */
++	public static function bootstrap( ?External_Style_Collector $collector ): void {
++		Block_Output_Builder::bootstrap( $collector );
++	}
++
+ 	/**
+ 	 * Blocks that require wrapper div output.
+ 	 *
+@@ -34,25 +50,34 @@ class Block_Builder {
+ 			$attrs = array();
+ 		}
+ 
+-		$attrs     = self::normalize_attributes( $attrs );
+-		$attr_json = empty( $attrs ) ? '' : ' ' . wp_json_encode( $attrs );
++		$block_slug = self::get_block_slug( $block );
++		$attrs      = Block_Output_Builder::prepare_attributes( $block_slug, self::normalize_attributes( $attrs ) );
++		$attr_json  = empty( $attrs ) ? '' : ' ' . wp_json_encode( $attrs );
++
++		$inner_html = Block_Output_Builder::sanitize_inner_html( $block_slug, $inner_html );
+ 
+ 		if ( 'button' === $block && '' === trim( $inner_html ) ) {
+ 			return sprintf( '<!-- wp:%s%s /-->%s', $block, $attr_json, "\n" );
+ 		}
+ 		$opening      = sprintf( '<!-- wp:%s%s -->', $block, $attr_json );
+ 		$closing      = sprintf( '<!-- /wp:%s -->', $block );
+-		$block_slug   = self::get_block_slug( $block );
+ 		$is_wrapper   = in_array( $block_slug, self::$wrapper_blocks, true );
+ 		$wrapper_html = $inner_html;
+ 
+ 		if ( $is_wrapper ) {
+-			$wrapper_class = self::build_wrapper_class( $block_slug, $attrs );
+-			$style_attr    = self::build_style_attribute( $attrs );
+-			$wrapper_html  = sprintf(
+-				'<div class="%s"%s>%s</div>',
+-				esc_attr( $wrapper_class ),
+-				$style_attr,
++			$wrapper_class     = self::build_wrapper_class( $block_slug, $attrs );
++			$style_attr        = self::build_style_attribute( $attrs );
++			$attrs_for_wrapper = array(
++				'class' => $wrapper_class,
++			);
++
++			if ( '' !== $style_attr ) {
++				$attrs_for_wrapper['style'] = trim( $style_attr );
++			}
++
++			$wrapper_html = sprintf(
++				'<div %s>%s</div>',
++				Html_Attribute_Builder::build( $attrs_for_wrapper ),
+ 				$inner_html
+ 			);
+ 		}
+@@ -102,7 +127,7 @@ class Block_Builder {
+ 	 *
+ 	 * @return string
+ 	 */
+-	private static function build_style_attribute( array $attrs ): string {
++	public static function build_style_attribute( array $attrs ): string {
+ 		if ( empty( $attrs['style'] ) || ! is_array( $attrs['style'] ) ) {
+ 			return '';
+ 		}
+@@ -178,7 +203,7 @@ class Block_Builder {
+ 			return '';
+ 		}
+ 
+-		return ' style="' . esc_attr( implode( ';', $style_rules ) ) . '"';
++		return esc_attr( implode( ';', $style_rules ) );
+ 	}
+ 
+ 	/**
+diff --git a/src/admin/helper/class-block-output-builder.php b/src/admin/helper/class-block-output-builder.php
+new file mode 100644
+index 0000000..2a8857b
+--- /dev/null
++++ b/src/admin/helper/class-block-output-builder.php
+@@ -0,0 +1,94 @@
++<?php
++/**
++ * Hardened Gutenberg block output builder.
++ *
++ * @package Progressus\Gutenberg
++ */
++
++namespace Progressus\Gutenberg\Admin\Helper;
++
++defined( 'ABSPATH' ) || exit;
++
++/**
++ * Hardened Gutenberg block output builder.
++ */
++class Block_Output_Builder {
++
++	/**
++	 * @var External_Style_Collector|null
++	 */
++	private static ?External_Style_Collector $collector = null;
++
++	/**
++	 * @var Gutenberg_Supports_Mapper|null
++	 */
++	private static ?Gutenberg_Supports_Mapper $mapper = null;
++
++	/**
++	 * Bootstrap dependencies.
++	 *
++	 * @param External_Style_Collector|null $collector Collector instance.
++	 *
++	 * @return void
++	 */
++	public static function bootstrap( ?External_Style_Collector $collector ): void {
++		self::$collector = $collector;
++		if ( null === self::$mapper ) {
++			self::$mapper = new Gutenberg_Supports_Mapper();
++		}
++	}
++
++	/**
++	 * Normalize and split attributes into supported and external CSS buckets.
++	 *
++	 * @param string $block_slug Block slug.
++	 * @param array $attrs Raw attributes.
++	 *
++	 * @return array Supported attributes.
++	 */
++	public static function prepare_attributes( string $block_slug, array $attrs ): array {
++		$attrs = Style_Normalizer::normalize_attributes( $block_slug, $attrs );
++
++		if ( null === self::$mapper ) {
++			self::$mapper = new Gutenberg_Supports_Mapper();
++		}
++
++		$split = self::$mapper->split_attributes( $block_slug, $attrs );
++
++		if ( ! empty( $split['external'] ) && null !== self::$collector ) {
++			$class = self::$collector->externalize_declarations( $block_slug, $split['external'] );
++			if ( '' !== $class ) {
++				$split['supported']['className'] = Html_Attribute_Builder::merge_classes(
++					$split['supported']['className'] ?? '',
++					$class
++				);
++			}
++		}
++
++		if ( ! empty( $split['dropped'] ) && null !== self::$collector ) {
++			self::$collector->record_dropped( $block_slug, 'attrs', $split['dropped'] );
++		}
++
++		return $split['supported'];
++	}
++
++	/**
++	 * Strip unsafe fragments from inner HTML.
++	 *
++	 * @param string $block_slug Block slug.
++	 * @param string $inner_html Raw inner HTML.
++	 *
++	 * @return string
++	 */
++	public static function sanitize_inner_html( string $block_slug, string $inner_html ): string {
++		// Remove script/style/comments to avoid serialization drift.
++		$inner_html = preg_replace( '#<(script|style)[^>]*>.*?</\1>#is', '', $inner_html );
++		$inner_html = preg_replace( '/<!--.*?-->/s', '', $inner_html );
++
++		if ( null !== self::$collector ) {
++			self::$collector->record_inner_sanitization( $block_slug, $inner_html );
++		}
++
++		return (string) $inner_html;
++	}
++}
+diff --git a/src/admin/helper/class-external-css-service.php b/src/admin/helper/class-external-css-service.php
+new file mode 100644
+index 0000000..f1c91b8
+--- /dev/null
++++ b/src/admin/helper/class-external-css-service.php
+@@ -0,0 +1,304 @@
++<?php
++/**
++ * External CSS file service.
++ *
++ * @package Progressus\Gutenberg
++ */
++
++namespace Progressus\Gutenberg\Admin\Helper;
++
++use function absint;
++use function current_time;
++use function delete_post_meta;
++use function file_exists;
++use function filemtime;
++use function get_post_meta;
++use function is_array;
++use function is_readable;
++use function is_string;
++use function json_decode;
++use function maybe_unserialize;
++use function wp_json_encode;
++use function wp_normalize_path;
++use function wp_unslash;
++
++defined( 'ABSPATH' ) || exit;
++
++class External_CSS_Service {
++
++	const META_KEY = '_progressus_gutenberg_external_css';
++
++	private static function resolve_post_id( int $post_id ): int {
++		$parent_id = wp_is_post_revision( $post_id );
++		if ( $parent_id ) {
++			return absint( $parent_id );
++		}
++
++		$parent_id = wp_is_post_autosave( $post_id );
++		if ( $parent_id ) {
++			return absint( $parent_id );
++		}
++
++		return $post_id;
++	}
++	/**
++	 * Save a CSS string as an external file in uploads and store reference in post meta.
++	 *
++	 * @param int $post_id Post ID.
++	 * @param string $css CSS content.
++	 *
++	 * @return array|null Meta payload on success, null on failure or empty CSS.
++	 */
++	public static function save_post_css( int $post_id, string $css ): ?array {
++		$post_id = self::resolve_post_id( $post_id );
++
++		$css = self::normalize_css( $css );
++		if ( '' === $css ) {
++			self::delete_post_css_meta( $post_id );
++			return null;
++		}
++
++		$upload = wp_get_upload_dir();
++		if ( empty( $upload['basedir'] ) || empty( $upload['baseurl'] ) ) {
++			return null;
++		}
++
++		$dir_rel  = 'progressus-gutenberg/css';
++		$base_dir = trailingslashit( (string) $upload['basedir'] );
++		$base_url = trailingslashit( (string) $upload['baseurl'] );
++
++		$target_dir = $base_dir . $dir_rel;
++		if ( ! wp_mkdir_p( $target_dir ) ) {
++			return null;
++		}
++
++		$hash     = substr( md5( $css ), 0, 12 );
++		$filename = 'page-' . (string) $post_id . '-' . $hash . '.css';
++
++		$path = trailingslashit( $target_dir ) . $filename;
++		$url  = trailingslashit( $base_url . $dir_rel ) . $filename;
++
++		if ( ! self::write_file( $path, $css ) ) {
++			return null;
++		}
++
++		$meta = array(
++			'url'      => $url,
++			'path'     => $path,
++			'hash'     => $hash,
++			'saved_at' => current_time( 'mysql' ),
++		);
++		$meta_json = wp_json_encode( $meta, JSON_UNESCAPED_SLASHES );
++		update_post_meta( $post_id, self::META_KEY, $meta_json );
++
++		return $meta;
++	}
++
++	/**
++	 * Get stored CSS meta for a post.
++	 *
++	 * @param int $post_id
++	 *
++	 * @return array|null
++	 */
++	public static function get_post_css_meta( int $post_id ): ?array {
++		$post_id = self::resolve_post_id( $post_id );
++
++		$meta = get_post_meta( $post_id, self::META_KEY, true );
++
++		// If meta is already an array (serialized storage), use it directly.
++		if ( is_array( $meta ) ) {
++			// continue
++		} elseif ( is_string( $meta ) && '' !== $meta ) {
++			// Most common case: JSON string (sometimes slashed).
++			$raw = trim( wp_unslash( $meta ) );
++
++			$maybe = maybe_unserialize( $raw );
++			if ( is_array( $maybe ) ) {
++				$meta = $maybe;
++			} else {
++				$decoded = json_decode( $raw, true );
++
++				// If the JSON decodes into a string (quoted JSON), decode again.
++				if ( is_string( $decoded ) && '' !== $decoded ) {
++					$decoded = json_decode( $decoded, true );
++				}
++
++				if ( is_array( $decoded ) ) {
++					$meta = $decoded;
++				}
++			}
++		}
++
++		if ( ! is_array( $meta ) ) {
++			return null;
++		}
++
++		$url  = ( isset( $meta['url'] ) && is_string( $meta['url'] ) ) ? $meta['url'] : '';
++		$path = ( isset( $meta['path'] ) && is_string( $meta['path'] ) ) ? $meta['path'] : '';
++
++		if ( '' === $url || '' === $path ) {
++			return null;
++		}
++
++		// Normalize Windows paths to avoid file_exists/is_readable edge cases.
++		$meta['path'] = wp_normalize_path( $path );
++
++		return $meta;
++	}
++
++	/**
++	 * Delete CSS meta reference.
++	 *
++	 * @param int $post_id
++	 *
++	 * @return void
++	 */
++	public static function delete_post_css_meta( int $post_id ): void {
++		$post_id = self::resolve_post_id( $post_id );
++		delete_post_meta( $post_id, self::META_KEY );
++	}
++
++	/**
++	 * Enqueue a post CSS file if stored and readable.
++	 *
++	 * @param int $post_id
++	 *
++	 * @return void
++	 */
++	public static function enqueue_post_css( int $post_id ): void {
++		$post_id = self::resolve_post_id( $post_id );
++
++		static $enqueued = array();
++		if ( isset( $enqueued[ $post_id ] ) ) {
++			return;
++		}
++		$enqueued[ $post_id ] = true;
++
++		$meta = self::get_post_css_meta( $post_id );
++		if ( null === $meta ) {
++			return;
++		}
++
++		$path = ( isset( $meta['path'] ) && is_string( $meta['path'] ) ) ? $meta['path'] : '';
++		$url  = ( isset( $meta['url'] ) && is_string( $meta['url'] ) ) ? $meta['url'] : '';
++
++		if ( '' === $path || '' === $url ) {
++			return;
++		}
++
++		// Normalize/fix filesystem path.
++		$path = self::normalize_fs_path( $path );
++
++		// Fallback: rebuild path from uploads basedir using the filename.
++		if ( ! file_exists( $path ) ) {
++			$upload = wp_get_upload_dir();
++			if ( ! empty( $upload['basedir'] ) ) {
++				$base_dir   = trailingslashit( wp_normalize_path( (string) $upload['basedir'] ) );
++				$base_dir   = str_replace( '/', DIRECTORY_SEPARATOR, $base_dir );
++				$filename   = basename( wp_normalize_path( $path ) );
++				$candidate  = $base_dir . 'progressus-gutenberg' . DIRECTORY_SEPARATOR . 'css' . DIRECTORY_SEPARATOR . $filename;
++
++				if ( file_exists( $candidate ) ) {
++					$path = $candidate;
++				}
++			}
++		}
++
++		if ( ! file_exists( $path ) || ! is_readable( $path ) ) {
++			return;
++		}
++
++		$ver = (string) filemtime( $path );
++		$hdl = 'progressus-gutenberg-page-css-' . (string) $post_id;
++
++		wp_enqueue_style( $hdl, $url, array(), $ver );
++	}
++
++	private static function normalize_fs_path( string $path ): string {
++		$path = trim( $path );
++
++		// Normalize slashes.
++		$path = wp_normalize_path( $path );
++
++		// Fix Windows drive path missing slash: "C:xampp/..." => "C:/xampp/..."
++		if ( preg_match( '/^[A-Za-z]:(?!\/)/', $path ) ) {
++			$path = substr( $path, 0, 2 ) . '/' . substr( $path, 2 );
++		}
++
++		// Convert to OS separator for filesystem calls (Windows likes backslashes).
++		$path = str_replace( '/', DIRECTORY_SEPARATOR, $path );
++
++		return $path;
++	}
++
++
++	/**
++	 * Normalize CSS content.
++	 *
++	 * @param string $css
++	 *
++	 * @return string
++	 */
++	private static function normalize_css( string $css ): string {
++		$css = str_replace( "\r\n", "\n", $css );
++		$css = str_replace( "\r", "\n", $css );
++		$css = trim( $css );
++
++		return $css;
++	}
++
++	/**
++	 * Write a file safely via WP_Filesystem when available.
++	 *
++	 * @param string $path
++	 * @param string $contents
++	 *
++	 * @return bool
++	 */
++	private static function write_file( string $path, string $contents ): bool {
++		if ( ! function_exists( 'WP_Filesystem' ) ) {
++			require_once ABSPATH . 'wp-admin/includes/file.php';
++		}
++
++		$filesystem_ready = WP_Filesystem();
++		if ( $filesystem_ready ) {
++			global $wp_filesystem;
++			if ( $wp_filesystem && method_exists( $wp_filesystem, 'put_contents' ) ) {
++				return (bool) $wp_filesystem->put_contents( $path, $contents, FS_CHMOD_FILE );
++			}
++		}
++
++		return false !== file_put_contents( $path, $contents );
++	}
++
++	/**
++	 * Enqueue CSS for the "current" post context (frontend or editor).
++	 *
++	 * @return void
++	 */
++	public static function enqueue_current_post_css(): void {
++		$post_id = 0;
++
++		// Frontend: use queried object.
++		if ( ! is_admin() ) {
++			$post_id = (int) get_queried_object_id();
++		} else {
++			// Editor/admin: try global $post first.
++			global $post;
++			if ( $post && isset( $post->ID ) ) {
++				$post_id = (int) $post->ID;
++			}
++
++			// Fallback: classic editor / block editor edit screen usually provides ?post=123
++			if ( 0 === $post_id && isset( $_GET['post'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
++				$post_id = absint( $_GET['post'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
++			}
++		}
++
++		if ( $post_id > 0 ) {
++			self::enqueue_post_css( $post_id );
++		}
++	}
++
++}
+diff --git a/src/admin/helper/class-gutenberg-supports-mapper.php b/src/admin/helper/class-gutenberg-supports-mapper.php
+new file mode 100644
+index 0000000..1f0b4c6
+--- /dev/null
++++ b/src/admin/helper/class-gutenberg-supports-mapper.php
+@@ -0,0 +1,167 @@
++<?php
++/**
++ * Map raw declarations onto Gutenberg-supported attributes.
++ *
++ * @package Progressus\Gutenberg
++ */
++
++namespace Progressus\Gutenberg\Admin\Helper;
++
++defined( 'ABSPATH' ) || exit;
++
++/**
++ * Mapper for Gutenberg supported attributes.
++ */
++class Gutenberg_Supports_Mapper {
++
++	/**
++	 * Compatibility map keyed by block slug.
++	 *
++	 * @var array<string, array<string, array<string, bool>>>
++	 */
++	private array $matrix = array();
++
++	public function __construct() {
++		$this->matrix = array(
++			'heading' => array(
++				'style' => array(
++					'typography' => true,
++					'spacing'    => true,
++					'color'      => true,
++				),
++				'attrs' => array(
++					'textAlign' => true,
++				),
++			),
++			'group'   => array(
++				'style' => array(
++					'spacing'    => true,
++					'color'      => true,
++					'typography' => true,
++				),
++				'attrs' => array(
++					'layout' => true,
++				),
++			),
++			'button'  => array(
++				'style' => array(
++					'spacing'    => true,
++					'typography' => true,
++					'color'      => true,
++				),
++				'attrs' => array(
++					'width' => true,
++				),
++			),
++		);
++	}
++
++	/**
++	 * Split supported and unsupported attributes.
++	 *
++	 * @param string $block_slug Block slug without namespace.
++	 * @param array $attrs Raw attributes.
++	 *
++	 * @return array{supported: array, external: array, dropped: array}
++	 */
++	public function split_attributes( string $block_slug, array $attrs ): array {
++		$supported = array();
++		$external  = array();
++		$dropped   = array();
++
++		$block_matrix = $this->matrix[ $block_slug ] ?? array();
++		$style_allow  = $block_matrix['style'] ?? array();
++		$attr_allow   = $block_matrix['attrs'] ?? array();
++
++		foreach ( $attrs as $key => $value ) {
++			if ( 'style' === $key && is_array( $value ) ) {
++				$split              = $this->split_style_tree( $style_allow, $value );
++				$supported['style'] = $split['supported'];
++				$external           = array_merge( $external, $split['external'] );
++				$dropped['style']   = $split['dropped'];
++				if ( empty( $supported['style'] ) ) {
++					unset( $supported['style'] );
++				}
++			} elseif ( isset( $attr_allow[ $key ] ) ) {
++				$supported[ $key ] = $value;
++			} else {
++				$dropped[ $key ] = $value;
++			}
++		}
++
++		return array(
++			'supported' => $supported,
++			'external'  => $external,
++			'dropped'   => Style_Normalizer::prune_empty( $dropped ),
++		);
++	}
++
++	/**
++	 * Split style tree by whitelist.
++	 *
++	 * @param array $allow_map Allowed top-level style keys.
++	 * @param array $style Style tree.
++	 *
++	 * @return array{supported: array, external: array, dropped: array}
++	 */
++	private function split_style_tree( array $allow_map, array $style ): array {
++		$supported = array();
++		$external  = array();
++		$dropped   = array();
++
++		foreach ( $style as $key => $value ) {
++			if ( isset( $allow_map[ $key ] ) ) {
++				$supported[ $key ] = $value;
++				continue;
++			}
++
++			if ( is_array( $value ) ) {
++				$external = array_merge( $external, $this->flatten_style_tree( $key, $value ) );
++			} else {
++				$external[ $key ] = $value;
++			}
++			$dropped[ $key ] = $value;
++		}
++
++		return array(
++			'supported' => Style_Normalizer::prune_empty( $supported ),
++			'external'  => Style_Normalizer::prune_empty( $external ),
++			'dropped'   => Style_Normalizer::prune_empty( $dropped ),
++		);
++	}
++
++	/**
++	 * Flatten a style tree into CSS property => value pairs using kebab-case keys.
++	 *
++	 * @param string $prefix Style prefix.
++	 * @param array $style Style tree.
++	 *
++	 * @return array
++	 */
++	private function flatten_style_tree( string $prefix, array $style ): array {
++		$output = array();
++		foreach ( $style as $key => $value ) {
++			$prop = $this->camel_to_kebab( $prefix . '-' . $key );
++			if ( is_array( $value ) ) {
++				$output = array_merge( $output, $this->flatten_style_tree( $prop, $value ) );
++			} else {
++				$output[ $prop ] = $value;
++			}
++		}
++
++		return $output;
++	}
++
++	/**
++	 * Convert camelCase to kebab-case.
++	 *
++	 * @param string $value Camel string.
++	 *
++	 * @return string
++	 */
++	private function camel_to_kebab( string $value ): string {
++		$value = preg_replace( '/([a-z])([A-Z])/', '$1-$2', $value );
++
++		return strtolower( (string) $value );
++	}
++}
+diff --git a/src/admin/helper/class-html-attribute-builder.php b/src/admin/helper/class-html-attribute-builder.php
+new file mode 100644
+index 0000000..56b7869
+--- /dev/null
++++ b/src/admin/helper/class-html-attribute-builder.php
+@@ -0,0 +1,77 @@
++<?php
++/**
++ * Deterministic HTML attribute builder.
++ *
++ * @package Progressus\Gutenberg
++ */
++
++namespace Progressus\Gutenberg\Admin\Helper;
++
++use function esc_attr;
++
++defined( 'ABSPATH' ) || exit;
++
++/**
++ * Deterministic HTML attribute builder.
++ */
++class Html_Attribute_Builder {
++
++	/**
++	 * Build an attribute string from ordered pairs.
++	 *
++	 * @param array<string, string|array> $attrs Attributes list.
++	 *
++	 * @return string
++	 */
++	public static function build( array $attrs ): string {
++		ksort( $attrs );
++
++		$parts = array();
++		foreach ( $attrs as $key => $value ) {
++			if ( is_array( $value ) ) {
++				$value = implode( ' ', array_filter( array_map( 'trim', $value ) ) );
++			}
++
++			$key   = strtolower( trim( (string) $key ) );
++			$value = trim( (string) $value );
++
++			if ( '' === $key || '' === $value ) {
++				continue;
++			}
++
++			$parts[] = sprintf( '%s="%s"', esc_attr( $key ), esc_attr( $value ) );
++		}
++
++		return implode( ' ', $parts );
++	}
++
++	/**
++	 * Merge classes into a deterministic string.
++	 *
++	 * @param string|array $existing Existing classes.
++	 * @param string|array $new New classes.
++	 *
++	 * @return string
++	 */
++	public static function merge_classes( $existing, $new ): string {
++		$classes = array();
++		foreach ( array( $existing, $new ) as $group ) {
++			if ( is_string( $group ) ) {
++				$group = preg_split( '/\s+/', $group );
++			}
++
++			if ( is_array( $group ) ) {
++				foreach ( $group as $class ) {
++					$clean = Style_Parser::clean_class( (string) $class );
++					if ( '' !== $clean ) {
++						$classes[ $clean ] = true;
++					}
++				}
++			}
++		}
++
++		ksort( $classes );
++
++		return implode( ' ', array_keys( $classes ) );
++	}
++}
+diff --git a/src/admin/helper/class-style-normalizer.php b/src/admin/helper/class-style-normalizer.php
+new file mode 100644
+index 0000000..b700a1c
+--- /dev/null
++++ b/src/admin/helper/class-style-normalizer.php
+@@ -0,0 +1,149 @@
++<?php
++/**
++ * Normalize style arrays and drop unsupported defaults.
++ *
++ * @package Progressus\Gutenberg
++ */
++
++namespace Progressus\Gutenberg\Admin\Helper;
++
++defined( 'ABSPATH' ) || exit;
++
++/**
++ * Style normalization helper.
++ */
++class Style_Normalizer {
++
++	/**
++	 * Normalize a block attributes payload.
++	 *
++	 * @param string $block_slug Block slug without namespace.
++	 * @param array $attrs Raw attributes.
++	 *
++	 * @return array
++	 */
++	public static function normalize_attributes( string $block_slug, array $attrs ): array {
++		if ( ! empty( $attrs['ariaLabel'] ) && '' === trim( (string) $attrs['ariaLabel'] ) ) {
++			unset( $attrs['ariaLabel'] );
++		}
++
++		if ( ! empty( $attrs['style'] ) && is_array( $attrs['style'] ) ) {
++			$attrs['style'] = self::normalize_style_tree( $block_slug, $attrs['style'] );
++			if ( empty( $attrs['style'] ) ) {
++				unset( $attrs['style'] );
++			}
++		}
++
++		return $attrs;
++	}
++
++	/**
++	 * Normalize typography defaults and zero-ish values.
++	 *
++	 * @param array $typography Typography style tree.
++	 *
++	 * @return array
++	 */
++	private static function normalize_typography( array $typography ): array {
++		foreach ( array( 'letterSpacing', 'wordSpacing' ) as $spacing_key ) {
++			if ( isset( $typography[ $spacing_key ] ) ) {
++				$norm = self::normalize_zero_dimension( (string) $typography[ $spacing_key ] );
++				if ( '0' === $norm ) {
++					unset( $typography[ $spacing_key ] );
++				}
++			}
++		}
++
++		if ( isset( $typography['fontStyle'] ) && 'normal' === strtolower( (string) $typography['fontStyle'] ) ) {
++			unset( $typography['fontStyle'] );
++		}
++
++		if ( isset( $typography['textDecoration'] ) && 'none' === strtolower( (string) $typography['textDecoration'] ) ) {
++			unset( $typography['textDecoration'] );
++		}
++
++		return $typography;
++	}
++
++	/**
++	 * Normalize the style tree by pruning empty leaves and defaults.
++	 *
++	 * @param string $block_slug Block slug.
++	 * @param array $style Style tree.
++	 *
++	 * @return array
++	 */
++	public static function normalize_style_tree( string $block_slug, array $style ): array {
++		if ( ! empty( $style['typography'] ) && is_array( $style['typography'] ) ) {
++			$style['typography'] = self::normalize_typography( $style['typography'] );
++			if ( empty( $style['typography'] ) ) {
++				unset( $style['typography'] );
++			}
++		}
++
++		if ( ! empty( $style['spacing'] ) && is_array( $style['spacing'] ) ) {
++			foreach ( array( 'padding', 'margin' ) as $dimension ) {
++				if ( empty( $style['spacing'][ $dimension ] ) || ! is_array( $style['spacing'][ $dimension ] ) ) {
++					continue;
++				}
++
++				foreach ( $style['spacing'][ $dimension ] as $key => $value ) {
++					$normalized = self::normalize_zero_dimension( (string) $value );
++					if ( '0' === $normalized ) {
++						$style['spacing'][ $dimension ][ $key ] = '0';
++					}
++				}
++			}
++		}
++
++		if ( ! empty( $style['dimensions']['minHeight'] ) ) {
++			$style['dimensions']['minHeight'] = self::normalize_zero_dimension( (string) $style['dimensions']['minHeight'] );
++		}
++
++		$style = self::prune_empty( $style );
++
++		return $style;
++	}
++
++	/**
++	 * Normalize zero-like dimension to canonical representation.
++	 *
++	 * @param string $value Raw value.
++	 *
++	 * @return string
++	 */
++	public static function normalize_zero_dimension( string $value ): string {
++		$value = strtolower( trim( $value ) );
++		if ( '' === $value ) {
++			return '';
++		}
++
++		if ( preg_match( '/^0(\.0+)?(px|em|rem|%)?$/', $value ) ) {
++			return '0';
++		}
++
++		return $value;
++	}
++
++	/**
++	 * Recursively prune empty arrays and empty strings.
++	 *
++	 * @param array $node Arbitrary nested array.
++	 *
++	 * @return array
++	 */
++	public static function prune_empty( array $node ): array {
++		foreach ( $node as $key => $value ) {
++			if ( is_array( $value ) ) {
++				$node[ $key ] = self::prune_empty( $value );
++				if ( empty( $node[ $key ] ) ) {
++					unset( $node[ $key ] );
++				}
++			} elseif ( null === $value || '' === $value ) {
++				unset( $node[ $key ] );
++			}
++		}
++
++		return $node;
++	}
++}
+diff --git a/src/admin/widget/class-button-widget-handler.php b/src/admin/widget/class-button-widget-handler.php
+index 56b6a90..ce9bff3 100644
+--- a/src/admin/widget/class-button-widget-handler.php
++++ b/src/admin/widget/class-button-widget-handler.php
+@@ -9,6 +9,7 @@ namespace Progressus\Gutenberg\Admin\Widget;
+ 
+ use Progressus\Gutenberg\Admin\Helper\Alignment_Helper;
+ use Progressus\Gutenberg\Admin\Helper\Block_Builder;
++use Progressus\Gutenberg\Admin\Helper\Html_Attribute_Builder;
+ use Progressus\Gutenberg\Admin\Helper\Icon_Parser;
+ use Progressus\Gutenberg\Admin\Helper\Style_Parser;
+ use Progressus\Gutenberg\Admin\Widget_Handler_Interface;
+@@ -41,11 +42,9 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
+ 
+ 		$spacing      = Style_Parser::parse_spacing( $settings );
+ 		$spacing_attr = isset( $spacing['attributes'] ) ? $spacing['attributes'] : array();
+-		$spacing_css  = isset( $spacing['style'] ) ? $spacing['style'] : '';
+ 
+ 		$typography      = Style_Parser::parse_typography( $settings );
+ 		$typography_attr = isset( $typography['attributes'] ) ? $typography['attributes'] : array();
+-		$typography_css  = isset( $typography['style'] ) ? $typography['style'] : '';
+ 
+ 		$alignment      = Alignment_Helper::detect_alignment( $settings, array(
+ 			'button_align',
+@@ -128,52 +127,34 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
+ 			Style_Parser::save_custom_css( $custom_css );
+ 		}
+ 
+-		$anchor_attrs   = array();
+-		$anchor_attrs[] = 'class="' . esc_attr( implode( ' ', array_unique( $anchor_classes ) ) ) . '"';
++		$anchor_attrs = array(
++			'class' => implode( ' ', array_unique( $anchor_classes ) ),
++		);
+ 
+ 		if ( '' !== $url ) {
+-			$anchor_attrs[] = 'href="' . $url . '"';
++			$anchor_attrs['href'] = $url;
+ 		}
+ 
+ 		if ( ! empty( $link_data['is_external'] ) ) {
+-			$anchor_attrs[] = 'target="_blank"';
++			$anchor_attrs['target'] = '_blank';
+ 		}
+ 
+ 		if ( ! empty( $rel_tokens ) ) {
+-			$anchor_attrs[] = 'rel="' . esc_attr( implode( ' ', array_unique( $rel_tokens ) ) ) . '"';
+-		}
+-
+-		$style_parts = array();
+-
+-		if ( '' !== $spacing_css ) {
+-			$style_parts[] = $spacing_css;
+-		}
+-
+-		if ( '' !== $typography_css ) {
+-			$style_parts[] = $typography_css;
+-		}
+-
+-		if ( ! empty( $anchor_style ) ) {
+-			$style_parts[] = implode( ';', array_filter( $anchor_style ) );
+-		}
+-
+-		if ( ! empty( $style_parts ) ) {
+-			$anchor_attrs[] = 'style="' . esc_attr( implode( '', $style_parts ) ) . '"';
++			$anchor_attrs['rel'] = implode( ' ', array_unique( $rel_tokens ) );
+ 		}
+ 
++		$icon_html = '';
+ 		if ( '' !== $icon_data['class_name'] ) {
+-			$anchor_attrs[] = 'data-icon-class="' . esc_attr( $icon_data['class_name'] ) . '"';
++			$icon_html = '<span class="etg-button-icon ' . esc_attr( $icon_data['class_name'] ) . '" aria-hidden="true"></span>';
++			Style_Parser::save_custom_css( '/* icon class captured for ETG_EXTRA_ATTRS_MAP_V1 */' );
++		} elseif ( '' !== $icon_data['url'] ) {
++			$icon_html = '<span class="etg-button-icon"><img src="' . esc_url( $icon_data['url'] ) . '" alt="" aria-hidden="true" /></span>';
+ 		}
+ 
+-		if ( '' !== $icon_data['url'] ) {
+-			$anchor_attrs[] = 'data-icon-url="' . esc_url( $icon_data['url'] ) . '"';
+-		}
+-
+-		$anchor_attrs[] = 'data-icon-type="' . esc_attr( $icon_data['type'] ) . '"';
+-
+ 		$anchor_html = sprintf(
+-			'<a %s>%s</a>',
+-			implode( ' ', $anchor_attrs ),
++			'<a %s>%s%s</a>',
++			Html_Attribute_Builder::build( $anchor_attrs ),
++			'' !== $icon_html ? $icon_html : '',
+ 			wp_strip_all_tags( $text )
+ 		);
+ 
+diff --git a/src/admin/widget/class-heading-widget-handler.php b/src/admin/widget/class-heading-widget-handler.php
+index 14cb161..9a9e85b 100644
+--- a/src/admin/widget/class-heading-widget-handler.php
++++ b/src/admin/widget/class-heading-widget-handler.php
+@@ -9,6 +9,7 @@ namespace Progressus\Gutenberg\Admin\Widget;
+ 
+ use Progressus\Gutenberg\Admin\Helper\Alignment_Helper;
+ use Progressus\Gutenberg\Admin\Helper\Block_Builder;
++use Progressus\Gutenberg\Admin\Helper\Html_Attribute_Builder;
+ use Progressus\Gutenberg\Admin\Helper\Style_Parser;
+ use Progressus\Gutenberg\Admin\Widget_Handler_Interface;
+ 
+@@ -44,18 +45,16 @@ class Heading_Widget_Handler implements Widget_Handler_Interface {
+ 		}
+ 		$level = (int) substr( $header_size, 1 );
+ 		// Alignment.
+-		$align = Alignment_Helper::detect_alignment( $settings, array( 'align' ) );
++		$align         = Alignment_Helper::detect_alignment( $settings, array( 'align' ) );
+ 		$align_payload = Alignment_Helper::build_text_alignment_payload( $align );
+ 
+ 		// Spacing (margin / padding).
+ 		$spacing      = Style_Parser::parse_spacing( $settings );
+ 		$spacing_attr = isset( $spacing['attributes'] ) ? $spacing['attributes'] : array();
+-		$spacing_css  = isset( $spacing['style'] ) ? $spacing['style'] : '';
+ 
+ 		// Typography (font family / size / weight / transform / line-height / letter-spacing / word-spacing).
+ 		$typography      = Style_Parser::parse_typography( $settings );
+ 		$typography_attr = isset( $typography['attributes'] ) ? $typography['attributes'] : array();
+-		$typography_css  = isset( $typography['style'] ) ? $typography['style'] : '';
+ 
+ 		// Build block attributes for Gutenberg.
+ 		$attrs = array(
+@@ -81,31 +80,21 @@ class Heading_Widget_Handler implements Widget_Handler_Interface {
+ 		}
+ 
+ 		// Inline style for the HTML tag itself (used on the frontend immediately).
+-		$style_parts = array();
++		$inline_style = Block_Builder::build_style_attribute( $attrs );
+ 
+-		if ( '' !== $spacing_css ) {
+-			$style_parts[] = $spacing_css;
+-		}
+-
+-		if ( '' !== $typography_css ) {
+-			$style_parts[] = $typography_css;
+-		}
+-
+-		if ( '' !== $align_payload['style'] ) {
+-			$style_parts[] = $align_payload['style'];
+-		}
++		$inner_attributes = array(
++			'class' => implode( ' ', array_unique( $heading_classes ) ),
++		);
+ 
+-		$style_attr = '';
+-		if ( ! empty( $style_parts ) ) {
+-			$style_attr = ' style="' . esc_attr( implode( '', $style_parts ) ) . '"';
++		if ( '' !== $inline_style ) {
++			$inner_attributes['style'] = $inline_style;
+ 		}
+ 
+ 		$inner_html = sprintf(
+-			'<%1$s class="%4$s"%3$s>%2$s</%1$s>',
++			'<%1$s %3$s>%2$s</%1$s>',
+ 			$header_size,
+ 			esc_html( $title ),
+-			$style_attr,
+-			esc_attr( implode( ' ', array_unique( $heading_classes ) ) )
++			Html_Attribute_Builder::build( $inner_attributes )
+ 		);
+ 
+ 		return Block_Builder::build( 'heading', $attrs, $inner_html );
+diff --git a/src/class-gutenberg.php b/src/class-gutenberg.php
+index e52e803..b923101 100644
+--- a/src/class-gutenberg.php
++++ b/src/class-gutenberg.php
+@@ -11,6 +11,7 @@ defined( 'ABSPATH' ) || exit;
+ 
+ use Progressus\Gutenberg\Admin\Admin_Settings;
+ use Progressus\Gutenberg\Admin\Batch_Convert_Wizard;
++use Progressus\Gutenberg\Admin\Helper\External_CSS_Service;
+ 
+ /**
+  * Class Gutenberg
+@@ -93,6 +94,7 @@ class Gutenberg {
+ 		add_action( 'wp_ajax_progressus_form_submit', array( $this, 'handle_form_submission' ) );
+ 		add_action( 'wp_ajax_nopriv_progressus_form_submit', array( $this, 'handle_form_submission' ) );
+ 		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_editor_assets' ) );
++		add_action( 'enqueue_block_assets', array( $this, 'enqueue_converted_page_css' ), 20 );
+ 	}
+ 
+ 	/**
+@@ -105,6 +107,7 @@ class Gutenberg {
+ 			array(),
+ 			GUTENBERG_PLUGIN_VERSION
+ 		);
++
+ 	}
+ 
+ 	/**
+@@ -184,6 +187,8 @@ class Gutenberg {
+ 				)
+ 			);
+ 		}
++
++
+ 	}
+ 
+ 	/**
+@@ -251,4 +256,16 @@ class Gutenberg {
+ 			);
+ 		}
+ 	}
++
++	/**
++	 * Enqueue per-post converted CSS when present.
++	 *
++	 * enqueue_block_assets runs in both frontend and block editor contexts.
++	 *
++	 * @return void
++	 */
++	public function enqueue_converted_page_css(): void {
++		External_CSS_Service::enqueue_current_post_css();
++	}
++
+ }

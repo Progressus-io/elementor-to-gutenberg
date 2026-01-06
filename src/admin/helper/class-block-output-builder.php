@@ -81,9 +81,7 @@ class Block_Output_Builder {
 	 * @return string
 	 */
 	public static function sanitize_inner_html( string $block_slug, string $inner_html ): string {
-		// Remove script/style/comments to avoid serialization drift.
 		$inner_html = preg_replace( '#<(script|style)[^>]*>.*?</\1>#is', '', $inner_html );
-		$inner_html = preg_replace( '/<!--.*?-->/s', '', $inner_html );
 
 		if ( null !== self::$collector ) {
 			self::$collector->record_inner_sanitization( $block_slug, $inner_html );
