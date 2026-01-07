@@ -23,7 +23,7 @@ class Gutenberg_Supports_Mapper {
 
 	public function __construct() {
 		$this->matrix = array(
-			'heading' => array(
+			'heading'   => array(
 				'style' => array(
 					'typography' => true,
 					'spacing'    => true,
@@ -31,9 +31,24 @@ class Gutenberg_Supports_Mapper {
 				),
 				'attrs' => array(
 					'textAlign' => true,
+					'level'     => true,
+					'anchor'    => true,
+					'className' => true,
 				),
 			),
-			'group'   => array(
+			'paragraph' => array(
+				'style' => array(
+					'typography' => true,
+					'spacing'    => true,
+					'color'      => true,
+				),
+				'attrs' => array(
+					'align'     => true,
+					'dropCap'   => true,
+					'className' => true,
+				),
+			),
+			'group'     => array(
 				'style' => array(
 					'spacing'    => true,
 					'color'      => true,
@@ -43,7 +58,7 @@ class Gutenberg_Supports_Mapper {
 					'layout' => true,
 				),
 			),
-			'button'  => array(
+			'button'    => array(
 				'style' => array(
 					'spacing'    => true,
 					'typography' => true,
@@ -73,6 +88,12 @@ class Gutenberg_Supports_Mapper {
 		$style_allow  = $block_matrix['style'] ?? array();
 		$attr_allow   = $block_matrix['attrs'] ?? array();
 
+		$always_allow = array(
+			'className' => true,
+			'align'     => true,
+			'anchor'    => true,
+		);
+
 		foreach ( $attrs as $key => $value ) {
 			if ( 'style' === $key && is_array( $value ) ) {
 				$split              = $this->split_style_tree( $style_allow, $value );
@@ -82,7 +103,7 @@ class Gutenberg_Supports_Mapper {
 				if ( empty( $supported['style'] ) ) {
 					unset( $supported['style'] );
 				}
-			} elseif ( isset( $attr_allow[ $key ] ) ) {
+			} elseif ( isset( $attr_allow[ $key ] ) || isset( $always_allow[ $key ] ) ) {
 				$supported[ $key ] = $value;
 			} else {
 				$dropped[ $key ] = $value;

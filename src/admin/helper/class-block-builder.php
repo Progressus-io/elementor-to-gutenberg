@@ -357,17 +357,27 @@ class Block_Builder {
 		$style       = $attrs['style'];
 		$style_rules = array();
 
-		if ( ! empty( $style['spacing']['blockGap'] ) ) {
-			$style_rules[] = 'gap:' . self::normalize_style_value( $style['spacing']['blockGap'] );
+		if ( isset( $style['spacing'] ) && is_array( $style['spacing'] ) && array_key_exists( 'blockGap', $style['spacing'] ) ) {
+			$gap = $style['spacing']['blockGap'];
+			if ( null !== $gap && '' !== (string) $gap ) {
+				$style_rules[] = 'gap:' . self::normalize_style_value( $gap );
+			}
 		}
 
-		foreach ( array( 'padding', 'margin' ) as $type ) {
+
+		foreach ( array( 'margin', 'padding' ) as $type ) {
 			if ( empty( $style['spacing'][ $type ] ) || ! is_array( $style['spacing'][ $type ] ) ) {
 				continue;
 			}
 
 			foreach ( array( 'top', 'right', 'bottom', 'left' ) as $side ) {
-				if ( empty( $style['spacing'][ $type ][ $side ] ) ) {
+				if ( ! array_key_exists( $side, $style['spacing'][ $type ] ) ) {
+					continue;
+				}
+
+				$val = $style['spacing'][ $type ][ $side ];
+
+				if ( null === $val || '' === (string) $val ) {
 					continue;
 				}
 
@@ -375,23 +385,28 @@ class Block_Builder {
 					'%s-%s:%s',
 					$type,
 					$side,
-					self::normalize_style_value( $style['spacing'][ $type ][ $side ] )
+					self::normalize_style_value( $val )
 				);
 			}
 		}
 
 		if ( ! empty( $style['typography'] ) && is_array( $style['typography'] ) ) {
 			foreach ( $style['typography'] as $property => $value ) {
-				if ( '' === $value ) {
+				if ( null === $value || '' === (string) $value ) {
 					continue;
 				}
-				$style_rules[] = sprintf( '%s:%s', self::camel_to_kebab( $property ), self::normalize_style_value( $value ) );
+				$style_rules[] = sprintf(
+					'%s:%s',
+					self::camel_to_kebab( $property ),
+					self::normalize_style_value( $value )
+				);
 			}
 		}
 
-		if ( isset( $style['color']['background'] ) ) {
+		if ( isset( $style['color']['background'] ) && null !== $style['color']['background'] && '' !== (string) $style['color']['background'] ) {
 			$style_rules[] = 'background-color:' . self::normalize_style_value( $style['color']['background'] );
 		}
+
 
 		if ( ! empty( $style['background'] ) && is_array( $style['background'] ) ) {
 			if ( ! empty( $style['background']['image'] ) ) {
