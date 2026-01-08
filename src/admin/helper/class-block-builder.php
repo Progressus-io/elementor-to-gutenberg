@@ -293,6 +293,64 @@ class Block_Builder {
 	}
 
 	/**
+	 * Build a block where the inner HTML is generated after attributes have been prepared.
+	 *
+	 * This is useful when the inner markup must match the final prepared attributes exactly
+	 *
+	 * @param string   $block Block name without `core/` prefix (e.g. `heading`).
+	 * @param array    $attrs Raw block attributes (will be normalized and prepared).
+	 * @param callable $inner_builder Callback that receives prepared attributes and returns inner HTML.
+	 *                               Signature: function( array $prepared_attrs ): string
+	 * @param array    $options Optional build options.
+	 *                          - strict (bool|null): Force enable/disable strict serialization. Null uses defaults.
+	 *
+	 * @return string Serialized block markup (including trailing newline).
+	 */
+	public static function build_prepared( string $block, array $attrs, callable $inner_builder, array $options = array() ): string {
+		if ( 'html' === $block ) {
+			$attrs = array();
+		}
+
+		$block_slug = self::get_block_slug( $block );
+		$attrs      = Block_Output_Builder::prepare_attributes( $block_slug, self::normalize_attributes( $attrs ) );
+
+		$inner_html = (string) call_user_func( $inner_builder, $attrs );
+		$inner_html = Block_Output_Builder::sanitize_inner_html( $block_slug, $inner_html );
+
+		if ( 'button' === $block && '' === trim( $inner_html ) ) {
+			$attr_json = empty( $attrs ) ? '' : ' ' . wp_json_encode( $attrs );
+			return sprintf( '<!-- wp:%s%s /-->%s', $block, $attr_json, "\n" );
+		}
+
+		$is_wrapper = in_array( $block_slug, self::$wrapper_blocks, true );
+
+		$attr_json    = empty( $attrs ) ? '' : ' ' . wp_json_encode( $attrs );
+		$opening      = sprintf( '<!-- wp:%s%s -->', $block, $attr_json );
+		$closing      = sprintf( '<!-- /wp:%s -->', $block );
+		$wrapper_html = $inner_html;
+
+		if ( $is_wrapper ) {
+			$wrapper_class     = self::build_wrapper_class( $block_slug, $attrs );
+			$style_attr        = self::build_style_attribute( $attrs );
+			$attrs_for_wrapper = array(
+				'class' => $wrapper_class,
+			);
+
+			if ( '' !== $style_attr ) {
+				$attrs_for_wrapper['style'] = trim( $style_attr );
+			}
+
+			$wrapper_html = sprintf(
+				'<div %s>%s</div>',
+				Html_Attribute_Builder::build( $attrs_for_wrapper ),
+				$inner_html
+			);
+		}
+
+		return $opening . $wrapper_html . $closing . "\n";
+	}
+
+	/**
 	 * Normalize a block name to a full namespaced form for serialize_block().
 	 *
 	 * @param string $block Block name.
@@ -444,11 +502,11 @@ class Block_Builder {
 	}
 
 	/**
-	 * Normalize style values for inline usage (e.g. presets to CSS vars).
+	 * Normalize style values for inline usage.
 	 *
-	 * @param string $value Raw value from attributes.
+	 * @param mixed $value Raw value from attributes.
 	 *
-	 * @return string
+	 * @return string Normalized CSS value.
 	 */
 	private static function normalize_style_value( $value ): string {
 		$value = (string) $value;

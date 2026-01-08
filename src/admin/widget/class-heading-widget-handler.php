@@ -97,6 +97,49 @@ class Heading_Widget_Handler implements Widget_Handler_Interface {
 			Html_Attribute_Builder::build( $inner_attributes )
 		);
 
-		return Block_Builder::build( 'heading', $attrs, $inner_html );
+		return Block_Builder::build_prepared(
+			'heading',
+			$attrs,
+			static function ( array $prepared_attrs ) use ( $header_size, $title ): string {
+				$classes = array( 'wp-block-heading' );
+
+				if ( isset( $prepared_attrs['textAlign'] ) && is_string( $prepared_attrs['textAlign'] ) && '' !== $prepared_attrs['textAlign'] ) {
+					$classes[] = 'has-text-align-' . Style_Parser::clean_class( (string) $prepared_attrs['textAlign'] );
+				}
+
+				if ( isset( $prepared_attrs['className'] ) && is_string( $prepared_attrs['className'] ) && '' !== trim( $prepared_attrs['className'] ) ) {
+					$parts = preg_split( '/\s+/', trim( $prepared_attrs['className'] ) );
+					if ( is_array( $parts ) ) {
+						foreach ( $parts as $part ) {
+							$clean = Style_Parser::clean_class( (string) $part );
+							if ( '' !== $clean ) {
+								$classes[] = $clean;
+							}
+						}
+					}
+				}
+
+				$inner_attrs = array(
+					'class' => implode( ' ', array_values( array_unique( array_filter( $classes ) ) ) ),
+				);
+
+				if ( isset( $prepared_attrs['anchor'] ) && is_string( $prepared_attrs['anchor'] ) && '' !== $prepared_attrs['anchor'] ) {
+					$inner_attrs['id'] = (string) $prepared_attrs['anchor'];
+				}
+
+				$inline_style = Block_Builder::build_style_attribute( $prepared_attrs );
+				if ( '' !== $inline_style ) {
+					$inner_attrs['style'] = $inline_style;
+				}
+
+				return sprintf(
+					'<%1$s %3$s>%2$s</%1$s>',
+					$header_size,
+					esc_html( $title ),
+					Html_Attribute_Builder::build( $inner_attrs )
+				);
+			}
+		);
+
 	}
 }
