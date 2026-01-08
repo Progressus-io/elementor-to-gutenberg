@@ -99,11 +99,6 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 			}
 		}
 
-		$anchor_classes = array_merge(
-			array( 'wp-block-button__link', 'wp-element-button' ),
-			$color_map['anchor_classes'] ?? array()
-		);
-		$anchor_style   = $color_map['anchor_styles'] ?? array();
 
 		if ( '' !== $url ) {
 			$button_attributes['url'] = $url;
@@ -127,21 +122,6 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 			Style_Parser::save_custom_css( $custom_css );
 		}
 
-		$anchor_attrs = array(
-			'class' => implode( ' ', array_unique( $anchor_classes ) ),
-		);
-
-		if ( '' !== $url ) {
-			$anchor_attrs['href'] = $url;
-		}
-
-		if ( ! empty( $link_data['is_external'] ) ) {
-			$anchor_attrs['target'] = '_blank';
-		}
-
-		if ( ! empty( $rel_tokens ) ) {
-			$anchor_attrs['rel'] = implode( ' ', array_unique( $rel_tokens ) );
-		}
 
 		$icon_html = '';
 		if ( '' !== $icon_data['class_name'] ) {
@@ -151,14 +131,72 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 			$icon_html = '<span class="etg-button-icon"><img src="' . esc_url( $icon_data['url'] ) . '" alt="" aria-hidden="true" /></span>';
 		}
 
-		$anchor_html = sprintf(
-			'<a %s>%s%s</a>',
-			Html_Attribute_Builder::build( $anchor_attrs ),
-			'' !== $icon_html ? $icon_html : '',
-			wp_strip_all_tags( $text )
-		);
 
-		$button_block = Block_Builder::build( 'button', $button_attributes, $anchor_html );
+		// Normalize typography for core/button to avoid Gutenberg dropping/reshuffling values.
+		if ( isset( $button_attributes['style']['typography'] ) && is_array( $button_attributes['style']['typography'] ) ) {
+			$typo = $button_attributes['style']['typography'];
+
+			if ( empty( $typo['fontStyle'] ) ) {
+				$typo['fontStyle'] = 'normal';
+			}
+
+			if ( isset( $typo['fontFamily'] ) ) {
+				$family = trim( (string) $typo['fontFamily'] );
+				if ( '' !== $family && 0 !== strpos( $family, 'var:' ) && 0 !== strpos( $family, 'var(' ) ) {
+					unset( $typo['fontFamily'] );
+				}
+			}
+
+			foreach ( array( 'letterSpacing', 'wordSpacing' ) as $spacing_key ) {
+				if ( isset( $typo[ $spacing_key ] ) ) {
+					$val = strtolower( trim( (string) $typo[ $spacing_key ] ) );
+					if ( '0' === $val || '0px' === $val || '0em' === $val || '0rem' === $val || '0%' === $val ) {
+						unset( $typo[ $spacing_key ] );
+					}
+				}
+			}
+
+			if ( empty( $typo ) ) {
+				unset( $button_attributes['style']['typography'] );
+			} else {
+				$button_attributes['style']['typography'] = $typo;
+			}
+		}
+
+		$button_block = Block_Builder::build_prepared(
+			'button',
+			$button_attributes,
+			function ( array $prepared_attrs ) use ( $icon_html, $text ): string {
+				$anchor_attrs = array(
+					'class' => Block_Builder::build_button_link_class( $prepared_attrs ),
+				);
+
+				$style = Block_Builder::build_button_link_style( $prepared_attrs );
+				if ( '' !== $style ) {
+					$anchor_attrs['style'] = $style;
+				}
+
+				$href = isset( $prepared_attrs['url'] ) ? (string) $prepared_attrs['url'] : '';
+				if ( '' !== $href ) {
+					$anchor_attrs['href'] = esc_url( $href );
+				}
+
+				if ( ! empty( $prepared_attrs['linkTarget'] ) ) {
+					$anchor_attrs['target'] = (string) $prepared_attrs['linkTarget'];
+				}
+
+				if ( ! empty( $prepared_attrs['rel'] ) ) {
+					$anchor_attrs['rel'] = (string) $prepared_attrs['rel'];
+				}
+
+				return sprintf(
+					'<a %s>%s%s</a>',
+					Html_Attribute_Builder::build( $anchor_attrs ),
+					'' !== $icon_html ? $icon_html : '',
+					wp_strip_all_tags( $text )
+				);
+			}
+		);
 
 		return Block_Builder::build(
 			'buttons',

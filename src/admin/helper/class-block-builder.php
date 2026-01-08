@@ -7,6 +7,7 @@
 
 namespace Progressus\Gutenberg\Admin\Helper;
 
+use function esc_attr;
 use Progressus\Gutenberg\Admin\Helper\Block_Output_Builder;
 use Progressus\Gutenberg\Admin\Helper\Html_Attribute_Builder;
 use Progressus\Gutenberg\Admin\Helper\Style_Normalizer;
@@ -87,7 +88,7 @@ class Block_Builder {
 
 		if ( $is_wrapper ) {
 			$wrapper_class     = self::build_wrapper_class( $block_slug, $attrs );
-			$style_attr        = self::build_style_attribute( $attrs );
+			$style_attr        = self::build_style_attribute( $attrs, $block_slug );
 			$attrs_for_wrapper = array(
 				'class' => $wrapper_class,
 			);
@@ -103,7 +104,9 @@ class Block_Builder {
 			);
 		}
 
-		return $opening . $wrapper_html . $closing . "\n";
+		$wrapper_html = rtrim( (string) $wrapper_html, "\n" );
+
+		return $opening . "\n" . $wrapper_html . "\n" . $closing . "\n";
 	}
 
 	/**
@@ -297,11 +300,11 @@ class Block_Builder {
 	 *
 	 * This is useful when the inner markup must match the final prepared attributes exactly
 	 *
-	 * @param string   $block Block name without `core/` prefix (e.g. `heading`).
-	 * @param array    $attrs Raw block attributes (will be normalized and prepared).
+	 * @param string $block Block name without `core/` prefix (e.g. `heading`).
+	 * @param array $attrs Raw block attributes (will be normalized and prepared).
 	 * @param callable $inner_builder Callback that receives prepared attributes and returns inner HTML.
 	 *                               Signature: function( array $prepared_attrs ): string
-	 * @param array    $options Optional build options.
+	 * @param array $options Optional build options.
 	 *                          - strict (bool|null): Force enable/disable strict serialization. Null uses defaults.
 	 *
 	 * @return string Serialized block markup (including trailing newline).
@@ -319,6 +322,7 @@ class Block_Builder {
 
 		if ( 'button' === $block && '' === trim( $inner_html ) ) {
 			$attr_json = empty( $attrs ) ? '' : ' ' . wp_json_encode( $attrs );
+
 			return sprintf( '<!-- wp:%s%s /-->%s', $block, $attr_json, "\n" );
 		}
 
@@ -331,7 +335,7 @@ class Block_Builder {
 
 		if ( $is_wrapper ) {
 			$wrapper_class     = self::build_wrapper_class( $block_slug, $attrs );
-			$style_attr        = self::build_style_attribute( $attrs );
+			$style_attr        = self::build_style_attribute( $attrs, $block_slug );
 			$attrs_for_wrapper = array(
 				'class' => $wrapper_class,
 			);
@@ -347,7 +351,9 @@ class Block_Builder {
 			);
 		}
 
-		return $opening . $wrapper_html . $closing . "\n";
+		$wrapper_html = rtrim( (string) $wrapper_html, "\n" );
+
+		return $opening . "\n" . $wrapper_html . "\n" . $closing . "\n";
 	}
 
 	/**
@@ -407,13 +413,35 @@ class Block_Builder {
 	 *
 	 * @return string
 	 */
-	public static function build_style_attribute( array $attrs ): string {
+	public static function build_style_attribute( array $attrs, string $block_slug = '' ): string {
 		if ( empty( $attrs['style'] ) || ! is_array( $attrs['style'] ) ) {
 			return '';
 		}
 
 		$style       = $attrs['style'];
 		$style_rules = array();
+
+		// Keep margin only (matches Gutenberg serialization).
+		if ( 'button' === $block_slug ) {
+			if ( isset( $style['spacing']['margin'] ) && is_array( $style['spacing']['margin'] ) ) {
+				foreach ( array( 'top', 'right', 'bottom', 'left' ) as $side ) {
+					if ( ! array_key_exists( $side, $style['spacing']['margin'] ) ) {
+						continue;
+					}
+					$val = $style['spacing']['margin'][ $side ];
+					if ( null === $val || '' === (string) $val ) {
+						continue;
+					}
+					$style_rules[] = 'margin-' . $side . ':' . self::normalize_style_value( $val );
+				}
+			}
+
+			if ( empty( $style_rules ) ) {
+				return '';
+			}
+
+			return esc_attr( implode( ';', $style_rules ) );
+		}
 
 		if ( isset( $style['spacing'] ) && is_array( $style['spacing'] ) && array_key_exists( 'blockGap', $style['spacing'] ) ) {
 			$gap = $style['spacing']['blockGap'];
@@ -499,6 +527,125 @@ class Block_Builder {
 		}
 
 		return esc_attr( implode( ';', $style_rules ) );
+	}
+
+	/**
+	 * Build anchor class attribute for core/button inner <a>.
+	 *
+	 * @param array $attrs Prepared block attrs.
+	 *
+	 * @return string
+	 */
+	public static function build_button_link_class( array $attrs ): string {
+		$classes = array( 'wp-block-button__link' );
+
+		$has_text_color = false;
+		if ( ! empty( $attrs['textColor'] ) ) {
+			$slug = Style_Parser::clean_class( (string) $attrs['textColor'] );
+			if ( '' !== $slug ) {
+				$classes[]      = 'has-text-color';
+				$classes[]      = 'has-' . $slug . '-color';
+				$has_text_color = true;
+			}
+		} elseif ( ! empty( $attrs['style']['color']['text'] ) ) {
+			$classes[]      = 'has-text-color';
+			$has_text_color = true;
+		}
+
+		if ( ! empty( $attrs['backgroundColor'] ) ) {
+			$slug = Style_Parser::clean_class( (string) $attrs['backgroundColor'] );
+			if ( '' !== $slug ) {
+				$classes[] = 'has-background';
+				$classes[] = 'has-' . $slug . '-background-color';
+			}
+		} elseif ( ! empty( $attrs['style']['color']['background'] ) ) {
+			$classes[] = 'has-background';
+		}
+
+		if ( ! empty( $attrs['fontSize'] ) ) {
+			$slug = Style_Parser::clean_class( (string) $attrs['fontSize'] );
+			if ( '' !== $slug ) {
+				$classes[] = 'has-' . $slug . '-font-size';
+			}
+		} elseif ( ! empty( $attrs['style']['typography']['fontSize'] ) ) {
+			$classes[] = 'has-custom-font-size';
+		}
+
+		$classes[] = 'wp-element-button';
+
+		return implode( ' ', array_values( array_unique( array_filter( $classes ) ) ) );
+	}
+
+	/**
+	 * Build anchor inline style attribute for core/button inner <a>.
+	 *
+	 * Order is intentional to better match Gutenberg serialization.
+	 *
+	 * @param array $attrs Prepared block attrs.
+	 *
+	 * @return string
+	 */
+	public static function build_button_link_style( array $attrs ): string {
+		if ( empty( $attrs['style'] ) || ! is_array( $attrs['style'] ) ) {
+			return '';
+		}
+
+		$style = $attrs['style'];
+		$rules = array();
+
+		if ( isset( $style['color']['background'] ) && null !== $style['color']['background'] && '' !== (string) $style['color']['background'] ) {
+			$rules[] = 'background-color:' . self::normalize_style_value( $style['color']['background'] );
+		}
+
+		if ( isset( $style['color']['text'] ) && null !== $style['color']['text'] && '' !== (string) $style['color']['text'] ) {
+			$rules[] = 'color:' . self::normalize_style_value( $style['color']['text'] );
+		}
+
+		$typo = isset( $style['typography'] ) && is_array( $style['typography'] ) ? $style['typography'] : array();
+
+		if ( isset( $typo['fontSize'] ) && '' !== (string) $typo['fontSize'] ) {
+			$rules[] = 'font-size:' . self::normalize_style_value( $typo['fontSize'] );
+		}
+		if ( isset( $typo['fontStyle'] ) && '' !== (string) $typo['fontStyle'] ) {
+			$rules[] = 'font-style:' . self::normalize_style_value( $typo['fontStyle'] );
+		}
+		if ( isset( $typo['fontWeight'] ) && '' !== (string) $typo['fontWeight'] ) {
+			$rules[] = 'font-weight:' . self::normalize_style_value( $typo['fontWeight'] );
+		}
+		if ( isset( $typo['lineHeight'] ) && '' !== (string) $typo['lineHeight'] ) {
+			$rules[] = 'line-height:' . self::normalize_style_value( $typo['lineHeight'] );
+		}
+		if ( isset( $typo['textTransform'] ) && '' !== (string) $typo['textTransform'] ) {
+			$rules[] = 'text-transform:' . self::normalize_style_value( $typo['textTransform'] );
+		}
+		if ( isset( $typo['textDecoration'] ) && '' !== (string) $typo['textDecoration'] ) {
+			$rules[] = 'text-decoration:' . self::normalize_style_value( $typo['textDecoration'] );
+		}
+		if ( isset( $typo['letterSpacing'] ) && '' !== (string) $typo['letterSpacing'] ) {
+			$rules[] = 'letter-spacing:' . self::normalize_style_value( $typo['letterSpacing'] );
+		}
+		if ( isset( $typo['wordSpacing'] ) && '' !== (string) $typo['wordSpacing'] ) {
+			$rules[] = 'word-spacing:' . self::normalize_style_value( $typo['wordSpacing'] );
+		}
+
+		if ( isset( $style['spacing']['padding'] ) && is_array( $style['spacing']['padding'] ) ) {
+			foreach ( array( 'top', 'right', 'bottom', 'left' ) as $side ) {
+				if ( ! array_key_exists( $side, $style['spacing']['padding'] ) ) {
+					continue;
+				}
+				$val = $style['spacing']['padding'][ $side ];
+				if ( null === $val || '' === (string) $val ) {
+					continue;
+				}
+				$rules[] = 'padding-' . $side . ':' . self::normalize_style_value( $val );
+			}
+		}
+
+		if ( empty( $rules ) ) {
+			return '';
+		}
+
+		return esc_attr( implode( ';', $rules ) );
 	}
 
 	/**
