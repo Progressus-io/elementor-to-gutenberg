@@ -510,6 +510,11 @@ class Admin_Settings {
 
 		$inner_html = implode( '', $child_blocks );
 
+		$inner_html = trim( (string) $inner_html );
+		if ( '' === $inner_html ) {
+			return '';
+		}
+
 		return Block_Builder::build( 'group', $attributes, $inner_html );
 	}
 
@@ -529,6 +534,13 @@ class Admin_Settings {
 			'justifyContent' => $justify_content,
 			'flexWrap'       => 'wrap',
 		);
+
+		$inner_html = implode( '', $child_blocks );
+
+		$inner_html = trim( (string) $inner_html );
+		if ( '' === $inner_html ) {
+			return '';
+		}
 
 		return Block_Builder::build( 'group', $attributes, implode( '', $child_blocks ) );
 	}
@@ -551,6 +563,12 @@ class Admin_Settings {
 			'justifyContent' => $justify_content,
 		);
 
+		$inner_html = implode( '', $child_blocks );
+
+		$inner_html = trim( (string) $inner_html );
+		if ( '' === $inner_html ) {
+			return '';
+		}
 		return Block_Builder::build( 'group', $attributes, implode( '', $child_blocks ) );
 	}
 
@@ -570,6 +588,7 @@ class Admin_Settings {
 		$inner_html = '';
 		foreach ( $child_data as $child ) {
 			$content = $child['content'] ?? '';
+			$content = trim( (string) $content );
 			if ( '' === $content ) {
 				continue;
 			}
@@ -579,6 +598,11 @@ class Admin_Settings {
 				array( 'layout' => array( 'type' => 'constrained' ) ),
 				$content
 			);
+		}
+
+		$inner_html = trim( (string) $inner_html );
+		if ( '' === $inner_html ) {
+			return '';
 		}
 
 		return Block_Builder::build( 'group', $attributes, $inner_html );
@@ -935,7 +959,7 @@ class Admin_Settings {
 	 * @param string $type Widget type.
 	 */
 	private function render_unknown_widget( string $type ): string {
-		return sprintf( "<!-- Unknown widget skipped: %s -->\n", esc_html( $type ) );
+		return '';
 	}
 
 	/**
