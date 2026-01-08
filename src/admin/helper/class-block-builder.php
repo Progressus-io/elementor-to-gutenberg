@@ -8,6 +8,7 @@
 namespace Progressus\Gutenberg\Admin\Helper;
 
 use function esc_attr;
+use function wp_kses_post;
 use Progressus\Gutenberg\Admin\Helper\Block_Output_Builder;
 use Progressus\Gutenberg\Admin\Helper\Html_Attribute_Builder;
 use Progressus\Gutenberg\Admin\Helper\Style_Normalizer;
@@ -45,6 +46,32 @@ class Block_Builder {
 	private static $strict_blocks = array( 'image' );
 
 	/**
+	 * Blocks that should bypass the hardening pipeline (prepare/sanitize).
+	 *
+	 * These blocks often require their inner markup and attributes to remain
+	 * in the exact shape Gutenberg expects (e.g. core/embed figure  wrapper URL).
+	 *
+	 * @var array<string>
+	 */
+	private static $raw_blocks = array( 'embed' );
+
+	/**
+	 * Decide whether to bypass hardening for a given block.
+	 *
+	 * @param string $block_slug Block slug (e.g. embed, group).
+	 * @param array  $options    Build options.
+	 *
+	 * @return bool True when hardening must be bypassed.
+	 */
+	private static function should_bypass_hardening( string $block_slug, array $options ): bool {
+		if ( array_key_exists( 'raw', $options ) ) {
+			return true === $options['raw'];
+		}
+
+		return in_array( $block_slug, self::$raw_blocks, true );
+	}
+
+	/**
 	 * Build the serialized markup for a block including wrapper markup when required.
 	 *
 	 * @param string $block Block name without `core/` prefix (e.g. `group`).
@@ -59,9 +86,17 @@ class Block_Builder {
 		}
 
 		$block_slug = self::get_block_slug( $block );
-		$attrs      = Block_Output_Builder::prepare_attributes( $block_slug, self::normalize_attributes( $attrs ) );
 
-		$inner_html = Block_Output_Builder::sanitize_inner_html( $block_slug, $inner_html );
+		$bypass     = self::should_bypass_hardening( $block_slug, $options );
+
+		if ( ! $bypass ) {
+			$attrs      = Block_Output_Builder::prepare_attributes( $block_slug, self::normalize_attributes( $attrs ) );
+			$inner_html = Block_Output_Builder::sanitize_inner_html( $block_slug, $inner_html );
+		} else {
+			$attrs                 = self::normalize_attributes( $attrs );
+			$inner_html            = wp_kses_post( (string) $inner_html );
+			$options['strict']     = false;
+		}
 
 		if ( 'image' === $block_slug ) {
 			$normalized = self::normalize_core_image( $attrs, $inner_html );
@@ -315,10 +350,19 @@ class Block_Builder {
 		}
 
 		$block_slug = self::get_block_slug( $block );
-		$attrs      = Block_Output_Builder::prepare_attributes( $block_slug, self::normalize_attributes( $attrs ) );
 
-		$inner_html = (string) call_user_func( $inner_builder, $attrs );
-		$inner_html = Block_Output_Builder::sanitize_inner_html( $block_slug, $inner_html );
+		$bypass     = self::should_bypass_hardening( $block_slug, $options );
+
+		if ( ! $bypass ) {
+			$attrs      = Block_Output_Builder::prepare_attributes( $block_slug, self::normalize_attributes( $attrs ) );
+			$inner_html = (string) call_user_func( $inner_builder, $attrs );
+			$inner_html = Block_Output_Builder::sanitize_inner_html( $block_slug, $inner_html );
+		} else {
+			$attrs                 = self::normalize_attributes( $attrs );
+			$inner_html            = (string) call_user_func( $inner_builder, $attrs );
+			$inner_html            = wp_kses_post( (string) $inner_html );
+			$options['strict']     = false;
+		}
 
 		if ( 'button' === $block && '' === trim( $inner_html ) ) {
 			$attr_json = empty( $attrs ) ? '' : ' ' . wp_json_encode( $attrs );
