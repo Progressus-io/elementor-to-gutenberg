@@ -32,6 +32,7 @@ class Widget_Handler_Factory {
 		'nested-tabs'          => 'Progressus\Gutenberg\Admin\Widget\Nested_Tabs_Widget_Handler',
 		'icon'                 => 'Progressus\Gutenberg\Admin\Widget\Icon_Widget_Handler',
 		'icon-box'             => 'Progressus\Gutenberg\Admin\Widget\Icon_Box_Widget_Handler',
+		'image-box'            => 'Progressus\Gutenberg\Admin\Widget\Image_Box_Widget_Handler',
 		'icon-list'            => 'Progressus\Gutenberg\Admin\Widget\Icon_List_Widget_Handler',
 		'social-icons'         => 'Progressus\Gutenberg\Admin\Widget\Social_Icons_Widget_Handler',
 		'spacer'               => 'Progressus\Gutenberg\Admin\Widget\Spacer_Widget_Handler',
