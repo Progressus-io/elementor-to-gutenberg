@@ -30,6 +30,7 @@ use function get_post_meta;
 use function get_post_field;
 use function get_post_status;
 use function get_post_type;
+use function get_posts;
 use function get_the_title;
 use function get_user_meta;
 use function get_stylesheet;
@@ -243,9 +244,10 @@ class Batch_Convert_Wizard {
 	public function ajax_start_job(): void {
 		$this->verify_ajax_request();
 
-		$mode            = isset( $_POST['mode'] ) ? sanitize_key( wp_unslash( $_POST['mode'] ) ) : 'auto';
-		$conflict_policy = isset( $_POST['conflictPolicy'] ) ? sanitize_key( wp_unslash( $_POST['conflictPolicy'] ) ) : 'skip';
-		$skip_converted  = ! empty( $_POST['skipConverted'] );
+		$mode             = isset( $_POST['mode'] ) ? sanitize_key( wp_unslash( $_POST['mode'] ) ) : 'auto';
+		$conflict_policy  = isset( $_POST['conflictPolicy'] ) ? sanitize_key( wp_unslash( $_POST['conflictPolicy'] ) ) : 'skip';
+		$skip_converted   = ! empty( $_POST['skipConverted'] );
+		$apply_full_width = ! empty( $_POST['applyFullWidth'] );
 
 		$raw_pages         = isset( $_POST['pages'] ) ? wp_unslash( $_POST['pages'] ) : array();
 		$raw_disabled      = isset( $_POST['disabledMeta'] ) ? wp_unslash( $_POST['disabledMeta'] ) : array();
@@ -291,6 +293,10 @@ class Batch_Convert_Wizard {
 			);
 		}
 
+		if ( $apply_full_width ) {
+			$this->apply_full_width_global_styles();
+		}
+
 		$pages     = $this->prepare_job_pages( $selected_page_ids, $disabled_meta_ids );
 		$templates = $this->prepare_job_templates(
 			$mode,
@@ -308,7 +314,8 @@ class Batch_Convert_Wizard {
 			);
 		}
 
-		$options = $this->build_job_options( $mode, $conflict_policy, $skip_converted );
+		$options                     = $this->build_job_options( $mode, $conflict_policy, $skip_converted );
+		$options['apply_full_width'] = $apply_full_width;
 
 		$job_id = uniqid( 'ele2gb_', true );
 
@@ -1362,6 +1369,117 @@ class Batch_Convert_Wizard {
 		}
 
 		return true;
+	}
+
+	/**
+	 * Apply full-width layout settings to the active block theme global styles.
+	 */
+	/**
+	 * Apply full-width layout settings to the active block theme global styles.
+	 */
+	private function apply_full_width_global_styles(): void {
+		$theme      = wp_get_theme();
+		$stylesheet = $theme->get_stylesheet();
+
+		if ( '' === $stylesheet ) {
+			return;
+		}
+
+		$is_block_theme = method_exists( $theme, 'is_block_theme' ) ? (bool) $theme->is_block_theme() : (bool) wp_is_block_theme();
+		if ( ! $is_block_theme ) {
+			return;
+		}
+
+		$post_id = $this->find_global_styles_post_id_for_theme( $stylesheet );
+		if ( ! $post_id ) {
+			return;
+		}
+
+		$this->update_global_styles_layout_post( $post_id, '1440px', '1440px' );
+	}
+
+	/**
+	 * Find the Global Styles post ID for the given theme stylesheet.
+	 */
+	private function find_global_styles_post_id_for_theme( string $stylesheet ): int {
+		$slug = 'wp-global-styles-' . $stylesheet;
+
+		$by_slug = get_posts(
+			array(
+				'post_type'      => 'wp_global_styles',
+				'post_status'    => 'any',
+				'name'           => $slug,
+				'posts_per_page' => 1,
+				'orderby'        => 'ID',
+				'order'          => 'DESC',
+			)
+		);
+
+		if ( ! empty( $by_slug ) && $by_slug[0] instanceof WP_Post ) {
+			return (int) $by_slug[0]->ID;
+		}
+
+		$fallback = get_posts(
+			array(
+				'post_type'      => 'wp_global_styles',
+				'post_status'    => 'any',
+				'posts_per_page' => 1,
+				'orderby'        => 'ID',
+				'order'          => 'DESC',
+			)
+		);
+
+		if ( ! empty( $fallback ) && $fallback[0] instanceof WP_Post ) {
+			return (int) $fallback[0]->ID;
+		}
+
+		return 0;
+	}
+
+	/**
+	 * Update the layout sizes inside a wp_global_styles post_content JSON.
+	 */
+	private function update_global_styles_layout_post( int $post_id, string $content_size, string $wide_size ): void {
+		$post = get_post( $post_id );
+		if ( ! ( $post instanceof WP_Post ) ) {
+			return;
+		}
+
+		$data = json_decode( (string) $post->post_content, true );
+		if ( ! is_array( $data ) ) {
+			$data = array();
+		}
+
+		if ( ! isset( $data['settings'] ) || ! is_array( $data['settings'] ) ) {
+			$data['settings'] = array();
+		}
+
+		if ( ! isset( $data['settings']['layout'] ) || ! is_array( $data['settings']['layout'] ) ) {
+			$data['settings']['layout'] = array();
+		}
+
+		$changed = false;
+
+		if ( ! isset( $data['settings']['layout']['contentSize'] ) || $data['settings']['layout']['contentSize'] !== $content_size ) {
+			$data['settings']['layout']['contentSize'] = $content_size;
+			$changed                                   = true;
+		}
+
+		if ( ! isset( $data['settings']['layout']['wideSize'] ) || $data['settings']['layout']['wideSize'] !== $wide_size ) {
+			$data['settings']['layout']['wideSize'] = $wide_size;
+			$changed                                = true;
+		}
+
+		if ( ! $changed ) {
+			return;
+		}
+
+		wp_update_post(
+			array(
+				'ID'           => (int) $post_id,
+				'post_content' => wp_json_encode( $data ),
+			)
+		);
 	}
 
 	/**
@@ -2419,8 +2537,12 @@ class Batch_Convert_Wizard {
 			'copyAdditionalCss'      => esc_html__( 'Copy Additional CSS from the current theme', 'elementor-to-gutenberg' ),
 			'themeSwitchError'       => esc_html__( 'Unable to switch themes. Please try again or choose a different theme.', 'elementor-to-gutenberg' ),
 			'themeActiveLabel'       => esc_html__( 'Active', 'elementor-to-gutenberg' ),
+			'layoutStepTitle'        => esc_html__( 'Layout settings', 'elementor-to-gutenberg' ),
+			'layoutStepDesc'         => esc_html__( 'Apply full-width layout defaults to the active block theme.', 'elementor-to-gutenberg' ),
+			'fullWidthLabel'         => esc_html__( 'Set site to Full Width (1440px)', 'elementor-to-gutenberg' ),
 			'reviewTitle'            => esc_html__( 'Review & Confirm', 'elementor-to-gutenberg' ),
 			'reviewSummary'          => esc_html__( '%1$d pages selected — %2$d will be converted, %3$d skipped.', 'elementor-to-gutenberg' ),
+			'fullWidthReview'        => esc_html__( 'Set site to Full Width (1440px)', 'elementor-to-gutenberg' ),
 			'metaDisabled'           => esc_html__( '%1$d pages will be converted without copying meta fields or featured image.', 'elementor-to-gutenberg' ),
 			'startConversion'        => esc_html__( 'Start Conversion', 'elementor-to-gutenberg' ),
 			'backgroundInfo'         => esc_html__( 'Conversion runs in the background. You can safely close this page.', 'elementor-to-gutenberg' ),
