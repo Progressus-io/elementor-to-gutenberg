@@ -109,6 +109,9 @@
                 changeTheme: false,
                 copyCustomCss: true,
                 applyFullWidth: false,
+                disableMetaByDefault: true,
+                enabledMeta: new Set(),
+
             };
 
             if (config.activeJob && config.activeJob.id) {
@@ -138,7 +141,9 @@
                 this.state.mode = 'auto';
                 this.state.modeSelection = 'auto';
                 this.state.selectedPageIds = new Set(this.pages.map((page) => page.id));
-                this.state.disabledMeta = new Set();
+                this.state.disabledMeta = new Set(this.pages.map((page) => page.id));
+                this.state.enabledMeta = new Set();
+                this.state.disableMetaByDefault = true;
                 this.state.selectedHeaderIds = new Set();
                 this.state.selectedFooterIds = new Set();
                 this.state.defaultHeaderId = defaultHeader;
@@ -150,6 +155,8 @@
                 this.state.modeSelection = 'custom';
                 this.state.selectedPageIds = new Set();
                 this.state.disabledMeta = new Set();
+                this.state.enabledMeta = new Set();
+                this.state.disableMetaByDefault = true;
                 this.state.selectedHeaderIds = new Set(this.getTemplatesFor('header').map((template) => Number(template.id)));
                 this.state.selectedFooterIds = new Set(this.getTemplatesFor('footer').map((template) => Number(template.id)));
                 this.state.defaultHeaderId = this.pickDefaultTemplate('header', this.state.selectedHeaderIds, defaultHeader);
@@ -410,9 +417,20 @@
         togglePageSelection(id, checked) {
             if (checked) {
                 this.state.selectedPageIds.add(id);
+
+                const isDisabled =
+                    this.state.disabledMeta.has(id) ||
+                    (this.state.disableMetaByDefault && !this.state.enabledMeta.has(id));
+
+                if (isDisabled) {
+                    this.state.disabledMeta.add(id);
+                    this.state.enabledMeta.delete(id);
+                } else {
+                    this.state.enabledMeta.add(id);
+                    this.state.disabledMeta.delete(id);
+                }
             } else {
                 this.state.selectedPageIds.delete(id);
-                this.state.disabledMeta.delete(id);
             }
             this.clearNotice();
             this.render();
@@ -421,7 +439,9 @@
         toggleDisableMeta(id, disable) {
             if (disable) {
                 this.state.disabledMeta.add(id);
+                this.state.enabledMeta.delete(id);
             } else {
+                this.state.enabledMeta.add(id);
                 this.state.disabledMeta.delete(id);
             }
             this.render();
@@ -567,7 +587,9 @@
             const payload = {
                 mode: this.state.mode,
                 pages: selected,
-                disabledMeta: Array.from(this.state.disabledMeta),
+                disabledMeta: Array.from(this.state.selectedPageIds).filter((id) => {
+                    return this.state.disabledMeta.has(id) || (this.state.disableMetaByDefault && !this.state.enabledMeta.has(id));
+                }),
                 skipConverted: this.state.skipConverted ? 1 : 0,
                 conflictPolicy: this.state.conflictPolicy,
             };
@@ -929,9 +951,20 @@
                 visiblePages.forEach((page) => {
                     if (selectAllCheckbox.checked) {
                         this.state.selectedPageIds.add(page.id);
+
+                        const isDisabled =
+                            this.state.disabledMeta.has(page.id) ||
+                            (this.state.disableMetaByDefault && !this.state.enabledMeta.has(page.id));
+
+                        if (isDisabled) {
+                            this.state.disabledMeta.add(page.id);
+                            this.state.enabledMeta.delete(page.id);
+                        } else {
+                            this.state.enabledMeta.add(page.id);
+                            this.state.disabledMeta.delete(page.id);
+                        }
                     } else {
                         this.state.selectedPageIds.delete(page.id);
-                        this.state.disabledMeta.delete(page.id);
                     }
                 });
                 this.render();
@@ -995,7 +1028,11 @@
                 metaToggle.className = 'ele2gb-inline-toggle';
                 const metaCheckbox = document.createElement('input');
                 metaCheckbox.type = 'checkbox';
-                metaCheckbox.checked = this.state.disabledMeta.has(page.id);
+                const isDisabled =
+                    this.state.disabledMeta.has(page.id) ||
+                    (this.state.disableMetaByDefault && !this.state.enabledMeta.has(page.id));
+
+                metaCheckbox.checked = isDisabled;
                 metaCheckbox.addEventListener('change', () => {
                     this.toggleDisableMeta(page.id, metaCheckbox.checked);
                 });
