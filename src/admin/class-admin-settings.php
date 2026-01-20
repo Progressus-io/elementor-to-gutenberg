@@ -390,10 +390,10 @@ class Admin_Settings {
 				return $handler->handle( $element );
 			}
 
-			return $this->render_unknown_widget( $widget_type );
+			return $this->render_placeholder_block( $element );
 		}
 
-		return $this->render_unknown_widget( $el_type ?: 'unknown' );
+		return $this->render_placeholder_block( $element );
 	}
 
 	/**
@@ -569,6 +569,7 @@ class Admin_Settings {
 		if ( '' === $inner_html ) {
 			return '';
 		}
+
 		return Block_Builder::build( 'group', $attributes, implode( '', $child_blocks ) );
 	}
 
@@ -959,7 +960,45 @@ class Admin_Settings {
 	 * @param string $type Widget type.
 	 */
 	private function render_unknown_widget( string $type ): string {
-		return '';
+		$element = array(
+			'widgetType' => $type,
+			'elType'     => 'widget',
+		);
+
+		return $this->render_placeholder_block( $element );
+	}
+
+	private function render_placeholder_block( array $element ): string {
+		// Detect widget name (best-effort).
+		$widget_name = '';
+		if ( isset( $element['widgetType'] ) ) {
+			$widget_name = (string) $element['widgetType'];
+		} elseif ( isset( $element['elType'] ) ) {
+			$widget_name = (string) $element['elType'];
+		}
+
+		$widget_name = trim( $widget_name );
+		if ( '' === $widget_name ) {
+			$widget_name = 'unknown';
+		}
+		// Visible notice text (plain text, no HTML).
+		$notice_text = sprintf( 'Unsupported widget: %s', $widget_name );
+		$notice_text = esc_html( $notice_text );
+
+		// core/paragraph canonical markup.
+		$inner_html = '<p class="etg-unsupported-widget">' . $notice_text . '</p>';
+
+		$block = array(
+			'blockName'    => 'core/paragraph',
+			'attrs'        => array(
+				'className' => 'etg-unsupported-widget',
+			),
+			'innerBlocks'  => array(),
+			'innerHTML'    => $inner_html,
+			'innerContent' => array( $inner_html ),
+		);
+
+		return serialize_block( $block ) . "\n";
 	}
 
 	/**
