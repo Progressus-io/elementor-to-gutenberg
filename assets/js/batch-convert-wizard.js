@@ -108,6 +108,10 @@
                 selectedThemeSlug: this.getCurrentThemeSlug(),
                 changeTheme: false,
                 copyCustomCss: true,
+                applyFullWidth: false,
+                disableMetaByDefault: true,
+                enabledMeta: new Set(),
+
             };
 
             if (config.activeJob && config.activeJob.id) {
@@ -137,7 +141,9 @@
                 this.state.mode = 'auto';
                 this.state.modeSelection = 'auto';
                 this.state.selectedPageIds = new Set(this.pages.map((page) => page.id));
-                this.state.disabledMeta = new Set();
+                this.state.disabledMeta = new Set(this.pages.map((page) => page.id));
+                this.state.enabledMeta = new Set();
+                this.state.disableMetaByDefault = true;
                 this.state.selectedHeaderIds = new Set();
                 this.state.selectedFooterIds = new Set();
                 this.state.defaultHeaderId = defaultHeader;
@@ -149,6 +155,8 @@
                 this.state.modeSelection = 'custom';
                 this.state.selectedPageIds = new Set();
                 this.state.disabledMeta = new Set();
+                this.state.enabledMeta = new Set();
+                this.state.disableMetaByDefault = true;
                 this.state.selectedHeaderIds = new Set(this.getTemplatesFor('header').map((template) => Number(template.id)));
                 this.state.selectedFooterIds = new Set(this.getTemplatesFor('footer').map((template) => Number(template.id)));
                 this.state.defaultHeaderId = this.pickDefaultTemplate('header', this.state.selectedHeaderIds, defaultHeader);
@@ -315,7 +323,7 @@
                 return ['progress'];
             }
 
-            const steps = ['mode', 'theme'];
+            const steps = ['mode', 'theme', 'layout'];
             if (this.state.mode === 'custom') {
                 steps.push('select');
                 steps.push('templates');
@@ -342,6 +350,8 @@
                     return this.strings.modeTitle || 'Choose Mode';
                 case 'theme':
                     return this.strings.themeStepTitle || 'Theme compatibility';
+                case 'layout':
+                    return this.strings.layoutStepTitle || 'Layout settings';
                 case 'select': {
                     const summary = formatString(this.strings.selectionSummary || '%1$d selected / %2$d total', this.state.selectedPageIds.size, this.pages.length);
                     return (this.strings.selectPagesTitle || 'Select Pages') + ' (' + summary + ')';
@@ -407,9 +417,20 @@
         togglePageSelection(id, checked) {
             if (checked) {
                 this.state.selectedPageIds.add(id);
+
+                const isDisabled =
+                    this.state.disabledMeta.has(id) ||
+                    (this.state.disableMetaByDefault && !this.state.enabledMeta.has(id));
+
+                if (isDisabled) {
+                    this.state.disabledMeta.add(id);
+                    this.state.enabledMeta.delete(id);
+                } else {
+                    this.state.enabledMeta.add(id);
+                    this.state.disabledMeta.delete(id);
+                }
             } else {
                 this.state.selectedPageIds.delete(id);
-                this.state.disabledMeta.delete(id);
             }
             this.clearNotice();
             this.render();
@@ -418,7 +439,9 @@
         toggleDisableMeta(id, disable) {
             if (disable) {
                 this.state.disabledMeta.add(id);
+                this.state.enabledMeta.delete(id);
             } else {
+                this.state.enabledMeta.add(id);
                 this.state.disabledMeta.delete(id);
             }
             this.render();
@@ -564,13 +587,17 @@
             const payload = {
                 mode: this.state.mode,
                 pages: selected,
-                disabledMeta: Array.from(this.state.disabledMeta),
+                disabledMeta: Array.from(this.state.selectedPageIds).filter((id) => {
+                    return this.state.disabledMeta.has(id) || (this.state.disableMetaByDefault && !this.state.enabledMeta.has(id));
+                }),
                 skipConverted: this.state.skipConverted ? 1 : 0,
                 conflictPolicy: this.state.conflictPolicy,
             };
 
             const themePayload = this.getThemePayload();
             Object.assign(payload, themePayload);
+
+            payload.applyFullWidth = this.state.applyFullWidth ? 1 : 0;
 
             if (this.state.mode === 'custom') {
                 payload.headerTemplates = selectedHeaders;
@@ -678,6 +705,7 @@
             });
             this.resetSelectionForMode('auto');
             this.resetThemeSelection();
+            this.state.applyFullWidth = false;
             this.clearNotice();
             this.render();
         }
@@ -866,6 +894,39 @@
             return container;
         }
 
+        renderLayoutStep() {
+            const container = createElement('div');
+            container.appendChild(createElement('h2', 'ele2gb-wizard-step-title', this.strings.layoutStepTitle || 'Layout settings'));
+            if (this.strings.layoutStepDesc) {
+                container.appendChild(createElement('p', 'ele2gb-step-description', this.strings.layoutStepDesc));
+            }
+
+            const wrapper = document.createElement('label');
+            wrapper.className = 'ele2gb-inline-toggle';
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = !!this.state.applyFullWidth;
+            checkbox.addEventListener('change', () => {
+                this.state.applyFullWidth = checkbox.checked;
+                this.render();
+            });
+            wrapper.appendChild(checkbox);
+            wrapper.appendChild(createElement('span', null, this.strings.fullWidthLabel || 'Set site to Full Width (1440px)'));
+            container.appendChild(wrapper);
+
+            const buttons = createElement('div', 'ele2gb-wizard-buttons');
+            const backBtn = createButton(this.strings.back || 'Back', 'button button-secondary');
+            backBtn.addEventListener('click', () => this.goToPrevious());
+            buttons.appendChild(backBtn);
+
+            const continueBtn = createButton(this.strings.continue || 'Continue', 'button button-primary');
+            continueBtn.addEventListener('click', () => this.goToNext());
+            buttons.appendChild(continueBtn);
+            container.appendChild(buttons);
+
+            return container;
+        }
+
         renderSelectStep() {
             const container = createElement('div');
             container.appendChild(createElement('h2', 'ele2gb-wizard-step-title', this.strings.selectPagesTitle || 'Select Pages'));
@@ -890,9 +951,20 @@
                 visiblePages.forEach((page) => {
                     if (selectAllCheckbox.checked) {
                         this.state.selectedPageIds.add(page.id);
+
+                        const isDisabled =
+                            this.state.disabledMeta.has(page.id) ||
+                            (this.state.disableMetaByDefault && !this.state.enabledMeta.has(page.id));
+
+                        if (isDisabled) {
+                            this.state.disabledMeta.add(page.id);
+                            this.state.enabledMeta.delete(page.id);
+                        } else {
+                            this.state.enabledMeta.add(page.id);
+                            this.state.disabledMeta.delete(page.id);
+                        }
                     } else {
                         this.state.selectedPageIds.delete(page.id);
-                        this.state.disabledMeta.delete(page.id);
                     }
                 });
                 this.render();
@@ -956,7 +1028,11 @@
                 metaToggle.className = 'ele2gb-inline-toggle';
                 const metaCheckbox = document.createElement('input');
                 metaCheckbox.type = 'checkbox';
-                metaCheckbox.checked = this.state.disabledMeta.has(page.id);
+                const isDisabled =
+                    this.state.disabledMeta.has(page.id) ||
+                    (this.state.disableMetaByDefault && !this.state.enabledMeta.has(page.id));
+
+                metaCheckbox.checked = isDisabled;
                 metaCheckbox.addEventListener('change', () => {
                     this.toggleDisableMeta(page.id, metaCheckbox.checked);
                 });
@@ -1278,6 +1354,10 @@
                 list.appendChild(createElement('li', null, (this.strings.themeKeepCurrent || 'Keep current theme') + ': ' + this.getCurrentThemeName()));
             }
 
+            if (this.state.applyFullWidth) {
+                list.appendChild(createElement('li', null, this.strings.fullWidthReview || 'Set site to Full Width (1440px)'));
+            }
+
             if (this.shouldShowConflictStep()) {
                 let policyLabel = '';
                 switch (this.state.conflictPolicy) {
@@ -1515,6 +1595,9 @@
                     break;
                 case 'theme':
                     stepContent = this.renderThemeStep();
+                    break;
+                case 'layout':
+                    stepContent = this.renderLayoutStep();
                     break;
                 case 'select':
                     stepContent = this.renderSelectStep();
