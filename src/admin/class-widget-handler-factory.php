@@ -42,6 +42,11 @@ class Widget_Handler_Factory {
 		'form'                 => 'Progressus\Gutenberg\Admin\Widget\Form_Widget_Handler',
 		'nav-menu'             => 'Progressus\Gutenberg\Admin\Widget\Menu_Widget_Handler',
 		'theme-site-logo'      => 'Progressus\Gutenberg\Admin\Widget\Site_Logo_Widget_Handler',
+				'woocommerce-products'  => 'Progressus\Gutenberg\Admin\Widget\Woo_Products_Widget_Handler',
+				'woocommerce-cart'      => 'Progressus\Gutenberg\Admin\Widget\Woo_Shortcode_Widget_Handler',
+				'woocommerce_cart'      => 'Progressus\Gutenberg\Admin\Widget\Woo_Shortcode_Widget_Handler',
+			'woocommerce-checkout'  => 'Progressus\Gutenberg\Admin\Widget\Woo_Shortcode_Widget_Handler',
+				'woocommerce-my-account'=> 'Progressus\Gutenberg\Admin\Widget\Woo_Shortcode_Widget_Handler',
 	);
 
 	/**
