@@ -3,7 +3,7 @@
  *
  * @see https://developer.wordpress.org/block-editor/reference-guides/packages/packages-i18n/
  */
-import { __ } from '@wordpress/i18n';
+import { __ } from "@wordpress/i18n";
 
 /**
  * React hook that is used to mark the block wrapper element.
@@ -11,32 +11,30 @@ import { __ } from '@wordpress/i18n';
  *
  * @see https://developer.wordpress.org/block-editor/reference-guides/packages/packages-block-editor/#useblockprops
  */
-import { 
-	useBlockProps, 
-	InspectorControls,
-	BlockControls
-} from '@wordpress/block-editor';
+import {
+  useBlockProps,
+  InspectorControls,
+  BlockControls,
+  MediaUpload,
+  MediaUploadCheck,
+} from "@wordpress/block-editor";
 
 import {
-	PanelBody,
-	RangeControl,
-	SelectControl,
-	ToggleControl,
-	TextControl,
-	Button,
-	ColorPicker,
-	Popover,
-	SearchControl,
-	TabPanel
-} from '@wordpress/components';
+  PanelBody,
+  RangeControl,
+  SelectControl,
+  ToggleControl,
+  TextControl,
+  Button,
+  ColorPicker,
+  Popover,
+  SearchControl,
+  TabPanel,
+} from "@wordpress/components";
 
-import { 
-	useState
-} from '@wordpress/element';
+import { useState } from "@wordpress/element";
 
-import {
-	AlignmentToolbar
-} from '@wordpress/block-editor';
+import { AlignmentToolbar } from "@wordpress/block-editor";
 
 /**
  * Lets webpack process CSS, SASS or SCSS files referenced in JavaScript files.
@@ -44,7 +42,7 @@ import {
  *
  * @see https://www.npmjs.com/package/@wordpress/scripts#using-css
  */
-import './editor.scss';
+import "./editor.scss";
 
 // FontAwesome icons organized by categories
 const FONTAWESOME_ICONS = {
@@ -120,335 +118,486 @@ const FONTAWESOME_ICONS = {
  *
  * @return {Element} Element to render.
  */
-export default function Edit( { attributes, setAttributes } ) {
-	const {
-		icon,
-		iconStyle,
-		size,
-		color,
-		backgroundColor,
-		borderRadius,
-		padding,
-		alignment,
-		hoverColor,
-		hoverBackgroundColor,
-		hoverEffect,
-		link,
-		linkTarget,
-		ariaLabel
-	} = attributes;
+export default function Edit({ attributes, setAttributes }) {
+  const {
+    icon,
+    svg,
+    svgUrl,
+    iconStyle,
+    size,
+    color,
+    backgroundColor,
+    borderRadius,
+    padding,
+    alignment,
+    hoverColor,
+    hoverBackgroundColor,
+    hoverEffect,
+    link,
+    linkTarget,
+    ariaLabel,
+  } = attributes;
 
-	const [ isIconPickerOpen, setIsIconPickerOpen ] = useState( false );
-	const [ iconSearch, setIconSearch ] = useState( '' );
-	const [ showColorPicker, setShowColorPicker ] = useState( false );
-	const [ showBgColorPicker, setShowBgColorPicker ] = useState( false );
-	const [ showHoverColorPicker, setShowHoverColorPicker ] = useState( false );
-	const [ showHoverBgColorPicker, setShowHoverBgColorPicker ] = useState( false );
+  const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
+  const [iconSearch, setIconSearch] = useState("");
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [showBgColorPicker, setShowBgColorPicker] = useState(false);
+  const [showHoverColorPicker, setShowHoverColorPicker] = useState(false);
+  const [showHoverBgColorPicker, setShowHoverBgColorPicker] = useState(false);
 
-	// Filter icons based on search
-	const getFilteredIcons = ( category ) => {
-		return FONTAWESOME_ICONS[category].filter( iconName =>
-			iconName.toLowerCase().includes( iconSearch.toLowerCase() )
-		);
-	};
+  // Filter icons based on search
+  const getFilteredIcons = (category) => {
+    return FONTAWESOME_ICONS[category].filter((iconName) =>
+      iconName.toLowerCase().includes(iconSearch.toLowerCase())
+    );
+  };
 
-	const blockProps = useBlockProps( {
-		className: `fontawesome-icon-align-${alignment}`,
-		style: {
-			textAlign: alignment
-		}
-	} );
+  const blockProps = useBlockProps({
+    className: `fontawesome-icon-align-${alignment}`,
+    style: {
+      textAlign: alignment,
+    },
+  });
 
-	const iconStyles = {
-		fontSize: `${size}px`,
-		color: color,
-		backgroundColor: backgroundColor || 'transparent',
-		borderRadius: borderRadius ? `${borderRadius}px` : '0',
-		padding: padding ? `${padding}px` : '0',
-		display: 'inline-block',
-		lineHeight: 1,
-		transition: 'all 0.3s ease',
-		width: 'auto',
-		height: 'auto'
-	};
+  const iconStyles = {
+    fontSize: `${size}px`,
+    color: color,
+    backgroundColor: backgroundColor || "transparent",
+    borderRadius: borderRadius ? `${borderRadius}px` : "0",
+    padding: padding ? `${padding}px` : "0",
+    display: "inline-block",
+    lineHeight: 1,
+    transition: "all 0.3s ease",
+    width: "auto",
+    height: "auto",
+  };
 
-	// Create FontAwesome icon element
-	const IconElement = () => {
-		return (
-			<i 
-				className={ `${iconStyle} ${icon} fontawesome-icon-hover-${hoverEffect}` }
-				style={ iconStyles }
-				aria-label={ ariaLabel }
-				aria-hidden={ !ariaLabel ? 'true' : 'false' }
-			/>
-		);
-	};
+  // Create FontAwesome icon element
+  const IconElement = () => {
+    if (svg) {
+      const svgWrapperStyles = {
+        width: `${size}px`,
+        height: `${size}px`,
+        display: "inline-block",
+        backgroundColor: backgroundColor || "transparent",
+        borderRadius: borderRadius ? `${borderRadius}px` : "0",
+        padding: padding ? `${padding}px` : "0",
+        transition: "all 0.3s ease",
+      };
 
-	return (
-		<>
-			<BlockControls>
-				<AlignmentToolbar
-					value={ alignment }
-					onChange={ ( value ) => setAttributes( { alignment: value || 'left' } ) }
-				/>
-			</BlockControls>
+      return (
+        <span
+          className={`gutenberg-icon-svg fontawesome-icon-hover-${hoverEffect}`}
+          style={svgWrapperStyles}
+          aria-label={ariaLabel}
+          aria-hidden={!ariaLabel ? "true" : "false"}
+          dangerouslySetInnerHTML={{ __html: svg }}
+        />
+      );
+    }
 
-			<InspectorControls>
-				<PanelBody title={ __( 'Icon Settings', 'fontawesome-icon-block' ) } initialOpen={ true }>
-					<div className="fontawesome-icon-picker">
-						<div className="fontawesome-icon-picker-preview">
-							<div className="fontawesome-icon-current">
-								<span className="current-icon-label">{ __( 'Current Icon:', 'fontawesome-icon-block' ) }</span>
-								<div className="current-icon-display">
-									<i 
-										className={ `${iconStyle} ${icon}` }
-										style={ { 
-											fontSize: '32px',
-											color: color
-										} }
-									/>
-									<div className="icon-details">
-										<span className="icon-name">{ icon }</span>
-										<span className="icon-style">{ iconStyle }</span>
-									</div>
-								</div>
-							</div>
-						</div>
-						<Button
-							variant="secondary"
-							onClick={ () => setIsIconPickerOpen( ! isIconPickerOpen ) }
-							className="fontawesome-icon-picker-button"
-						>
-							{ __( 'Choose Different Icon', 'fontawesome-icon-block' ) }
-						</Button>
-						
-						{ isIconPickerOpen && (
-							<Popover
-								position="middle center"
-								onClose={ () => setIsIconPickerOpen( false ) }
-								className="fontawesome-icon-picker-popover"
-							>
-								<div className="fontawesome-icon-picker-content">
-									<SearchControl
-										value={ iconSearch }
-										onChange={ setIconSearch }
-										placeholder={ __( 'Search icons...', 'fontawesome-icon-block' ) }
-									/>
-									<TabPanel
-										className="fontawesome-icon-tabs"
-										activeClass="active-tab"
-										tabs={ [
-											{ name: 'solid', title: __( 'Solid', 'fontawesome-icon-block' ), className: 'tab-solid' },
-											{ name: 'regular', title: __( 'Regular', 'fontawesome-icon-block' ), className: 'tab-regular' },
-											{ name: 'brands', title: __( 'Brands', 'fontawesome-icon-block' ), className: 'tab-brands' }
-										] }
-									>
-										{ ( tab ) => {
-											const stylePrefix = tab.name === 'solid' ? 'fas' : tab.name === 'regular' ? 'far' : 'fab';
-											const filteredIcons = getFilteredIcons( tab.name );
-											
-											return (
-												<div className="fontawesome-icon-grid">
-													{ filteredIcons.map( ( iconName ) => (
-														<Button
-															key={ `${stylePrefix}-${iconName}` }
-															onClick={ () => {
-																setAttributes( { 
-																	icon: iconName,
-																	iconStyle: stylePrefix
-																} );
-																setIsIconPickerOpen( false );
-															} }
-															className={ `fontawesome-icon-option ${iconName === icon && stylePrefix === iconStyle ? 'is-selected' : ''}` }
-															title={ `${iconName} (${stylePrefix})` }
-														>
-															<i className={ `${stylePrefix} ${iconName}` } />
-														</Button>
-													) ) }
-												</div>
-											);
-										} }
-									</TabPanel>
-								</div>
-							</Popover>
-						) }
-					</div>
+    if (svgUrl) {
+      const imgStyles = {
+        width: `${size}px`,
+        height: "auto",
+        backgroundColor: backgroundColor || "transparent",
+        borderRadius: borderRadius ? `${borderRadius}px` : "0",
+        padding: padding ? `${padding}px` : "0",
+        transition: "all 0.3s ease",
+      };
 
-					<RangeControl
-						label={ __( 'Size', 'fontawesome-icon-block' ) }
-						value={ size }
-						onChange={ ( value ) => setAttributes( { size: value } ) }
-						min={ 16 }
-						max={ 200 }
-						step={ 2 }
-					/>
+      return <img src={svgUrl} style={imgStyles} alt={ariaLabel || ""} />;
+    }
 
-					<RangeControl
-						label={ __( 'Padding', 'fontawesome-icon-block' ) }
-						value={ padding }
-						onChange={ ( value ) => setAttributes( { padding: value } ) }
-						min={ 0 }
-						max={ 50 }
-						step={ 1 }
-					/>
+    return (
+      <i
+        className={`${iconStyle} ${icon} fontawesome-icon-hover-${hoverEffect}`}
+        style={iconStyles}
+        aria-label={ariaLabel}
+        aria-hidden={!ariaLabel ? "true" : "false"}
+      />
+    );
+  };
 
-					<RangeControl
-						label={ __( 'Border Radius', 'fontawesome-icon-block' ) }
-						value={ borderRadius }
-						onChange={ ( value ) => setAttributes( { borderRadius: value } ) }
-						min={ 0 }
-						max={ 50 }
-						step={ 1 }
-					/>
-				</PanelBody>
+  return (
+    <>
+      <BlockControls>
+        <AlignmentToolbar
+          value={alignment}
+          onChange={(value) => setAttributes({ alignment: value || "left" })}
+        />
+      </BlockControls>
 
-				<PanelBody title={ __( 'Colors', 'fontawesome-icon-block' ) } initialOpen={ false }>
-					<div className="components-base-control">
-						<div className="components-base-control__label">
-							{ __( 'Icon Color', 'fontawesome-icon-block' ) }
-						</div>
-						<Button
-							className="fontawesome-icon-color-button"
-							onClick={ () => setShowColorPicker( ! showColorPicker ) }
-							style={ { backgroundColor: color } }
-						>
-							{ color || __( 'Choose Color', 'fontawesome-icon-block' ) }
-						</Button>
-						{ showColorPicker && (
-							<Popover
-								position="bottom left"
-								onClose={ () => setShowColorPicker( false ) }
-							>
-								<ColorPicker
-									color={ color }
-									onChange={ ( value ) => setAttributes( { color: value } ) }
-									enableAlpha
-								/>
-							</Popover>
-						) }
-					</div>
+      <InspectorControls>
+        <PanelBody
+          title={__("Icon Settings", "fontawesome-icon-block")}
+          initialOpen={true}
+        >
+          <div className="fontawesome-icon-picker">
+            <div className="fontawesome-icon-picker-preview">
+              <div className="fontawesome-icon-current">
+                <span className="current-icon-label">
+                  {__("Current Icon:", "fontawesome-icon-block")}
+                </span>
+                <div className="current-icon-display">
+                  <i
+                    className={`${iconStyle} ${icon}`}
+                    style={{
+                      fontSize: "32px",
+                      color: color,
+                    }}
+                  />
+                  <div className="icon-details">
+                    <span className="icon-name">{icon}</span>
+                    <span className="icon-style">{iconStyle}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <Button
+              variant="secondary"
+              onClick={() => setIsIconPickerOpen(!isIconPickerOpen)}
+              className="fontawesome-icon-picker-button"
+            >
+              {__("Choose Different Icon", "fontawesome-icon-block")}
+            </Button>
 
-					<div className="components-base-control">
-						<div className="components-base-control__label">
-							{ __( 'Background Color', 'fontawesome-icon-block' ) }
-						</div>
-						<Button
-							className="fontawesome-icon-color-button"
-							onClick={ () => setShowBgColorPicker( ! showBgColorPicker ) }
-							style={ { backgroundColor: backgroundColor || '#transparent' } }
-						>
-							{ backgroundColor || __( 'Choose Color', 'fontawesome-icon-block' ) }
-						</Button>
-						{ showBgColorPicker && (
-							<Popover
-								position="bottom left"
-								onClose={ () => setShowBgColorPicker( false ) }
-							>
-								<ColorPicker
-									color={ backgroundColor }
-									onChange={ ( value ) => setAttributes( { backgroundColor: value } ) }
-									enableAlpha
-								/>
-							</Popover>
-						) }
-					</div>
-				</PanelBody>
+            {isIconPickerOpen && (
+              <Popover
+                position="middle center"
+                onClose={() => setIsIconPickerOpen(false)}
+                className="fontawesome-icon-picker-popover"
+              >
+                <div className="fontawesome-icon-picker-content">
+                  <SearchControl
+                    value={iconSearch}
+                    onChange={setIconSearch}
+                    placeholder={__(
+                      "Search icons...",
+                      "fontawesome-icon-block"
+                    )}
+                  />
+                  <TabPanel
+                    className="fontawesome-icon-tabs"
+                    activeClass="active-tab"
+                    tabs={[
+                      {
+                        name: "solid",
+                        title: __("Solid", "fontawesome-icon-block"),
+                        className: "tab-solid",
+                      },
+                      {
+                        name: "regular",
+                        title: __("Regular", "fontawesome-icon-block"),
+                        className: "tab-regular",
+                      },
+                      {
+                        name: "brands",
+                        title: __("Brands", "fontawesome-icon-block"),
+                        className: "tab-brands",
+                      },
+                    ]}
+                  >
+                    {(tab) => {
+                      const stylePrefix =
+                        tab.name === "solid"
+                          ? "fas"
+                          : tab.name === "regular"
+                          ? "far"
+                          : "fab";
+                      const filteredIcons = getFilteredIcons(tab.name);
 
-				<PanelBody title={ __( 'Hover Effects', 'fontawesome-icon-block' ) } initialOpen={ false }>
-					<SelectControl
-						label={ __( 'Hover Effect', 'fontawesome-icon-block' ) }
-						value={ hoverEffect }
-						onChange={ ( value ) => setAttributes( { hoverEffect: value } ) }
-						options={ [
-							{ label: __( 'None', 'fontawesome-icon-block' ), value: 'none' },
-							{ label: __( 'Scale Up', 'fontawesome-icon-block' ), value: 'scale-up' },
-							{ label: __( 'Scale Down', 'fontawesome-icon-block' ), value: 'scale-down' },
-							{ label: __( 'Rotate', 'fontawesome-icon-block' ), value: 'rotate' },
-							{ label: __( 'Bounce', 'fontawesome-icon-block' ), value: 'bounce' },
-							{ label: __( 'Pulse', 'fontawesome-icon-block' ), value: 'pulse' }
-						] }
-					/>
+                      return (
+                        <div className="fontawesome-icon-grid">
+                          {filteredIcons.map((iconName) => (
+                            <Button
+                              key={`${stylePrefix}-${iconName}`}
+                              onClick={() => {
+                                setAttributes({
+                                  icon: iconName,
+                                  iconStyle: stylePrefix,
+                                });
+                                setIsIconPickerOpen(false);
+                              }}
+                              className={`fontawesome-icon-option ${
+                                iconName === icon && stylePrefix === iconStyle
+                                  ? "is-selected"
+                                  : ""
+                              }`}
+                              title={`${iconName} (${stylePrefix})`}
+                            >
+                              <i className={`${stylePrefix} ${iconName}`} />
+                            </Button>
+                          ))}
+                        </div>
+                      );
+                    }}
+                  </TabPanel>
+                </div>
+              </Popover>
+            )}
+          </div>
 
-					<div className="components-base-control">
-						<div className="components-base-control__label">
-							{ __( 'Hover Color', 'fontawesome-icon-block' ) }
-						</div>
-						<Button
-							className="fontawesome-icon-color-button"
-							onClick={ () => setShowHoverColorPicker( ! showHoverColorPicker ) }
-							style={ { backgroundColor: hoverColor || '#transparent' } }
-						>
-							{ hoverColor || __( 'Choose Color', 'fontawesome-icon-block' ) }
-						</Button>
-						{ showHoverColorPicker && (
-							<Popover
-								position="bottom left"
-								onClose={ () => setShowHoverColorPicker( false ) }
-							>
-								<ColorPicker
-									color={ hoverColor }
-									onChange={ ( value ) => setAttributes( { hoverColor: value } ) }
-									enableAlpha
-								/>
-							</Popover>
-						) }
-					</div>
+          <div className="fontawesome-svg-upload" style={{ marginTop: "12px" }}>
+            <div className="components-base-control__label">
+              {__("SVG Upload", "fontawesome-icon-block")}
+            </div>
+            {svg ? (
+              <div
+                className="svg-preview"
+                style={{ marginBottom: "8px" }}
+                dangerouslySetInnerHTML={{ __html: svg }}
+              />
+            ) : svgUrl ? (
+              <img
+                src={svgUrl}
+                alt={ariaLabel || ""}
+                style={{ width: "64px", height: "auto", marginBottom: "8px" }}
+              />
+            ) : null}
+            <MediaUploadCheck>
+              <MediaUpload
+                onSelect={(media) => {
+                  const url = media && media.url ? media.url : "";
+                  if (url && url.toLowerCase().endsWith(".svg")) {
+                    fetch(url)
+                      .then((res) => res.text())
+                      .then((text) =>
+                        setAttributes({ svg: text, svgUrl: url })
+                      );
+                  } else {
+                    setAttributes({ svg: "", svgUrl: url });
+                  }
+                }}
+                allowedTypes={["image"]}
+                render={({ open }) => (
+                  <Button isSecondary onClick={open}>
+                    {svg || svgUrl
+                      ? __("Replace SVG", "fontawesome-icon-block")
+                      : __("Upload SVG", "fontawesome-icon-block")}
+                  </Button>
+                )}
+              />
+            </MediaUploadCheck>
+            {(svg || svgUrl) && (
+              <Button
+                isLink
+                onClick={() => setAttributes({ svg: "", svgUrl: "" })}
+              >
+                {__("Remove SVG", "fontawesome-icon-block")}
+              </Button>
+            )}
+          </div>
 
-					<div className="components-base-control">
-						<div className="components-base-control__label">
-							{ __( 'Hover Background Color', 'fontawesome-icon-block' ) }
-						</div>
-						<Button
-							className="fontawesome-icon-color-button"
-							onClick={ () => setShowHoverBgColorPicker( ! showHoverBgColorPicker ) }
-							style={ { backgroundColor: hoverBackgroundColor || '#transparent' } }
-						>
-							{ hoverBackgroundColor || __( 'Choose Color', 'fontawesome-icon-block' ) }
-						</Button>
-						{ showHoverBgColorPicker && (
-							<Popover
-								position="bottom left"
-								onClose={ () => setShowHoverBgColorPicker( false ) }
-							>
-								<ColorPicker
-									color={ hoverBackgroundColor }
-									onChange={ ( value ) => setAttributes( { hoverBackgroundColor: value } ) }
-									enableAlpha
-								/>
-							</Popover>
-						) }
-					</div>
-				</PanelBody>
+          <RangeControl
+            label={__("Size", "fontawesome-icon-block")}
+            value={size}
+            onChange={(value) => setAttributes({ size: value })}
+            min={16}
+            max={200}
+            step={2}
+          />
 
-				<PanelBody title={ __( 'Link Settings', 'fontawesome-icon-block' ) } initialOpen={ false }>
-					<TextControl
-						label={ __( 'Link URL', 'fontawesome-icon-block' ) }
-						value={ link }
-						onChange={ ( value ) => setAttributes( { link: value } ) }
-						placeholder={ __( 'Enter URL...', 'fontawesome-icon-block' ) }
-					/>
+          <RangeControl
+            label={__("Padding", "fontawesome-icon-block")}
+            value={padding}
+            onChange={(value) => setAttributes({ padding: value })}
+            min={0}
+            max={50}
+            step={1}
+          />
 
-					{ link && (
-						<ToggleControl
-							label={ __( 'Open in new tab', 'fontawesome-icon-block' ) }
-							checked={ linkTarget }
-							onChange={ ( value ) => setAttributes( { linkTarget: value } ) }
-						/>
-					) }
+          <RangeControl
+            label={__("Border Radius", "fontawesome-icon-block")}
+            value={borderRadius}
+            onChange={(value) => setAttributes({ borderRadius: value })}
+            min={0}
+            max={50}
+            step={1}
+          />
+        </PanelBody>
 
-					<TextControl
-						label={ __( 'Accessible Label (aria-label)', 'fontawesome-icon-block' ) }
-						value={ ariaLabel }
-						onChange={ ( value ) => setAttributes( { ariaLabel: value } ) }
-						placeholder={ __( 'Describe the icon...', 'fontawesome-icon-block' ) }
-						help={ __( 'Helps screen readers understand the purpose of this icon', 'fontawesome-icon-block' ) }
-					/>
-				</PanelBody>
-			</InspectorControls>
+        <PanelBody
+          title={__("Colors", "fontawesome-icon-block")}
+          initialOpen={false}
+        >
+          <div className="components-base-control">
+            <div className="components-base-control__label">
+              {__("Icon Color", "fontawesome-icon-block")}
+            </div>
+            <Button
+              className="fontawesome-icon-color-button"
+              onClick={() => setShowColorPicker(!showColorPicker)}
+              style={{ backgroundColor: color }}
+            >
+              {color || __("Choose Color", "fontawesome-icon-block")}
+            </Button>
+            {showColorPicker && (
+              <Popover
+                position="bottom left"
+                onClose={() => setShowColorPicker(false)}
+              >
+                <ColorPicker
+                  color={color}
+                  onChange={(value) => setAttributes({ color: value })}
+                  enableAlpha
+                />
+              </Popover>
+            )}
+          </div>
 
-			<div { ...blockProps }>
-				<IconElement />
-			</div>
-		</>
-	);
+          <div className="components-base-control">
+            <div className="components-base-control__label">
+              {__("Background Color", "fontawesome-icon-block")}
+            </div>
+            <Button
+              className="fontawesome-icon-color-button"
+              onClick={() => setShowBgColorPicker(!showBgColorPicker)}
+              style={{ backgroundColor: backgroundColor || "#transparent" }}
+            >
+              {backgroundColor || __("Choose Color", "fontawesome-icon-block")}
+            </Button>
+            {showBgColorPicker && (
+              <Popover
+                position="bottom left"
+                onClose={() => setShowBgColorPicker(false)}
+              >
+                <ColorPicker
+                  color={backgroundColor}
+                  onChange={(value) =>
+                    setAttributes({ backgroundColor: value })
+                  }
+                  enableAlpha
+                />
+              </Popover>
+            )}
+          </div>
+        </PanelBody>
+
+        <PanelBody
+          title={__("Hover Effects", "fontawesome-icon-block")}
+          initialOpen={false}
+        >
+          <SelectControl
+            label={__("Hover Effect", "fontawesome-icon-block")}
+            value={hoverEffect}
+            onChange={(value) => setAttributes({ hoverEffect: value })}
+            options={[
+              { label: __("None", "fontawesome-icon-block"), value: "none" },
+              {
+                label: __("Scale Up", "fontawesome-icon-block"),
+                value: "scale-up",
+              },
+              {
+                label: __("Scale Down", "fontawesome-icon-block"),
+                value: "scale-down",
+              },
+              {
+                label: __("Rotate", "fontawesome-icon-block"),
+                value: "rotate",
+              },
+              {
+                label: __("Bounce", "fontawesome-icon-block"),
+                value: "bounce",
+              },
+              { label: __("Pulse", "fontawesome-icon-block"), value: "pulse" },
+            ]}
+          />
+
+          <div className="components-base-control">
+            <div className="components-base-control__label">
+              {__("Hover Color", "fontawesome-icon-block")}
+            </div>
+            <Button
+              className="fontawesome-icon-color-button"
+              onClick={() => setShowHoverColorPicker(!showHoverColorPicker)}
+              style={{ backgroundColor: hoverColor || "#transparent" }}
+            >
+              {hoverColor || __("Choose Color", "fontawesome-icon-block")}
+            </Button>
+            {showHoverColorPicker && (
+              <Popover
+                position="bottom left"
+                onClose={() => setShowHoverColorPicker(false)}
+              >
+                <ColorPicker
+                  color={hoverColor}
+                  onChange={(value) => setAttributes({ hoverColor: value })}
+                  enableAlpha
+                />
+              </Popover>
+            )}
+          </div>
+
+          <div className="components-base-control">
+            <div className="components-base-control__label">
+              {__("Hover Background Color", "fontawesome-icon-block")}
+            </div>
+            <Button
+              className="fontawesome-icon-color-button"
+              onClick={() => setShowHoverBgColorPicker(!showHoverBgColorPicker)}
+              style={{
+                backgroundColor: hoverBackgroundColor || "#transparent",
+              }}
+            >
+              {hoverBackgroundColor ||
+                __("Choose Color", "fontawesome-icon-block")}
+            </Button>
+            {showHoverBgColorPicker && (
+              <Popover
+                position="bottom left"
+                onClose={() => setShowHoverBgColorPicker(false)}
+              >
+                <ColorPicker
+                  color={hoverBackgroundColor}
+                  onChange={(value) =>
+                    setAttributes({ hoverBackgroundColor: value })
+                  }
+                  enableAlpha
+                />
+              </Popover>
+            )}
+          </div>
+        </PanelBody>
+
+        <PanelBody
+          title={__("Link Settings", "fontawesome-icon-block")}
+          initialOpen={false}
+        >
+          <TextControl
+            label={__("Link URL", "fontawesome-icon-block")}
+            value={link}
+            onChange={(value) => setAttributes({ link: value })}
+            placeholder={__("Enter URL...", "fontawesome-icon-block")}
+          />
+
+          {link && (
+            <ToggleControl
+              label={__("Open in new tab", "fontawesome-icon-block")}
+              checked={linkTarget}
+              onChange={(value) => setAttributes({ linkTarget: value })}
+            />
+          )}
+
+          <TextControl
+            label={__(
+              "Accessible Label (aria-label)",
+              "fontawesome-icon-block"
+            )}
+            value={ariaLabel}
+            onChange={(value) => setAttributes({ ariaLabel: value })}
+            placeholder={__("Describe the icon...", "fontawesome-icon-block")}
+            help={__(
+              "Helps screen readers understand the purpose of this icon",
+              "fontawesome-icon-block"
+            )}
+          />
+        </PanelBody>
+      </InspectorControls>
+
+      <div {...blockProps}>
+        <IconElement />
+      </div>
+    </>
+  );
 }
