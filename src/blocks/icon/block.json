@@ -46,6 +46,26 @@
     "hoverEffect": { "type": "string", "default": "none" },
     "link": { "type": "string", "default": "" },
     "linkTarget": { "type": "boolean", "default": false },
-    "ariaLabel": { "type": "string", "default": "" }
+    "ariaLabel": { "type": "string", "default": "" },
+    "svg": {
+      "type": "string",
+      "source": "html",
+      "selector": "span.gutenberg-icon-svg",
+      "default": ""
+    },
+    "svgUrl": {
+      "type": "string",
+      "source": "attribute",
+      "selector": "img.svg-icon, img",
+      "attribute": "src",
+      "default": ""
+    },
+    "svgStyle": {
+      "type": "string",
+      "source": "attribute",
+      "selector": "img.svg-icon, img",
+      "attribute": "style",
+      "default": ""
+    }
   }
 }
