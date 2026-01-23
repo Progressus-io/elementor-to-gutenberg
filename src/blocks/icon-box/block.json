@@ -13,20 +13,53 @@
     "anchor": true
   },
   "attributes": {
-    "icon": { "type": "string", "default": "fa-star" },
-    "iconStyle": { "type": "string", "default": "fas" },
-    "color": { "type": "string", "default": "#333" },
-    "svgUrl": { "type": "string", "default": "" },
-    "svgStyle": { "type": "string", "default": "" },
-    "size": { "type": "number", "default": 24 },
-    "title": { "type": "string", "default": "" },
-    "description": { "type": "string", "default": "" },
-    "titleSize": { "type": "number", "default": 20 },
-    "titleColor": { "type": "string", "default": "#000000" },
-    "descriptionSize": { "type": "number", "default": 14 },
-    "descriptionColor": { "type": "string", "default": "#666666" },
-    "alignment": { "type": "string", "default": "left" },
-    "className": { "type": "string", "default": "" },
-    "anchor": { "type": "string", "default": "" }
+    "icon": {
+      "type": "string",
+      "default": "fa-star"
+    },
+    "iconStyle": {
+      "type": "string",
+      "default": "fas"
+    },
+    "size": {
+      "type": "number",
+      "default": 24
+    },
+    "svgUrl": {
+      "type": "string",
+      "default": ""
+    },
+    "svgStyle": {
+      "type": "string",
+      "default": ""
+    },
+    "title": {
+      "type": "string",
+      "default": ""
+    },
+    "description": {
+      "type": "string",
+      "default": ""
+    },
+    "alignment": {
+      "type": "string",
+      "default": "left"
+    },
+    "titleSize": {
+      "type": "number",
+      "default": 20
+    },
+    "titleColor": {
+      "type": "string",
+      "default": "#000000"
+    },
+    "descriptionSize": {
+      "type": "number",
+      "default": 14
+    },
+    "descriptionColor": {
+      "type": "string",
+      "default": "#666666"
+    }
   }
 }

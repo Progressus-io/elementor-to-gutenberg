@@ -100,21 +100,20 @@ class Icon_Box_Widget_Handler implements Widget_Handler_Interface {
 
 		// Build block attributes for the new `gutenberg/icon-box` block.
 		$block_attributes = array(
-			'icon'      => ! empty( $icon_data['class_name'] ) ? $icon_data['class_name'] : ( $icon_data['slug'] ?? '' ),
-			'iconStyle' => $icon_data['style_class'] ?? '',
-			'svgUrl'  => $icon_data['url'] ?? '',
-			// Reuse the inline svg style used above so saved markup matches.
-			'svgStyle' => ( 'svg' === $icon_data['type'] && '' !== $icon_data['url'] ) ? ('width:' . $size . 'px;height:auto;display:inline-block') : '',
-			'size'    => $size,
-			'title'   => $title,
-			'description' => $description,
-			'titleSize' => isset( $title_size ) ? $title_size : 20,
-			'titleColor' => isset( $title_color ) ? $title_color : '#000000',
-			'descriptionSize' => isset( $description_size ) ? $description_size : 14,
-			'descriptionColor' => isset( $description_color ) ? $description_color : '#666666',
-			'alignment' => '' === $align_payload['style'] ? 'left' : ( $align_payload['classes'][0] ?? 'left' ),
-			'className' => implode( ' ', $custom_classes ),
-			'anchor' => $custom_id,
+			'icon'             => isset( $icon_data['slug'] ) ? (string) $icon_data['slug'] : '',
+			'iconStyle'        => isset( $icon_data['style_class'] ) ? (string) $icon_data['style_class'] : 'fas',
+			'svgUrl'           => isset( $icon_data['url'] ) ? (string) $icon_data['url'] : '',
+			'svgStyle'         => ( 'svg' === $icon_data['type'] && '' !== $icon_data['url'] )
+				? ( 'width:' . $size . 'px;height:auto;' )
+				: '',
+			'size'             => $size,
+			'title'            => $title,
+			'description'      => $description,
+			'titleSize'        => $title_size,
+			'titleColor'       => $title_color,
+			'descriptionSize'  => $description_size,
+			'descriptionColor' => $description_color,
+			'alignment'        => 'left',
 		);
 		if ( '' !== $custom_css ) {
 			Style_Parser::save_custom_css( $custom_css );
