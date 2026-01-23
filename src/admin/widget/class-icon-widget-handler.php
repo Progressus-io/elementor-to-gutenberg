@@ -47,7 +47,7 @@ class Icon_Widget_Handler implements Widget_Handler_Interface {
 		$hover_effect     = isset( $settings['hover_effect'] ) ? (string) $settings['hover_effect'] : 'scale-up';
 		$link_settings    = is_array( $settings['link'] ?? null ) ? $settings['link'] : array();
 		$link             = isset( $link_settings['url'] ) ? (string) $link_settings['url'] : '';
-		$link_target      = ! empty( $link_settings['is_external'] );
+		$link_target = ! empty( $link_settings['is_external'] ) ? '_blank' : '';
 
 		$icon_style_class = $icon_data['style_class'];
 		$attributes       = array(
@@ -125,10 +125,11 @@ class Icon_Widget_Handler implements Widget_Handler_Interface {
 		}
 
 		if ( '' !== $link ) {
-			$rel_attr  = $link_target ? ' rel=\"noopener noreferrer\"' : '';
-			$target    = $link_target ? ' target=\"_blank\"' : '';
+			$rel_attr = $link_target ? ' rel="noopener noreferrer"' : '';
+			$target   = $link_target ? ' target="_blank"' : '';
+
 			$icon_html = sprintf(
-				'<a href=\"%1$s\"%2$s%3$s aria-label=\"\">%4$s</a>',
+				'<a href="%1$s"%2$s%3$s aria-label="">%4$s</a>',
 				esc_url( $link ),
 				$target,
 				$rel_attr,
@@ -164,7 +165,12 @@ class Icon_Widget_Handler implements Widget_Handler_Interface {
 			Style_Parser::save_custom_css( $custom_css );
 		}
 
-		return Block_Builder::build( 'gutenberg/icon', $attributes, $inner_html );
+		return Block_Builder::build(
+			'gutenberg/icon',
+			$attributes,
+			$inner_html,
+			array( 'no_kses' => true )
+		);
 	}
 
 	/**
