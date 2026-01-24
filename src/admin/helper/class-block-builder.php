@@ -111,7 +111,10 @@ class Block_Builder {
 		}
 
 		if ( 'button' === $block && '' === trim( $inner_html ) ) {
-			$attr_json = empty( $attrs ) ? '' : ' ' . wp_json_encode( $attrs );
+			$attr_json = empty( $attrs ) ? '' : ' ' . wp_json_encode(
+					$attrs,
+					JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
+				);
 
 			return sprintf( '<!-- wp:%s%s /-->%s', $block, $attr_json, "\n" );
 		}
@@ -122,8 +125,10 @@ class Block_Builder {
 			return self::build_strict_serialized( $block, $attrs, $inner_html );
 		}
 
-		$attr_json    = empty( $attrs ) ? '' : ' ' . wp_json_encode( $attrs );
-		$opening      = sprintf( '<!-- wp:%s%s -->', $block, $attr_json );
+		       $attr_json    = empty( $attrs ) ? '' : ' ' . wp_json_encode(
+				               $attrs,
+				               JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
+				                                                );		$opening      = sprintf( '<!-- wp:%s%s -->', $block, $attr_json );
 		$closing      = sprintf( '<!-- /wp:%s -->', $block );
 		$wrapper_html = $inner_html;
 
@@ -371,15 +376,20 @@ class Block_Builder {
 		}
 
 		if ( 'button' === $block && '' === trim( $inner_html ) ) {
-			$attr_json = empty( $attrs ) ? '' : ' ' . wp_json_encode( $attrs );
+			$attr_json = empty( $attrs ) ? '' : ' ' . wp_json_encode(
+					$attrs,
+					JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
+				);
 
 			return sprintf( '<!-- wp:%s%s /-->%s', $block, $attr_json, "\n" );
 		}
 
 		$is_wrapper = in_array( $block_slug, self::$wrapper_blocks, true );
 
-		$attr_json    = empty( $attrs ) ? '' : ' ' . wp_json_encode( $attrs );
-		$opening      = sprintf( '<!-- wp:%s%s -->', $block, $attr_json );
+		       $attr_json    = empty( $attrs ) ? '' : ' ' . wp_json_encode(
+				               $attrs,
+				               JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
+				                                                );		$opening      = sprintf( '<!-- wp:%s%s -->', $block, $attr_json );
 		$closing      = sprintf( '<!-- /wp:%s -->', $block );
 		$wrapper_html = $inner_html;
 
