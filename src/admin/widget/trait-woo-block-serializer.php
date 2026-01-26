@@ -52,4 +52,19 @@ trait Woo_Block_Serializer_Trait {
 
 		return $this->serialize_block( 'core/shortcode', array(), $fallback_shortcode );
 	}
+
+	private function get_block_pattern_content( string $pattern_name ): string {
+		if ( ! class_exists( 'WP_Block_Patterns_Registry' ) ) {
+			return '';
+		}
+
+		$pattern = \WP_Block_Patterns_Registry::get_instance()->get_registered( $pattern_name );
+		if ( ! is_array( $pattern ) ) {
+			return '';
+		}
+
+		$content = isset( $pattern['content'] ) ? (string) $pattern['content'] : '';
+		return '' !== $content ? $content : '';
+	}
+
 }
