@@ -34,15 +34,14 @@ class Image_Widget_Handler implements Widget_Handler_Interface {
 	public function handle( array $element ): string {
 		$settings      = is_array( $element['settings'] ?? null ) ? $element['settings'] : array();
 		$image         = is_array( $settings['image'] ?? null ) ? $settings['image'] : array();
+		$alignment_raw = Alignment_Helper::detect_alignment( $settings, array( 'align', 'image_align' ) );
 		$image_url     = isset( $image['url'] ) ? (string) $image['url'] : '';
 		$alt_text      = isset( $image['alt'] ) ? (string) $image['alt'] : '';
 		$attachment    = isset( $image['id'] ) ? (int) $image['id'] : 0;
 		$custom_id     = isset( $settings['_element_id'] ) ? trim( (string) $settings['_element_id'] ) : '';
 		$custom_css    = isset( $settings['custom_css'] ) ? (string) $settings['custom_css'] : '';
 		$custom_raw    = isset( $settings['_css_classes'] ) ? trim( (string) $settings['_css_classes'] ) : '';
-		$align_payload = Alignment_Helper::build_block_alignment_payload(
-			Alignment_Helper::detect_alignment( $settings, array( 'align', 'image_align' ) )
-		);
+		$align_payload = Alignment_Helper::build_block_alignment_payload( $alignment_raw );
 		$caption       = isset( $settings['caption'] ) ? (string) $settings['caption'] : '';
 
 		if ( '' === $image_url ) {
@@ -59,10 +58,7 @@ class Image_Widget_Handler implements Widget_Handler_Interface {
 			}
 		}
 
-		$figure_classes = array( 'wp-block-image', 'size-full' );
-		if ( ! empty( $align_payload['classes'] ) ) {
-			$figure_classes = array_merge( $figure_classes, $align_payload['classes'] );
-		}
+		$figure_classes = array( 'wp-block-image' );
 		$custom_classes = array();
 
 		if ( '' !== $custom_raw ) {
@@ -71,7 +67,6 @@ class Image_Widget_Handler implements Widget_Handler_Interface {
 				if ( '' === $clean ) {
 					continue;
 				}
-				$figure_classes[] = $clean;
 				$custom_classes[] = $clean;
 			}
 		}
@@ -91,6 +86,22 @@ class Image_Widget_Handler implements Widget_Handler_Interface {
 			$image_attrs = array_merge( $image_attrs, $align_payload['attributes'] );
 		}
 
+		if ( is_string( $alignment_raw ) && '' !== trim( $alignment_raw ) ) {
+			$alignment_raw = strtolower( trim( $alignment_raw ) );
+			$allowed_align = array( 'left', 'right', 'center', 'wide', 'full' );
+			if ( in_array( $alignment_raw, $allowed_align, true ) ) {
+				$image_attrs['align'] = $alignment_raw;
+			}
+		}
+
+		if ( isset( $image_attrs['className'] ) && is_string( $image_attrs['className'] ) && '' !== $image_attrs['className'] ) {
+			$image_attrs['className'] = preg_replace( '/\balign(left|right|center|wide|full)\b/', '', $image_attrs['className'] );
+			$image_attrs['className'] = preg_replace( '/\s/', ' ', trim( $image_attrs['className'] ) );
+			if ( '' === $image_attrs['className'] ) {
+				unset( $image_attrs['className'] );
+			}
+		}
+
 		if ( ! empty( $custom_classes ) ) {
 			$image_attrs['className'] = implode( ' ', array_unique( $custom_classes ) );
 		}
@@ -102,16 +113,13 @@ class Image_Widget_Handler implements Widget_Handler_Interface {
 		$width = $this->normalize_dimension( $settings['width'] ?? null );
 		if ( null !== $width ) {
 			$image_attrs['width'] = $width;
-			if ( '100%' !== $width ) {
-				$figure_classes[] = 'is-resized';
-			}
 		}
 
 		$img_attributes = array();
+
 		if ( $attachment > 0 ) {
 			$img_attributes[] = 'class="wp-image-' . esc_attr( (string) $attachment ) . '"';
 		}
-
 		if ( null !== $width && is_numeric( $width ) ) {
 			$img_attributes[] = 'width="' . esc_attr( $width ) . '"';
 		}
@@ -119,7 +127,7 @@ class Image_Widget_Handler implements Widget_Handler_Interface {
 		$img_attributes[] = 'src="' . esc_url( $image_url ) . '"';
 		$img_attributes[] = 'alt="' . esc_attr( $alt_text ) . '"';
 
-		$img_html = '<img ' . implode( ' ', $img_attributes ) . ' />';
+		$img_html = '<img ' . implode( ' ', $img_attributes ) . '/>';
 
 		if ( 'custom' === ( $settings['link_to'] ?? '' ) && ! empty( $settings['link']['url'] ?? '' ) ) {
 			$img_html = sprintf( '<a href="%s">%s</a>', esc_url( (string) $settings['link']['url'] ), $img_html );

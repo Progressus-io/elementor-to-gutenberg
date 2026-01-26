@@ -1,93 +1,81 @@
-/**
- * React hook that is used to mark the block wrapper element.
- * It provides all the necessary props like the class name.
- *
- * @see https://developer.wordpress.org/block-editor/reference-guides/packages/packages-block-editor/#useblockprops
- */
-import { useBlockProps } from '@wordpress/block-editor';
+import { useBlockProps } from "@wordpress/block-editor";
 
-/**
- * The save function defines the way in which the different attributes should
- * be combined into the final markup, which is then serialized by the block
- * editor into `post_content`.
- *
- * @see https://developer.wordpress.org/block-editor/reference-guides/block-api/block-edit-save/#save
- *
- * @return {Element} Element to render.
- */
-export default function save( { attributes } ) {
-	const {
-		icon,
-		iconStyle,
-		size,
-		color,
-		backgroundColor,
-		borderRadius,
-		padding,
-		alignment,
-		hoverColor,
-		hoverBackgroundColor,
-		hoverEffect,
-		link,
-		linkTarget,
-		ariaLabel
-	} = attributes;
+export default function save({ attributes }) {
+  const {
+    className,
+    svg,
+    svgUrl,
+    svgStyle,
+    size,
+    alignment,
+    hoverEffect,
+    link,
+    linkTarget,
+    ariaLabel,
+  } = attributes;
 
-	const blockProps = useBlockProps.save( {
-		className: `fontawesome-icon-align-${alignment}`,
-		style: {
-			textAlign: alignment
-		}
-	} );
+  const alignmentValue = alignment ? alignment : "left";
+  const alignClass = `fontawesome-icon-align-${alignmentValue}`;
 
-	const iconStyles = {
-		fontSize: `${size}px`,
-		color: color,
-		backgroundColor: backgroundColor || 'transparent',
-		borderRadius: borderRadius ? `${borderRadius}px` : '0',
-		padding: padding ? `${padding}px` : '0',
-		display: 'inline-block',
-		lineHeight: 1,
-		transition: 'all 0.3s ease',
-		width: 'auto',
-		height: 'auto'
-	};
+  const shouldAddAlignClass = !className || className.indexOf(alignClass) === -1;
 
-	// Create custom CSS variables for hover effects
-	const customProperties = { ...iconStyles };
-	if ( hoverColor ) {
-		customProperties['--fontawesome-icon-hover-color'] = hoverColor;
-	}
-	if ( hoverBackgroundColor ) {
-		customProperties['--fontawesome-icon-hover-bg'] = hoverBackgroundColor;
-	}
+  const blockProps = useBlockProps.save({
+    className: shouldAddAlignClass ? alignClass : undefined,
+    style: { textAlign: alignmentValue },
+  });
 
-	const iconElement = (
-		<i 
-			className={ `${iconStyle} ${icon} fontawesome-icon-hover-${hoverEffect}` }
-			style={ customProperties }
-			aria-label={ ariaLabel }
-			aria-hidden={ !ariaLabel ? 'true' : 'false' }
-			data-hover-effect={ hoverEffect }
-			data-icon={ icon }
-			data-icon-style={ iconStyle }
-		/>
-	);
+  const parseStyleString = (str) => {
+    return str.split(";").reduce((acc, rule) => {
+      const parts = rule.split(":");
+      const prop = parts[0] ? parts[0].trim() : "";
+      const val = parts[1] ? parts.slice(1).join(":").trim() : "";
+      if (!prop || !val) return acc;
+      const jsProp = prop.replace(/-([a-z])/g, function(_, c) { return c.toUpperCase(); });
+      acc[jsProp] = val;
+      return acc;
+    }, {});
+  };
 
-	return (
-		<div { ...blockProps }>
-			{ link ? (
-				<a 
-					href={ link }
-					target={ linkTarget ? '_blank' : '_self' }
-					rel={ linkTarget ? 'noopener noreferrer' : '' }
-					aria-label={ ariaLabel }
-				>
-					{ iconElement }
-				</a>
-			) : (
-				iconElement
-			) }
-		</div>
-	);
+  let iconElement = null;
+
+  if (svg) {
+    iconElement = (
+        <span
+            className={`gutenberg-icon-svg fontawesome-icon-hover-${hoverEffect || "none"}`}
+            dangerouslySetInnerHTML={{ __html: svg }}
+            aria-hidden={ariaLabel ? "false" : "true"}
+            data-hover-effect={hoverEffect || "none"}
+        />
+    );
+  } else if (svgUrl) {
+    const imgStyles = svgStyle
+        ? parseStyleString(svgStyle)
+        : { width: `${size || 35}px`, height: "auto", display: "inline-block" };
+
+    iconElement = (
+        <img
+            src={svgUrl}
+            alt={ariaLabel || ""}
+            className="svg-icon"
+            style={imgStyles}
+        />
+    );
+  } else {
+    iconElement = null;
+  }
+
+  const linkProps = link
+      ? {
+        href: link,
+        target: linkTarget || undefined,
+        rel: linkTarget === "_blank" ? "noopener noreferrer" : undefined,
+        "aria-label": ariaLabel,
+      }
+      : null;
+
+  return (
+      <div {...blockProps}>
+        {link ? <a {...linkProps}>{iconElement}</a> : iconElement}
+      </div>
+  );
 }

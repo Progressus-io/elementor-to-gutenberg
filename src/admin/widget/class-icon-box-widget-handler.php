@@ -34,26 +34,31 @@ class Icon_Box_Widget_Handler implements Widget_Handler_Interface {
 	public function handle( array $element ): string {
 		$settings       = is_array( $element['settings'] ?? null ) ? $element['settings'] : array();
 		$custom_css     = isset( $settings['custom_css'] ) ? (string) $settings['custom_css'] : '';
+		$alignment      = Alignment_Helper::detect_alignment( $settings, array( 'align', 'alignment', 'text_align' ) );
 		$custom_id      = isset( $settings['_element_id'] ) ? trim( (string) $settings['_element_id'] ) : '';
 		$custom_classes = $this->sanitize_custom_classes( trim( isset( $settings['_css_classes'] ) ? (string) $settings['_css_classes'] : '' ) );
 
-		$spacing      = Style_Parser::parse_spacing( $settings );
-		$spacing_attr = isset( $spacing['attributes'] ) ? $spacing['attributes'] : array();
-		$spacing_css  = isset( $spacing['style'] ) ? $spacing['style'] : '';
-
 		$typography      = Style_Parser::parse_typography( $settings );
 		$typography_attr = isset( $typography['attributes'] ) ? $typography['attributes'] : array();
-		$typography_css  = isset( $typography['style'] ) ? $typography['style'] : '';
 
-		$icon_data     = $this->resolve_icon_data( $settings );
-		$size          = $this->sanitize_slider_value( $settings['size'] ?? null, 24 );
-		$title         = isset( $settings['title_text'] ) ? (string) $settings['title_text'] : '';
-		$description   = isset( $settings['description_text'] ) ? (string) $settings['description_text'] : '';
-		$tooltip       = isset( $settings['premium_tooltip_text'] ) ? (string) $settings['premium_tooltip_text'] : '';
-		$tooltip_pos   = $this->sanitize_tooltip_position( $settings['premium_tooltip_position'] ?? '' );
-		$align_payload = Alignment_Helper::build_text_alignment_payload(
-			Alignment_Helper::detect_alignment( $settings, array( 'align', 'alignment', 'text_align' ) )
-		);
+		$icon_data   = $this->resolve_icon_data( $settings );
+		$icon_value  = trim( $icon_data['class_name'] );
+		$size        = $this->sanitize_slider_value( $settings['size'] ?? null, 24 );
+		$title       = isset( $settings['title_text'] ) ? (string) $settings['title_text'] : '';
+		$description = isset( $settings['description_text'] ) ? (string) $settings['description_text'] : '';
+
+		// Normalize Elementor "start/end" to CSS text-align values.
+		$alignment_value = is_string( $alignment ) ? trim( strtolower( $alignment ) ) : '';
+		if ( 'start' === $alignment_value ) {
+			$alignment_value = 'left';
+		} elseif ( 'end' === $alignment_value ) {
+			$alignment_value = 'right';
+		}
+		if ( '' === $alignment_value ) {
+			$alignment_value = 'left';
+		}
+
+		$align_payload = Alignment_Helper::build_text_alignment_payload( $alignment_value );
 
 		$icon_html = '';
 
@@ -63,52 +68,34 @@ class Icon_Box_Widget_Handler implements Widget_Handler_Interface {
 				esc_url( $icon_data['url'] ),
 				$size
 			);
-		} elseif ( '' !== $icon_data['class_name'] ) {
+		} elseif ( '' !== $icon_value ) {
 			$icon_html = sprintf(
 				'<i class="%1$s" style="font-size:%2$dpx;"></i>',
-				esc_attr( $icon_data['class_name'] ),
+				esc_attr( $icon_value ),
 				$size
 			);
-
-			if ( '' !== $tooltip ) {
-				$icon_html = sprintf(
-					'<span class="tooltip-wrapper" data-tooltip="%1$s" data-tooltip-position="%2$s">%3$s</span>',
-					esc_attr( $tooltip ),
-					esc_attr( $tooltip_pos ),
-					$icon_html
-				);
-			}
+		} else {
+			$icon_html = sprintf(
+				'<i class="fas fa-star" style="font-size:%2$dpx;"></i>',
+				esc_attr( $icon_value ),
+				$size
+			);
 		}
 
-		$segments = array();
-		if ( '' !== $icon_html ) {
-			$segments[] = '<div class="icon-box-icon">' . $icon_html . '</div>';
-		}
+		$segments   = array();
+		$segments[] = '<div class="icon-box-icon">' . $icon_html . '</div>';
 
-		$style_parts = array();
-
-		if ( '' !== $spacing_css ) {
-			$style_parts[] = $spacing_css;
-		}
-
-		if ( '' !== $typography_css ) {
-			$style_parts[] = $typography_css;
-		}
-
-		if ( '' !== $align_payload['style'] ) {
-			$style_parts[] = $align_payload['style'];
-		}
-
-		$style_attr = '';
-		if ( ! empty( $style_parts ) ) {
-			$style_attr = ' style="' . esc_attr( implode( '', $style_parts ) ) . '"';
-		}
+		// Determine title/description typographic defaults (fall back to sensible values).
+		$title_size        = isset( $typography_attr['fontSize'] ) ? (int) $typography_attr['fontSize'] : 20;
+		$title_color       = isset( $typography_attr['color'] ) ? $typography_attr['color'] : '#000000';
+		$description_size  = isset( $typography_attr['descriptionSize'] ) ? (int) $typography_attr['descriptionSize'] : 14;
+		$description_color = isset( $typography_attr['descriptionColor'] ) ? $typography_attr['descriptionColor'] : '#666666';
 
 		if ( '' !== trim( $title ) ) {
-			$segments[] = '<h3 class="icon-box-title"' . $style_attr . '>' . esc_html( $title ) . '</h3>';
+			$segments[] = '<h3 class="icon-box-title" style="font-size:' . esc_attr( $title_size ) . 'px;color:' . esc_attr( $title_color ) . '">' . esc_html( $title ) . '</h3>';
 		}
 		if ( '' !== trim( $description ) ) {
-			$segments[] = '<div class="icon-box-description"' . $style_attr . '>' . wp_kses_post( $description ) . '</div>';
+			$segments[] = '<div class="icon-box-description" style="font-size:' . esc_attr( $description_size ) . 'px;color:' . esc_attr( $description_color ) . '">' . wp_kses_post( $description ) . '</div>';
 		}
 
 		$wrapper_classes = array_merge( array( 'wp-block-icon-box' ), $align_payload['classes'], $custom_classes );
@@ -116,17 +103,35 @@ class Icon_Box_Widget_Handler implements Widget_Handler_Interface {
 		if ( '' !== $custom_id ) {
 			$wrapper_attrs[] = 'id="' . esc_attr( $custom_id ) . '"';
 		}
-		if ( '' !== $align_payload['style'] ) {
-			$wrapper_attrs[] = 'style="' . esc_attr( $align_payload['style'] ) . '"';
-		}
+
+		$alignment_value = '' !== $alignment ? $alignment : 'left';
+		$wrapper_attrs[] = 'style="text-align:' . esc_attr( $alignment_value ) . '"';
 
 		$content = '<div ' . implode( ' ', $wrapper_attrs ) . '>' . implode( '', $segments ) . '</div>';
 
+		// Build block attributes for the new `gutenberg/icon-box` block.
+		$block_attributes = array(
+			'icon'             => isset( $icon_data['slug'] ) ? (string) $icon_data['slug'] : '',
+			'iconStyle'        => isset( $icon_data['style_class'] ) ? (string) $icon_data['style_class'] : 'fas',
+			'svgUrl'           => isset( $icon_data['url'] ) ? (string) $icon_data['url'] : '',
+			'svgStyle'         => ( 'svg' === $icon_data['type'] && '' !== $icon_data['url'] )
+				? ( 'width:' . $size . 'px;height:auto;' )
+				: '',
+			'size'             => $size,
+			'title'            => $title,
+			'description'      => $description,
+			'titleSize'        => $title_size,
+			'titleColor'       => $title_color,
+			'descriptionSize'  => $description_size,
+			'descriptionColor' => $description_color,
+			'alignment'        => $alignment_value,
+
+		);
 		if ( '' !== $custom_css ) {
 			Style_Parser::save_custom_css( $custom_css );
 		}
 
-		return Block_Builder::build( 'html', array(), $content );
+		return Block_Builder::build( 'gutenberg/icon-box', $block_attributes, $content );
 	}
 
 	/**

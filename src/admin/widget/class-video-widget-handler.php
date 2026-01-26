@@ -52,10 +52,10 @@ class Video_Widget_Handler implements Widget_Handler_Interface {
 
 		$figure = sprintf(
 			'<figure class="wp-block-embed is-type-video is-provider-youtube wp-block-embed-youtube"><div class="wp-block-embed__wrapper">%s</div></figure>',
-			wp_kses_post( esc_url( $watch_url ) )
+			esc_url( $watch_url )
 		);
 
-		return Block_Builder::build( 'embed', $attrs, $figure );
+		return Block_Builder::build( 'embed', $attrs, $figure, array( 'raw' => true ) );
 	}
 
 	/**

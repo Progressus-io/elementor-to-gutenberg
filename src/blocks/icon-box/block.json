@@ -1,0 +1,65 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "gutenberg/icon-box",
+  "title": "Icon Box",
+  "category": "design",
+  "icon": "screenoptions",
+  "description": "Icon box with title and description, supports SVG or FontAwesome icons.",
+  "editorScript": "file:./index.js",
+  "style": "file:./style-index.css",
+  "supports": {
+    "html": false,
+    "anchor": true
+  },
+  "attributes": {
+    "icon": {
+      "type": "string",
+      "default": "fa-star"
+    },
+    "iconStyle": {
+      "type": "string",
+      "default": "fas"
+    },
+    "size": {
+      "type": "number",
+      "default": 24
+    },
+    "svgUrl": {
+      "type": "string",
+      "default": ""
+    },
+    "svgStyle": {
+      "type": "string",
+      "default": ""
+    },
+    "title": {
+      "type": "string",
+      "default": ""
+    },
+    "description": {
+      "type": "string",
+      "default": ""
+    },
+    "alignment": {
+      "type": "string",
+      "default": "left"
+    },
+    "titleSize": {
+      "type": "number",
+      "default": 20
+    },
+    "titleColor": {
+      "type": "string",
+      "default": "#000000"
+    },
+    "descriptionSize": {
+      "type": "number",
+      "default": 14
+    },
+    "descriptionColor": {
+      "type": "string",
+      "default": "#666666"
+    }
+  }
+}

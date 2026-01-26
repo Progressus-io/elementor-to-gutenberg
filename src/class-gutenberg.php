@@ -11,6 +11,7 @@ defined( 'ABSPATH' ) || exit;
 
 use Progressus\Gutenberg\Admin\Admin_Settings;
 use Progressus\Gutenberg\Admin\Batch_Convert_Wizard;
+use Progressus\Gutenberg\Admin\Helper\External_CSS_Service;
 
 /**
  * Class Gutenberg
@@ -93,6 +94,7 @@ class Gutenberg {
 		add_action( 'wp_ajax_progressus_form_submit', array( $this, 'handle_form_submission' ) );
 		add_action( 'wp_ajax_nopriv_progressus_form_submit', array( $this, 'handle_form_submission' ) );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_editor_assets' ) );
+		add_action( 'enqueue_block_assets', array( $this, 'enqueue_converted_page_css' ), 20 );
 	}
 
 	/**
@@ -105,6 +107,7 @@ class Gutenberg {
 			array(),
 			GUTENBERG_PLUGIN_VERSION
 		);
+
 	}
 
 	/**
@@ -184,6 +187,8 @@ class Gutenberg {
 				)
 			);
 		}
+
+
 	}
 
 	/**
@@ -251,4 +256,16 @@ class Gutenberg {
 			);
 		}
 	}
+
+	/**
+	 * Enqueue per-post converted CSS when present.
+	 *
+	 * enqueue_block_assets runs in both frontend and block editor contexts.
+	 *
+	 * @return void
+	 */
+	public function enqueue_converted_page_css(): void {
+		External_CSS_Service::enqueue_current_post_css();
+	}
+
 }

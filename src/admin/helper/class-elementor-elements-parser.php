@@ -30,11 +30,17 @@ class Elementor_Elements_Parser {
 		$block_content = '';
 		foreach ( $elements as $element ) {
 			if ( isset( $element['elType'] ) && 'container' === $element['elType'] ) {
-				$inner         = ! empty( $element['elements'] ) ? self::parse( $element['elements'] ) : '';
-				$block_content .= sprintf(
-					'<!-- wp:group --><div class="wp-block-group">%s</div><!-- /wp:group -->' . "\n",
-					$inner
-				);
+
+				$inner = ! empty( $element['elements'] ) ? self::parse( $element['elements'] ) : '';
+				$inner = trim( (string) $inner );
+
+				if ( '' !== $inner ) {
+					$block_content .= sprintf(
+						'<!-- wp:group --><div class="wp-block-group">%s</div><!-- /wp:group -->' . "\n",
+						$inner
+					);
+				}
+
 			} elseif ( isset( $element['elType'] ) && 'widget' === $element['elType'] ) {
 				$handler = Widget_Handler_Factory::get_handler( $element['widgetType'] );
 				if ( null !== $handler ) {

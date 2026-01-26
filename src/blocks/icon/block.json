@@ -3,7 +3,11 @@
   "apiVersion": 3,
   "name": "gutenberg/icon",
   "title": "Styled Icon Block",
-  "keywords": ["icon", "symbol", "svg"],
+  "keywords": [
+    "icon",
+    "symbol",
+    "svg"
+  ],
   "version": "1.0.0",
   "textdomain": "gutenberg",
   "editorStyle": "file:./index.css",
@@ -25,27 +29,55 @@
   "supports": {
     "html": false,
     "anchor": true,
-    "align": ["left", "right", "center"],
+    "align": [
+      "left",
+      "right",
+      "center"
+    ],
     "spacing": {
       "margin": true,
       "padding": true
-    },
-    "__experimentalSkipSerialization": true
+    }
   },
   "attributes": {
-    "icon": { "type": "string", "default": "star-filled" },
-    "iconStyle": { "type": "string", "default": "fas" },
-    "size": { "type": "number", "default": 32 },
-    "color": { "type": "string", "default": "#333333" },
-    "backgroundColor": { "type": "string", "default": "transparent" },
-    "borderRadius": { "type": "number", "default": 0 },
-    "padding": { "type": "number", "default": 0 },
-    "alignment": { "type": "string", "default": "left" },
-    "hoverColor": { "type": "string", "default": "" },
-    "hoverBackgroundColor": { "type": "string", "default": "" },
-    "hoverEffect": { "type": "string", "default": "none" },
-    "link": { "type": "string", "default": "" },
-    "linkTarget": { "type": "boolean", "default": false },
-    "ariaLabel": { "type": "string", "default": "" }
+    "alignment": {
+      "type": "string",
+      "default": "left"
+    },
+    "link": {
+      "type": "string",
+      "source": "attribute",
+      "selector": "a",
+      "attribute": "href",
+      "default": ""
+    },
+    "linkTarget": {
+      "type": "string",
+      "source": "attribute",
+      "selector": "a",
+      "attribute": "target",
+      "default": ""
+    },
+    "ariaLabel": {
+      "type": "string",
+      "source": "attribute",
+      "selector": "a",
+      "attribute": "aria-label",
+      "default": ""
+    },
+    "svgUrl": {
+      "type": "string",
+      "source": "attribute",
+      "selector": "img.svg-icon",
+      "attribute": "src",
+      "default": ""
+    },
+    "svgStyle": {
+      "type": "string",
+      "source": "attribute",
+      "selector": "img.svg-icon",
+      "attribute": "style",
+      "default": ""
+    }
   }
 }

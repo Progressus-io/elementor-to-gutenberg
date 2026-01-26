@@ -364,8 +364,7 @@ class Text_Editor_Widget_Handler implements Widget_Handler_Interface {
 			$attrs .= ' style="' . esc_attr( $style ) . '"';
 		}
 
-		$inner = $segment['plain'] ? esc_html( $segment['content'] ) : wp_kses_post( $segment['content'] );
-
+		$inner = $segment['plain'] ? esc_html( $segment['content'] ) : wp_kses_post( $this->strip_wrapping_p( $segment['content'] ) );
 		return sprintf( '<p%s>%s</p>', $attrs, $inner );
 	}
 
@@ -584,4 +583,12 @@ class Text_Editor_Widget_Handler implements Widget_Handler_Interface {
 
 		return $style;
 	}
+	private function strip_wrapping_p( string $html ): string {
+		$trimmed = trim( $html );
+		if ( 1 === preg_match( '#^<p\b[^>]*>(.*)</p>$#is', $trimmed, $m ) ) {
+			return (string) $m[1];
+		}
+		return $html;
+	}
+
 }

@@ -127,15 +127,10 @@ class Style_Parser {
 		$anchor_classes = array();
 		$anchor_styles  = array();
 
-		$kit_settings = self::get_elementor_kit_settings();
-
 		$text_color = self::extract_color_from_sources(
 			array(
 				$settings['button_text_color'] ?? '',
 				$settings['text_color'] ?? '',
-				$kit_settings['button_text_color'] ?? '',
-				$kit_settings['button_typography_text_color'] ?? '',
-				$kit_settings['button_typography_color'] ?? '',
 			)
 		);
 
@@ -143,8 +138,6 @@ class Style_Parser {
 			array(
 				$settings['background_color'] ?? '',
 				$settings['button_background_color'] ?? '',
-				$kit_settings['button_background_color'] ?? '',
-				$kit_settings['button_background'] ?? '',
 			)
 		);
 
@@ -220,6 +213,7 @@ class Style_Parser {
 			'color' => '',
 		);
 	}
+
 	/**
 	 * Resolve an Elementor color reference (raw hex or globals/colors?id=xxx)
 	 * into a normalized hex color and an optional matching theme slug.
@@ -1267,7 +1261,7 @@ class Style_Parser {
 	public static function parse_container_styles( array $settings ): array {
 		$attributes = array();
 		$style      = array();
-		$spacing = self::parse_spacing( $settings );
+		$spacing    = self::parse_spacing( $settings );
 		if ( ! empty( $spacing['attributes']['padding'] ) ) {
 			$attributes['style']['spacing']['padding'] = $spacing['attributes']['padding'];
 		}
