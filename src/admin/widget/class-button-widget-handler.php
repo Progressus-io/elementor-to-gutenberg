@@ -9,6 +9,7 @@ namespace Progressus\Gutenberg\Admin\Widget;
 
 use Progressus\Gutenberg\Admin\Helper\Alignment_Helper;
 use Progressus\Gutenberg\Admin\Helper\Block_Builder;
+use Progressus\Gutenberg\Admin\Helper\Html_Attribute_Builder;
 use Progressus\Gutenberg\Admin\Helper\Icon_Parser;
 use Progressus\Gutenberg\Admin\Helper\Style_Parser;
 use Progressus\Gutenberg\Admin\Widget_Handler_Interface;
@@ -41,11 +42,9 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 
 		$spacing      = Style_Parser::parse_spacing( $settings );
 		$spacing_attr = isset( $spacing['attributes'] ) ? $spacing['attributes'] : array();
-		$spacing_css  = isset( $spacing['style'] ) ? $spacing['style'] : '';
 
 		$typography      = Style_Parser::parse_typography( $settings );
 		$typography_attr = isset( $typography['attributes'] ) ? $typography['attributes'] : array();
-		$typography_css  = isset( $typography['style'] ) ? $typography['style'] : '';
 
 		$alignment      = Alignment_Helper::detect_alignment( $settings, array(
 			'button_align',
@@ -100,11 +99,6 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 			}
 		}
 
-		$anchor_classes = array_merge(
-			array( 'wp-block-button__link', 'wp-element-button' ),
-			$color_map['anchor_classes'] ?? array()
-		);
-		$anchor_style   = $color_map['anchor_styles'] ?? array();
 
 		if ( '' !== $url ) {
 			$button_attributes['url'] = $url;
@@ -128,56 +122,81 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 			Style_Parser::save_custom_css( $custom_css );
 		}
 
-		$anchor_attrs   = array();
-		$anchor_attrs[] = 'class="' . esc_attr( implode( ' ', array_unique( $anchor_classes ) ) ) . '"';
 
-		if ( '' !== $url ) {
-			$anchor_attrs[] = 'href="' . $url . '"';
-		}
-
-		if ( ! empty( $link_data['is_external'] ) ) {
-			$anchor_attrs[] = 'target="_blank"';
-		}
-
-		if ( ! empty( $rel_tokens ) ) {
-			$anchor_attrs[] = 'rel="' . esc_attr( implode( ' ', array_unique( $rel_tokens ) ) ) . '"';
-		}
-
-		$style_parts = array();
-
-		if ( '' !== $spacing_css ) {
-			$style_parts[] = $spacing_css;
-		}
-
-		if ( '' !== $typography_css ) {
-			$style_parts[] = $typography_css;
-		}
-
-		if ( ! empty( $anchor_style ) ) {
-			$style_parts[] = implode( ';', array_filter( $anchor_style ) );
-		}
-
-		if ( ! empty( $style_parts ) ) {
-			$anchor_attrs[] = 'style="' . esc_attr( implode( '', $style_parts ) ) . '"';
-		}
-
+		$icon_html = '';
 		if ( '' !== $icon_data['class_name'] ) {
-			$anchor_attrs[] = 'data-icon-class="' . esc_attr( $icon_data['class_name'] ) . '"';
+			$icon_html = '<span class="etg-button-icon ' . esc_attr( $icon_data['class_name'] ) . '" aria-hidden="true"></span>';
+			Style_Parser::save_custom_css( '/* icon class captured for ETG_EXTRA_ATTRS_MAP_V1 */' );
+		} elseif ( '' !== $icon_data['url'] ) {
+			$icon_html = '<span class="etg-button-icon"><img src="' . esc_url( $icon_data['url'] ) . '" alt="" aria-hidden="true" /></span>';
 		}
 
-		if ( '' !== $icon_data['url'] ) {
-			$anchor_attrs[] = 'data-icon-url="' . esc_url( $icon_data['url'] ) . '"';
+
+		// Normalize typography for core/button to avoid Gutenberg dropping/reshuffling values.
+		if ( isset( $button_attributes['style']['typography'] ) && is_array( $button_attributes['style']['typography'] ) ) {
+			$typo = $button_attributes['style']['typography'];
+
+			if ( empty( $typo['fontStyle'] ) ) {
+				$typo['fontStyle'] = 'normal';
+			}
+
+			if ( isset( $typo['fontFamily'] ) ) {
+				$family = trim( (string) $typo['fontFamily'] );
+				if ( '' !== $family && 0 !== strpos( $family, 'var:' ) && 0 !== strpos( $family, 'var(' ) ) {
+					unset( $typo['fontFamily'] );
+				}
+			}
+
+			foreach ( array( 'letterSpacing', 'wordSpacing' ) as $spacing_key ) {
+				if ( isset( $typo[ $spacing_key ] ) ) {
+					$val = strtolower( trim( (string) $typo[ $spacing_key ] ) );
+					if ( '0' === $val || '0px' === $val || '0em' === $val || '0rem' === $val || '0%' === $val ) {
+						unset( $typo[ $spacing_key ] );
+					}
+				}
+			}
+
+			if ( empty( $typo ) ) {
+				unset( $button_attributes['style']['typography'] );
+			} else {
+				$button_attributes['style']['typography'] = $typo;
+			}
 		}
 
-		$anchor_attrs[] = 'data-icon-type="' . esc_attr( $icon_data['type'] ) . '"';
+		$button_block = Block_Builder::build_prepared(
+			'button',
+			$button_attributes,
+			function ( array $prepared_attrs ) use ( $icon_html, $text ): string {
+				$anchor_attrs = array(
+					'class' => Block_Builder::build_button_link_class( $prepared_attrs ),
+				);
 
-		$anchor_html = sprintf(
-			'<a %s>%s</a>',
-			implode( ' ', $anchor_attrs ),
-			wp_strip_all_tags( $text )
+				$style = Block_Builder::build_button_link_style( $prepared_attrs );
+				if ( '' !== $style ) {
+					$anchor_attrs['style'] = $style;
+				}
+
+				$href = isset( $prepared_attrs['url'] ) ? (string) $prepared_attrs['url'] : '';
+				if ( '' !== $href ) {
+					$anchor_attrs['href'] = esc_url( $href );
+				}
+
+				if ( ! empty( $prepared_attrs['linkTarget'] ) ) {
+					$anchor_attrs['target'] = (string) $prepared_attrs['linkTarget'];
+				}
+
+				if ( ! empty( $prepared_attrs['rel'] ) ) {
+					$anchor_attrs['rel'] = (string) $prepared_attrs['rel'];
+				}
+
+				return sprintf(
+					'<a %s>%s%s</a>',
+					Html_Attribute_Builder::build( $anchor_attrs ),
+					'' !== $icon_html ? $icon_html : '',
+					wp_strip_all_tags( $text )
+				);
+			}
 		);
-
-		$button_block = Block_Builder::build( 'button', $button_attributes, $anchor_html );
 
 		return Block_Builder::build(
 			'buttons',

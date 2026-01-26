@@ -34,20 +34,31 @@ class Icon_Box_Widget_Handler implements Widget_Handler_Interface {
 	public function handle( array $element ): string {
 		$settings       = is_array( $element['settings'] ?? null ) ? $element['settings'] : array();
 		$custom_css     = isset( $settings['custom_css'] ) ? (string) $settings['custom_css'] : '';
+		$alignment      = Alignment_Helper::detect_alignment( $settings, array( 'align', 'alignment', 'text_align' ) );
 		$custom_id      = isset( $settings['_element_id'] ) ? trim( (string) $settings['_element_id'] ) : '';
 		$custom_classes = $this->sanitize_custom_classes( trim( isset( $settings['_css_classes'] ) ? (string) $settings['_css_classes'] : '' ) );
 
 		$typography      = Style_Parser::parse_typography( $settings );
 		$typography_attr = isset( $typography['attributes'] ) ? $typography['attributes'] : array();
 
-		$icon_data     = $this->resolve_icon_data( $settings );
-		$icon_value    = trim( $icon_data['class_name'] );
-		$size          = $this->sanitize_slider_value( $settings['size'] ?? null, 24 );
-		$title         = isset( $settings['title_text'] ) ? (string) $settings['title_text'] : '';
-		$description   = isset( $settings['description_text'] ) ? (string) $settings['description_text'] : '';
-		$align_payload = Alignment_Helper::build_text_alignment_payload(
-			Alignment_Helper::detect_alignment( $settings, array( 'align', 'alignment', 'text_align' ) )
-		);
+		$icon_data   = $this->resolve_icon_data( $settings );
+		$icon_value  = trim( $icon_data['class_name'] );
+		$size        = $this->sanitize_slider_value( $settings['size'] ?? null, 24 );
+		$title       = isset( $settings['title_text'] ) ? (string) $settings['title_text'] : '';
+		$description = isset( $settings['description_text'] ) ? (string) $settings['description_text'] : '';
+
+		// Normalize Elementor "start/end" to CSS text-align values.
+		$alignment_value = is_string( $alignment ) ? trim( strtolower( $alignment ) ) : '';
+		if ( 'start' === $alignment_value ) {
+			$alignment_value = 'left';
+		} elseif ( 'end' === $alignment_value ) {
+			$alignment_value = 'right';
+		}
+		if ( '' === $alignment_value ) {
+			$alignment_value = 'left';
+		}
+
+		$align_payload = Alignment_Helper::build_text_alignment_payload( $alignment_value );
 
 		$icon_html = '';
 
@@ -71,13 +82,13 @@ class Icon_Box_Widget_Handler implements Widget_Handler_Interface {
 			);
 		}
 
-		$segments = array();
+		$segments   = array();
 		$segments[] = '<div class="icon-box-icon">' . $icon_html . '</div>';
 
 		// Determine title/description typographic defaults (fall back to sensible values).
-		$title_size       = isset( $typography_attr['fontSize'] ) ? (int) $typography_attr['fontSize'] : 20;
-		$title_color      = isset( $typography_attr['color'] ) ? $typography_attr['color'] : '#000000';
-		$description_size = isset( $typography_attr['descriptionSize'] ) ? (int) $typography_attr['descriptionSize'] : 14;
+		$title_size        = isset( $typography_attr['fontSize'] ) ? (int) $typography_attr['fontSize'] : 20;
+		$title_color       = isset( $typography_attr['color'] ) ? $typography_attr['color'] : '#000000';
+		$description_size  = isset( $typography_attr['descriptionSize'] ) ? (int) $typography_attr['descriptionSize'] : 14;
 		$description_color = isset( $typography_attr['descriptionColor'] ) ? $typography_attr['descriptionColor'] : '#666666';
 
 		if ( '' !== trim( $title ) ) {
@@ -93,28 +104,28 @@ class Icon_Box_Widget_Handler implements Widget_Handler_Interface {
 			$wrapper_attrs[] = 'id="' . esc_attr( $custom_id ) . '"';
 		}
 
-		$alignment_value = '' === $align_payload['style'] ? 'left' : ( $align_payload['classes'][0] ?? 'left' );
+		$alignment_value = '' !== $alignment ? $alignment : 'left';
 		$wrapper_attrs[] = 'style="text-align:' . esc_attr( $alignment_value ) . '"';
 
 		$content = '<div ' . implode( ' ', $wrapper_attrs ) . '>' . implode( '', $segments ) . '</div>';
 
 		// Build block attributes for the new `gutenberg/icon-box` block.
 		$block_attributes = array(
-			'icon'      => ! empty( $icon_data['class_name'] ) ? $icon_data['class_name'] : ( $icon_data['slug'] ?? '' ),
-			'iconStyle' => $icon_data['style_class'] ?? '',
-			'svgUrl'  => $icon_data['url'] ?? '',
-			// Reuse the inline svg style used above so saved markup matches.
-			'svgStyle' => ( 'svg' === $icon_data['type'] && '' !== $icon_data['url'] ) ? ('width:' . $size . 'px;height:auto;display:inline-block') : '',
-			'size'    => $size,
-			'title'   => $title,
-			'description' => $description,
-			'titleSize' => isset( $title_size ) ? $title_size : 20,
-			'titleColor' => isset( $title_color ) ? $title_color : '#000000',
-			'descriptionSize' => isset( $description_size ) ? $description_size : 14,
-			'descriptionColor' => isset( $description_color ) ? $description_color : '#666666',
-			'alignment' => '' === $align_payload['style'] ? 'left' : ( $align_payload['classes'][0] ?? 'left' ),
-			'className' => implode( ' ', $custom_classes ),
-			'anchor' => $custom_id,
+			'icon'             => isset( $icon_data['slug'] ) ? (string) $icon_data['slug'] : '',
+			'iconStyle'        => isset( $icon_data['style_class'] ) ? (string) $icon_data['style_class'] : 'fas',
+			'svgUrl'           => isset( $icon_data['url'] ) ? (string) $icon_data['url'] : '',
+			'svgStyle'         => ( 'svg' === $icon_data['type'] && '' !== $icon_data['url'] )
+				? ( 'width:' . $size . 'px;height:auto;' )
+				: '',
+			'size'             => $size,
+			'title'            => $title,
+			'description'      => $description,
+			'titleSize'        => $title_size,
+			'titleColor'       => $title_color,
+			'descriptionSize'  => $description_size,
+			'descriptionColor' => $description_color,
+			'alignment'        => $alignment_value,
+
 		);
 		if ( '' !== $custom_css ) {
 			Style_Parser::save_custom_css( $custom_css );

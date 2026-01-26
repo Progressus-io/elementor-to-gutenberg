@@ -23,10 +23,8 @@ export default function save({ attributes }) {
   );
 
   const icon_html = svgUrl
-    ? svgStyle
-      ? `<img src="${svgUrl}" alt="" style="${svgStyle}" class="svg-icon" />`
-      : `<img src="${svgUrl}" alt="" style="width:${size}px;height:auto;display:inline-block" class="svg-icon" />`
-    : `<i class="${iconStyle} ${icon}" style="font-size:${size}px;"></i>`;
+      ? `<img src="${svgUrl}" alt="" style="${svgStyle ? svgStyle : `width:${size}px;height:auto;`}" class="svg-icon" />`
+      : `<i class="${iconStyle} ${icon}" style="font-size:${size}px;"></i>`;
 
   return (
     <div

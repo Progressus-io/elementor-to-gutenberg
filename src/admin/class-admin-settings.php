@@ -6,11 +6,14 @@
  */
 
 namespace Progressus\Gutenberg\Admin;
+
 use Progressus\Gutenberg\Admin\Helper\File_Upload_Service;
 use Progressus\Gutenberg\Admin\Helper\Block_Builder;
 use Progressus\Gutenberg\Admin\Layout\Container_Classifier;
 use Progressus\Gutenberg\Admin\Helper\Style_Parser;
 use Progressus\Gutenberg\Admin\Helper\Alignment_Helper;
+use Progressus\Gutenberg\Admin\Helper\External_CSS_Service;
+use Progressus\Gutenberg\Admin\Helper\External_Style_Collector;
 
 use function esc_html;
 use function esc_html__;
@@ -25,6 +28,7 @@ use function esc_attr;
 use function wp_json_encode;
 
 defined( 'ABSPATH' ) || exit;
+
 /**
  * Main admin settings class for Elementor to Gutenberg conversion.
  */
@@ -37,6 +41,11 @@ class Admin_Settings {
 	private static $instance = null;
 
 	/**
+	 * @var External_Style_Collector|null
+	 */
+	private $external_css_collector = null;
+
+	/**
 	 * Get the singleton instance.
 	 *
 	 * @return Admin_Settings
@@ -45,6 +54,7 @@ class Admin_Settings {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
 		}
+
 		return self::$instance;
 	}
 
@@ -70,6 +80,7 @@ class Admin_Settings {
 			);
 			$actions['convert_to_gutenberg'] = '<a href="' . esc_url( $url ) . '">Convert to Gutenberg</a>';
 		}
+
 		return $actions;
 	}
 
@@ -96,6 +107,10 @@ class Admin_Settings {
 
 		// Create new page with blocks
 		$new_page_id = $this->insert_new_page( $page_id, $blocks );
+		$css         = $this->get_external_css();
+		if ( '' !== trim( $css ) ) {
+			External_CSS_Service::save_post_css( (int) $new_page_id, (string) $css );
+		}
 
 		if ( $new_page_id ) {
 			wp_safe_redirect( admin_url( 'post.php?post=' . $new_page_id . '&action=edit' ) );
@@ -110,7 +125,7 @@ class Admin_Settings {
 	 *
 	 * @param int $page_id Page ID.
 	 * @param array $blocks Gutenberg blocks.
-	 * 
+	 *
 	 * @return int New page ID.
 	 */
 	public function insert_new_page( $page_id, $blocks ): int {
@@ -181,6 +196,7 @@ class Admin_Settings {
 	 * Handle JSON file upload and conversion.
 	 *
 	 * @param mixed $option The option value.
+	 *
 	 * @return string The processed Gutenberg content or existing option.
 	 */
 	public function handle_json_upload( $option ): string {
@@ -235,6 +251,7 @@ class Admin_Settings {
 				esc_html__( 'Failed to create new page.', 'elementor-to-gutenberg' ),
 				'error'
 			);
+
 			return get_option( 'gutenberg_json_data', '' );
 		}
 
@@ -244,6 +261,7 @@ class Admin_Settings {
 			esc_html__( 'JSON file uploaded and page created successfully!', 'elementor-to-gutenberg' ),
 			'updated'
 		);
+
 		return $gutenberg_content;
 	}
 
@@ -288,14 +306,50 @@ class Admin_Settings {
 	 * Convert JSON data to Gutenberg blocks.
 	 *
 	 * @param array $json_data The JSON data to convert.
+	 *
 	 * @return string The converted Gutenberg content.
 	 */
 	public function convert_json_to_gutenberg_content( array $json_data ): string {
+		$this->external_css_collector = new External_Style_Collector();
+		Block_Builder::bootstrap( $this->external_css_collector );
+
 		if ( empty( $json_data['content'] ) || ! is_array( $json_data['content'] ) ) {
 			return '';
 		}
 
-		return $this->parse_elementor_elements( $json_data['content'] );
+		$content = $this->parse_elementor_elements( $json_data['content'] );
+		$this->log_inventory_summary();
+
+		return $content;
+	}
+
+	private function log_inventory_summary(): void {
+		if ( null === $this->external_css_collector ) {
+			return;
+		}
+
+		$inventory = $this->external_css_collector->get_inventory();
+		if ( empty( $inventory ) ) {
+			return;
+		}
+
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			$summary = array(
+				'externalized' => count( $inventory['externalized'] ?? array() ),
+				'dropped'      => count( $inventory['dropped'] ?? array() ),
+				'conversions'  => count( $inventory['conversions'] ?? array() ),
+			);
+
+			error_log( 'inventory: ' . wp_json_encode( $summary ) );
+		}
+	}
+
+	private function get_external_css(): string {
+		if ( null === $this->external_css_collector ) {
+			return '';
+		}
+
+		return $this->external_css_collector->render_css();
 	}
 
 	/**
@@ -336,10 +390,10 @@ class Admin_Settings {
 				return $handler->handle( $element );
 			}
 
-			return $this->render_unknown_widget( $widget_type );
+			return $this->render_placeholder_block( $element );
 		}
 
-		return $this->render_unknown_widget( $el_type ?: 'unknown' );
+		return $this->render_placeholder_block( $element );
 	}
 
 	/**
@@ -449,7 +503,17 @@ class Admin_Settings {
 	 */
 	private function render_group( array $attributes, array $child_blocks, string $layout_type = 'constrained' ): string {
 		$attributes['layout'] = array( 'type' => $layout_type );
-		$inner_html           = implode( '', $child_blocks );
+
+		if ( null !== $this->external_css_collector ) {
+			$attributes = $this->external_css_collector->externalize_attrs( 'group', $attributes );
+		}
+
+		$inner_html = implode( '', $child_blocks );
+
+		$inner_html = trim( (string) $inner_html );
+		if ( '' === $inner_html ) {
+			return '';
+		}
 
 		return Block_Builder::build( 'group', $attributes, $inner_html );
 	}
@@ -470,6 +534,13 @@ class Admin_Settings {
 			'justifyContent' => $justify_content,
 			'flexWrap'       => 'wrap',
 		);
+
+		$inner_html = implode( '', $child_blocks );
+
+		$inner_html = trim( (string) $inner_html );
+		if ( '' === $inner_html ) {
+			return '';
+		}
 
 		return Block_Builder::build( 'group', $attributes, implode( '', $child_blocks ) );
 	}
@@ -492,6 +563,13 @@ class Admin_Settings {
 			'justifyContent' => $justify_content,
 		);
 
+		$inner_html = implode( '', $child_blocks );
+
+		$inner_html = trim( (string) $inner_html );
+		if ( '' === $inner_html ) {
+			return '';
+		}
+
 		return Block_Builder::build( 'group', $attributes, implode( '', $child_blocks ) );
 	}
 
@@ -511,6 +589,7 @@ class Admin_Settings {
 		$inner_html = '';
 		foreach ( $child_data as $child ) {
 			$content = $child['content'] ?? '';
+			$content = trim( (string) $content );
 			if ( '' === $content ) {
 				continue;
 			}
@@ -520,6 +599,11 @@ class Admin_Settings {
 				array( 'layout' => array( 'type' => 'constrained' ) ),
 				$content
 			);
+		}
+
+		$inner_html = trim( (string) $inner_html );
+		if ( '' === $inner_html ) {
+			return '';
 		}
 
 		return Block_Builder::build( 'group', $attributes, $inner_html );
@@ -876,7 +960,45 @@ class Admin_Settings {
 	 * @param string $type Widget type.
 	 */
 	private function render_unknown_widget( string $type ): string {
-		return sprintf( "<!-- Unknown widget skipped: %s -->\n", esc_html( $type ) );
+		$element = array(
+			'widgetType' => $type,
+			'elType'     => 'widget',
+		);
+
+		return $this->render_placeholder_block( $element );
+	}
+
+	private function render_placeholder_block( array $element ): string {
+		// Detect widget name (best-effort).
+		$widget_name = '';
+		if ( isset( $element['widgetType'] ) ) {
+			$widget_name = (string) $element['widgetType'];
+		} elseif ( isset( $element['elType'] ) ) {
+			$widget_name = (string) $element['elType'];
+		}
+
+		$widget_name = trim( $widget_name );
+		if ( '' === $widget_name ) {
+			$widget_name = 'unknown';
+		}
+		// Visible notice text (plain text, no HTML).
+		$notice_text = sprintf( 'Unsupported widget: %s', $widget_name );
+		$notice_text = esc_html( $notice_text );
+
+		// core/paragraph canonical markup.
+		$inner_html = '<p class="etg-unsupported-widget">' . $notice_text . '</p>';
+
+		$block = array(
+			'blockName'    => 'core/paragraph',
+			'attrs'        => array(
+				'className' => 'etg-unsupported-widget',
+			),
+			'innerBlocks'  => array(),
+			'innerHTML'    => $inner_html,
+			'innerContent' => array( $inner_html ),
+		);
+
+		return serialize_block( $block ) . "\n";
 	}
 
 	/**

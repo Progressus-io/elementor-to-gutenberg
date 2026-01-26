@@ -89,7 +89,8 @@ class Divider_Widget_Handler implements Widget_Handler_Interface {
 			$color_sources[] = $settings['__globals__']['color'];
 		}
 
-		$resolved_color = null;
+		$resolved_color   = null;
+		$has_custom_color = false;
 
 		foreach ( $color_sources as $source ) {
 			$data = Style_Parser::resolve_elementor_color_reference( $source );
@@ -108,6 +109,7 @@ class Divider_Widget_Handler implements Widget_Handler_Interface {
 			}
 
 			if ( '' !== $resolved_color['color'] ) {
+				$has_custom_color                                = true;
 				$separator_attrs['style']['color']['background'] = $resolved_color['color'];
 				$inline_style                                    .= 'background-color:' . esc_attr( $resolved_color['color'] ) . ';color:' . esc_attr( $resolved_color['color'] ) . ';';
 			}
@@ -194,16 +196,25 @@ class Divider_Widget_Handler implements Widget_Handler_Interface {
 				$separator_attrs['className'] .= ' is-style-wide';
 			}
 
-			if ( ! $has_width ) {
-				$inline_style .= 'width:100%;';
+			// Gutenberg adds these classes when color style exists.
+			if ( true === $has_custom_color ) {
+				$separator_attrs['className'] = trim( 'has-text-color has-alpha-channel-opacity has-background ' . $separator_attrs['className'] );
 			}
 
+			// Normalize classes (remove duplicates + clean spaces).
+			$separator_class_parts        = preg_split( '/\s+/', trim( (string) $separator_attrs['className'] ) );
+			$separator_class_parts        = is_array( $separator_class_parts ) ? $separator_class_parts : array();
+			$separator_attrs['className'] = implode( ' ', array_values( array_unique( array_filter( $separator_class_parts ) ) ) );
+
+			$inline_style_attr = rtrim( trim( (string) $inline_style ), ';' );
+			$id_attr           = '' !== trim( (string) $custom_id ) ? ' id="' . esc_attr( $custom_id ) . '"' : '';
+
 			$block_content .= sprintf(
-				'<!-- wp:separator %s --><hr id="%s" class="wp-block-separator %s" style="%s"/><!-- /wp:separator -->' . "\n",
+				"<!-- wp:separator %s -->\n<hr%s class=\"wp-block-separator %s\" style=\"%s\"/>\n<!-- /wp:separator -->\n",
 				$separator_attrs ? wp_json_encode( $separator_attrs ) : '',
-				esc_attr( $custom_id ),
+				$id_attr,
 				esc_attr( $separator_attrs['className'] ),
-				esc_attr( $inline_style )
+				esc_attr( $inline_style_attr )
 			);
 		}
 

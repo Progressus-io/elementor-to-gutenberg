@@ -9,6 +9,7 @@ namespace Progressus\Gutenberg\Admin\Widget;
 
 use Progressus\Gutenberg\Admin\Helper\Alignment_Helper;
 use Progressus\Gutenberg\Admin\Helper\Block_Builder;
+use Progressus\Gutenberg\Admin\Helper\Html_Attribute_Builder;
 use Progressus\Gutenberg\Admin\Helper\Style_Parser;
 use Progressus\Gutenberg\Admin\Widget_Handler_Interface;
 
@@ -44,18 +45,16 @@ class Heading_Widget_Handler implements Widget_Handler_Interface {
 		}
 		$level = (int) substr( $header_size, 1 );
 		// Alignment.
-		$align = Alignment_Helper::detect_alignment( $settings, array( 'align' ) );
+		$align         = Alignment_Helper::detect_alignment( $settings, array( 'align' ) );
 		$align_payload = Alignment_Helper::build_text_alignment_payload( $align );
 
 		// Spacing (margin / padding).
 		$spacing      = Style_Parser::parse_spacing( $settings );
 		$spacing_attr = isset( $spacing['attributes'] ) ? $spacing['attributes'] : array();
-		$spacing_css  = isset( $spacing['style'] ) ? $spacing['style'] : '';
 
 		// Typography (font family / size / weight / transform / line-height / letter-spacing / word-spacing).
 		$typography      = Style_Parser::parse_typography( $settings );
 		$typography_attr = isset( $typography['attributes'] ) ? $typography['attributes'] : array();
-		$typography_css  = isset( $typography['style'] ) ? $typography['style'] : '';
 
 		// Build block attributes for Gutenberg.
 		$attrs = array(
@@ -81,33 +80,66 @@ class Heading_Widget_Handler implements Widget_Handler_Interface {
 		}
 
 		// Inline style for the HTML tag itself (used on the frontend immediately).
-		$style_parts = array();
+		$inline_style = Block_Builder::build_style_attribute( $attrs );
 
-		if ( '' !== $spacing_css ) {
-			$style_parts[] = $spacing_css;
-		}
+		$inner_attributes = array(
+			'class' => implode( ' ', array_unique( $heading_classes ) ),
+		);
 
-		if ( '' !== $typography_css ) {
-			$style_parts[] = $typography_css;
-		}
-
-		if ( '' !== $align_payload['style'] ) {
-			$style_parts[] = $align_payload['style'];
-		}
-
-		$style_attr = '';
-		if ( ! empty( $style_parts ) ) {
-			$style_attr = ' style="' . esc_attr( implode( '', $style_parts ) ) . '"';
+		if ( '' !== $inline_style ) {
+			$inner_attributes['style'] = $inline_style;
 		}
 
 		$inner_html = sprintf(
-			'<%1$s class="%4$s"%3$s>%2$s</%1$s>',
+			'<%1$s %3$s>%2$s</%1$s>',
 			$header_size,
 			esc_html( $title ),
-			$style_attr,
-			esc_attr( implode( ' ', array_unique( $heading_classes ) ) )
+			Html_Attribute_Builder::build( $inner_attributes )
 		);
 
-		return Block_Builder::build( 'heading', $attrs, $inner_html );
+		return Block_Builder::build_prepared(
+			'heading',
+			$attrs,
+			static function ( array $prepared_attrs ) use ( $header_size, $title ): string {
+				$classes = array( 'wp-block-heading' );
+
+				if ( isset( $prepared_attrs['textAlign'] ) && is_string( $prepared_attrs['textAlign'] ) && '' !== $prepared_attrs['textAlign'] ) {
+					$classes[] = 'has-text-align-' . Style_Parser::clean_class( (string) $prepared_attrs['textAlign'] );
+				}
+
+				if ( isset( $prepared_attrs['className'] ) && is_string( $prepared_attrs['className'] ) && '' !== trim( $prepared_attrs['className'] ) ) {
+					$parts = preg_split( '/\s+/', trim( $prepared_attrs['className'] ) );
+					if ( is_array( $parts ) ) {
+						foreach ( $parts as $part ) {
+							$clean = Style_Parser::clean_class( (string) $part );
+							if ( '' !== $clean ) {
+								$classes[] = $clean;
+							}
+						}
+					}
+				}
+
+				$inner_attrs = array(
+					'class' => implode( ' ', array_values( array_unique( array_filter( $classes ) ) ) ),
+				);
+
+				if ( isset( $prepared_attrs['anchor'] ) && is_string( $prepared_attrs['anchor'] ) && '' !== $prepared_attrs['anchor'] ) {
+					$inner_attrs['id'] = (string) $prepared_attrs['anchor'];
+				}
+
+				$inline_style = Block_Builder::build_style_attribute( $prepared_attrs );
+				if ( '' !== $inline_style ) {
+					$inner_attrs['style'] = $inline_style;
+				}
+
+				return sprintf(
+					'<%1$s %3$s>%2$s</%1$s>',
+					$header_size,
+					esc_html( $title ),
+					Html_Attribute_Builder::build( $inner_attrs )
+				);
+			}
+		);
+
 	}
 }
