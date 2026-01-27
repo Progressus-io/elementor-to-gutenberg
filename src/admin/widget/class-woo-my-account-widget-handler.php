@@ -1,0 +1,28 @@
+<?php
+
+namespace Progressus\Gutenberg\Admin\Widget;
+
+use Progressus\Gutenberg\Admin\Widget_Handler_Interface;
+
+defined( 'ABSPATH' ) || exit;
+
+class Woo_My_Account_Widget_Handler implements Widget_Handler_Interface {
+	use Woo_Block_Serializer_Trait;
+
+	public function handle( array $element ): string {
+		$block = $this->serialize_first_registered_block(
+			array(
+				'woocommerce/my-account',
+				'woocommerce/customer-account',
+			),
+			array(),
+			''
+		);
+
+		if ( '' !== $block ) {
+			return $block;
+		}
+
+		return $this->serialize_block( 'core/shortcode', array(), '[woocommerce_my_account]' );
+	}
+}
