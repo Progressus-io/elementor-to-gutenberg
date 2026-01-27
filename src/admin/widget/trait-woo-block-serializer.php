@@ -2,8 +2,7 @@
 
 namespace Progressus\Gutenberg\Admin\Widget;
 
-use function sanitize_key;
-use function wp_json_encode;
+use function is_array;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -53,6 +52,17 @@ trait Woo_Block_Serializer_Trait {
 		return $this->serialize_block( 'core/shortcode', array(), $fallback_shortcode );
 	}
 
+	private function serialize_first_registered_block( array $candidates, array $attrs = array(), string $inner_html = '' ): string {
+		foreach ( $candidates as $name ) {
+			$name = (string) $name;
+			if ( '' !== $name && $this->is_block_registered( $name ) ) {
+				return $this->serialize_block( $name, $attrs, $inner_html );
+			}
+		}
+
+		return '';
+	}
+
 	private function get_block_pattern_content( string $pattern_name ): string {
 		if ( ! class_exists( 'WP_Block_Patterns_Registry' ) ) {
 			return '';
@@ -64,7 +74,6 @@ trait Woo_Block_Serializer_Trait {
 		}
 
 		$content = isset( $pattern['content'] ) ? (string) $pattern['content'] : '';
-		return '' !== $content ? $content : '';
+		return $content;
 	}
-
 }
