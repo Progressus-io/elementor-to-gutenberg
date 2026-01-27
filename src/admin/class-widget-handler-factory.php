@@ -54,6 +54,7 @@ class Widget_Handler_Factory {
 		'woocommerce-mini-cart'     => 'Progressus\Gutenberg\Admin\Widget\Woo_Mini_Cart_Widget_Handler',
 		'shortcode'                 => 'Progressus\Gutenberg\Admin\Widget\Shortcode_Widget_Handler',
 		'wc-categories'             => 'Progressus\Gutenberg\Admin\Widget\Woo_Categories_Widget_Handler',
+		'woocommerce-notices'       => 'Progressus\Gutenberg\Admin\Widget\Woo_Notices_Widget_Handler',
 	);
 
 	/**
