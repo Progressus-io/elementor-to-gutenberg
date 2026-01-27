@@ -131,6 +131,8 @@ class Style_Parser {
 			array(
 				$settings['button_text_color'] ?? '',
 				$settings['text_color'] ?? '',
+				( isset( $settings['__globals__'] ) && is_array( $settings['__globals__'] ) ) ? ( $settings['__globals__']['button_text_color'] ?? '' ) : '',
+				( isset( $settings['__globals__'] ) && is_array( $settings['__globals__'] ) ) ? ( $settings['__globals__']['text_color'] ?? '' ) : '',
 			)
 		);
 
@@ -138,9 +140,10 @@ class Style_Parser {
 			array(
 				$settings['background_color'] ?? '',
 				$settings['button_background_color'] ?? '',
+				( isset( $settings['__globals__'] ) && is_array( $settings['__globals__'] ) ) ? ( $settings['__globals__']['background_color'] ?? '' ) : '',
+				( isset( $settings['__globals__'] ) && is_array( $settings['__globals__'] ) ) ? ( $settings['__globals__']['button_background_color'] ?? '' ) : '',
 			)
 		);
-
 		if ( '' !== $text_color['slug'] ) {
 			$attributes['textColor'] = $text_color['slug'];
 			$anchor_classes[]        = 'has-text-color';
@@ -179,6 +182,21 @@ class Style_Parser {
 		foreach ( $sources as $source ) {
 			$raw = self::sanitize_color( $source );
 			if ( '' === $raw ) {
+				continue;
+			}
+
+			if ( self::is_elementor_global_color_reference( $raw ) ) {
+				$resolved = self::resolve_elementor_color_reference( $raw );
+
+				if ( '' !== $resolved['color'] ) {
+					$matched_slug = self::match_theme_color_slug( $resolved['color'] );
+
+					return array(
+						'slug'  => null === $matched_slug ? '' : self::clean_class( $matched_slug ),
+						'color' => $resolved['color'],
+					);
+				}
+
 				continue;
 			}
 
@@ -1279,16 +1297,6 @@ class Style_Parser {
 			$attributes['style']['border'] = $border['attributes'];
 		}
 
-		$background = self::sanitize_color( $settings['background_color'] ?? $settings['_background_color'] ?? '' );
-		if ( '' !== $background ) {
-			if ( self::is_preset_slug( $background ) ) {
-				$attributes['backgroundColor'] = $background;
-				$attributes['className']       = self::append_class( $attributes['className'] ?? '', 'has-background' );
-			} else {
-				$attributes['style']['color']['background'] = $background;
-				$attributes['className']                    = self::append_class( $attributes['className'] ?? '', 'has-background' );
-			}
-		}
 		$background_color = self::extract_color_from_sources(
 			array(
 				isset( $settings['background_color'] ) ? $settings['background_color'] : '',
@@ -1300,13 +1308,6 @@ class Style_Parser {
 
 		if ( '' !== $background_color['slug'] ) {
 			$attributes['backgroundColor'] = $background_color['slug'];
-
-			if ( '' !== $background_color['color'] ) {
-				if ( ! isset( $style['color'] ) || ! is_array( $style['color'] ) ) {
-					$style['color'] = array();
-				}
-				$style['color']['background'] = $background_color['color'];
-			}
 		} elseif ( '' !== $background_color['color'] ) {
 			if ( ! isset( $style['color'] ) || ! is_array( $style['color'] ) ) {
 				$style['color'] = array();
@@ -1392,7 +1393,29 @@ class Style_Parser {
 	 * @param string $color Color string.
 	 */
 	private static function is_preset_slug( string $color ): bool {
-		return '' !== $color && false === strpos( $color, '#' ) && 0 !== strpos( $color, 'rgb' );
+		if ( '' === $color ) {
+			return false;
+		}
+
+		if ( false !== strpos( $color, '#' ) || 0 === strpos( $color, 'rgb' ) ) {
+			return false;
+		}
+
+		if ( self::is_elementor_global_color_reference( $color ) ) {
+			return false;
+		}
+
+		if ( false !== strpos( $color, '/' ) ) {
+			return false;
+		}
+
+		return true;
+	}
+
+	private static function is_elementor_global_color_reference( string $value ): bool {
+		$value = trim( $value );
+
+		return ( '' !== $value && 0 === strpos( $value, 'globals/colors?id=' ) );
 	}
 
 	/**

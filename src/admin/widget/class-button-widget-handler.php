@@ -12,6 +12,7 @@ use Progressus\Gutenberg\Admin\Helper\Block_Builder;
 use Progressus\Gutenberg\Admin\Helper\Html_Attribute_Builder;
 use Progressus\Gutenberg\Admin\Helper\Icon_Parser;
 use Progressus\Gutenberg\Admin\Helper\Style_Parser;
+use Progressus\Gutenberg\Admin\Helper\Style_Normalizer;
 use Progressus\Gutenberg\Admin\Widget_Handler_Interface;
 
 use function esc_attr;
@@ -78,15 +79,26 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 			}
 		}
 
-		$button_attributes = $color_map['attributes'] ?? array();
+		$button_attributes = array();
 
-		if ( ! empty( $spacing_attr ) ) {
-			$button_attributes['style']['spacing'] = $spacing_attr;
+		if ( ! empty( $color_map['attributes'] ) && is_array( $color_map['attributes'] ) ) {
+			$button_attributes = array_replace_recursive( $button_attributes, $color_map['attributes'] );
 		}
 
 		if ( ! empty( $typography_attr ) ) {
-			$button_attributes['style']['typography'] = $typography_attr;
+			$button_attributes['style']['typography'] = isset( $button_attributes['style']['typography'] ) && is_array( $button_attributes['style']['typography'] )
+				? array_replace_recursive( $button_attributes['style']['typography'], $typography_attr )
+				: $typography_attr;
 		}
+
+		if ( ! empty( $spacing_attr ) ) {
+			$button_attributes['style']['spacing'] = isset( $button_attributes['style']['spacing'] ) && is_array( $button_attributes['style']['spacing'] )
+				? array_replace_recursive( $button_attributes['style']['spacing'], $spacing_attr )
+				: $spacing_attr;
+		}
+
+		$button_attributes = Style_Normalizer::normalize_attributes( 'button', $button_attributes );
+
 		if ( ! empty( $custom_classes ) ) {
 			$existing_classnames = array();
 			if ( ! empty( $button_attributes['className'] ) ) {
