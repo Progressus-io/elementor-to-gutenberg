@@ -34,6 +34,13 @@ class Style_Parser {
 	private static ?array $font_sizes = null;
 
 	/**
+	 * Cached theme font-family presets.
+	 *
+	 * @var array<int, array<string, string>>|null
+	 */
+	private static ?array $font_families = null;
+
+	/**
 	 * Cached Elementor kit settings.
 	 *
 	 * @var array<string, mixed>|null
@@ -109,6 +116,163 @@ class Style_Parser {
 			'attributes' => $attributes,
 			'style'      => implode( '', $style_parts ),
 		);
+	}
+
+	/**
+	 * Retrieve Elementor kit typography settings for a context (body/headings).
+	 *
+	 * @param string $context Context key (body or headings).
+	 *
+	 * @return array
+	 */
+	public static function get_elementor_kit_typography( string $context ): array {
+		$context = strtolower( trim( $context ) );
+		if ( '' === $context ) {
+			return array();
+		}
+
+		$kit_settings = self::get_elementor_kit_settings();
+		if ( empty( $kit_settings ) || ! is_array( $kit_settings ) ) {
+			return array();
+		}
+
+		$prefixes = array();
+		$handles  = array();
+
+		if ( 'body' === $context ) {
+			$prefixes = array( 'body_typography', 'body' );
+			$handles  = array( 'text', 'body' );
+		} elseif ( 'headings' === $context || 'heading' === $context ) {
+			$prefixes = array( 'heading_typography', 'headings_typography', 'heading', 'headings' );
+			$handles  = array( 'primary', 'secondary', 'heading' );
+		} else {
+			return array();
+		}
+
+		$settings = self::collect_typography_from_prefixes( $kit_settings, $prefixes );
+		if ( ! empty( $settings ) ) {
+			return $settings;
+		}
+
+		if ( empty( $handles ) ) {
+			return array();
+		}
+
+		$map = self::get_elementor_global_typography_map();
+		foreach ( $handles as $handle ) {
+			if ( isset( $map[ $handle ] ) && is_array( $map[ $handle ] ) ) {
+				return $map[ $handle ];
+			}
+		}
+
+		return array();
+	}
+
+	/**
+	 * Build CSS declarations from Elementor typography settings.
+	 *
+	 * @param array $settings Elementor typography settings.
+	 *
+	 * @return array<string, string>
+	 */
+	public static function build_typography_declarations( array $settings ): array {
+		$settings = self::apply_global_typography( $settings );
+		$rules    = array();
+
+		$font_family = self::sanitize_font_family_value( $settings['typography_font_family'] ?? '' );
+		if ( '' !== $font_family ) {
+			$rules['font-family'] = $font_family;
+		}
+
+		$font_size = self::normalize_dimension( $settings['typography_font_size'] ?? null, 'px' );
+		if ( null !== $font_size ) {
+			$font_size = self::sanitize_css_dimension_value( $font_size );
+			if ( '' !== $font_size ) {
+				$rules['font-size'] = $font_size;
+			}
+		}
+
+		$font_weight = self::sanitize_font_weight_value( $settings['typography_font_weight'] ?? '' );
+		if ( '' !== $font_weight ) {
+			$rules['font-weight'] = $font_weight;
+		}
+
+		$text_transform = self::sanitize_text_transform_value( $settings['typography_text_transform'] ?? '' );
+		if ( '' !== $text_transform ) {
+			$rules['text-transform'] = $text_transform;
+		}
+
+		$letter_spacing = self::normalize_dimension( $settings['typography_letter_spacing'] ?? null, 'px' );
+		if ( null !== $letter_spacing ) {
+			$letter_spacing = self::sanitize_letter_spacing_value( $letter_spacing );
+			if ( '' !== $letter_spacing ) {
+				$rules['letter-spacing'] = $letter_spacing;
+			}
+		}
+
+		$line_height = self::normalize_dimension( $settings['typography_line_height'] ?? null, '' );
+		if ( null !== $line_height ) {
+			$line_height = self::sanitize_line_height_value( $line_height );
+			if ( '' !== $line_height ) {
+				$rules['line-height'] = $line_height;
+			}
+		}
+
+		$font_style = self::sanitize_font_style_value( $settings['typography_font_style'] ?? '' );
+		if ( '' !== $font_style ) {
+			$rules['font-style'] = $font_style;
+		}
+
+		return $rules;
+	}
+
+	/**
+	 * Match a font-family string to a theme preset slug when possible.
+	 *
+	 * @param string $font_family Raw font-family value.
+	 *
+	 * @return string|null
+	 */
+	public static function match_font_family_slug( string $font_family ): ?string {
+		$font_family = trim( $font_family );
+		if ( '' === $font_family ) {
+			return null;
+		}
+
+		$normalized = self::normalize_font_family_string( $font_family );
+		if ( '' === $normalized ) {
+			return null;
+		}
+
+		foreach ( self::get_font_family_presets() as $preset ) {
+			$preset_family = isset( $preset['fontFamily'] ) ? (string) $preset['fontFamily'] : '';
+			$preset_slug   = isset( $preset['slug'] ) ? (string) $preset['slug'] : '';
+			if ( '' === $preset_family || '' === $preset_slug ) {
+				continue;
+			}
+
+			if ( self::normalize_font_family_string( $preset_family ) === $normalized ) {
+				return $preset_slug;
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * Build a CSS var reference for a font-family preset slug.
+	 *
+	 * @param string $slug Preset slug.
+	 *
+	 * @return string
+	 */
+	public static function build_font_family_preset_value( string $slug ): string {
+		$slug = self::sanitize_scalar( $slug );
+		if ( '' === $slug ) {
+			return '';
+		}
+
+		return 'var(--wp--preset--font-family--' . $slug . ')';
 	}
 
 	/**
@@ -461,6 +625,64 @@ class Style_Parser {
 		}
 
 		return self::$elementor_global_typography;
+	}
+
+	/**
+	 * Collect typography settings using known kit key prefixes.
+	 *
+	 * @param array $kit_settings Elementor kit settings.
+	 * @param array $prefixes Key prefixes to scan.
+	 *
+	 * @return array
+	 */
+	private static function collect_typography_from_prefixes( array $kit_settings, array $prefixes ): array {
+		if ( empty( $kit_settings ) || empty( $prefixes ) ) {
+			return array();
+		}
+
+		$suffix_map = array(
+			'font_family'       => 'typography_font_family',
+			'text_transform'    => 'typography_text_transform',
+			'font_style'        => 'typography_font_style',
+			'font_weight'       => 'typography_font_weight',
+			'text_decoration'   => 'typography_text_decoration',
+			'font_size'         => 'typography_font_size',
+			'line_height'       => 'typography_line_height',
+			'letter_spacing'    => 'typography_letter_spacing',
+			'word_spacing'      => 'typography_word_spacing',
+			'typography'        => 'typography_typography',
+			'global_typography' => 'typography_global_typography',
+		);
+
+		$settings = array();
+
+		foreach ( $prefixes as $prefix ) {
+			$prefix = trim( (string) $prefix );
+			if ( '' === $prefix ) {
+				continue;
+			}
+
+			foreach ( $suffix_map as $suffix => $target ) {
+				$key = $prefix . '_' . $suffix;
+				if ( isset( $kit_settings[ $key ] ) ) {
+					$settings[ $target ] = $kit_settings[ $key ];
+				}
+			}
+
+			if ( isset( $kit_settings[ $prefix ] ) && is_array( $kit_settings[ $prefix ] ) ) {
+				foreach ( $suffix_map as $suffix => $target ) {
+					if ( isset( $kit_settings[ $prefix ][ $suffix ] ) ) {
+						$settings[ $target ] = $kit_settings[ $prefix ][ $suffix ];
+					}
+				}
+			}
+
+			if ( ! empty( $settings ) ) {
+				break;
+			}
+		}
+
+		return $settings;
 	}
 
 	/**
@@ -1047,6 +1269,47 @@ class Style_Parser {
 	}
 
 	/**
+	 * Fetch font-family presets defined by the active theme.
+	 *
+	 * @return array<int, array<string, string>>
+	 */
+	private static function get_font_family_presets(): array {
+		if ( null !== self::$font_families ) {
+			return self::$font_families;
+		}
+
+		if ( ! function_exists( 'wp_get_global_settings' ) ) {
+			self::$font_families = array();
+
+			return self::$font_families;
+		}
+
+		$settings = wp_get_global_settings( array( 'typography', 'fontFamilies' ) );
+		$output   = array();
+
+		foreach ( array( 'theme', 'custom', 'default' ) as $group ) {
+			if ( empty( $settings[ $group ] ) || ! is_array( $settings[ $group ] ) ) {
+				continue;
+			}
+
+			foreach ( $settings[ $group ] as $preset ) {
+				if ( empty( $preset['slug'] ) || empty( $preset['fontFamily'] ) ) {
+					continue;
+				}
+
+				$output[] = array(
+					'slug'       => (string) $preset['slug'],
+					'fontFamily' => (string) $preset['fontFamily'],
+				);
+			}
+		}
+
+		self::$font_families = $output;
+
+		return self::$font_families;
+	}
+
+	/**
 	 * Convert font-size values to an approximate pixel value.
 	 *
 	 * @param mixed $value Raw value.
@@ -1078,6 +1341,26 @@ class Style_Parser {
 		}
 
 		return null;
+	}
+
+	/**
+	 * Normalize font-family strings for comparison.
+	 *
+	 * @param string $value Raw font-family string.
+	 *
+	 * @return string
+	 */
+	private static function normalize_font_family_string( string $value ): string {
+		$value = trim( strtolower( $value ) );
+		if ( '' === $value ) {
+			return '';
+		}
+
+		$value = str_replace( array( '"', "'" ), '', $value );
+		$value = preg_replace( '/\s*,\s*/', ',', $value );
+		$value = preg_replace( '/\s+/', ' ', $value );
+
+		return trim( (string) $value );
 	}
 
 	/**

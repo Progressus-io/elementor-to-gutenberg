@@ -143,6 +143,30 @@ class External_Style_Collector {
 	}
 
 	/**
+	 * Register a custom rule with a selector, optionally tracking inventory.
+	 *
+	 * @param string $selector CSS selector.
+	 * @param array $declarations CSS declarations.
+	 * @param string $reason Optional reason label.
+	 *
+	 * @return void
+	 */
+	public function register_rule( string $selector, array $declarations, string $reason = '' ): void {
+		$declarations = Style_Normalizer::prune_empty( $declarations );
+		if ( '' === trim( $selector ) || empty( $declarations ) ) {
+			return;
+		}
+
+		$this->add_rule( $selector, $declarations );
+
+		$this->inventory['externalized'][] = array(
+			'block'  => 'page',
+			'rules'  => $declarations,
+			'reason' => '' === $reason ? 'custom-rule' : $reason,
+		);
+	}
+
+	/**
 	 * Record dropped attributes.
 	 *
 	 * @param string $block_slug Block slug.

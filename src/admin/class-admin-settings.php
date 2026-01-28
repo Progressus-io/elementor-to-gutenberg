@@ -28,6 +28,7 @@ use function wp_strip_all_tags;
 use function wp_unslash;
 use function esc_attr;
 use function wp_json_encode;
+use function wp_update_post;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -46,6 +47,11 @@ class Admin_Settings {
 	 * @var External_Style_Collector|null
 	 */
 	private $external_css_collector = null;
+
+	/**
+	 * Page wrapper placeholder token.
+	 */
+	private const PAGE_WRAPPER_TOKEN = 'ETG_PAGE_ID_PLACEHOLDER';
 
 	/**
 	 * Get the singleton instance.
@@ -109,9 +115,8 @@ class Admin_Settings {
 
 		// Create new page with blocks
 		$new_page_id = $this->insert_new_page( $page_id, $blocks );
-		$css         = $this->get_external_css();
-		if ( '' !== trim( $css ) ) {
-			External_CSS_Service::save_post_css( (int) $new_page_id, (string) $css );
+		if ( $new_page_id ) {
+			$this->finalize_converted_post( (int) $new_page_id, (string) $blocks, true );
 		}
 
 		if ( $new_page_id ) {
@@ -320,9 +325,60 @@ class Admin_Settings {
 		}
 
 		$content = $this->parse_elementor_elements( $json_data['content'] );
+		$content = $this->wrap_converted_content( $content );
 		$this->log_inventory_summary();
 
 		return $content;
+	}
+
+	/**
+	 * Replace the page wrapper token with the actual post ID.
+	 *
+	 * @param string $content Content containing the wrapper token.
+	 * @param int $post_id Post ID to inject.
+	 *
+	 * @return string
+	 */
+	public function replace_page_wrapper_token( string $content, int $post_id ): string {
+		if ( '' === $content || $post_id <= 0 ) {
+			return $content;
+		}
+
+		return str_replace( self::PAGE_WRAPPER_TOKEN, (string) $post_id, $content );
+	}
+
+	/**
+	 * Finalize converted post content and save external CSS.
+	 *
+	 * @param int $post_id Post ID.
+	 * @param string $content Converted content.
+	 * @param bool $update_post Whether to update post content.
+	 *
+	 * @return string
+	 */
+	public function finalize_converted_post( int $post_id, string $content, bool $update_post = true ): string {
+		if ( $post_id <= 0 ) {
+			return $content;
+		}
+
+		$updated_content = $this->replace_page_wrapper_token( $content, $post_id );
+
+		if ( $update_post && $updated_content !== $content ) {
+			wp_update_post(
+				array(
+					'ID'           => $post_id,
+					'post_content' => $updated_content,
+				)
+			);
+		}
+
+		$css = $this->get_external_css();
+		if ( '' !== trim( $css ) ) {
+			$css = $this->replace_page_wrapper_token( $css, $post_id );
+			External_CSS_Service::save_post_css( $post_id, (string) $css );
+		}
+
+		return $updated_content;
 	}
 
 	private function log_inventory_summary(): void {
@@ -352,6 +408,101 @@ class Admin_Settings {
 		}
 
 		return $this->external_css_collector->render_css();
+	}
+
+	/**
+	 * Wrap converted content in a page-level group for typography scoping.
+	 *
+	 * @param string $content Converted Gutenberg blocks.
+	 *
+	 * @return string
+	 */
+	private function wrap_converted_content( string $content ): string {
+		$content = trim( (string) $content );
+		if ( '' === $content ) {
+			return '';
+		}
+
+		$page_class  = $this->get_page_wrapper_class();
+		$extra_class = $this->collect_page_typography_rules( $page_class );
+		$class_name  = trim( $page_class . ' ' . $extra_class );
+		$attributes  = array(
+			'className' => $class_name,
+			'layout'    => array( 'type' => 'default' ),
+		);
+
+		return Block_Builder::build( 'group', $attributes, $content );
+	}
+
+	/**
+	 * Build a predictable page wrapper class name.
+	 *
+	 * @return string
+	 */
+	private function get_page_wrapper_class(): string {
+		return 'etg-page-' . self::PAGE_WRAPPER_TOKEN;
+	}
+
+	/**
+	 * Collect typography rules for the current conversion into external CSS.
+	 *
+	 * @param string $page_class Base wrapper class.
+	 *
+	 * @return string Extra class names for wrapper.
+	 */
+	private function collect_page_typography_rules( string $page_class ): string {
+		if ( null === $this->external_css_collector ) {
+			return '';
+		}
+
+		$page_class = trim( (string) $page_class );
+		if ( '' === $page_class ) {
+			return '';
+		}
+
+		$body_settings    = Style_Parser::get_elementor_kit_typography( 'body' );
+		$heading_settings = Style_Parser::get_elementor_kit_typography( 'headings' );
+
+		$body_rules    = Style_Parser::build_typography_declarations( $body_settings );
+		$heading_rules = Style_Parser::build_typography_declarations( $heading_settings );
+
+		$extra_classes = array();
+
+		if ( isset( $body_rules['font-family'] ) ) {
+			$font_slug = Style_Parser::match_font_family_slug( (string) $body_rules['font-family'] );
+			if ( null !== $font_slug && '' !== $font_slug ) {
+				$extra_classes[] = 'has-' . Style_Parser::clean_class( $font_slug ) . '-font-family';
+				unset( $body_rules['font-family'] );
+			}
+		}
+
+		if ( isset( $heading_rules['font-family'] ) ) {
+			$font_slug = Style_Parser::match_font_family_slug( (string) $heading_rules['font-family'] );
+			if ( null !== $font_slug && '' !== $font_slug ) {
+				$heading_rules['font-family'] = Style_Parser::build_font_family_preset_value( $font_slug );
+			}
+		}
+
+		$base_selector = '.' . $page_class;
+
+		if ( ! empty( $body_rules ) ) {
+			$this->external_css_collector->register_rule( $base_selector, $body_rules, 'kit-typography-body' );
+		}
+
+		if ( ! empty( $heading_rules ) ) {
+			$selectors = array(
+				$base_selector . ' h1',
+				$base_selector . ' h2',
+				$base_selector . ' h3',
+				$base_selector . ' h4',
+				$base_selector . ' h5',
+				$base_selector . ' h6',
+				$base_selector . ' .wp-block-heading',
+			);
+			$this->external_css_collector->register_rule( implode( ', ', $selectors ), $heading_rules, 'kit-typography-headings' );
+		}
+
+		return implode( ' ', $extra_classes );
 	}
 
 	/**
