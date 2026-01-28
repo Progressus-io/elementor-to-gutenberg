@@ -76,6 +76,14 @@ class Admin_Settings {
 		add_action( 'admin_post_myplugin_convert_page', array( $this, 'myplugin_handle_convert_page' ) );
 	}
 
+	/**
+	 * Add a Gutenberg conversion action to page row actions.
+	 *
+	 * @param array<string, mixed> $actions Existing row actions.
+	 * @param \WP_Post $post Current post object.
+	 *
+	 * @return array<string, mixed>
+	 */
 	public function myplugin_add_convert_button( $actions, $post ) {
 		if ( $post->post_type === 'page' ) {
 			$json_data = get_post_meta( $post->ID, '_elementor_data', true );
@@ -93,6 +101,11 @@ class Admin_Settings {
 	}
 
 
+	/**
+	 * Handle the admin convert page action.
+	 *
+	 * @return void
+	 */
 	public function myplugin_handle_convert_page() {
 		if ( ! isset( $_GET['page_id'] ) ) {
 			wp_die( 'Page ID missing.' );
@@ -381,6 +394,11 @@ class Admin_Settings {
 		return $updated_content;
 	}
 
+	/**
+	 * Log external CSS inventory summary when debugging is enabled.
+	 *
+	 * @return void
+	 */
 	private function log_inventory_summary(): void {
 		if ( null === $this->external_css_collector ) {
 			return;
@@ -402,6 +420,11 @@ class Admin_Settings {
 		}
 	}
 
+	/**
+	 * Render the collected external CSS.
+	 *
+	 * @return string
+	 */
 	private function get_external_css(): string {
 		if ( null === $this->external_css_collector ) {
 			return '';
@@ -1167,6 +1190,13 @@ class Admin_Settings {
 		return $this->render_placeholder_block( $element );
 	}
 
+	/**
+	 * Render a placeholder block for unsupported widgets.
+	 *
+	 * @param array<string, mixed> $element Elementor element data.
+	 *
+	 * @return string
+	 */
 	private function render_placeholder_block( array $element ): string {
 		// Detect widget name (best-effort).
 		$widget_name = '';

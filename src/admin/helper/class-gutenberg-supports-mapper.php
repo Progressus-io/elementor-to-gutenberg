@@ -21,6 +21,11 @@ class Gutenberg_Supports_Mapper {
 	 */
 	private array $matrix = array();
 
+	/**
+	 * Set up the Gutenberg support matrix.
+	 *
+	 * @return void
+	 */
 	public function __construct() {
 		$this->matrix = array(
 			'heading'   => array(

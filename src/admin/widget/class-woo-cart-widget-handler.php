@@ -9,6 +9,13 @@ defined( 'ABSPATH' ) || exit;
 class Woo_Cart_Widget_Handler implements Widget_Handler_Interface {
 	use Woo_Block_Serializer_Trait;
 
+	/**
+	 * Render the cart widget from patterns or a fallback shortcode.
+	 *
+	 * @param array<string, mixed> $element Elementor widget data.
+	 *
+	 * @return string
+	 */
 	public function handle( array $element ): string {
 		$pattern_names = array(
 			'woocommerce/cart',
@@ -27,6 +34,11 @@ class Woo_Cart_Widget_Handler implements Widget_Handler_Interface {
 	}
 
 
+	/**
+	 * Get the default WooCommerce cart block template markup.
+	 *
+	 * @return string
+	 */
 	private function get_cart_template(): string {
 		return
 			"<!-- wp:woocommerce/filled-cart-block -->\n" .

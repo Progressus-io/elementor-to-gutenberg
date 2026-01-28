@@ -14,6 +14,13 @@ defined( 'ABSPATH' ) || exit;
 class Woo_Products_Widget_Handler implements Widget_Handler_Interface {
 	use Woo_Block_Serializer_Trait;
 
+	/**
+	 * Render the products widget as a WooCommerce block or shortcode.
+	 *
+	 * @param array<string, mixed> $element Elementor widget data.
+	 *
+	 * @return string
+	 */
 	public function handle( array $element ): string {
 		$settings = is_array( $element['settings'] ?? null ) ? $element['settings'] : array();
 
@@ -79,12 +86,26 @@ class Woo_Products_Widget_Handler implements Widget_Handler_Interface {
 		return $this->serialize_block( 'core/shortcode', array(), $shortcode );
 	}
 
+	/**
+	 * Normalize order value to an allowed WooCommerce value.
+	 *
+	 * @param string $value Raw order value.
+	 *
+	 * @return string
+	 */
 	private function normalize_order( string $value ): string {
 		$value = strtolower( trim( $value ) );
 
 		return in_array( $value, array( 'asc', 'desc' ), true ) ? $value : '';
 	}
 
+	/**
+	 * Normalize orderby value to an allowed WooCommerce value.
+	 *
+	 * @param string $value Raw orderby value.
+	 *
+	 * @return string
+	 */
 	private function normalize_orderby( string $value ): string {
 		$value   = sanitize_key( $value );
 		$allowed = array( 'date', 'title', 'id', 'menu_order', 'rand', 'price', 'popularity', 'rating' );
@@ -92,6 +113,13 @@ class Woo_Products_Widget_Handler implements Widget_Handler_Interface {
 		return in_array( $value, $allowed, true ) ? $value : '';
 	}
 
+	/**
+	 * Convert a term list to a comma-separated slug list.
+	 *
+	 * @param mixed $value Raw term value.
+	 *
+	 * @return string
+	 */
 	private function normalize_terms_csv( $value ): string {
 		$terms = array();
 
@@ -121,6 +149,14 @@ class Woo_Products_Widget_Handler implements Widget_Handler_Interface {
 		return empty( $terms ) ? '' : implode( ',', $terms );
 	}
 
+	/**
+	 * Build a shortcode string from a tag and attributes.
+	 *
+	 * @param string $tag Shortcode tag name.
+	 * @param array<string, mixed> $attrs Shortcode attributes.
+	 *
+	 * @return string
+	 */
 	private function build_shortcode( string $tag, array $attrs ): string {
 		$shortcode = '[' . sanitize_key( $tag );
 
@@ -136,6 +172,19 @@ class Woo_Products_Widget_Handler implements Widget_Handler_Interface {
 		return $shortcode;
 	}
 
+	/**
+	 * Build block attributes for the product collection block.
+	 *
+	 * @param array<string, mixed> $element Elementor widget data.
+	 * @param int $columns Columns count.
+	 * @param int $per_page Items per page.
+	 * @param string $order Sort order.
+	 * @param string $orderby Sort field.
+	 * @param string $category_csv Category slugs CSV.
+	 * @param string $tag_csv Tag slugs CSV.
+	 *
+	 * @return array<string, mixed>
+	 */
 	private function build_product_collection_attrs(
 		array $element,
 		int $columns,
@@ -205,6 +254,13 @@ class Woo_Products_Widget_Handler implements Widget_Handler_Interface {
 		);
 	}
 
+	/**
+	 * Build a numeric query ID from the Elementor element.
+	 *
+	 * @param array<string, mixed> $element Elementor widget data.
+	 *
+	 * @return int
+	 */
 	private function build_query_id_from_element( array $element ): int {
 		$raw_id = isset( $element['id'] ) ? (string) $element['id'] : '';
 
@@ -219,6 +275,11 @@ class Woo_Products_Widget_Handler implements Widget_Handler_Interface {
 		return absint( sprintf( '%u', crc32( $raw_id ) ) );
 	}
 
+	/**
+	 * Get the WooCommerce product collection block template markup.
+	 *
+	 * @return string
+	 */
 	private function get_product_collection_template(): string {
 		return
 			"<div class=\"wp-block-woocommerce-product-collection\">\n" .

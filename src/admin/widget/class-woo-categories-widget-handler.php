@@ -9,6 +9,13 @@ defined( 'ABSPATH' ) || exit;
 class Woo_Categories_Widget_Handler implements Widget_Handler_Interface {
 	use Woo_Block_Serializer_Trait;
 
+	/**
+	 * Render the product categories widget using WooCommerce blocks or shortcode.
+	 *
+	 * @param array<string, mixed> $element Elementor widget data.
+	 *
+	 * @return string
+	 */
 	public function handle( array $element ): string {
 		$block = $this->serialize_first_registered_block(
 			array(

@@ -758,6 +758,13 @@ class Text_Editor_Widget_Handler implements Widget_Handler_Interface {
 		return $style;
 	}
 
+	/**
+	 * Strip a single wrapping paragraph tag from HTML.
+	 *
+	 * @param string $html HTML content.
+	 *
+	 * @return string
+	 */
 	private function strip_wrapping_p( string $html ): string {
 		$trimmed = trim( $html );
 		if ( 1 === preg_match( '#^<p\b[^>]*>(.*)</p>$#is', $trimmed, $m ) ) {

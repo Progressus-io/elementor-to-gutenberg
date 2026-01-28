@@ -9,6 +9,13 @@ defined( 'ABSPATH' ) || exit;
 class Woo_Checkout_Widget_Handler implements Widget_Handler_Interface {
 	use Woo_Block_Serializer_Trait;
 
+	/**
+	 * Render the checkout widget from patterns or a fallback shortcode.
+	 *
+	 * @param array<string, mixed> $element Elementor widget data.
+	 *
+	 * @return string
+	 */
 	public function handle( array $element ): string {
 		$pattern_names = array(
 			'woocommerce/checkout',
@@ -26,6 +33,11 @@ class Woo_Checkout_Widget_Handler implements Widget_Handler_Interface {
 		return $this->serialize_block( 'core/shortcode', array(), '[woocommerce_checkout]' );
 	}
 
+	/**
+	 * Get the default WooCommerce checkout block template markup.
+	 *
+	 * @return string
+	 */
 	private function get_checkout_template(): string {
 		// Same template content as in Elementor_Shortcode_Widget_Handler::get_checkout_template()
 		return

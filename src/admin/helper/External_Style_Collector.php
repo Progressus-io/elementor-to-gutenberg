@@ -259,6 +259,14 @@ class External_Style_Collector {
 		return $out;
 	}
 
+	/**
+	 * Add sanitized declarations to the ruleset for a selector.
+	 *
+	 * @param string $selector CSS selector.
+	 * @param array<string, mixed> $declarations Declarations to append.
+	 *
+	 * @return void
+	 */
 	private function add_rule( string $selector, array $declarations ): void {
 		if ( ! isset( $this->rules[ $selector ] ) ) {
 			$this->rules[ $selector ] = array();
@@ -271,6 +279,14 @@ class External_Style_Collector {
 		}
 	}
 
+	/**
+	 * Read a style value from the nested style tree.
+	 *
+	 * @param array<string, mixed> $attrs Block attributes.
+	 * @param array<int, string> $path Style path segments.
+	 *
+	 * @return string
+	 */
 	private function get_style_leaf( array $attrs, array $path ): string {
 		if ( empty( $attrs['style'] ) || ! is_array( $attrs['style'] ) ) {
 			return '';
@@ -291,6 +307,14 @@ class External_Style_Collector {
 		return trim( (string) $node );
 	}
 
+	/**
+	 * Remove a style leaf from the attributes tree.
+	 *
+	 * @param array<string, mixed> $attrs Block attributes.
+	 * @param array<int, string> $path Style path segments.
+	 *
+	 * @return array<string, mixed>
+	 */
 	private function unset_style_leaf( array $attrs, array $path ): array {
 		if ( empty( $attrs['style'] ) || ! is_array( $attrs['style'] ) ) {
 			return $attrs;
@@ -313,6 +337,13 @@ class External_Style_Collector {
 		return $attrs;
 	}
 
+	/**
+	 * Remove empty style structures after extractions.
+	 *
+	 * @param array<string, mixed> $attrs Block attributes.
+	 *
+	 * @return array<string, mixed>
+	 */
 	private function cleanup_empty_style( array $attrs ): array {
 		if ( empty( $attrs['style'] ) || ! is_array( $attrs['style'] ) ) {
 			return $attrs;
@@ -327,6 +358,13 @@ class External_Style_Collector {
 		return $attrs;
 	}
 
+	/**
+	 * Recursively prune empty arrays and empty scalar values.
+	 *
+	 * @param array<string, mixed> $node Style node.
+	 *
+	 * @return array<string, mixed>
+	 */
 	private function recursive_prune_empty_arrays( array $node ): array {
 		foreach ( $node as $k => $v ) {
 			if ( is_array( $v ) ) {
@@ -342,6 +380,14 @@ class External_Style_Collector {
 		return $node;
 	}
 
+	/**
+	 * Append a class to a class list while keeping it unique.
+	 *
+	 * @param string $existing Existing class list.
+	 * @param string $new_class Class to add.
+	 *
+	 * @return string
+	 */
 	private function append_class( string $existing, string $new_class ): string {
 		$existing  = trim( $existing );
 		$new_class = trim( $new_class );
@@ -366,6 +412,13 @@ class External_Style_Collector {
 		return implode( ' ', array_keys( $unique ) );
 	}
 
+	/**
+	 * Normalize a background image declaration into a url(...) value.
+	 *
+	 * @param string $raw Raw background image value.
+	 *
+	 * @return string
+	 */
 	private function format_background_image( string $raw ): string {
 		$raw = trim( $raw );
 		if ( '' === $raw ) {
