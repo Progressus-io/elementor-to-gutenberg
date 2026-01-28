@@ -4,54 +4,57 @@ namespace Progressus\Gutenberg\Admin\Widget;
 
 use Progressus\Gutenberg\Admin\Widget_Handler_Interface;
 
-use function sanitize_key;
-use function wp_json_encode;
-
 defined( 'ABSPATH' ) || exit;
 
 class Woo_Checkout_Widget_Handler implements Widget_Handler_Interface {
+	use Woo_Block_Serializer_Trait;
+
 	public function handle( array $element ): string {
-		if ( $this->is_block_registered( 'woocommerce/checkout' ) ) {
-			return $this->serialize_block( 'woocommerce/checkout', array(), '' );
+		$pattern_names = array(
+			'woocommerce/checkout',
+			'woocommerce/checkout-page',
+			'woocommerce/checkout-template',
+		);
+
+		foreach ( $pattern_names as $pattern_name ) {
+			$content = $this->get_block_pattern_content( $pattern_name );
+			if ( '' !== $content ) {
+				return $content . "\n";
+			}
 		}
 
 		return $this->serialize_block( 'core/shortcode', array(), '[woocommerce_checkout]' );
 	}
 
-	private function is_block_registered( string $block_name ): bool {
-		if ( ! class_exists( 'WP_Block_Type_Registry' ) ) {
-			return false;
-		}
-
-		$block_type = \WP_Block_Type_Registry::get_instance()->get_registered( $block_name );
-		return is_object( $block_type );
-	}
-
-	private function serialize_block( string $block_name, array $attrs, string $inner_html ): string {
-		$parsed = array(
-			'blockName'    => $block_name,
-			'attrs'        => $attrs,
-			'innerBlocks'  => array(),
-			'innerHTML'    => $inner_html,
-			'innerContent' => '' === $inner_html ? array() : array( $inner_html ),
-		);
-
-		if ( function_exists( 'serialize_block' ) ) {
-			return serialize_block( $parsed ) . "\n";
-		}
-
-		$attr_json = empty( $attrs ) ? '' : ' ' . wp_json_encode( $attrs, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
-
-		if ( '' === $inner_html ) {
-			return sprintf( '<!-- wp:%s%s /-->%s', sanitize_key( $block_name ), $attr_json, "\n" );
-		}
-
-		return sprintf(
-			"<!-- wp:%s%s -->\n%s\n<!-- /wp:%s -->\n",
-			sanitize_key( $block_name ),
-			$attr_json,
-			$inner_html,
-			sanitize_key( $block_name )
-		);
+	private function get_checkout_template(): string {
+		// Same template content as in Elementor_Shortcode_Widget_Handler::get_checkout_template()
+		return
+			"<!-- wp:woocommerce/checkout-totals-block -->\n" .
+			"<!-- wp:woocommerce/checkout-order-summary-block -->\n" .
+			"<!-- wp:woocommerce/checkout-order-summary-cart-items-block /-->\n" .
+			"<!-- wp:woocommerce/checkout-order-summary-coupon-form-block /-->\n" .
+			"<!-- wp:woocommerce/checkout-order-summary-totals-block -->\n" .
+			"<!-- wp:woocommerce/checkout-order-summary-subtotal-block /-->\n" .
+			"<!-- wp:woocommerce/checkout-order-summary-fee-block /-->\n" .
+			"<!-- wp:woocommerce/checkout-order-summary-discount-block /-->\n" .
+			"<!-- wp:woocommerce/checkout-order-summary-shipping-block /-->\n" .
+			"<!-- wp:woocommerce/checkout-order-summary-taxes-block /-->\n" .
+			"<!-- /wp:woocommerce/checkout-order-summary-totals-block -->\n" .
+			"<!-- /wp:woocommerce/checkout-order-summary-block -->\n" .
+			"<!-- /wp:woocommerce/checkout-totals-block -->\n" .
+			"<!-- wp:woocommerce/checkout-fields-block -->\n" .
+			"<!-- wp:woocommerce/checkout-express-payment-block /-->\n" .
+			"<!-- wp:woocommerce/checkout-contact-information-block /-->\n" .
+			"<!-- wp:woocommerce/checkout-shipping-method-block /-->\n" .
+			"<!-- wp:woocommerce/checkout-pickup-options-block /-->\n" .
+			"<!-- wp:woocommerce/checkout-shipping-address-block /-->\n" .
+			"<!-- wp:woocommerce/checkout-billing-address-block /-->\n" .
+			"<!-- wp:woocommerce/checkout-shipping-methods-block /-->\n" .
+			"<!-- wp:woocommerce/checkout-payment-block /-->\n" .
+			"<!-- wp:woocommerce/checkout-additional-information-block /-->\n" .
+			"<!-- wp:woocommerce/checkout-order-note-block /-->\n" .
+			"<!-- wp:woocommerce/checkout-terms-block /-->\n" .
+			"<!-- wp:woocommerce/checkout-actions-block /-->\n" .
+			"<!-- /wp:woocommerce/checkout-fields-block -->\n";
 	}
 }
