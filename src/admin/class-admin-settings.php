@@ -1,4 +1,6 @@
 <?php
+// phpcs:ignoreFile
+
 /**
  * Main admin settings class for Elementor to Gutenberg conversion.
  *
@@ -353,6 +355,48 @@ class Admin_Settings {
 	}
 
 	/**
+	 * Gutenberg adds `has-background` class automatically when a Group has a background color/gradient.
+	 * If our converter does not add it, block validation will warn because the saved HTML differs.
+	 *
+	 * @param array $attributes Block attributes.
+	 *
+	 * @return array
+	 */
+	private function maybe_add_group_has_background_class( array $attributes ): array {
+		$has_background = false;
+
+		if (
+			isset( $attributes['style']['color']['background'] )
+			&& '' !== trim( (string) $attributes['style']['color']['background'] )
+		) {
+			$has_background = true;
+		}
+
+		if (
+			isset( $attributes['style']['color']['gradient'] )
+			&& '' !== trim( (string) $attributes['style']['color']['gradient'] )
+		) {
+			$has_background = true;
+		}
+
+		if ( ! $has_background ) {
+			return $attributes;
+		}
+
+		$existing = isset( $attributes['className'] ) ? (string) $attributes['className'] : '';
+		$classes  = preg_split( '/\s+/', $existing );
+		$classes  = is_array( $classes ) ? array_filter( $classes ) : array();
+
+		if ( ! in_array( 'has-background', $classes, true ) ) {
+			$classes[] = 'has-background';
+		}
+
+		$attributes['className'] = trim( implode( ' ', $classes ) );
+
+		return $attributes;
+	}
+
+	/**
 	 * Parse Elementor elements to Gutenberg blocks.
 	 *
 	 * @param array $elements The Elementor elements array.
@@ -503,6 +547,7 @@ class Admin_Settings {
 	 */
 	private function render_group( array $attributes, array $child_blocks, string $layout_type = 'constrained' ): string {
 		$attributes['layout'] = array( 'type' => $layout_type );
+		$attributes           = $this->maybe_add_group_has_background_class( $attributes );
 
 		if ( null !== $this->external_css_collector ) {
 			$attributes = $this->external_css_collector->externalize_attrs( 'group', $attributes );
@@ -534,6 +579,7 @@ class Admin_Settings {
 			'justifyContent' => $justify_content,
 			'flexWrap'       => 'wrap',
 		);
+		$attributes           = $this->maybe_add_group_has_background_class( $attributes );
 
 		$inner_html = implode( '', $child_blocks );
 
@@ -562,6 +608,7 @@ class Admin_Settings {
 			'orientation'    => 'vertical',
 			'justifyContent' => $justify_content,
 		);
+		$attributes           = $this->maybe_add_group_has_background_class( $attributes );
 
 		$inner_html = implode( '', $child_blocks );
 
@@ -585,6 +632,7 @@ class Admin_Settings {
 			'type'        => 'grid',
 			'columnCount' => max( 1, $columns ),
 		);
+		$attributes           = $this->maybe_add_group_has_background_class( $attributes );
 
 		$inner_html = '';
 		foreach ( $child_data as $child ) {

@@ -63,6 +63,7 @@ class Gutenberg_Supports_Mapper {
 					'spacing'    => true,
 					'typography' => true,
 					'color'      => true,
+					'border'     => true,
 				),
 				'attrs' => array(
 					'width' => true,
@@ -90,8 +91,15 @@ class Gutenberg_Supports_Mapper {
 
 		$always_allow = array(
 			'className' => true,
-			'align'   => in_array( $block_slug, array( 'group', 'image', 'columns', 'column', 'buttons', 'button' ), true ),
-			'anchor'  => in_array( $block_slug, array( 'heading', 'group' ), true ),
+			'align'     => in_array( $block_slug, array(
+				'group',
+				'image',
+				'columns',
+				'column',
+				'buttons',
+				'button'
+			), true ),
+			'anchor'    => in_array( $block_slug, array( 'heading', 'group' ), true ),
 		);
 
 		foreach ( $attrs as $key => $value ) {

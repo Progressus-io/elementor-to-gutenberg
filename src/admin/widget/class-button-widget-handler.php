@@ -47,6 +47,9 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 		$typography      = Style_Parser::parse_typography( $settings );
 		$typography_attr = isset( $typography['attributes'] ) ? $typography['attributes'] : array();
 
+		$border      = Style_Parser::parse_border( $settings );
+		$border_attr = isset( $border['attributes'] ) ? $border['attributes'] : array();
+
 		$alignment      = Alignment_Helper::detect_alignment( $settings, array(
 			'button_align',
 			'align',
@@ -95,6 +98,30 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 			$button_attributes['style']['spacing'] = isset( $button_attributes['style']['spacing'] ) && is_array( $button_attributes['style']['spacing'] )
 				? array_replace_recursive( $button_attributes['style']['spacing'], $spacing_attr )
 				: $spacing_attr;
+		}
+
+		if ( ! empty( $border_attr ) ) {
+			$button_attributes['style']['border'] = isset( $button_attributes['style']['border'] ) && is_array( $button_attributes['style']['border'] )
+				? array_replace_recursive( $button_attributes['style']['border'], $border_attr )
+				: $border_attr;
+		}
+
+		if ( empty( $button_attributes['style']['spacing']['padding'] ) ) {
+			$button_attributes['style']['spacing']['padding'] = array(
+				'top'    => '12px',
+				'right'  => '24px',
+				'bottom' => '12px',
+				'left'   => '24px',
+			);
+		}
+
+		if ( empty( $button_attributes['style']['border']['radius'] ) ) {
+			$button_attributes['style']['border']['radius'] = array(
+				'topLeft'     => '4px',
+				'topRight'    => '4px',
+				'bottomRight' => '4px',
+				'bottomLeft'  => '4px',
+			);
 		}
 
 		$button_attributes = Style_Normalizer::normalize_attributes( 'button', $button_attributes );

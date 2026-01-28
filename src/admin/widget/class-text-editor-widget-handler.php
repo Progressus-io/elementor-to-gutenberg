@@ -26,6 +26,7 @@ class Text_Editor_Widget_Handler implements Widget_Handler_Interface {
 	 * Handle conversion of Elementor text-editor to Gutenberg block.
 	 *
 	 * @param array $element The Elementor element data.
+	 *
 	 * @return string The Gutenberg block content.
 	 */
 	public function handle( array $element ): string {
@@ -66,13 +67,34 @@ class Text_Editor_Widget_Handler implements Widget_Handler_Interface {
 			? $typography_map['attributes']
 			: array();
 
-		$color_value = Style_Parser::normalize_color_value( $computed['color'] ?? '' );
-		if ( '' === $color_value ) {
-			$color_value = Style_Parser::normalize_color_value( $settings['text_color'] ?? '' );
+		$raw_setting_color  = isset( $settings['text_color'] ) ? (string) $settings['text_color'] : '';
+		$raw_computed_color = isset( $computed['color'] ) ? (string) $computed['color'] : '';
+
+		$setting_color_value = Style_Parser::normalize_color_value( $raw_setting_color );
+		if ( '' === $setting_color_value && '' !== $raw_setting_color ) {
+			$resolved_text_color = Style_Parser::resolve_elementor_color_reference( $raw_setting_color );
+			if ( '' !== $resolved_text_color['color'] ) {
+				$setting_color_value = $resolved_text_color['color'];
+				if ( '' === $color_slug && '' !== $resolved_text_color['slug'] ) {
+					$color_slug = Style_Parser::clean_class( $resolved_text_color['slug'] );
+				}
+			}
 		}
 
+		$computed_color = Style_Parser::normalize_color_value( $raw_computed_color );
+		if ( '' === $computed_color && '' !== $raw_computed_color ) {
+			$resolved_text_color = Style_Parser::resolve_elementor_color_reference( $raw_computed_color );
+			if ( '' !== $resolved_text_color['color'] ) {
+				$computed_color = $resolved_text_color['color'];
+				if ( '' === $color_slug && '' !== $resolved_text_color['slug'] ) {
+					$color_slug = Style_Parser::clean_class( $resolved_text_color['slug'] );
+				}
+			}
+		}
+
+		$color_value = '' !== $setting_color_value ? $setting_color_value : $computed_color;
+
 		if ( '' === $color_value ) {
-			$raw_setting_color = isset( $settings['text_color'] ) ? (string) $settings['text_color'] : '';
 			if ( $this->is_preset_color_slug( $raw_setting_color ) ) {
 				$color_slug  = Style_Parser::clean_class( $raw_setting_color );
 				$color_value = Style_Parser::resolve_theme_color_value( $color_slug );
@@ -279,7 +301,56 @@ class Text_Editor_Widget_Handler implements Widget_Handler_Interface {
 		}
 
 		if ( null === $segments ) {
-			return $this->build_html_block( $content );
+			$content_trim    = trim( (string) $content );
+			$allow_paragraph = true;
+
+			if ( preg_match( '/<(table|ul|ol|iframe|script|style|form|input|textarea|button)\b/i', $content_trim ) ) {
+				$allow_paragraph = false;
+			}
+
+			if ( $allow_paragraph ) {
+				$style_string    = $this->build_style_string( $inline_styles );
+				$element_classes = $markup_classes;
+				$attributes      = $base_attributes;
+
+				if ( '' !== $custom_id ) {
+					$attributes['anchor'] = $custom_id;
+				}
+
+				$paragraph_html = $this->build_paragraph_html(
+					array(
+						'type'    => 'paragraph',
+						'content' => $content_trim,
+						'plain'   => false,
+					),
+					$element_classes,
+					$style_string,
+					''
+				);
+
+				return Block_Builder::build( 'paragraph', $attributes, $paragraph_html );
+			}
+
+			$html_block = $this->build_html_block( $content_trim );
+			$group_attr = array();
+
+			if ( ! empty( $base_attributes['style']['color'] ) ) {
+				$group_attr['style']['color'] = $base_attributes['style']['color'];
+			}
+
+			if ( ! empty( $base_attributes['className'] ) ) {
+				$group_attr['className'] = $base_attributes['className'];
+			}
+
+			if ( '' !== $custom_id ) {
+				$group_attr['anchor'] = $custom_id;
+			}
+
+			if ( empty( $group_attr ) ) {
+				return $html_block;
+			}
+
+			return Block_Builder::build( 'group', $group_attr, $html_block );
 		}
 
 		$style_string = $this->build_style_string( $inline_styles );
@@ -361,10 +432,14 @@ class Text_Editor_Widget_Handler implements Widget_Handler_Interface {
 		}
 
 		if ( '' !== $style ) {
-			$attrs .= ' style="' . esc_attr( $style ) . '"';
+			$style = $this->normalize_inline_style_attribute( $style );
+			if ( '' !== $style ) {
+				$attrs .= ' style="' . esc_attr( $style ) . '"';
+			}
 		}
 
 		$inner = $segment['plain'] ? esc_html( $segment['content'] ) : wp_kses_post( $this->strip_wrapping_p( $segment['content'] ) );
+
 		return sprintf( '<p%s>%s</p>', $attrs, $inner );
 	}
 
@@ -389,7 +464,10 @@ class Text_Editor_Widget_Handler implements Widget_Handler_Interface {
 		}
 
 		if ( '' !== $style ) {
-			$attrs .= ' style="' . esc_attr( $style ) . '"';
+			$style = $this->normalize_inline_style_attribute( $style );
+			if ( '' !== $style ) {
+				$attrs .= ' style="' . esc_attr( $style ) . '"';
+			}
 		}
 
 		$items_html = array();
@@ -398,6 +476,102 @@ class Text_Editor_Widget_Handler implements Widget_Handler_Interface {
 		}
 
 		return sprintf( '<%1$s%2$s>%3$s</%1$s>', $tag, $attrs, implode( '', $items_html ) );
+	}
+
+	/**
+	 * Normalize inline style attribute to match WP serializer expectations.
+	 * - Trim whitespace.
+	 * - Ensure it ends with a semicolon.
+	 *
+	 * @param string $style Raw inline style string.
+	 */
+	private function normalize_inline_style_attribute( string $style ): string {
+		$style = trim( $style );
+		if ( '' === $style ) {
+			return '';
+		}
+
+		$style = preg_replace( '/\s+/', ' ', $style );
+		if ( null === $style ) {
+			return '';
+		}
+
+		$style = rtrim( $style, ';' );
+		$style = trim( $style );
+		if ( '' === $style ) {
+			return '';
+		}
+
+		return $style . ';';
+	}
+
+	/**
+	 * Basic "dark color" heuristic used for safe fallback text color.
+	 *
+	 * @param string $color Normalized color value (hex/rgb/rgba) or empty.
+	 */
+	private function is_dark_color( string $color ): bool {
+		$rgb = $this->parse_rgb_triplet( $color );
+		if ( null === $rgb ) {
+			return false;
+		}
+
+		$r = (int) $rgb[0];
+		$g = (int) $rgb[1];
+		$b = (int) $rgb[2];
+
+		$brightness = ( $r * 299 + $g * 587 + $b * 114 ) / 1000;
+
+		return $brightness < 120;
+	}
+
+	/**
+	 * Parse rgb triplet from hex/rgb/rgba.
+	 *
+	 * @param string $color Normalized color value.
+	 *
+	 * @return array<int, int>|null
+	 */
+	private function parse_rgb_triplet( string $color ): ?array {
+		$color = strtolower( trim( $color ) );
+		if ( '' === $color ) {
+			return null;
+		}
+
+		if ( 1 === preg_match( '/^#([0-9a-f]{3})$/', $color, $m ) ) {
+			$hex = $m[1];
+
+			return array(
+				hexdec( $hex[0] . $hex[0] ),
+				hexdec( $hex[1] . $hex[1] ),
+				hexdec( $hex[2] . $hex[2] ),
+			);
+		}
+
+		if ( 1 === preg_match( '/^#([0-9a-f]{6})$/', $color, $m ) ) {
+			$hex = $m[1];
+
+			return array(
+				hexdec( substr( $hex, 0, 2 ) ),
+				hexdec( substr( $hex, 2, 2 ) ),
+				hexdec( substr( $hex, 4, 2 ) ),
+			);
+		}
+
+		if ( 1 === preg_match( '/^rgb\(\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*\)$/', $color, $m ) ) {
+			return array( (int) $m[1], (int) $m[2], (int) $m[3] );
+		}
+
+		if ( 1 === preg_match( '/^rgba\(\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*,\s*([0-9]*\.?[0-9]+)\s*\)$/', $color, $m ) ) {
+			$alpha = (float) $m[4];
+			if ( $alpha <= 0 ) {
+				return null;
+			}
+
+			return array( (int) $m[1], (int) $m[2], (int) $m[3] );
+		}
+
+		return null;
 	}
 
 	/**
@@ -583,11 +757,13 @@ class Text_Editor_Widget_Handler implements Widget_Handler_Interface {
 
 		return $style;
 	}
+
 	private function strip_wrapping_p( string $html ): string {
 		$trimmed = trim( $html );
 		if ( 1 === preg_match( '#^<p\b[^>]*>(.*)</p>$#is', $trimmed, $m ) ) {
 			return (string) $m[1];
 		}
+
 		return $html;
 	}
 
