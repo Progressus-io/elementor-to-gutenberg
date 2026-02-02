@@ -3,6 +3,9 @@
 namespace Progressus\Gutenberg\Admin\Widget;
 
 use Progressus\Gutenberg\Admin\Widget_Handler_Interface;
+use Progressus\Gutenberg\Admin\Admin_Settings;
+use Progressus\Gutenberg\Admin\Helper\Block_Builder;
+use Progressus\Gutenberg\Admin\Helper\WooCommerce_Style_Builder;
 
 use function absint;
 use function esc_attr;
@@ -23,6 +26,7 @@ class Woo_Products_Widget_Handler implements Widget_Handler_Interface {
 	 */
 	public function handle( array $element ): string {
 		$settings = is_array( $element['settings'] ?? null ) ? $element['settings'] : array();
+		$classes  = $this->build_widget_wrapper_classes( $element, 'wc-products' );
 
 		$columns = absint( $settings['columns'] ?? 0 );
 		$rows    = absint( $settings['rows'] ?? 0 );
@@ -79,11 +83,43 @@ class Woo_Products_Widget_Handler implements Widget_Handler_Interface {
 
 			$template = $this->get_product_collection_template();
 
-			return $this->serialize_block( 'woocommerce/product-collection', $block_attrs, $template );
+			WooCommerce_Style_Builder::register_products_styles(
+				$element,
+				$classes['widget_class'],
+				Admin_Settings::get_page_wrapper_class_name()
+			);
+
+			$products_block = $this->serialize_block( 'woocommerce/product-collection', $block_attrs, $template );
+			if ( '' === $classes['className'] ) {
+				return $products_block;
+			}
+
+			return Block_Builder::build(
+				'group',
+				array(
+					'className' => $classes['className'],
+				),
+				$products_block
+			);
 		}
 
+		WooCommerce_Style_Builder::register_products_styles(
+			$element,
+			$classes['widget_class'],
+			Admin_Settings::get_page_wrapper_class_name()
+		);
+
 		// Fallback to shortcode for older sites without Woo blocks.
-		return $this->serialize_block( 'core/shortcode', array(), $shortcode );
+		$shortcode_block = $this->serialize_block( 'core/shortcode', array(), $shortcode );
+		if ( '' === $classes['className'] ) {
+			return $shortcode_block;
+		}
+
+		return Block_Builder::build(
+			'group',
+			array( 'className' => $classes['className'] ),
+			$shortcode_block
+		);
 	}
 
 	/**
@@ -219,8 +255,8 @@ class Woo_Products_Widget_Handler implements Widget_Handler_Interface {
 			);
 		}
 
-		$cols = $columns > 0 ? $columns : 3;
-		$pp   = $per_page > 0 ? $per_page : ( $cols * 1 );
+		$cols = $columns > 0 ? $columns : 4;
+		$pp   = $per_page > 0 ? $per_page : max( $cols * 3, 12 );
 
 		return array(
 			'queryId'       => $query_id,

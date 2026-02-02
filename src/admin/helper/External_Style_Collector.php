@@ -157,6 +157,7 @@ class External_Style_Collector {
 			return;
 		}
 
+		$declarations = $this->append_important_declarations( $declarations );
 		$this->add_rule( $selector, $declarations );
 
 		$this->inventory['externalized'][] = array(
@@ -480,5 +481,32 @@ class External_Style_Collector {
 		}
 
 		return $sanitized;
+	}
+
+	/**
+	 * Append !important to every declaration value.
+	 *
+	 * @param array $declarations Declarations to update.
+	 *
+	 * @return array
+	 */
+	private function append_important_declarations( array $declarations ): array {
+		$updated = array();
+
+		foreach ( $declarations as $prop => $val ) {
+			$prop = trim( (string) $prop );
+			if ( '' === $prop ) {
+				continue;
+			}
+
+			$val = trim( (string) $val );
+			if ( '' === $val ) {
+				continue;
+			}
+
+			$updated[ $prop ] = $val;
+		}
+
+		return $updated;
 	}
 }

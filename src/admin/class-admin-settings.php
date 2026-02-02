@@ -467,6 +467,15 @@ class Admin_Settings {
 	}
 
 	/**
+	 * Get the page wrapper class name used during conversion.
+	 *
+	 * @return string
+	 */
+	public static function get_page_wrapper_class_name(): string {
+		return 'etg-page-' . self::PAGE_WRAPPER_TOKEN;
+	}
+
+	/**
 	 * Collect typography rules for the current conversion into external CSS.
 	 *
 	 * @param string $page_class Base wrapper class.
