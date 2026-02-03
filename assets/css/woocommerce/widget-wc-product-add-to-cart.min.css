@@ -1,0 +1,21 @@
+:where([class*="etg-page-"] [class*="etg-widget-"])
+:is(
+  .woocommerce div.product,
+  div.wc-block-add-to-cart-form
+) form.cart{
+    margin:0
+}
+
+:where([class*="etg-page-"] [class*="etg-widget-"])
+:is(
+  .woocommerce div.product,
+  div.wc-block-add-to-cart-form
+) form.cart.variations_form .woocommerce-variation-add-to-cart,
+:where([class*="etg-page-"] [class*="etg-widget-"])
+:is(
+  .woocommerce div.product,
+  div.wc-block-add-to-cart-form
+) form.cart:not(.grouped_form):not(.variations_form){
+    display:flex;
+    flex-wrap:nowrap
+}

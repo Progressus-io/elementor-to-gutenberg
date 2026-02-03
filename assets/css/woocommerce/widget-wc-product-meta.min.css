@@ -1,0 +1,15 @@
+:where([class*="etg-page-"] [class*="etg-widget-"])
+.woocommerce div.product .product_meta{
+    position:relative
+}
+
+:where([class*="etg-page-"] [class*="etg-widget-"])
+.woocommerce div.product .product_meta > span{
+    font-weight:700
+}
+
+:where([class*="etg-page-"] [class*="etg-widget-"]).elementor-woo-meta--view-inline
+.woocommerce div.product .product_meta{
+    display:flex;
+    flex-wrap:wrap
+}
