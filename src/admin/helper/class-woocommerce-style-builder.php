@@ -143,14 +143,15 @@ class WooCommerce_Style_Builder {
 		);
 
 		$item_declarations = array();
+		$has_box_border    = self::has_visible_border( $box_border_width );
 		$border_width      = self::build_box_shorthand( $box_border_width );
-		if ( '' !== $border_width ) {
+		if ( $has_box_border && '' !== $border_width ) {
 			$item_declarations['border-width'] = $border_width;
 		}
-		if ( '' !== $box_border_style ) {
+		if ( $has_box_border && '' !== $box_border_style ) {
 			$item_declarations['border-style'] = $box_border_style;
 		}
-		if ( '' !== $box_border_color ) {
+		if ( $has_box_border && '' !== $box_border_color ) {
 			$item_declarations['border-color'] = $box_border_color;
 		}
 		$radius = self::build_box_shorthand( $box_border_radius );
@@ -200,14 +201,15 @@ class WooCommerce_Style_Builder {
 		);
 
 		$image_declarations = array();
+		$has_image_border   = self::has_visible_border( $image_border_width );
 		$image_border       = self::build_box_shorthand( $image_border_width );
-		if ( '' !== $image_border ) {
+		if ( $has_image_border && '' !== $image_border ) {
 			$image_declarations['border-width'] = $image_border;
 		}
-		if ( '' !== $image_border_style ) {
+		if ( $has_image_border && '' !== $image_border_style ) {
 			$image_declarations['border-style'] = $image_border_style;
 		}
-		if ( '' !== $image_border_color ) {
+		if ( $has_image_border && '' !== $image_border_color ) {
 			$image_declarations['border-color'] = $image_border_color;
 		}
 		$image_radius = self::build_box_shorthand( $image_border_radius );
@@ -289,14 +291,15 @@ class WooCommerce_Style_Builder {
 		if ( '' !== $button_background_color ) {
 			$button_declarations['background-color'] = $button_background_color;
 		}
-		if ( '' !== $button_border_style ) {
+		$has_button_border = self::has_visible_border( $button_border_width );
+		if ( $has_button_border && '' !== $button_border_style ) {
 			$button_declarations['border-style'] = $button_border_style;
 		}
 		$button_border = self::build_box_shorthand( $button_border_width );
-		if ( '' !== $button_border ) {
+		if ( $has_button_border && '' !== $button_border ) {
 			$button_declarations['border-width'] = $button_border;
 		}
-		if ( '' !== $button_border_color ) {
+		if ( $has_button_border && '' !== $button_border_color ) {
 			$button_declarations['border-color'] = $button_border_color;
 		}
 		$button_radius = self::build_box_shorthand( $button_border_radius );
@@ -1056,5 +1059,35 @@ class WooCommerce_Style_Builder {
 		}
 
 		return trim( $top . ' ' . $right . ' ' . $bottom . ' ' . $left );
+	}
+
+	/**
+	 * Determine if border widths contain any visible value.
+	 *
+	 * @param array<string, string> $sides Border width map.
+	 *
+	 * @return bool
+	 */
+	private static function has_visible_border( array $sides ): bool {
+		foreach ( $sides as $value ) {
+			if ( null === $value || '' === $value ) {
+				continue;
+			}
+
+			if ( is_numeric( $value ) ) {
+				if ( (float) $value > 0 ) {
+					return true;
+				}
+				continue;
+			}
+
+			if ( preg_match( '/-?\d*\.?\d+/', (string) $value, $matches ) ) {
+				if ( (float) $matches[0] > 0 ) {
+					return true;
+				}
+			}
+		}
+
+		return false;
 	}
 }
