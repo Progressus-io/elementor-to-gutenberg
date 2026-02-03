@@ -195,6 +195,7 @@ class Gutenberg {
 			);
 		}
 
+		$this->enqueue_woocommerce_widget_styles();
 
 	}
 
@@ -290,6 +291,100 @@ class Gutenberg {
 	public function enqueue_converted_page_css(): void {
 		External_CSS_Service::enqueue_current_post_css();
 	}
+
+	/**
+	 * Enqueue WooCommerce widget styles based on Elementor widget markers in content.
+	 *
+	 * @return void
+	 */
+	private function enqueue_woocommerce_widget_styles(): void {
+		if ( ! is_singular() ) {
+			return;
+		}
+
+		$post_id = get_queried_object_id();
+		if ( ! $post_id ) {
+			return;
+		}
+
+		$content = (string) get_post_field( 'post_content', $post_id );
+		if ( '' === $content ) {
+			return;
+		}
+
+		$required_handles = $this->get_required_woocommerce_style_handles( $content );
+		if ( empty( $required_handles ) ) {
+			return;
+		}
+
+		$base_url = plugins_url( 'assets/css/woocommerce/', GUTENBERG_PLUGIN_FILE );
+		foreach ( $required_handles as $handle => $file ) {
+			wp_enqueue_style(
+				$handle,
+				$base_url . $file,
+				array(),
+				GUTENBERG_PLUGIN_VERSION
+			);
+		}
+	}
+
+	/**
+	 * Determine WooCommerce widget style handles required for the given content.
+	 *
+	 * @param string $content Post content to inspect.
+	 *
+	 * @return array<string, string> Map of handle => file name.
+	 */
+	private function get_required_woocommerce_style_handles( string $content ): array {
+
+		$required      = array();
+		$handle_prefix = 'gutenberg-plugin-wc-';
+
+		if ( has_block( 'woocommerce/product-button', get_the_ID() )
+		     || has_block( 'woocommerce/add-to-cart-form', get_the_ID() )
+		) {
+			$required[ $handle_prefix . 'add-to-cart' ] = 'widget-wc-product-add-to-cart.min.css';
+		}
+
+		if ( has_block( 'woocommerce/product-price', get_the_ID() ) ) {
+			$required[ $handle_prefix . 'price' ] = 'widget-wc-product-price.min.css';
+		}
+
+		if ( has_block( 'woocommerce/product-image', get_the_ID() ) ) {
+			$required[ $handle_prefix . 'images' ] = 'widget-wc-product-images.min.css';
+		}
+
+		if ( has_block( 'woocommerce/product-collection', get_the_ID() ) ) {
+			$required[ $handle_prefix . 'products' ] = 'widget-wc-products.min.css';
+		}
+
+		if ( has_block( 'woocommerce/product-categories', get_the_ID() ) ) {
+			$required[ $handle_prefix . 'archive' ] = 'widget-wc-products-archive.min.css';
+		}
+
+		if (
+			strpos( $content, 'woocommerce-tabs' ) !== false
+			|| strpos( $content, 'wc-tabs' ) !== false
+		) {
+			$required[ $handle_prefix . 'tabs' ] = 'widget-wc-product-data-tabs.min.css';
+		}
+
+		if (
+			strpos( $content, 'product_meta' ) !== false
+		) {
+			$required[ $handle_prefix . 'meta' ] = 'widget-wc-product-meta.min.css';
+		}
+
+		if (
+			strpos( $content, 'woocommerce-notices-wrapper' ) !== false
+			|| strpos( $content, 'wc-block-components-notice-banner' ) !== false
+		) {
+			$required[ $handle_prefix . 'notices' ] = 'widget-wc-notices.min.css';
+		}
+
+		return $required;
+	}
+
 
 	/**
 	 * Inject Elementor kit typography into theme.json defaults.
