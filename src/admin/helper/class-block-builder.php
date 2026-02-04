@@ -36,7 +36,7 @@ class Block_Builder {
 	 *
 	 * @var array<string>
 	 */
-	private static $wrapper_blocks = array( 'group', 'columns', 'column', 'buttons', 'button' );
+	private static $wrapper_blocks = array( 'group', 'columns', 'column', 'buttons', 'button', 'query' );
 
 	/**
 	 * Core blocks that should prefer strict serialization via serialize_block().
