@@ -1,0 +1,32 @@
+/*! ETG compat - translated from elementor-pro */
+:where([class*="etg-page-"] [class*="etg-widget-"])
+:is(ul.products, ul.wc-block-grid__products, .wc-block-product-template){
+    display:grid;
+    margin:0;
+    grid-column-gap:20px;
+    grid-row-gap:40px
+}
+
+:where([class*="etg-page-"] [class*="etg-widget-"])
+:is(
+  ul.products li.product,
+  ul.wc-block-grid__products li,
+  .wc-block-product-template > li,
+  .wc-block-product-template .wc-block-product
+){
+    float:none;
+    margin:0;
+    padding:0;
+    width:auto
+}
+
+:where([class*="etg-page-"] [class*="etg-widget-"])
+nav.woocommerce-pagination{
+    margin-top:40px
+}
+
+:where([class*="etg-page-"] [class*="etg-widget-"])
+:not(.show-heading-yes)
+:is(.products, ul.wc-block-grid__products, .wc-block-product-template) > h2{
+    display:none
+}

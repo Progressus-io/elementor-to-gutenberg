@@ -9,6 +9,13 @@ defined( 'ABSPATH' ) || exit;
 class Woo_Mini_Cart_Widget_Handler implements Widget_Handler_Interface {
 	use Woo_Block_Serializer_Trait;
 
+	/**
+	 * Render the mini cart widget using the WooCommerce block or shortcode.
+	 *
+	 * @param array<string, mixed> $element Elementor widget data.
+	 *
+	 * @return string
+	 */
 	public function handle( array $element ): string {
 		return $this->serialize_block_or_shortcode( 'woocommerce/mini-cart', '[woocommerce_mini_cart]' );
 	}

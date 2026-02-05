@@ -41,6 +41,7 @@ class External_CSS_Service {
 
 		return $post_id;
 	}
+
 	/**
 	 * Save a CSS string as an external file in uploads and store reference in post meta.
 	 *
@@ -55,6 +56,7 @@ class External_CSS_Service {
 		$css = self::normalize_css( $css );
 		if ( '' === $css ) {
 			self::delete_post_css_meta( $post_id );
+
 			return null;
 		}
 
@@ -63,7 +65,7 @@ class External_CSS_Service {
 			return null;
 		}
 
-		$dir_rel  = 'progressus-gutenberg/css';
+		$dir_rel  = 'etg';
 		$base_dir = trailingslashit( (string) $upload['basedir'] );
 		$base_url = trailingslashit( (string) $upload['baseurl'] );
 
@@ -73,7 +75,7 @@ class External_CSS_Service {
 		}
 
 		$hash     = substr( md5( $css ), 0, 12 );
-		$filename = 'page-' . (string) $post_id . '-' . $hash . '.css';
+		$filename = 'etg-page-' . (string) $post_id . '.css';
 
 		$path = trailingslashit( $target_dir ) . $filename;
 		$url  = trailingslashit( $base_url . $dir_rel ) . $filename;
@@ -82,7 +84,7 @@ class External_CSS_Service {
 			return null;
 		}
 
-		$meta = array(
+		$meta      = array(
 			'url'      => $url,
 			'path'     => $path,
 			'hash'     => $hash,
@@ -194,10 +196,10 @@ class External_CSS_Service {
 		if ( ! file_exists( $path ) ) {
 			$upload = wp_get_upload_dir();
 			if ( ! empty( $upload['basedir'] ) ) {
-				$base_dir   = trailingslashit( wp_normalize_path( (string) $upload['basedir'] ) );
-				$base_dir   = str_replace( '/', DIRECTORY_SEPARATOR, $base_dir );
-				$filename   = basename( wp_normalize_path( $path ) );
-				$candidate  = $base_dir . 'progressus-gutenberg' . DIRECTORY_SEPARATOR . 'css' . DIRECTORY_SEPARATOR . $filename;
+				$base_dir  = trailingslashit( wp_normalize_path( (string) $upload['basedir'] ) );
+				$base_dir  = str_replace( '/', DIRECTORY_SEPARATOR, $base_dir );
+				$filename  = basename( wp_normalize_path( $path ) );
+				$candidate = $base_dir . 'etg' . DIRECTORY_SEPARATOR . $filename;
 
 				if ( file_exists( $candidate ) ) {
 					$path = $candidate;
@@ -209,8 +211,9 @@ class External_CSS_Service {
 			return;
 		}
 
-		$ver = (string) filemtime( $path );
-		$hdl = 'progressus-gutenberg-page-css-' . (string) $post_id;
+		$hash = isset( $meta['hash'] ) ? (string) $meta['hash'] : '';
+		$ver  = '' !== $hash ? $hash : (string) filemtime( $path );
+		$hdl  = 'progressus-gutenberg-page-css-' . (string) $post_id;
 
 		wp_enqueue_style( $hdl, $url, array(), $ver );
 	}

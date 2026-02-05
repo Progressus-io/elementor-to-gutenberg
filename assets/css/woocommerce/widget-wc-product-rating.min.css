@@ -1,0 +1,32 @@
+/*! ETG compat - translated from elementor-pro */
+:where([class*="etg-page-"] [class*="etg-widget-"])
+.woocommerce .woocommerce-product-rating{
+    align-items:center;
+    display:flex;
+    margin-bottom:0
+}
+
+:where([class*="etg-page-"] [class*="etg-widget-"])
+.woocommerce .star-rating{
+    margin-top:0
+}
+
+:where([class*="etg-page-"] [class*="etg-widget-"]).elementor-product-rating--align-left
+.woocommerce .woocommerce-product-rating{
+    justify-content:flex-start
+}
+
+:where([class*="etg-page-"] [class*="etg-widget-"]).elementor-product-rating--align-right
+.woocommerce .woocommerce-product-rating{
+    justify-content:flex-end
+}
+
+:where([class*="etg-page-"] [class*="etg-widget-"]).elementor-product-rating--align-center
+.woocommerce .woocommerce-product-rating{
+    justify-content:center
+}
+
+:where([class*="etg-page-"] [class*="etg-widget-"]).elementor-product-rating--align-justify
+.woocommerce .woocommerce-product-rating .woocommerce-review-link{
+    margin-left:auto
+}

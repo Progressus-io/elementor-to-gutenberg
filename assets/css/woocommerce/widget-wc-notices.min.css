@@ -1,0 +1,51 @@
+:where(.editor-styles-wrapper, .wp-site-blocks, [class*="etg-page-"])
+.woocommerce-notices-wrapper{
+    padding:2em 2em .3em
+}
+
+:where(.editor-styles-wrapper, .wp-site-blocks, [class*="etg-page-"])
+.woocommerce-notices-wrapper.elementor-loading{
+    opacity:.3
+}
+
+:where([class*="etg-page-"] [class*="etg-widget-"])
+.woocommerce-message{
+    background:#fafbf5;
+    border-top:3px solid var(--message-message-icon-color,#95ac3c)
+}
+
+:where([class*="etg-page-"] [class*="etg-widget-"])
+.woocommerce-info{
+    background:#f6f9fb;
+    border-top:3px solid var(--info-message-icon-color,#3f84b9)
+}
+
+:where([class*="etg-page-"] [class*="etg-widget-"])
+.woocommerce-error{
+    background:#f9f2f5;
+    border-top:3px solid var(--error-message-icon-color,#b81c23)
+}
+
+:where([class*="etg-page-"] [class*="etg-widget-"])
+div.wc-block-components-notice-banner{
+    display:flex;
+    padding:16px;
+    border:1px solid;
+    border-radius:4px;
+    background:#fff
+}
+
+:where([class*="etg-page-"] [class*="etg-widget-"])
+div.wc-block-components-notice-banner.is-success{
+    background:#f4fff7
+}
+
+:where([class*="etg-page-"] [class*="etg-widget-"])
+div.wc-block-components-notice-banner.is-error{
+    background:#fff0f0
+}
+
+:where([class*="etg-page-"] [class*="etg-widget-"])
+div.wc-block-components-notice-banner.is-info{
+    background:#f4f8ff
+}

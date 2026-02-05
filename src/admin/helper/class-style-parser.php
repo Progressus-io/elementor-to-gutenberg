@@ -34,6 +34,13 @@ class Style_Parser {
 	private static ?array $font_sizes = null;
 
 	/**
+	 * Cached theme font-family presets.
+	 *
+	 * @var array<int, array<string, string>>|null
+	 */
+	private static ?array $font_families = null;
+
+	/**
 	 * Cached Elementor kit settings.
 	 *
 	 * @var array<string, mixed>|null
@@ -112,6 +119,163 @@ class Style_Parser {
 	}
 
 	/**
+	 * Retrieve Elementor kit typography settings for a context (body/headings).
+	 *
+	 * @param string $context Context key (body or headings).
+	 *
+	 * @return array
+	 */
+	public static function get_elementor_kit_typography( string $context ): array {
+		$context = strtolower( trim( $context ) );
+		if ( '' === $context ) {
+			return array();
+		}
+
+		$kit_settings = self::get_elementor_kit_settings();
+		if ( empty( $kit_settings ) || ! is_array( $kit_settings ) ) {
+			return array();
+		}
+
+		$prefixes = array();
+		$handles  = array();
+
+		if ( 'body' === $context ) {
+			$prefixes = array( 'body_typography', 'body' );
+			$handles  = array( 'text', 'body' );
+		} elseif ( 'headings' === $context || 'heading' === $context ) {
+			$prefixes = array( 'heading_typography', 'headings_typography', 'heading', 'headings' );
+			$handles  = array( 'primary', 'secondary', 'heading' );
+		} else {
+			return array();
+		}
+
+		$settings = self::collect_typography_from_prefixes( $kit_settings, $prefixes );
+		if ( ! empty( $settings ) ) {
+			return $settings;
+		}
+
+		if ( empty( $handles ) ) {
+			return array();
+		}
+
+		$map = self::get_elementor_global_typography_map();
+		foreach ( $handles as $handle ) {
+			if ( isset( $map[ $handle ] ) && is_array( $map[ $handle ] ) ) {
+				return $map[ $handle ];
+			}
+		}
+
+		return array();
+	}
+
+	/**
+	 * Build CSS declarations from Elementor typography settings.
+	 *
+	 * @param array $settings Elementor typography settings.
+	 *
+	 * @return array<string, string>
+	 */
+	public static function build_typography_declarations( array $settings ): array {
+		$settings = self::apply_global_typography( $settings );
+		$rules    = array();
+
+		$font_family = self::sanitize_font_family_value( $settings['typography_font_family'] ?? '' );
+		if ( '' !== $font_family ) {
+			$rules['font-family'] = $font_family;
+		}
+
+		$font_size = self::normalize_dimension( $settings['typography_font_size'] ?? null, 'px' );
+		if ( null !== $font_size ) {
+			$font_size = self::sanitize_css_dimension_value( $font_size );
+			if ( '' !== $font_size ) {
+				$rules['font-size'] = $font_size;
+			}
+		}
+
+		$font_weight = self::sanitize_font_weight_value( $settings['typography_font_weight'] ?? '' );
+		if ( '' !== $font_weight ) {
+			$rules['font-weight'] = $font_weight;
+		}
+
+		$text_transform = self::sanitize_text_transform_value( $settings['typography_text_transform'] ?? '' );
+		if ( '' !== $text_transform ) {
+			$rules['text-transform'] = $text_transform;
+		}
+
+		$letter_spacing = self::normalize_dimension( $settings['typography_letter_spacing'] ?? null, 'px' );
+		if ( null !== $letter_spacing ) {
+			$letter_spacing = self::sanitize_letter_spacing_value( $letter_spacing );
+			if ( '' !== $letter_spacing ) {
+				$rules['letter-spacing'] = $letter_spacing;
+			}
+		}
+
+		$line_height = self::normalize_dimension( $settings['typography_line_height'] ?? null, '' );
+		if ( null !== $line_height ) {
+			$line_height = self::sanitize_line_height_value( $line_height );
+			if ( '' !== $line_height ) {
+				$rules['line-height'] = $line_height;
+			}
+		}
+
+		$font_style = self::sanitize_font_style_value( $settings['typography_font_style'] ?? '' );
+		if ( '' !== $font_style ) {
+			$rules['font-style'] = $font_style;
+		}
+
+		return $rules;
+	}
+
+	/**
+	 * Match a font-family string to a theme preset slug when possible.
+	 *
+	 * @param string $font_family Raw font-family value.
+	 *
+	 * @return string|null
+	 */
+	public static function match_font_family_slug( string $font_family ): ?string {
+		$font_family = trim( $font_family );
+		if ( '' === $font_family ) {
+			return null;
+		}
+
+		$normalized = self::normalize_font_family_string( $font_family );
+		if ( '' === $normalized ) {
+			return null;
+		}
+
+		foreach ( self::get_font_family_presets() as $preset ) {
+			$preset_family = isset( $preset['fontFamily'] ) ? (string) $preset['fontFamily'] : '';
+			$preset_slug   = isset( $preset['slug'] ) ? (string) $preset['slug'] : '';
+			if ( '' === $preset_family || '' === $preset_slug ) {
+				continue;
+			}
+
+			if ( self::normalize_font_family_string( $preset_family ) === $normalized ) {
+				return $preset_slug;
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * Build a CSS var reference for a font-family preset slug.
+	 *
+	 * @param string $slug Preset slug.
+	 *
+	 * @return string
+	 */
+	public static function build_font_family_preset_value( string $slug ): string {
+		$slug = self::sanitize_scalar( $slug );
+		if ( '' === $slug ) {
+			return '';
+		}
+
+		return 'var(--wp--preset--font-family--' . $slug . ')';
+	}
+
+	/**
 	 * Parse button-specific colors from widget and kit settings.
 	 *
 	 * @param array $settings Elementor widget settings.
@@ -131,34 +295,83 @@ class Style_Parser {
 			array(
 				$settings['button_text_color'] ?? '',
 				$settings['text_color'] ?? '',
+				( isset( $settings['__globals__'] ) && is_array( $settings['__globals__'] ) ) ? ( $settings['__globals__']['button_text_color'] ?? '' ) : '',
+				( isset( $settings['__globals__'] ) && is_array( $settings['__globals__'] ) ) ? ( $settings['__globals__']['text_color'] ?? '' ) : '',
 			)
 		);
 
 		$background_color = self::extract_color_from_sources(
 			array(
-				$settings['background_color'] ?? '',
 				$settings['button_background_color'] ?? '',
+				$settings['background_color'] ?? '',
+				( isset( $settings['__globals__'] ) && is_array( $settings['__globals__'] ) ) ? ( $settings['__globals__']['button_background_color'] ?? '' ) : '',
+				( isset( $settings['__globals__'] ) && is_array( $settings['__globals__'] ) ) ? ( $settings['__globals__']['background_color'] ?? '' ) : '',
 			)
 		);
 
-		if ( '' !== $text_color['slug'] ) {
-			$attributes['textColor'] = $text_color['slug'];
-			$anchor_classes[]        = 'has-text-color';
-			$anchor_classes[]        = 'has-' . self::clean_class( $text_color['slug'] ) . '-color';
-		} elseif ( '' !== $text_color['color'] ) {
-			$attributes['style']['color']['text'] = $text_color['color'];
-			$anchor_classes[]                     = 'has-text-color';
-			$anchor_styles[]                      = 'color:' . $text_color['color'];
+		if ( '' === $text_color['color'] && '' === $text_color['slug'] ) {
+			$kit        = self::get_elementor_kit_settings();
+			$text_color = self::extract_color_from_sources(
+				array(
+					$kit['button_text_color'] ?? '',
+					$kit['button_color'] ?? '',
+					$kit['buttons_text_color'] ?? '',
+					$kit['global_button_text_color'] ?? '',
+				)
+			);
 		}
 
-		if ( '' !== $background_color['slug'] ) {
-			$attributes['backgroundColor'] = $background_color['slug'];
-			$anchor_classes[]              = 'has-background';
-			$anchor_classes[]              = 'has-' . self::clean_class( $background_color['slug'] ) . '-background-color';
-		} elseif ( '' !== $background_color['color'] ) {
-			$attributes['style']['color']['background'] = $background_color['color'];
+		if ( '' === $background_color['color'] && '' === $background_color['slug'] ) {
+			$kit              = isset( $kit ) ? $kit : self::get_elementor_kit_settings();
+			$background_color = self::extract_color_from_sources(
+				array(
+					$kit['button_background_color'] ?? '',
+					$kit['button_color_background'] ?? '',
+					$kit['buttons_background_color'] ?? '',
+					$kit['global_button_background_color'] ?? '',
+				)
+			);
+		}
+
+		$text_value = $text_color['color'];
+		if ( '' === $text_value && '' !== $text_color['slug'] ) {
+			$text_value = self::resolve_theme_color_value( $text_color['slug'] );
+		}
+
+		$background_value = $background_color['color'];
+		if ( '' === $background_value && '' !== $background_color['slug'] ) {
+			$background_value = self::resolve_theme_color_value( $background_color['slug'] );
+		}
+
+		if ( '' === $background_value ) {
+			foreach ( array( 'accent', 'primary', 'secondary' ) as $handle ) {
+				$resolved = self::resolve_elementor_color_reference( 'globals/colors?id=' . $handle );
+				if ( '' !== $resolved['color'] ) {
+					$background_value = $resolved['color'];
+					break;
+				}
+			}
+		}
+
+		if ( '' === $text_value && '' !== $background_value ) {
+			$text_value = '#ffffff';
+		}
+
+		if ( '' === $text_value && '' === $background_value ) {
+			$background_value = '#f57c00';
+			$text_value       = '#ffffff';
+		}
+
+		if ( '' !== $text_value ) {
+			$attributes['style']['color']['text'] = $text_value;
+			$anchor_classes[]                     = 'has-text-color';
+			$anchor_styles[]                      = 'color:' . $text_value;
+		}
+
+		if ( '' !== $background_value ) {
+			$attributes['style']['color']['background'] = $background_value;
 			$anchor_classes[]                           = 'has-background';
-			$anchor_styles[]                            = 'background-color:' . $background_color['color'];
+			$anchor_styles[]                            = 'background-color:' . $background_value;
 		}
 
 		return array(
@@ -179,6 +392,21 @@ class Style_Parser {
 		foreach ( $sources as $source ) {
 			$raw = self::sanitize_color( $source );
 			if ( '' === $raw ) {
+				continue;
+			}
+
+			if ( self::is_elementor_global_color_reference( $raw ) ) {
+				$resolved = self::resolve_elementor_color_reference( $raw );
+
+				if ( '' !== $resolved['color'] ) {
+					$matched_slug = self::match_theme_color_slug( $resolved['color'] );
+
+					return array(
+						'slug'  => null === $matched_slug ? '' : self::clean_class( $matched_slug ),
+						'color' => $resolved['color'],
+					);
+				}
+
 				continue;
 			}
 
@@ -397,6 +625,64 @@ class Style_Parser {
 		}
 
 		return self::$elementor_global_typography;
+	}
+
+	/**
+	 * Collect typography settings using known kit key prefixes.
+	 *
+	 * @param array $kit_settings Elementor kit settings.
+	 * @param array $prefixes Key prefixes to scan.
+	 *
+	 * @return array
+	 */
+	private static function collect_typography_from_prefixes( array $kit_settings, array $prefixes ): array {
+		if ( empty( $kit_settings ) || empty( $prefixes ) ) {
+			return array();
+		}
+
+		$suffix_map = array(
+			'font_family'       => 'typography_font_family',
+			'text_transform'    => 'typography_text_transform',
+			'font_style'        => 'typography_font_style',
+			'font_weight'       => 'typography_font_weight',
+			'text_decoration'   => 'typography_text_decoration',
+			'font_size'         => 'typography_font_size',
+			'line_height'       => 'typography_line_height',
+			'letter_spacing'    => 'typography_letter_spacing',
+			'word_spacing'      => 'typography_word_spacing',
+			'typography'        => 'typography_typography',
+			'global_typography' => 'typography_global_typography',
+		);
+
+		$settings = array();
+
+		foreach ( $prefixes as $prefix ) {
+			$prefix = trim( (string) $prefix );
+			if ( '' === $prefix ) {
+				continue;
+			}
+
+			foreach ( $suffix_map as $suffix => $target ) {
+				$key = $prefix . '_' . $suffix;
+				if ( isset( $kit_settings[ $key ] ) ) {
+					$settings[ $target ] = $kit_settings[ $key ];
+				}
+			}
+
+			if ( isset( $kit_settings[ $prefix ] ) && is_array( $kit_settings[ $prefix ] ) ) {
+				foreach ( $suffix_map as $suffix => $target ) {
+					if ( isset( $kit_settings[ $prefix ][ $suffix ] ) ) {
+						$settings[ $target ] = $kit_settings[ $prefix ][ $suffix ];
+					}
+				}
+			}
+
+			if ( ! empty( $settings ) ) {
+				break;
+			}
+		}
+
+		return $settings;
 	}
 
 	/**
@@ -983,6 +1269,47 @@ class Style_Parser {
 	}
 
 	/**
+	 * Fetch font-family presets defined by the active theme.
+	 *
+	 * @return array<int, array<string, string>>
+	 */
+	private static function get_font_family_presets(): array {
+		if ( null !== self::$font_families ) {
+			return self::$font_families;
+		}
+
+		if ( ! function_exists( 'wp_get_global_settings' ) ) {
+			self::$font_families = array();
+
+			return self::$font_families;
+		}
+
+		$settings = wp_get_global_settings( array( 'typography', 'fontFamilies' ) );
+		$output   = array();
+
+		foreach ( array( 'theme', 'custom', 'default' ) as $group ) {
+			if ( empty( $settings[ $group ] ) || ! is_array( $settings[ $group ] ) ) {
+				continue;
+			}
+
+			foreach ( $settings[ $group ] as $preset ) {
+				if ( empty( $preset['slug'] ) || empty( $preset['fontFamily'] ) ) {
+					continue;
+				}
+
+				$output[] = array(
+					'slug'       => (string) $preset['slug'],
+					'fontFamily' => (string) $preset['fontFamily'],
+				);
+			}
+		}
+
+		self::$font_families = $output;
+
+		return self::$font_families;
+	}
+
+	/**
 	 * Convert font-size values to an approximate pixel value.
 	 *
 	 * @param mixed $value Raw value.
@@ -1014,6 +1341,26 @@ class Style_Parser {
 		}
 
 		return null;
+	}
+
+	/**
+	 * Normalize font-family strings for comparison.
+	 *
+	 * @param string $value Raw font-family string.
+	 *
+	 * @return string
+	 */
+	private static function normalize_font_family_string( string $value ): string {
+		$value = trim( strtolower( $value ) );
+		if ( '' === $value ) {
+			return '';
+		}
+
+		$value = str_replace( array( '"', "'" ), '', $value );
+		$value = preg_replace( '/\s*,\s*/', ',', $value );
+		$value = preg_replace( '/\s+/', ' ', $value );
+
+		return trim( (string) $value );
 	}
 
 	/**
@@ -1132,10 +1479,12 @@ class Style_Parser {
 		$attributes  = array();
 		$style_parts = array();
 		$maps        = array(
-			'_padding' => 'padding',
-			'_margin'  => 'margin',
-			'padding'  => 'padding',
-			'margin'   => 'margin',
+			'_padding'        => 'padding',
+			'_margin'         => 'margin',
+			'padding'         => 'padding',
+			'margin'          => 'margin',
+			'button_padding'  => 'padding',
+			'_button_padding' => 'padding',
 		);
 
 		foreach ( $maps as $key => $type ) {
@@ -1184,7 +1533,7 @@ class Style_Parser {
 		$attributes  = array();
 		$style_parts = array();
 
-		$radius_sources = array( '_border_radius', 'border_radius' );
+		$radius_sources = array( '_border_radius', 'border_radius', 'button_border_radius', '_button_border_radius' );
 		foreach ( $radius_sources as $radius_key ) {
 			$radius_data = $settings[ $radius_key ] ?? null;
 			if ( ! is_array( $radius_data ) ) {
@@ -1213,8 +1562,8 @@ class Style_Parser {
 			}
 		}
 
-		$width_sources = array( '_border_width', 'border_width' );
-		$color         = self::sanitize_color( $settings['border_color'] ?? $settings['_border_color'] ?? '' );
+		$width_sources = array( '_border_width', 'border_width', 'button_border_width', '_button_border_width' );
+		$color         = self::sanitize_color( $settings['border_color'] ?? $settings['_border_color'] ?? $settings['button_border_color'] ?? $settings['_button_border_color'] ?? '' );
 
 		foreach ( $width_sources as $width_key ) {
 			$width_data = $settings[ $width_key ] ?? null;
@@ -1279,16 +1628,6 @@ class Style_Parser {
 			$attributes['style']['border'] = $border['attributes'];
 		}
 
-		$background = self::sanitize_color( $settings['background_color'] ?? $settings['_background_color'] ?? '' );
-		if ( '' !== $background ) {
-			if ( self::is_preset_slug( $background ) ) {
-				$attributes['backgroundColor'] = $background;
-				$attributes['className']       = self::append_class( $attributes['className'] ?? '', 'has-background' );
-			} else {
-				$attributes['style']['color']['background'] = $background;
-				$attributes['className']                    = self::append_class( $attributes['className'] ?? '', 'has-background' );
-			}
-		}
 		$background_color = self::extract_color_from_sources(
 			array(
 				isset( $settings['background_color'] ) ? $settings['background_color'] : '',
@@ -1298,25 +1637,24 @@ class Style_Parser {
 			)
 		);
 
-		if ( '' !== $background_color['slug'] ) {
-			$attributes['backgroundColor'] = $background_color['slug'];
+		$background_type = self::sanitize_scalar( $settings['background_background'] ?? $settings['_background_background'] ?? '' );
+		$image_data      = $settings['background_image'] ?? $settings['_background_image'] ?? null;
+		$image_url       = self::extract_image_url( $image_data );
 
-			if ( '' !== $background_color['color'] ) {
-				if ( ! isset( $style['color'] ) || ! is_array( $style['color'] ) ) {
-					$style['color'] = array();
-				}
-				$style['color']['background'] = $background_color['color'];
-			}
-		} elseif ( '' !== $background_color['color'] ) {
+		if ( '' !== $background_color['color'] && ( '' === $background_type || 'classic' === $background_type ) ) {
 			if ( ! isset( $style['color'] ) || ! is_array( $style['color'] ) ) {
 				$style['color'] = array();
 			}
 			$style['color']['background'] = $background_color['color'];
+		} elseif ( '' !== $background_color['slug'] && ( '' === $background_type || 'classic' === $background_type ) ) {
+			$resolved = self::resolve_theme_color_value( $background_color['slug'] );
+			if ( '' !== $resolved ) {
+				if ( ! isset( $style['color'] ) || ! is_array( $style['color'] ) ) {
+					$style['color'] = array();
+				}
+				$style['color']['background'] = $resolved;
+			}
 		}
-
-		$background_type = self::sanitize_scalar( $settings['background_background'] ?? $settings['_background_background'] ?? '' );
-		$image_data      = $settings['background_image'] ?? $settings['_background_image'] ?? null;
-		$image_url       = self::extract_image_url( $image_data );
 
 		if ( 'classic' === $background_type && '' !== $image_url ) {
 			$attributes['style']['background']['image'] = $image_url;
@@ -1392,7 +1730,29 @@ class Style_Parser {
 	 * @param string $color Color string.
 	 */
 	private static function is_preset_slug( string $color ): bool {
-		return '' !== $color && false === strpos( $color, '#' ) && 0 !== strpos( $color, 'rgb' );
+		if ( '' === $color ) {
+			return false;
+		}
+
+		if ( false !== strpos( $color, '#' ) || 0 === strpos( $color, 'rgb' ) ) {
+			return false;
+		}
+
+		if ( self::is_elementor_global_color_reference( $color ) ) {
+			return false;
+		}
+
+		if ( false !== strpos( $color, '/' ) ) {
+			return false;
+		}
+
+		return true;
+	}
+
+	private static function is_elementor_global_color_reference( string $value ): bool {
+		$value = trim( $value );
+
+		return ( '' !== $value && 0 === strpos( $value, 'globals/colors?id=' ) );
 	}
 
 	/**

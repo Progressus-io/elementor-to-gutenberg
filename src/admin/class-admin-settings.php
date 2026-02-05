@@ -1,4 +1,6 @@
 <?php
+// phpcs:ignoreFile
+
 /**
  * Main admin settings class for Elementor to Gutenberg conversion.
  *
@@ -26,6 +28,7 @@ use function wp_strip_all_tags;
 use function wp_unslash;
 use function esc_attr;
 use function wp_json_encode;
+use function wp_update_post;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -44,6 +47,11 @@ class Admin_Settings {
 	 * @var External_Style_Collector|null
 	 */
 	private $external_css_collector = null;
+
+	/**
+	 * Page wrapper placeholder token.
+	 */
+	private const PAGE_WRAPPER_TOKEN = 'ETG_PAGE_ID_PLACEHOLDER';
 
 	/**
 	 * Get the singleton instance.
@@ -68,6 +76,14 @@ class Admin_Settings {
 		add_action( 'admin_post_myplugin_convert_page', array( $this, 'myplugin_handle_convert_page' ) );
 	}
 
+	/**
+	 * Add a Gutenberg conversion action to page row actions.
+	 *
+	 * @param array<string, mixed> $actions Existing row actions.
+	 * @param \WP_Post $post Current post object.
+	 *
+	 * @return array<string, mixed>
+	 */
 	public function myplugin_add_convert_button( $actions, $post ) {
 		if ( $post->post_type === 'page' ) {
 			$json_data = get_post_meta( $post->ID, '_elementor_data', true );
@@ -85,6 +101,11 @@ class Admin_Settings {
 	}
 
 
+	/**
+	 * Handle the admin convert page action.
+	 *
+	 * @return void
+	 */
 	public function myplugin_handle_convert_page() {
 		if ( ! isset( $_GET['page_id'] ) ) {
 			wp_die( 'Page ID missing.' );
@@ -107,9 +128,8 @@ class Admin_Settings {
 
 		// Create new page with blocks
 		$new_page_id = $this->insert_new_page( $page_id, $blocks );
-		$css         = $this->get_external_css();
-		if ( '' !== trim( $css ) ) {
-			External_CSS_Service::save_post_css( (int) $new_page_id, (string) $css );
+		if ( $new_page_id ) {
+			$this->finalize_converted_post( (int) $new_page_id, (string) $blocks, true );
 		}
 
 		if ( $new_page_id ) {
@@ -318,11 +338,67 @@ class Admin_Settings {
 		}
 
 		$content = $this->parse_elementor_elements( $json_data['content'] );
+		$content = $this->wrap_converted_content( $content );
 		$this->log_inventory_summary();
 
 		return $content;
 	}
 
+	/**
+	 * Replace the page wrapper token with the actual post ID.
+	 *
+	 * @param string $content Content containing the wrapper token.
+	 * @param int $post_id Post ID to inject.
+	 *
+	 * @return string
+	 */
+	public function replace_page_wrapper_token( string $content, int $post_id ): string {
+		if ( '' === $content || $post_id <= 0 ) {
+			return $content;
+		}
+
+		return str_replace( self::PAGE_WRAPPER_TOKEN, (string) $post_id, $content );
+	}
+
+	/**
+	 * Finalize converted post content and save external CSS.
+	 *
+	 * @param int $post_id Post ID.
+	 * @param string $content Converted content.
+	 * @param bool $update_post Whether to update post content.
+	 *
+	 * @return string
+	 */
+	public function finalize_converted_post( int $post_id, string $content, bool $update_post = true ): string {
+		if ( $post_id <= 0 ) {
+			return $content;
+		}
+
+		$updated_content = $this->replace_page_wrapper_token( $content, $post_id );
+
+		if ( $update_post && $updated_content !== $content ) {
+			wp_update_post(
+				array(
+					'ID'           => $post_id,
+					'post_content' => $updated_content,
+				)
+			);
+		}
+
+		$css = $this->get_external_css();
+		if ( '' !== trim( $css ) ) {
+			$css = $this->replace_page_wrapper_token( $css, $post_id );
+			External_CSS_Service::save_post_css( $post_id, (string) $css );
+		}
+
+		return $updated_content;
+	}
+
+	/**
+	 * Log external CSS inventory summary when debugging is enabled.
+	 *
+	 * @return void
+	 */
 	private function log_inventory_summary(): void {
 		if ( null === $this->external_css_collector ) {
 			return;
@@ -344,12 +420,163 @@ class Admin_Settings {
 		}
 	}
 
+	/**
+	 * Render the collected external CSS.
+	 *
+	 * @return string
+	 */
 	private function get_external_css(): string {
 		if ( null === $this->external_css_collector ) {
 			return '';
 		}
 
 		return $this->external_css_collector->render_css();
+	}
+
+	/**
+	 * Wrap converted content in a page-level group for typography scoping.
+	 *
+	 * @param string $content Converted Gutenberg blocks.
+	 *
+	 * @return string
+	 */
+	private function wrap_converted_content( string $content ): string {
+		$content = trim( (string) $content );
+		if ( '' === $content ) {
+			return '';
+		}
+
+		$page_class  = $this->get_page_wrapper_class();
+		$extra_class = $this->collect_page_typography_rules( $page_class );
+		$class_name  = trim( $page_class . ' ' . $extra_class );
+		$attributes  = array(
+			'className' => $class_name,
+			'layout'    => array( 'type' => 'default' ),
+		);
+
+		return Block_Builder::build( 'group', $attributes, $content );
+	}
+
+	/**
+	 * Build a predictable page wrapper class name.
+	 *
+	 * @return string
+	 */
+	private function get_page_wrapper_class(): string {
+		return 'etg-page-' . self::PAGE_WRAPPER_TOKEN;
+	}
+
+	/**
+	 * Get the page wrapper class name used during conversion.
+	 *
+	 * @return string
+	 */
+	public static function get_page_wrapper_class_name(): string {
+		return 'etg-page-' . self::PAGE_WRAPPER_TOKEN;
+	}
+
+	/**
+	 * Collect typography rules for the current conversion into external CSS.
+	 *
+	 * @param string $page_class Base wrapper class.
+	 *
+	 * @return string Extra class names for wrapper.
+	 */
+	private function collect_page_typography_rules( string $page_class ): string {
+		if ( null === $this->external_css_collector ) {
+			return '';
+		}
+
+		$page_class = trim( (string) $page_class );
+		if ( '' === $page_class ) {
+			return '';
+		}
+
+		$body_settings    = Style_Parser::get_elementor_kit_typography( 'body' );
+		$heading_settings = Style_Parser::get_elementor_kit_typography( 'headings' );
+
+		$body_rules    = Style_Parser::build_typography_declarations( $body_settings );
+		$heading_rules = Style_Parser::build_typography_declarations( $heading_settings );
+
+		$extra_classes = array();
+
+		if ( isset( $body_rules['font-family'] ) ) {
+			$font_slug = Style_Parser::match_font_family_slug( (string) $body_rules['font-family'] );
+			if ( null !== $font_slug && '' !== $font_slug ) {
+				$extra_classes[] = 'has-' . Style_Parser::clean_class( $font_slug ) . '-font-family';
+				unset( $body_rules['font-family'] );
+			}
+		}
+
+		if ( isset( $heading_rules['font-family'] ) ) {
+			$font_slug = Style_Parser::match_font_family_slug( (string) $heading_rules['font-family'] );
+			if ( null !== $font_slug && '' !== $font_slug ) {
+				$heading_rules['font-family'] = Style_Parser::build_font_family_preset_value( $font_slug );
+			}
+		}
+
+		$base_selector = '.' . $page_class;
+
+		if ( ! empty( $body_rules ) ) {
+			$this->external_css_collector->register_rule( $base_selector, $body_rules, 'kit-typography-body' );
+		}
+
+		if ( ! empty( $heading_rules ) ) {
+			$selectors = array(
+				$base_selector . ' h1',
+				$base_selector . ' h2',
+				$base_selector . ' h3',
+				$base_selector . ' h4',
+				$base_selector . ' h5',
+				$base_selector . ' h6',
+				$base_selector . ' .wp-block-heading',
+			);
+			$this->external_css_collector->register_rule( implode( ', ', $selectors ), $heading_rules, 'kit-typography-headings' );
+		}
+
+		return implode( ' ', $extra_classes );
+	}
+
+	/**
+	 * Gutenberg adds `has-background` class automatically when a Group has a background color/gradient.
+	 * If our converter does not add it, block validation will warn because the saved HTML differs.
+	 *
+	 * @param array $attributes Block attributes.
+	 *
+	 * @return array
+	 */
+	private function maybe_add_group_has_background_class( array $attributes ): array {
+		$has_background = false;
+
+		if (
+			isset( $attributes['style']['color']['background'] )
+			&& '' !== trim( (string) $attributes['style']['color']['background'] )
+		) {
+			$has_background = true;
+		}
+
+		if (
+			isset( $attributes['style']['color']['gradient'] )
+			&& '' !== trim( (string) $attributes['style']['color']['gradient'] )
+		) {
+			$has_background = true;
+		}
+
+		if ( ! $has_background ) {
+			return $attributes;
+		}
+
+		$existing = isset( $attributes['className'] ) ? (string) $attributes['className'] : '';
+		$classes  = preg_split( '/\s+/', $existing );
+		$classes  = is_array( $classes ) ? array_filter( $classes ) : array();
+
+		if ( ! in_array( 'has-background', $classes, true ) ) {
+			$classes[] = 'has-background';
+		}
+
+		$attributes['className'] = trim( implode( ' ', $classes ) );
+
+		return $attributes;
 	}
 
 	/**
@@ -503,6 +730,7 @@ class Admin_Settings {
 	 */
 	private function render_group( array $attributes, array $child_blocks, string $layout_type = 'constrained' ): string {
 		$attributes['layout'] = array( 'type' => $layout_type );
+		$attributes           = $this->maybe_add_group_has_background_class( $attributes );
 
 		if ( null !== $this->external_css_collector ) {
 			$attributes = $this->external_css_collector->externalize_attrs( 'group', $attributes );
@@ -534,6 +762,7 @@ class Admin_Settings {
 			'justifyContent' => $justify_content,
 			'flexWrap'       => 'wrap',
 		);
+		$attributes           = $this->maybe_add_group_has_background_class( $attributes );
 
 		$inner_html = implode( '', $child_blocks );
 
@@ -562,6 +791,7 @@ class Admin_Settings {
 			'orientation'    => 'vertical',
 			'justifyContent' => $justify_content,
 		);
+		$attributes           = $this->maybe_add_group_has_background_class( $attributes );
 
 		$inner_html = implode( '', $child_blocks );
 
@@ -585,6 +815,7 @@ class Admin_Settings {
 			'type'        => 'grid',
 			'columnCount' => max( 1, $columns ),
 		);
+		$attributes           = $this->maybe_add_group_has_background_class( $attributes );
 
 		$inner_html = '';
 		foreach ( $child_data as $child ) {
@@ -968,6 +1199,13 @@ class Admin_Settings {
 		return $this->render_placeholder_block( $element );
 	}
 
+	/**
+	 * Render a placeholder block for unsupported widgets.
+	 *
+	 * @param array<string, mixed> $element Elementor element data.
+	 *
+	 * @return string
+	 */
 	private function render_placeholder_block( array $element ): string {
 		// Detect widget name (best-effort).
 		$widget_name = '';

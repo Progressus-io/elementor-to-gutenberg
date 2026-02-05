@@ -2,6 +2,9 @@
 
 namespace Progressus\Gutenberg\Admin\Widget;
 
+use Progressus\Gutenberg\Admin\Admin_Settings;
+use Progressus\Gutenberg\Admin\Helper\Block_Builder;
+use Progressus\Gutenberg\Admin\Helper\WooCommerce_Style_Builder;
 use Progressus\Gutenberg\Admin\Widget_Handler_Interface;
 
 defined( 'ABSPATH' ) || exit;
@@ -9,24 +12,40 @@ defined( 'ABSPATH' ) || exit;
 class Woo_Cart_Widget_Handler implements Widget_Handler_Interface {
 	use Woo_Block_Serializer_Trait;
 
+	/**
+	 * Render the cart widget from patterns or a fallback shortcode.
+	 *
+	 * @param array<string, mixed> $element Elementor widget data.
+	 *
+	 * @return string
+	 */
 	public function handle( array $element ): string {
-		$pattern_names = array(
-			'woocommerce/cart',
-			'woocommerce/cart-page',
-			'woocommerce/cart-template',
+		$classes = $this->build_widget_wrapper_classes( $element, 'wc-cart' );
+
+		WooCommerce_Style_Builder::register_cart_styles(
+			$element,
+			$classes['widget_class'],
+			Admin_Settings::get_page_wrapper_class_name()
 		);
 
-		foreach ( $pattern_names as $pattern_name ) {
-			$content = $this->get_block_pattern_content( $pattern_name );
-			if ( '' !== $content ) {
-				return $content . "\n";
-			}
+		$shortcode = $this->serialize_block( 'core/shortcode', array(), '[woocommerce_cart]' );
+		if ( '' === $classes['className'] ) {
+			return $shortcode;
 		}
 
-		return $this->serialize_block( 'core/shortcode', array(), '[woocommerce_cart]' );
+		return Block_Builder::build(
+			'group',
+			array( 'className' => $classes['className'] ),
+			$shortcode
+		);
 	}
 
 
+	/**
+	 * Get the default WooCommerce cart block template markup.
+	 *
+	 * @return string
+	 */
 	private function get_cart_template(): string {
 		return
 			"<!-- wp:woocommerce/filled-cart-block -->\n" .

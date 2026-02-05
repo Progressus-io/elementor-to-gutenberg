@@ -59,7 +59,7 @@ class Block_Builder {
 	 * Decide whether to bypass hardening for a given block.
 	 *
 	 * @param string $block_slug Block slug (e.g. embed, group).
-	 * @param array  $options    Build options.
+	 * @param array $options Build options.
 	 *
 	 * @return bool True when hardening must be bypassed.
 	 */
@@ -125,10 +125,11 @@ class Block_Builder {
 			return self::build_strict_serialized( $block, $attrs, $inner_html );
 		}
 
-		       $attr_json    = empty( $attrs ) ? '' : ' ' . wp_json_encode(
-				               $attrs,
-				               JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
-				                                                );		$opening      = sprintf( '<!-- wp:%s%s -->', $block, $attr_json );
+		$attr_json    = empty( $attrs ) ? '' : ' ' . wp_json_encode(
+				$attrs,
+				JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
+			);
+		$opening      = sprintf( '<!-- wp:%s%s -->', $block, $attr_json );
 		$closing      = sprintf( '<!-- /wp:%s -->', $block );
 		$wrapper_html = $inner_html;
 
@@ -362,17 +363,17 @@ class Block_Builder {
 
 		$block_slug = self::get_block_slug( $block );
 
-		$bypass     = self::should_bypass_hardening( $block, $options );
+		$bypass = self::should_bypass_hardening( $block, $options );
 
 		if ( ! $bypass ) {
 			$attrs      = Block_Output_Builder::prepare_attributes( $block_slug, self::normalize_attributes( $attrs ) );
 			$inner_html = (string) call_user_func( $inner_builder, $attrs );
 			$inner_html = Block_Output_Builder::sanitize_inner_html( $block_slug, $inner_html );
 		} else {
-			$attrs                 = self::normalize_attributes( $attrs );
-			$inner_html            = (string) call_user_func( $inner_builder, $attrs );
-			$inner_html            = wp_kses_post( (string) $inner_html );
-			$options['strict']     = false;
+			$attrs             = self::normalize_attributes( $attrs );
+			$inner_html        = (string) call_user_func( $inner_builder, $attrs );
+			$inner_html        = wp_kses_post( (string) $inner_html );
+			$options['strict'] = false;
 		}
 
 		if ( 'button' === $block && '' === trim( $inner_html ) ) {
@@ -386,10 +387,11 @@ class Block_Builder {
 
 		$is_wrapper = in_array( $block_slug, self::$wrapper_blocks, true );
 
-		       $attr_json    = empty( $attrs ) ? '' : ' ' . wp_json_encode(
-				               $attrs,
-				               JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
-				                                                );		$opening      = sprintf( '<!-- wp:%s%s -->', $block, $attr_json );
+		$attr_json    = empty( $attrs ) ? '' : ' ' . wp_json_encode(
+				$attrs,
+				JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
+			);
+		$opening      = sprintf( '<!-- wp:%s%s -->', $block, $attr_json );
 		$closing      = sprintf( '<!-- /wp:%s -->', $block );
 		$wrapper_html = $inner_html;
 
@@ -699,6 +701,10 @@ class Block_Builder {
 				}
 				$rules[] = 'padding-' . $side . ':' . self::normalize_style_value( $val );
 			}
+		}
+
+		if ( ! empty( $style['border'] ) && is_array( $style['border'] ) ) {
+			$rules = array_merge( $rules, self::build_border_rules( $style['border'] ) );
 		}
 
 		if ( empty( $rules ) ) {

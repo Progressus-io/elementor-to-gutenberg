@@ -12,6 +12,13 @@ defined( 'ABSPATH' ) || exit;
 class Shortcode_Widget_Handler implements Widget_Handler_Interface {
 	use Woo_Block_Serializer_Trait;
 
+	/**
+	 * Render a shortcode widget into block markup.
+	 *
+	 * @param array<string, mixed> $element Elementor widget data.
+	 *
+	 * @return string
+	 */
 	public function handle( array $element ): string {
 		$settings  = is_array( $element['settings'] ?? null ) ? $element['settings'] : array();
 		$shortcode = isset( $settings['shortcode'] ) ? trim( (string) $settings['shortcode'] ) : '';
@@ -51,6 +58,14 @@ class Shortcode_Widget_Handler implements Widget_Handler_Interface {
 		return $this->serialize_block( 'core/shortcode', array(), $shortcode );
 	}
 
+	/**
+	 * Serialize a registered pattern or fallback shortcode.
+	 *
+	 * @param array<int, string> $pattern_names Pattern slugs to try.
+	 * @param string $fallback_shortcode Shortcode to use if no pattern found.
+	 *
+	 * @return string
+	 */
 	private function serialize_by_patterns_or_shortcode( array $pattern_names, string $fallback_shortcode ): string {
 		foreach ( $pattern_names as $pattern_name ) {
 			$content = $this->get_block_pattern_content( (string) $pattern_name );
@@ -61,6 +76,14 @@ class Shortcode_Widget_Handler implements Widget_Handler_Interface {
 
 		return $this->serialize_block( 'core/shortcode', array(), $fallback_shortcode );
 	}
+
+	/**
+	 * Serialize a checkout block when available or fallback shortcode.
+	 *
+	 * @param string $fallback_shortcode Shortcode to use if block not available.
+	 *
+	 * @return string
+	 */
 	private function serialize_checkout_block_or_shortcode( string $fallback_shortcode ): string {
 		if ( $this->is_block_registered( 'woocommerce/checkout' ) ) {
 			return $this->serialize_block( 'woocommerce/checkout', array(), $this->get_checkout_template() );
@@ -69,6 +92,13 @@ class Shortcode_Widget_Handler implements Widget_Handler_Interface {
 		return $this->serialize_block( 'core/shortcode', array(), $fallback_shortcode );
 	}
 
+	/**
+	 * Serialize a cart block when available or fallback shortcode.
+	 *
+	 * @param string $fallback_shortcode Shortcode to use if block not available.
+	 *
+	 * @return string
+	 */
 	private function serialize_cart_block_or_shortcode( string $fallback_shortcode ): string {
 		if ( $this->is_block_registered( 'woocommerce/cart' ) ) {
 			return $this->serialize_block( 'woocommerce/cart', array(), $this->get_cart_template() );
@@ -77,6 +107,11 @@ class Shortcode_Widget_Handler implements Widget_Handler_Interface {
 		return $this->serialize_block( 'core/shortcode', array(), $fallback_shortcode );
 	}
 
+	/**
+	 * Get the default WooCommerce checkout block template markup.
+	 *
+	 * @return string
+	 */
 	private function get_checkout_template(): string {
 		return
 			"<!-- wp:woocommerce/checkout-totals-block -->\n" .
@@ -108,6 +143,11 @@ class Shortcode_Widget_Handler implements Widget_Handler_Interface {
 			"<!-- /wp:woocommerce/checkout-fields-block -->\n";
 	}
 
+	/**
+	 * Get the default WooCommerce cart block template markup.
+	 *
+	 * @return string
+	 */
 	private function get_cart_template(): string {
 		return
 			"<!-- wp:woocommerce/filled-cart-block -->\n" .

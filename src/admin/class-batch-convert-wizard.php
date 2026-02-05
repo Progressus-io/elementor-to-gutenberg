@@ -1625,6 +1625,10 @@ class Batch_Convert_Wizard {
 		}
 
 		if ( 'update' === $options['mode'] ) {
+			$content = Admin_Settings::instance()->replace_page_wrapper_token( $content, $post_id );
+		}
+
+		if ( 'update' === $options['mode'] ) {
 			$save      = wp_update_post(
 				array(
 					'ID'           => $post_id,
@@ -1658,6 +1662,12 @@ class Batch_Convert_Wizard {
 			$result['message'] = $message;
 
 			return $result;
+		}
+
+		if ( 'update' === $options['mode'] ) {
+			Admin_Settings::instance()->finalize_converted_post( $target_id, $content, false );
+		} else {
+			Admin_Settings::instance()->finalize_converted_post( $target_id, $content, true );
 		}
 
 		if ( ! empty( $options['assign_template'] ) ) {
@@ -1871,6 +1881,8 @@ class Batch_Convert_Wizard {
 
 			return $result;
 		}
+
+		Admin_Settings::instance()->finalize_converted_post( $target_id, $content, true );
 
 		$this->store_template_part_meta( $target_id, $template_info );
 		$this->update_template_part_role( $target_id, (string) $template_info['role'], (string) $template_info['type'] );

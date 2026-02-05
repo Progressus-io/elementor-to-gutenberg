@@ -73,6 +73,15 @@ class Block_Output_Builder {
 	}
 
 	/**
+	 * Expose the active style collector instance.
+	 *
+	 * @return External_Style_Collector|null
+	 */
+	public static function get_collector(): ?External_Style_Collector {
+		return self::$collector;
+	}
+
+	/**
 	 * Strip unsafe fragments from inner HTML.
 	 *
 	 * @param string $block_slug Block slug.

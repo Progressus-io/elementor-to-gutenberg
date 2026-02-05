@@ -1,0 +1,82 @@
+@media (min-width:1025px){
+
+    :where([class*="etg-page-"] [class*="etg-widget-"])
+    :is(.woocommerce.columns-2,.columns-2,.has-2-columns)
+    :is(ul.products,ul.wc-block-grid__products,.wc-block-product-template){
+        grid-template-columns:repeat(2,1fr)
+    }
+
+    :where([class*="etg-page-"] [class*="etg-widget-"])
+    :is(.woocommerce.columns-3,.columns-3,.has-3-columns)
+    :is(ul.products,ul.wc-block-grid__products,.wc-block-product-template){
+        grid-template-columns:repeat(3,1fr)
+    }
+
+    :where([class*="etg-page-"] [class*="etg-widget-"])
+    :is(.woocommerce.columns-4,.columns-4,.has-4-columns)
+    :is(ul.products,ul.wc-block-grid__products,.wc-block-product-template){
+        grid-template-columns:repeat(4,1fr)
+    }
+
+    :where([class*="etg-page-"] [class*="etg-widget-"])
+    :is(.woocommerce.columns-5,.columns-5,.has-5-columns)
+    :is(ul.products,ul.wc-block-grid__products,.wc-block-product-template){
+        grid-template-columns:repeat(5,1fr)
+    }
+
+    :where([class*="etg-page-"] [class*="etg-widget-"])
+    :is(.woocommerce.columns-6,.columns-6,.has-6-columns)
+    :is(ul.products,ul.wc-block-grid__products,.wc-block-product-template){
+        grid-template-columns:repeat(6,1fr)
+    }
+
+    :where([class*="etg-page-"] [class*="etg-widget-"])
+    :is(.woocommerce.columns-7,.columns-7,.has-7-columns)
+    :is(ul.products,ul.wc-block-grid__products,.wc-block-product-template){
+        grid-template-columns:repeat(7,1fr)
+    }
+
+    :where([class*="etg-page-"] [class*="etg-widget-"])
+    :is(.woocommerce.columns-8,.columns-8,.has-8-columns)
+    :is(ul.products,ul.wc-block-grid__products,.wc-block-product-template){
+        grid-template-columns:repeat(8,1fr)
+    }
+
+    :where([class*="etg-page-"] [class*="etg-widget-"])
+    :is(.woocommerce.columns-9,.columns-9,.has-9-columns)
+    :is(ul.products,ul.wc-block-grid__products,.wc-block-product-template){
+        grid-template-columns:repeat(9,1fr)
+    }
+
+    :where([class*="etg-page-"] [class*="etg-widget-"])
+    :is(.woocommerce.columns-10,.columns-10,.has-10-columns)
+    :is(ul.products,ul.wc-block-grid__products,.wc-block-product-template){
+        grid-template-columns:repeat(10,1fr)
+    }
+
+    :where([class*="etg-page-"] [class*="etg-widget-"])
+    :is(.woocommerce.columns-11,.columns-11,.has-11-columns)
+    :is(ul.products,ul.wc-block-grid__products,.wc-block-product-template){
+        grid-template-columns:repeat(11,1fr)
+    }
+
+    :where([class*="etg-page-"] [class*="etg-widget-"])
+    :is(.woocommerce.columns-12,.columns-12,.has-12-columns)
+    :is(ul.products,ul.wc-block-grid__products,.wc-block-product-template){
+        grid-template-columns:repeat(12,1fr)
+    }
+}
+
+@media (max-width:1024px){
+    :where([class*="etg-page-"] [class*="etg-widget-"])
+    :is(ul.products,ul.wc-block-grid__products,.wc-block-product-template){
+        grid-template-columns:repeat(3,1fr)
+    }
+}
+
+@media (max-width:767px){
+    :where([class*="etg-page-"] [class*="etg-widget-"])
+    :is(ul.products,ul.wc-block-grid__products,.wc-block-product-template){
+        grid-template-columns:repeat(2,1fr)
+    }
+}
