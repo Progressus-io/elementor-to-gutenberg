@@ -58,6 +58,8 @@ class Widget_Handler_Factory {
 		'woocommerce-my-account'    => 'Progressus\Gutenberg\Admin\Widget\Woo_My_Account_Widget_Handler',
 		'wc-add-to-cart'            => 'Progressus\Gutenberg\Admin\Widget\Woo_Add_To_Cart_Widget_Handler',
 		'posts'                     => 'Progressus\Gutenberg\Admin\Widget\Posts_Widget_Handler',
+		'search-form'               => 'Progressus\Gutenberg\Admin\Widget\Search_Form_Widget_Handler',
+		'search'                    => 'Progressus\Gutenberg\Admin\Widget\Search_Form_Widget_Handler',
 	);
 
 	/**
