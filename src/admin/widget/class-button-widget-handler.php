@@ -40,6 +40,7 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 		$custom_css = isset( $settings['custom_css'] ) ? (string) $settings['custom_css'] : '';
 		$custom_raw = isset( $settings['_css_classes'] ) ? (string) $settings['_css_classes'] : '';
 		$color_map  = Style_Parser::parse_button_styles( $settings );
+		$computed_styles = Style_Parser::get_computed_styles( $element );
 
 		$spacing      = Style_Parser::parse_spacing( $settings );
 		$spacing_attr = isset( $spacing['attributes'] ) ? $spacing['attributes'] : array();
@@ -104,6 +105,12 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 			$button_attributes['style']['border'] = isset( $button_attributes['style']['border'] ) && is_array( $button_attributes['style']['border'] )
 				? array_replace_recursive( $button_attributes['style']['border'], $border_attr )
 				: $border_attr;
+		}
+
+		if ( $this->should_drop_background( $settings, $computed_styles, $button_attributes ) ) {
+			if ( isset( $button_attributes['style']['color']['background'] ) ) {
+				$button_attributes['style']['color']['background'] = 'transparent';
+			}
 		}
 
 		if ( empty( $button_attributes['style']['spacing']['padding'] ) ) {
@@ -242,6 +249,119 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 			empty( $buttons_layout ) ? array() : array( 'layout' => $buttons_layout ),
 			$button_block
 		);
+	}
+
+	private function should_drop_background( array $settings, array $computed_styles, array $attrs ): bool {
+		foreach ( array(
+			'button_background_background',
+			'_button_background_background',
+			'background_background',
+			'_background_background',
+		) as $key ) {
+			if ( ! isset( $settings[ $key ] ) ) {
+				continue;
+			}
+
+			$type = strtolower( trim( (string) $settings[ $key ] ) );
+			if ( 'none' === $type ) {
+				return true;
+			}
+		}
+
+		foreach ( array( 'background-color', 'background' ) as $prop ) {
+			if ( empty( $computed_styles[ $prop ] ) ) {
+				continue;
+			}
+
+			$val = trim( (string) $computed_styles[ $prop ] );
+			if ( '' === $val ) {
+				continue;
+			}
+
+			if ( 'none' === strtolower( $val ) || $this->is_transparent_css_value( $val ) ) {
+				return true;
+			}
+		}
+
+		$text = isset( $attrs['style']['color']['text'] ) ? strtolower( trim( (string) $attrs['style']['color']['text'] ) ) : '';
+		$bg   = isset( $attrs['style']['color']['background'] ) ? strtolower( trim( (string) $attrs['style']['color']['background'] ) ) : '';
+
+		if ( '' !== $text && '' !== $bg && $text === $bg ) {
+			return true;
+		}
+
+		$has_widget_bg = false;
+
+		foreach ( array(
+			'button_background_color',
+			'background_color',
+		) as $bg_key ) {
+			if ( isset( $settings[ $bg_key ] ) && '' !== trim( (string) $settings[ $bg_key ] ) ) {
+				$has_widget_bg = true;
+				break;
+			}
+		}
+
+		if ( ! $has_widget_bg && isset( $settings['__globals__'] ) && is_array( $settings['__globals__'] ) ) {
+			foreach ( array(
+				'button_background_color',
+				'background_color',
+			) as $bg_key ) {
+				if ( ! empty( $settings['__globals__'][ $bg_key ] ) ) {
+					$has_widget_bg = true;
+					break;
+				}
+			}
+		}
+
+		$computed_bg = '';
+		foreach ( array( 'background-color', 'background' ) as $prop ) {
+			if ( ! empty( $computed_styles[ $prop ] ) ) {
+				$computed_bg = trim( (string) $computed_styles[ $prop ] );
+				break;
+			}
+		}
+
+		$attrs_bg = isset( $attrs['style']['color']['background'] ) ? trim( (string) $attrs['style']['color']['background'] ) : '';
+
+		if ( '' !== $attrs_bg && ! $has_widget_bg && ( '' === $computed_bg || $this->is_transparent_css_value( $computed_bg ) ) ) {
+			return true;
+		}
+
+		return false;
+	}
+
+	private function is_transparent_css_value( string $value ): bool {
+		$v = strtolower( trim( $value ) );
+		if ( '' === $v ) {
+			return false;
+		}
+
+		if ( 'transparent' === $v ) {
+			return true;
+		}
+
+		if ( false !== strpos( $v, 'transparent' ) ) {
+			return true;
+		}
+
+		if ( preg_match( '/rgba\(\s*[\d.]+\s*,\s*[\d.]+\s*,\s*[\d.]+\s*,\s*(0|0\.0+)\s*\)/', $v ) ) {
+			return true;
+		}
+
+		if ( preg_match( '/hsla\(\s*[\d.]+\s*,\s*[\d.]+%\s*,\s*[\d.]+%\s*,\s*(0|0\.0+)\s*\)/', $v ) ) {
+			return true;
+		}
+
+		if ( preg_match( '/#([0-9a-f]{8})/i', $v, $m ) ) {
+			return '00' === strtolower( substr( $m[1], 6, 2 ) );
+		}
+
+		if ( preg_match( '/#([0-9a-f]{4})/i', $v, $m ) ) {
+			return '0' === strtolower( substr( $m[1], 3, 1 ) );
+		}
+
+		return false;
 	}
 
 }

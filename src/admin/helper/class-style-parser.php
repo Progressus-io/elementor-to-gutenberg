@@ -291,6 +291,21 @@ class Style_Parser {
 		$anchor_classes = array();
 		$anchor_styles  = array();
 
+		$bg_mode = self::sanitize_scalar(
+			$settings['button_background_background']
+			?? $settings['_button_background_background']
+			   ?? $settings['background_background']
+			      ?? $settings['_background_background']
+			         ?? ''
+		);
+
+		$bg_mode = strtolower( trim( $bg_mode ) );
+
+		$allow_kit_background_fallback = ( '' === $bg_mode || 'classic' === $bg_mode );
+		if ( 'none' === $bg_mode ) {
+			$allow_kit_background_fallback = false;
+		}
+
 		$text_color = self::extract_color_from_sources(
 			array(
 				$settings['button_text_color'] ?? '',
@@ -321,7 +336,7 @@ class Style_Parser {
 			);
 		}
 
-		if ( '' === $background_color['color'] && '' === $background_color['slug'] ) {
+		if ( $allow_kit_background_fallback && '' === $background_color['color'] && '' === $background_color['slug'] ) {
 			$kit              = isset( $kit ) ? $kit : self::get_elementor_kit_settings();
 			$background_color = self::extract_color_from_sources(
 				array(
@@ -343,23 +358,8 @@ class Style_Parser {
 			$background_value = self::resolve_theme_color_value( $background_color['slug'] );
 		}
 
-		if ( '' === $background_value ) {
-			foreach ( array( 'accent', 'primary', 'secondary' ) as $handle ) {
-				$resolved = self::resolve_elementor_color_reference( 'globals/colors?id=' . $handle );
-				if ( '' !== $resolved['color'] ) {
-					$background_value = $resolved['color'];
-					break;
-				}
-			}
-		}
-
 		if ( '' === $text_value && '' !== $background_value ) {
 			$text_value = '#ffffff';
-		}
-
-		if ( '' === $text_value && '' === $background_value ) {
-			$background_value = '#f57c00';
-			$text_value       = '#ffffff';
 		}
 
 		if ( '' !== $text_value ) {
@@ -373,6 +373,7 @@ class Style_Parser {
 			$anchor_classes[]                           = 'has-background';
 			$anchor_styles[]                            = 'background-color:' . $background_value;
 		}
+
 
 		return array(
 			'attributes'     => $attributes,
@@ -1173,6 +1174,16 @@ class Style_Parser {
 			return '';
 		}
 
+		if ( preg_match( '/^#([0-9a-f]{8})$/i', $color, $m ) ) {
+			return '#' . strtolower( $m[1] );
+		}
+		if ( preg_match( '/^#([0-9a-f]{4})$/i', $color, $m ) ) {
+			$h = strtolower( $m[1] );
+
+			// expand #RGBA -> #RRGGBBAA
+			return '#' . $h[0] . $h[0] . $h[1] . $h[1] . $h[2] . $h[2] . $h[3] . $h[3];
+		}
+
 		$hex = sanitize_hex_color( $color );
 		if ( false !== $hex && null !== $hex ) {
 			return strtolower( $hex );
@@ -1563,7 +1574,19 @@ class Style_Parser {
 		}
 
 		$width_sources = array( '_border_width', 'border_width', 'button_border_width', '_button_border_width' );
-		$color         = self::sanitize_color( $settings['border_color'] ?? $settings['_border_color'] ?? $settings['button_border_color'] ?? $settings['_button_border_color'] ?? '' );
+		$color_info    = self::extract_color_from_sources( array(
+			$settings['border_color'] ?? '',
+			$settings['_border_color'] ?? '',
+			$settings['button_border_color'] ?? '',
+			$settings['_button_border_color'] ?? '',
+			( isset( $settings['__globals__'] ) && is_array( $settings['__globals__'] ) ) ? ( $settings['__globals__']['border_color'] ?? '' ) : '',
+			( isset( $settings['__globals__'] ) && is_array( $settings['__globals__'] ) ) ? ( $settings['__globals__']['button_border_color'] ?? '' ) : '',
+		) );
+
+		$color = $color_info['color'];
+		if ( '' === $color && '' !== $color_info['slug'] ) {
+			$color = self::resolve_theme_color_value( $color_info['slug'] );
+		}
 
 		foreach ( $width_sources as $width_key ) {
 			$width_data = $settings[ $width_key ] ?? null;
