@@ -18,6 +18,27 @@ use Progressus\Gutenberg\Admin\Helper\Style_Parser;
 class Menu_Widget_Handler implements Widget_Handler_Interface {
 
 	/**
+	 * Build navigation block attributes with ignored hooked blocks.
+	 *
+	 * @param int $navigation_post_id Navigation post ID.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function build_navigation_block_attributes( int $navigation_post_id ): array {
+		$attributes = array(
+			'ref'      => $navigation_post_id,
+			'metadata' => array(
+				'ignoredHookedBlocks' => array(
+					'woocommerce/customer-account',
+					'woocommerce/mini-cart',
+				),
+			),
+		);
+
+		return $attributes;
+	}
+
+	/**
 	 * Convert Elementor nav-menu widget to Gutenberg navigation block.
 	 *
 	 * @param array $element Elementor widget data.
@@ -42,10 +63,7 @@ class Menu_Widget_Handler implements Widget_Handler_Interface {
 			$this->sync_navigation_items( $navigation_post_id, $menu_object );
 		}
 
-		// Build block attributes for the navigation reference only.
-		$attributes = array(
-			'ref' => $navigation_post_id,
-		);
+		$attributes = $this->build_navigation_block_attributes( $navigation_post_id );
 
 		// Encode attributes for the block.
 		$attributes_json = wp_json_encode( $attributes );
