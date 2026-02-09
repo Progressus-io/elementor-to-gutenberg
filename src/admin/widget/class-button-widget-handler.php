@@ -32,14 +32,14 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 	 * @param array $element The Elementor element data.
 	 */
 	public function handle( array $element ): string {
-		$settings   = isset( $element['settings'] ) && is_array( $element['settings'] ) ? $element['settings'] : array();
-		$text       = isset( $settings['text'] ) ? trim( (string) $settings['text'] ) : '';
-		$icon_data  = Icon_Parser::parse_selected_icon( $settings['selected_icon'] ?? null );
-		$link_data  = is_array( $settings['link'] ?? null ) ? $settings['link'] : array();
-		$url        = isset( $link_data['url'] ) ? esc_url( (string) $link_data['url'] ) : '';
-		$custom_css = isset( $settings['custom_css'] ) ? (string) $settings['custom_css'] : '';
-		$custom_raw = isset( $settings['_css_classes'] ) ? (string) $settings['_css_classes'] : '';
-		$color_map  = Style_Parser::parse_button_styles( $settings );
+		$settings        = isset( $element['settings'] ) && is_array( $element['settings'] ) ? $element['settings'] : array();
+		$text            = isset( $settings['text'] ) ? trim( (string) $settings['text'] ) : '';
+		$icon_data       = Icon_Parser::parse_selected_icon( $settings['selected_icon'] ?? null );
+		$link_data       = is_array( $settings['link'] ?? null ) ? $settings['link'] : array();
+		$url             = isset( $link_data['url'] ) ? esc_url( (string) $link_data['url'] ) : '';
+		$custom_css      = isset( $settings['custom_css'] ) ? (string) $settings['custom_css'] : '';
+		$custom_raw      = isset( $settings['_css_classes'] ) ? (string) $settings['_css_classes'] : '';
+		$color_map       = Style_Parser::parse_button_styles( $settings );
 		$computed_styles = Style_Parser::get_computed_styles( $element );
 
 		$spacing      = Style_Parser::parse_spacing( $settings );
@@ -62,6 +62,20 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 				'type'           => 'flex',
 				'justifyContent' => Alignment_Helper::map_justify_content( $alignment ),
 			);
+		}
+		$buttons_attrs = array();
+
+		if ( '' !== $alignment ) {
+			$justify_class = $alignment;
+
+			// normalize common values
+			if ( 'middle' === $justify_class ) {
+				$justify_class = 'center';
+			}
+
+			if ( 'center' === $justify_class || 'left' === $justify_class || 'right' === $justify_class || 'space-between' === $justify_class ) {
+				$buttons_attrs['className'] = 'is-layout-flex is-content-justification-' . $justify_class;
+			}
 		}
 
 		if ( '' === $text ) {
@@ -246,18 +260,20 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 
 		return Block_Builder::build(
 			'buttons',
-			empty( $buttons_layout ) ? array() : array( 'layout' => $buttons_layout ),
+			$buttons_attrs,
 			$button_block
 		);
 	}
 
 	private function should_drop_background( array $settings, array $computed_styles, array $attrs ): bool {
-		foreach ( array(
-			'button_background_background',
-			'_button_background_background',
-			'background_background',
-			'_background_background',
-		) as $key ) {
+		foreach (
+			array(
+				'button_background_background',
+				'_button_background_background',
+				'background_background',
+				'_background_background',
+			) as $key
+		) {
 			if ( ! isset( $settings[ $key ] ) ) {
 				continue;
 			}
@@ -292,10 +308,12 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 
 		$has_widget_bg = false;
 
-		foreach ( array(
-			'button_background_color',
-			'background_color',
-		) as $bg_key ) {
+		foreach (
+			array(
+				'button_background_color',
+				'background_color',
+			) as $bg_key
+		) {
 			if ( isset( $settings[ $bg_key ] ) && '' !== trim( (string) $settings[ $bg_key ] ) ) {
 				$has_widget_bg = true;
 				break;
@@ -303,10 +321,12 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 		}
 
 		if ( ! $has_widget_bg && isset( $settings['__globals__'] ) && is_array( $settings['__globals__'] ) ) {
-			foreach ( array(
-				'button_background_color',
-				'background_color',
-			) as $bg_key ) {
+			foreach (
+				array(
+					'button_background_color',
+					'background_color',
+				) as $bg_key
+			) {
 				if ( ! empty( $settings['__globals__'][ $bg_key ] ) ) {
 					$has_widget_bg = true;
 					break;
