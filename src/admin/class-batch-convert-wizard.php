@@ -1371,116 +1371,162 @@ class Batch_Convert_Wizard {
 		return true;
 	}
 
-	/**
-	 * Apply full-width layout settings to the active block theme global styles.
-	 */
-	/**
-	 * Apply full-width layout settings to the active block theme global styles.
-	 */
-	private function apply_full_width_global_styles(): void {
-		$theme      = wp_get_theme();
-		$stylesheet = $theme->get_stylesheet();
+    /**
+     * Apply full-width layout settings to the active block theme global styles.
+     *
+     * Uses core resolver logic so it works even if the wp_global_styles post
+     * has not been created yet.
+     */
+    private function apply_full_width_global_styles(): void {
+        $stylesheet = get_stylesheet();
+        if ( '' === $stylesheet ) {
+            error_log( 'ele2gb full width: missing stylesheet' );
 
-		if ( '' === $stylesheet ) {
-			return;
-		}
+            return;
+        }
 
-		$is_block_theme = method_exists( $theme, 'is_block_theme' ) ? (bool) $theme->is_block_theme() : (bool) wp_is_block_theme();
-		if ( ! $is_block_theme ) {
-			return;
-		}
+        if ( ! current_user_can( 'edit_theme_options' ) && ! current_user_can( 'manage_options' ) ) {
+            error_log( 'ele2gb full width: insufficient permissions' );
 
-		$post_id = $this->find_global_styles_post_id_for_theme( $stylesheet );
-		if ( ! $post_id ) {
-			return;
-		}
+            return;
+        }
 
-		$this->update_global_styles_layout_post( $post_id, '1440px', '1440px' );
-	}
+        if ( ! function_exists( 'wp_is_block_theme' ) || ! wp_is_block_theme() ) {
+            error_log( 'ele2gb full width: not a block theme ' . $stylesheet );
 
-	/**
-	 * Find the Global Styles post ID for the given theme stylesheet.
-	 */
-	private function find_global_styles_post_id_for_theme( string $stylesheet ): int {
-		$slug = 'wp-global-styles-' . $stylesheet;
+            return;
+        }
 
-		$by_slug = get_posts(
-			array(
-				'post_type'      => 'wp_global_styles',
-				'post_status'    => 'any',
-				'name'           => $slug,
-				'posts_per_page' => 1,
-				'orderby'        => 'ID',
-				'order'          => 'DESC',
-			)
-		);
+        $post_id = $this->find_global_styles_post_id_for_theme( $stylesheet );
+        if ( ! $post_id ) {
+            error_log( 'ele2gb full width: no global styles post id for ' . $stylesheet );
 
-		if ( ! empty( $by_slug ) && $by_slug[0] instanceof WP_Post ) {
-			return (int) $by_slug[0]->ID;
-		}
+            return;
+        }
 
-		$fallback = get_posts(
-			array(
-				'post_type'      => 'wp_global_styles',
-				'post_status'    => 'any',
-				'posts_per_page' => 1,
-				'orderby'        => 'ID',
-				'order'          => 'DESC',
-			)
-		);
+        $result = $this->update_global_styles_layout_post( $post_id, '1440px', '1440px' );
+        if ( is_wp_error( $result ) ) {
+            error_log( 'ele2gb full width: failed ' . $result->get_error_message() );
 
-		if ( ! empty( $fallback ) && $fallback[0] instanceof WP_Post ) {
-			return (int) $fallback[0]->ID;
-		}
+            return;
+        }
 
-		return 0;
-	}
+        error_log( 'ele2gb full width: updated global styles post ' . $post_id . ' for ' . $stylesheet );
+    }
 
-	/**
-	 * Update the layout sizes inside a wp_global_styles post_content JSON.
-	 */
-	private function update_global_styles_layout_post( int $post_id, string $content_size, string $wide_size ): void {
-		$post = get_post( $post_id );
-		if ( ! ( $post instanceof WP_Post ) ) {
-			return;
-		}
+    /**
+     * Find the Global Styles post ID for the given theme stylesheet.
+     *
+     * Prefer core resolver methods first, then fallback to queries.
+     */
+    private function find_global_styles_post_id_for_theme( string $stylesheet ): int {
+        $post_id = 0;
 
-		$data = json_decode( (string) $post->post_content, true );
-		if ( ! is_array( $data ) ) {
-			$data = array();
-		}
+        if ( class_exists( 'WP_Theme_JSON_Resolver' ) && method_exists( 'WP_Theme_JSON_Resolver', 'get_user_global_styles_post_id' ) ) {
+            $post_id = (int) \WP_Theme_JSON_Resolver::get_user_global_styles_post_id();
+        }
 
-		if ( ! isset( $data['settings'] ) || ! is_array( $data['settings'] ) ) {
-			$data['settings'] = array();
-		}
+        if ( ! $post_id && function_exists( 'wp_get_global_styles_post_id' ) ) {
+            $post_id = (int) \wp_get_global_styles_post_id( $stylesheet );
+        }
 
-		if ( ! isset( $data['settings']['layout'] ) || ! is_array( $data['settings']['layout'] ) ) {
-			$data['settings']['layout'] = array();
-		}
+        if ( $post_id ) {
+            return $post_id;
+        }
 
-		$changed = false;
+        $slug    = 'wp-global-styles-' . $stylesheet;
+        $by_slug = get_posts(
+                array(
+                        'post_type'      => 'wp_global_styles',
+                        'post_status'    => 'any',
+                        'name'           => $slug,
+                        'posts_per_page' => 1,
+                        'orderby'        => 'ID',
+                        'order'          => 'DESC',
+                )
+        );
 
-		if ( ! isset( $data['settings']['layout']['contentSize'] ) || $data['settings']['layout']['contentSize'] !== $content_size ) {
-			$data['settings']['layout']['contentSize'] = $content_size;
-			$changed                                   = true;
-		}
+        if ( ! empty( $by_slug ) && $by_slug[0] instanceof WP_Post ) {
+            return (int) $by_slug[0]->ID;
+        }
 
-		if ( ! isset( $data['settings']['layout']['wideSize'] ) || $data['settings']['layout']['wideSize'] !== $wide_size ) {
-			$data['settings']['layout']['wideSize'] = $wide_size;
-			$changed                                = true;
-		}
+        $query = new WP_Query(
+                array(
+                        'post_type'      => 'wp_global_styles',
+                        'post_status'    => 'any',
+                        'posts_per_page' => 1,
+                        'orderby'        => 'ID',
+                        'order'          => 'DESC',
+                        'tax_query'      => array(
+                                array(
+                                        'taxonomy' => 'wp_theme',
+                                        'field'    => 'slug',
+                                        'terms'    => array( $stylesheet ),
+                                ),
+                        ),
+                )
+        );
 
-		if ( ! $changed ) {
-			return;
-		}
+        $found = $query->have_posts() ? (int) $query->posts[0]->ID : 0;
+        wp_reset_postdata();
 
-		wp_update_post(
-			array(
-				'ID'           => (int) $post_id,
-				'post_content' => wp_json_encode( $data ),
-			)
-		);
-	}
+        return $found;
+    }
+
+    /**
+     * Update the layout sizes inside a wp_global_styles post_content JSON.
+     */
+    private function update_global_styles_layout_post( int $post_id, string $content_size, string $wide_size ) {
+        $post = get_post( $post_id );
+        if ( ! ( $post instanceof WP_Post ) ) {
+            return new WP_Error( 'ele2gb-global-styles-missing', 'Global styles post not found' );
+        }
+
+        $data = json_decode( (string) $post->post_content, true );
+        if ( ! is_array( $data ) ) {
+            $data = array();
+        }
+
+        if ( ! isset( $data['settings'] ) || ! is_array( $data['settings'] ) ) {
+            $data['settings'] = array();
+        }
+
+        if ( ! isset( $data['settings']['layout'] ) || ! is_array( $data['settings']['layout'] ) ) {
+            $data['settings']['layout'] = array();
+        }
+
+        $changed = false;
+
+        if ( ! isset( $data['settings']['layout']['contentSize'] ) || $data['settings']['layout']['contentSize'] !== $content_size ) {
+            $data['settings']['layout']['contentSize'] = $content_size;
+            $changed                                   = true;
+        }
+
+        if ( ! isset( $data['settings']['layout']['wideSize'] ) || $data['settings']['layout']['wideSize'] !== $wide_size ) {
+            $data['settings']['layout']['wideSize'] = $wide_size;
+            $changed                                = true;
+        }
+
+        if ( ! $changed ) {
+            return true;
+        }
+        $encoded = wp_json_encode( $data );
+        if ( ! is_string( $encoded ) || '' === $encoded ) {
+            return new WP_Error( 'ele2gb-global-styles-encode', 'Failed to encode global styles JSON' );
+        }
+
+        $saved = wp_update_post(
+                array(
+                        'ID'           => (int) $post_id,
+                        'post_content' => $encoded,
+                ), true
+        );
+        if ( is_wp_error( $saved ) || ! $saved ) {
+            return is_wp_error( $saved ) ? $saved : new WP_Error( 'ele2gb-global-styles-update', 'Failed to update global styles post' );
+        }
+
+        return true;
+    }
 
 	/**
 	 * Install a theme if it is not already available.
