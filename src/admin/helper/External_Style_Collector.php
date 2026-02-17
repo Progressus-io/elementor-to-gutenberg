@@ -14,6 +14,13 @@ class External_Style_Collector {
 	private array $rules = array();
 
 	/**
+	 * Responsive media rules grouped by media query.
+	 *
+	 * @var array<string, array<string, array<string, string>>>
+	 */
+	private array $media_rules = array();
+
+	/**
 	 * Inventory for externalized declarations and drops.
 	 *
 	 * @var array<string, array<string, array>>
@@ -168,6 +175,46 @@ class External_Style_Collector {
 	}
 
 	/**
+	 * Register a responsive media rule.
+	 *
+	 * @param string $media_query Media query condition without @media wrapper.
+	 * @param string $selector CSS selector.
+	 * @param array $declarations CSS declarations.
+	 * @param string $reason Optional reason label.
+	 *
+	 * @return void
+	 */
+	public function register_media_rule( string $media_query, string $selector, array $declarations, string $reason = '' ): void {
+		$media_query  = trim( $media_query );
+		$selector     = trim( $selector );
+		$declarations = Style_Normalizer::prune_empty( $declarations );
+
+		if ( '' === $media_query || '' === $selector || empty( $declarations ) ) {
+			return;
+		}
+
+		$declarations = $this->append_important_declarations( $declarations );
+		if ( ! isset( $this->media_rules[ $media_query ] ) ) {
+			$this->media_rules[ $media_query ] = array();
+		}
+
+		if ( ! isset( $this->media_rules[ $media_query ][ $selector ] ) ) {
+			$this->media_rules[ $media_query ][ $selector ] = array();
+		}
+
+		$declarations = $this->sanitize_declarations( $declarations );
+		foreach ( $declarations as $prop => $val ) {
+			$this->media_rules[ $media_query ][ $selector ][ $prop ] = (string) $val;
+		}
+
+		$this->inventory['externalized'][] = array(
+			'block'  => 'page',
+			'rules'  => $declarations,
+			'reason' => '' === $reason ? 'custom-media-rule' : $reason,
+		);
+	}
+
+	/**
 	 * Record dropped attributes.
 	 *
 	 * @param string $block_slug Block slug.
@@ -253,6 +300,31 @@ class External_Style_Collector {
 					continue;
 				}
 				$out .= "\t" . $prop . ': ' . $val . ";\n";
+			}
+			$out .= "}\n";
+		}
+
+		foreach ( $this->media_rules as $media_query => $selectors ) {
+			if ( empty( $selectors ) ) {
+				continue;
+			}
+
+			$out .= '@media ' . $media_query . " {\n";
+			foreach ( $selectors as $selector => $declarations ) {
+				if ( empty( $declarations ) ) {
+					continue;
+				}
+
+				$out .= "\t" . $selector . " {\n";
+				foreach ( $declarations as $prop => $val ) {
+					$prop = trim( (string) $prop );
+					$val  = trim( (string) $val );
+					if ( '' === $prop || '' === $val ) {
+						continue;
+					}
+					$out .= "\t\t" . $prop . ': ' . $val . ";\n";
+				}
+				$out .= "\t}\n";
 			}
 			$out .= "}\n";
 		}

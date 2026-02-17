@@ -521,7 +521,7 @@ class Admin_Settings {
 			$this->external_css_collector->register_rule( $base_selector, $body_rules, 'kit-typography-body' );
 		}
 
-		if ( ! empty( $heading_rules ) ) {
+		if ( ! empty( $heading_rules ) && ! empty( $heading_settings['typography_typography'] ) ) {
 			$selectors = array(
 				$base_selector . ' h1',
 				$base_selector . ' h2',

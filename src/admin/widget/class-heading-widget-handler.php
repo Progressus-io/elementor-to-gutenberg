@@ -9,11 +9,11 @@ namespace Progressus\Gutenberg\Admin\Widget;
 
 use Progressus\Gutenberg\Admin\Helper\Alignment_Helper;
 use Progressus\Gutenberg\Admin\Helper\Block_Builder;
+use Progressus\Gutenberg\Admin\Helper\Block_Output_Builder;
 use Progressus\Gutenberg\Admin\Helper\Html_Attribute_Builder;
 use Progressus\Gutenberg\Admin\Helper\Style_Parser;
 use Progressus\Gutenberg\Admin\Widget_Handler_Interface;
 
-use function esc_attr;
 use function esc_html;
 
 defined( 'ABSPATH' ) || exit;
@@ -38,64 +38,30 @@ class Heading_Widget_Handler implements Widget_Handler_Interface {
 			return '';
 		}
 
-		// Determine heading level.
 		$header_size = isset( $settings['header_size'] ) ? (string) $settings['header_size'] : 'h2';
 		if ( ! preg_match( '/^h[1-6]$/', $header_size ) ) {
 			$header_size = 'h2';
 		}
 		$level = (int) substr( $header_size, 1 );
-		// Alignment.
+
 		$align         = Alignment_Helper::detect_alignment( $settings, array( 'align' ) );
 		$align_payload = Alignment_Helper::build_text_alignment_payload( $align );
 
-		// Spacing (margin / padding).
-		$spacing      = Style_Parser::parse_spacing( $settings );
-		$spacing_attr = isset( $spacing['attributes'] ) ? $spacing['attributes'] : array();
-
-		// Typography (font family / size / weight / transform / line-height / letter-spacing / word-spacing).
-		$typography      = Style_Parser::parse_typography( $settings );
-		$typography_attr = isset( $typography['attributes'] ) ? $typography['attributes'] : array();
-
-		// Build block attributes for Gutenberg.
 		$attrs = array(
 			'level'     => $level,
 			'className' => 'wp-block-heading',
 		);
 
-		$heading_classes = array( 'wp-block-heading' );
+		$element_class = Style_Parser::get_element_unique_class( $element );
+		if ( '' !== $element_class ) {
+			$attrs['className'] .= ' ' . $element_class;
+		}
+
 		if ( ! empty( $align_payload['attributes'] ) ) {
 			$attrs = array_merge( $attrs, $align_payload['attributes'] );
 		}
 
-		if ( ! empty( $align_payload['classes'] ) ) {
-			$heading_classes = array_merge( $heading_classes, $align_payload['classes'] );
-		}
-
-		if ( ! empty( $spacing_attr ) ) {
-			$attrs['style']['spacing'] = $spacing_attr;
-		}
-
-		if ( ! empty( $typography_attr ) ) {
-			$attrs['style']['typography'] = $typography_attr;
-		}
-
-		// Inline style for the HTML tag itself (used on the frontend immediately).
-		$inline_style = Block_Builder::build_style_attribute( $attrs );
-
-		$inner_attributes = array(
-			'class' => implode( ' ', array_unique( $heading_classes ) ),
-		);
-
-		if ( '' !== $inline_style ) {
-			$inner_attributes['style'] = $inline_style;
-		}
-
-		$inner_html = sprintf(
-			'<%1$s %3$s>%2$s</%1$s>',
-			$header_size,
-			esc_html( $title ),
-			Html_Attribute_Builder::build( $inner_attributes )
-		);
+		$this->register_heading_external_styles( $element_class, $settings );
 
 		return Block_Builder::build_prepared(
 			'heading',
@@ -127,11 +93,6 @@ class Heading_Widget_Handler implements Widget_Handler_Interface {
 					$inner_attrs['id'] = (string) $prepared_attrs['anchor'];
 				}
 
-				$inline_style = Block_Builder::build_style_attribute( $prepared_attrs );
-				if ( '' !== $inline_style ) {
-					$inner_attrs['style'] = $inline_style;
-				}
-
 				return sprintf(
 					'<%1$s %3$s>%2$s</%1$s>',
 					$header_size,
@@ -140,6 +101,50 @@ class Heading_Widget_Handler implements Widget_Handler_Interface {
 				);
 			}
 		);
+	}
 
+	/**
+	 * Register per-element heading typography and color rules.
+	 *
+	 * @param string $element_class Element CSS class.
+	 * @param array $settings Widget settings.
+	 *
+	 * @return void
+	 */
+	private function register_heading_external_styles( string $element_class, array $settings ): void {
+		if ( '' === $element_class ) {
+			return;
+		}
+
+		$collector = Block_Output_Builder::get_collector();
+		if ( null === $collector ) {
+			return;
+		}
+
+		$selector   = '.' . $element_class . '.wp-block-heading';
+		$typography = Style_Parser::extract_typography_css_rules( $settings );
+		$base_rules = isset( $typography['base'] ) && is_array( $typography['base'] ) ? $typography['base'] : array();
+
+		$color_data = Style_Parser::extract_text_color_css_value( $settings, 'title_color' );
+		if ( '' !== $color_data['color'] ) {
+			$base_rules['color'] = $color_data['color'];
+		} elseif ( false === $color_data['safe'] ) {
+			$collector->record_conversion( 'heading', 'unsafe-color-omitted', array( 'value' => (string) ( $settings['title_color'] ?? '' ) ) );
+		}
+
+		if ( ! empty( $base_rules ) ) {
+			$collector->register_rule( $selector, $base_rules, 'widget-heading-base' );
+		}
+
+		$tablet = isset( $typography['tablet'] ) && is_array( $typography['tablet'] ) ? $typography['tablet'] : array();
+		$mobile = isset( $typography['mobile'] ) && is_array( $typography['mobile'] ) ? $typography['mobile'] : array();
+
+		if ( ! empty( $tablet ) ) {
+			$collector->register_media_rule( '(max-width: ' . (string) Style_Parser::BREAKPOINT_TABLET_MAX . 'px)', $selector, $tablet, 'widget-heading-tablet' );
+		}
+
+		if ( ! empty( $mobile ) ) {
+			$collector->register_media_rule( '(max-width: ' . (string) Style_Parser::BREAKPOINT_MOBILE_MAX . 'px)', $selector, $mobile, 'widget-heading-mobile' );
+		}
 	}
 }

@@ -19,6 +19,9 @@ defined( 'ABSPATH' ) || exit;
  */
 class Style_Parser {
 
+	public const BREAKPOINT_TABLET_MAX = 1024;
+	public const BREAKPOINT_MOBILE_MAX = 767;
+
 	/**
 	 * Cached theme palette colors.
 	 *
@@ -62,6 +65,8 @@ class Style_Parser {
 	 * @return array Array containing 'attributes' and 'style' keys.
 	 */
 	public static function parse_typography( array $settings ): array {
+		Elementor_Fonts_Service::register_settings_fonts( $settings );
+
 		$settings    = self::apply_global_typography( $settings );
 		$attributes  = array();
 		$style_parts = array();
@@ -116,6 +121,150 @@ class Style_Parser {
 			'attributes' => $attributes,
 			'style'      => implode( '', $style_parts ),
 		);
+	}
+
+	/**
+	 * Build deterministic per-element class from Elementor element id.
+	 *
+	 * @param array $element Elementor element data.
+	 *
+	 * @return string
+	 */
+	public static function get_element_unique_class( array $element ): string {
+		$id = '';
+
+		if ( isset( $element['id'] ) ) {
+			$id = self::clean_class( (string) $element['id'] );
+		}
+
+		if ( '' === $id && isset( $element['settings'] ) && is_array( $element['settings'] ) && isset( $element['settings']['_element_id'] ) ) {
+			$id = self::clean_class( (string) $element['settings']['_element_id'] );
+		}
+
+		if ( '' === $id ) {
+			return '';
+		}
+
+		return 'etg-el-' . $id;
+	}
+
+	/**
+	 * Extract typography declarations for base/tablet/mobile from Elementor settings.
+	 *
+	 * @param array $settings Elementor settings.
+	 *
+	 * @return array{base:array,tablet:array,mobile:array,font_family:string}
+	 */
+	public static function extract_typography_css_rules( array $settings ): array {
+		$settings = self::apply_global_typography( $settings );
+
+		$base   = array();
+		$tablet = array();
+		$mobile = array();
+
+		$font_family = self::sanitize_font_family_value( $settings['typography_font_family'] ?? '' );
+		if ( '' !== $font_family ) {
+			$base['font-family'] = $font_family;
+		}
+
+		$font_weight = self::sanitize_font_weight_value( $settings['typography_font_weight'] ?? '' );
+		if ( '' !== $font_weight ) {
+			$base['font-weight'] = $font_weight;
+		}
+
+		$text_transform = self::sanitize_text_transform_value( $settings['typography_text_transform'] ?? '' );
+		if ( '' !== $text_transform ) {
+			$base['text-transform'] = $text_transform;
+		}
+
+		$letter_spacing = self::normalize_dimension( $settings['typography_letter_spacing'] ?? null, 'px' );
+		if ( null !== $letter_spacing ) {
+			$letter_spacing = self::sanitize_letter_spacing_value( $letter_spacing );
+			if ( '' !== $letter_spacing && ! self::is_zero_dimension( $letter_spacing ) ) {
+				$base['letter-spacing'] = $letter_spacing;
+			}
+		}
+
+		$font_size_desktop = self::normalize_dimension( $settings['typography_font_size'] ?? null, 'px' );
+		$font_size_tablet  = self::normalize_dimension( $settings['typography_font_size_tablet'] ?? null, 'px' );
+		$font_size_mobile  = self::normalize_dimension( $settings['typography_font_size_mobile'] ?? null, 'px' );
+
+		$line_height_desktop = self::normalize_dimension( $settings['typography_line_height'] ?? null, '' );
+		$line_height_tablet  = self::normalize_dimension( $settings['typography_line_height_tablet'] ?? null, '' );
+		$line_height_mobile  = self::normalize_dimension( $settings['typography_line_height_mobile'] ?? null, '' );
+
+		self::append_dimension_rule( $base, 'font-size', $font_size_desktop, 'sanitize_css_dimension_value' );
+		self::append_dimension_rule( $tablet, 'font-size', $font_size_tablet, 'sanitize_css_dimension_value' );
+		self::append_dimension_rule( $mobile, 'font-size', $font_size_mobile, 'sanitize_css_dimension_value' );
+
+		self::append_dimension_rule( $base, 'line-height', $line_height_desktop, 'sanitize_line_height_value' );
+		self::append_dimension_rule( $tablet, 'line-height', $line_height_tablet, 'sanitize_line_height_value' );
+		self::append_dimension_rule( $mobile, 'line-height', $line_height_mobile, 'sanitize_line_height_value' );
+
+		return array(
+			'base'        => $base,
+			'tablet'      => $tablet,
+			'mobile'      => $mobile,
+			'font_family' => $font_family,
+		);
+	}
+
+	/**
+	 * Extract safe text color for specific widget setting key.
+	 *
+	 * @param array $settings Elementor settings.
+	 * @param string $key Color setting key.
+	 *
+	 * @return array{color:string,safe:bool}
+	 */
+	public static function extract_text_color_css_value( array $settings, string $key ): array {
+		$raw = isset( $settings[ $key ] ) ? self::sanitize_scalar( $settings[ $key ] ) : '';
+		if ( '' === $raw ) {
+			return array( 'color' => '', 'safe' => true );
+		}
+
+		if ( preg_match( '/^var\(\s*--[a-z0-9\-_]+\s*\)$/i', $raw ) ) {
+			return array( 'color' => $raw, 'safe' => true );
+		}
+
+		$resolved = self::resolve_elementor_color_reference( $raw );
+		if ( '' !== $resolved['color'] ) {
+			return array( 'color' => $resolved['color'], 'safe' => true );
+		}
+
+		$normalized = self::normalize_color_value( $raw );
+		if ( '' !== $normalized ) {
+			return array( 'color' => $normalized, 'safe' => true );
+		}
+
+		return array( 'color' => '', 'safe' => false );
+	}
+
+	private static function append_dimension_rule( array &$rules, string $property, ?string $value, string $sanitizer ): void {
+		if ( null === $value ) {
+			return;
+		}
+
+		$clean = '';
+		if ( 'sanitize_line_height_value' === $sanitizer ) {
+			$clean = self::sanitize_line_height_value( $value );
+		} else {
+			$clean = self::sanitize_css_dimension_value( $value );
+		}
+
+		if ( '' !== $clean ) {
+			$rules[ $property ] = $clean;
+		}
+	}
+
+	private static function is_zero_dimension( string $value ): bool {
+		$normalized = trim( strtolower( $value ) );
+		$normalized = preg_replace( '/\s+/', '', $normalized );
+		if ( null === $normalized ) {
+			return false;
+		}
+
+		return in_array( $normalized, array( '0', '0px', '0em', '0rem', '0%' ), true );
 	}
 
 	/**

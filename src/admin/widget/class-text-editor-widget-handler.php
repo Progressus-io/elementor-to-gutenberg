@@ -9,6 +9,7 @@ namespace Progressus\Gutenberg\Admin\Widget;
 
 use Progressus\Gutenberg\Admin\Helper\Alignment_Helper;
 use Progressus\Gutenberg\Admin\Helper\Block_Builder;
+use Progressus\Gutenberg\Admin\Helper\Block_Output_Builder;
 use Progressus\Gutenberg\Admin\Helper\Style_Parser;
 use Progressus\Gutenberg\Admin\Widget_Handler_Interface;
 
@@ -57,7 +58,15 @@ class Text_Editor_Widget_Handler implements Widget_Handler_Interface {
 			$base_attributes['className'] = implode( ' ', array_unique( $custom_classes ) );
 		}
 
+		$element_class = Style_Parser::get_element_unique_class( $element );
+		if ( '' !== $element_class ) {
+			$base_attributes['className'] = trim( (string) ( $base_attributes['className'] ?? '' ) . ' ' . $element_class );
+		}
+
 		$markup_classes     = $custom_classes;
+		if ( '' !== $element_class ) {
+			$markup_classes[] = $element_class;
+		}
 		$inline_styles      = array();
 		$typography         = array();
 		$spacing            = array();
@@ -294,6 +303,19 @@ class Text_Editor_Widget_Handler implements Widget_Handler_Interface {
 			$inline_styles['text-align'] = $align_payload['attributes']['textAlign'];
 		}
 
+		$this->register_text_editor_external_styles( $element_class, $settings );
+
+		if ( '' !== $element_class ) {
+			unset( $base_attributes['style']['color'] );
+			unset( $base_attributes['style']['typography'] );
+			unset( $base_attributes['textColor'] );
+			unset( $base_attributes['fontSize'] );
+
+			foreach ( array( 'color', 'font-family', 'font-size', 'font-weight', 'font-style', 'text-decoration', 'line-height', 'letter-spacing', 'word-spacing', 'text-transform' ) as $style_key ) {
+				unset( $inline_styles[ $style_key ] );
+			}
+		}
+
 		$segments = $this->extract_structured_segments( $content );
 
 		if ( '' !== $custom_css ) {
@@ -399,6 +421,63 @@ class Text_Editor_Widget_Handler implements Widget_Handler_Interface {
 		}
 
 		return implode( '', $output );
+	}
+
+
+	/**
+	 * Register per-element typography and text color styles for text-editor output.
+	 *
+	 * @param string $element_class Element class.
+	 * @param array $settings Elementor widget settings.
+	 *
+	 * @return void
+	 */
+	private function register_text_editor_external_styles( string $element_class, array $settings ): void {
+		if ( '' === $element_class ) {
+			return;
+		}
+
+		$collector = Block_Output_Builder::get_collector();
+		if ( null === $collector ) {
+			return;
+		}
+
+		$selector_base = '.' . $element_class;
+		$selectors     = array(
+			$selector_base . '.wp-block-paragraph',
+			$selector_base . '.wp-block-list',
+		);
+
+		$typography = Style_Parser::extract_typography_css_rules( $settings );
+		$base_rules = isset( $typography['base'] ) && is_array( $typography['base'] ) ? $typography['base'] : array();
+
+		$color_data = Style_Parser::extract_text_color_css_value( $settings, 'text_color' );
+		if ( '' !== $color_data['color'] ) {
+			$base_rules['color'] = $color_data['color'];
+		} elseif ( false === $color_data['safe'] ) {
+			$collector->record_conversion( 'paragraph', 'unsafe-color-omitted', array( 'value' => (string) ( $settings['text_color'] ?? '' ) ) );
+		}
+
+		if ( ! empty( $base_rules ) ) {
+			foreach ( $selectors as $selector ) {
+				$collector->register_rule( $selector, $base_rules, 'widget-text-editor-base' );
+			}
+		}
+
+		$tablet = isset( $typography['tablet'] ) && is_array( $typography['tablet'] ) ? $typography['tablet'] : array();
+		$mobile = isset( $typography['mobile'] ) && is_array( $typography['mobile'] ) ? $typography['mobile'] : array();
+
+		if ( ! empty( $tablet ) ) {
+			foreach ( $selectors as $selector ) {
+				$collector->register_media_rule( '(max-width: ' . (string) Style_Parser::BREAKPOINT_TABLET_MAX . 'px)', $selector, $tablet, 'widget-text-editor-tablet' );
+			}
+		}
+
+		if ( ! empty( $mobile ) ) {
+			foreach ( $selectors as $selector ) {
+				$collector->register_media_rule( '(max-width: ' . (string) Style_Parser::BREAKPOINT_MOBILE_MAX . 'px)', $selector, $mobile, 'widget-text-editor-mobile' );
+			}
+		}
 	}
 
 	/**
