@@ -62,6 +62,12 @@ class Widget_Handler_Factory {
 		'posts'                     => 'Progressus\Gutenberg\Admin\Widget\Posts_Widget_Handler',
 		'search-form'               => 'Progressus\Gutenberg\Admin\Widget\Search_Form_Widget_Handler',
 		'search'                    => 'Progressus\Gutenberg\Admin\Widget\Search_Form_Widget_Handler',
+		'soundcloud'                => 'Progressus\Gutenberg\Admin\Widget\Generic_Elementor_Widget_Handler',
+		'testimonial'               => 'Progressus\Gutenberg\Admin\Widget\Generic_Elementor_Widget_Handler',
+		'alert'                     => 'Progressus\Gutenberg\Admin\Widget\Generic_Elementor_Widget_Handler',
+		'rating'                    => 'Progressus\Gutenberg\Admin\Widget\Generic_Elementor_Widget_Handler',
+		'image-carousel'            => 'Progressus\Gutenberg\Admin\Widget\Generic_Elementor_Widget_Handler',
+		'image_carousel'            => 'Progressus\Gutenberg\Admin\Widget\Generic_Elementor_Widget_Handler',
 	);
 
 	/**
