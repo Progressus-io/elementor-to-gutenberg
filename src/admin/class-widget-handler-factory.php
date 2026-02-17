@@ -7,6 +7,8 @@
 
 namespace Progressus\Gutenberg\Admin;
 
+use Progressus\Gutenberg\Admin\Widget\WP_Widget_Handler;
+
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -70,6 +72,9 @@ class Widget_Handler_Factory {
 	 * @return Widget_Handler_Interface|null The widget handler or null if not found.
 	 */
 	public static function get_handler( string $widget_type ): ?Widget_Handler_Interface {
+		if ( 0 === strpos( $widget_type, 'wp-widget-' ) ) {
+			return new WP_Widget_Handler();
+		}
 		$handler_class = self::$handlers[ $widget_type ] ?? null;
 		if ( null === $handler_class ) {
 			return null;
