@@ -11,29 +11,108 @@ use Progressus\Gutenberg\Admin\Helper\Block_Builder;
 use Progressus\Gutenberg\Admin\Helper\Style_Parser;
 use Progressus\Gutenberg\Admin\Widget_Handler_Interface;
 
-use function esc_attr;
-use function esc_html;
-
 defined( 'ABSPATH' ) || exit;
 
 /**
  * Widget handler for Elementor testimonial widget.
  */
 class Testimonial_Widget_Handler implements Widget_Handler_Interface {
+
 	/**
 	 * Handle conversion of Elementor testimonial widget.
 	 *
 	 * @param array $element Elementor widget data.
+	 *
+	 * @return string Gutenberg block markup.
 	 */
 	public function handle( array $element ): string {
 		$settings   = is_array( $element['settings'] ?? null ) ? $element['settings'] : array();
 		$custom_css = isset( $settings['custom_css'] ) ? (string) $settings['custom_css'] : '';
 
-		$content_block = $this->render_content_block( $settings );
-		$author_block  = $this->render_author_block( $settings );
+		$content   = isset( $settings['testimonial_content'] ) ? (string) $settings['testimonial_content'] : '';
+		$name      = isset( $settings['testimonial_name'] ) ? trim( (string) $settings['testimonial_name'] ) : '';
+		$job       = isset( $settings['testimonial_job'] ) ? trim( (string) $settings['testimonial_job'] ) : '';
+		$alignment = isset( $settings['testimonial_alignment'] ) ? (string) $settings['testimonial_alignment'] : 'left';
+		$alignment = in_array( $alignment, array( 'left', 'center', 'right' ), true ) ? $alignment : 'left';
 
-		$child_blocks = array_filter( array( $content_block, $author_block ) );
-		if ( empty( $child_blocks ) ) {
+		// Image data.
+		$image_data = isset( $settings['testimonial_image'] ) && is_array( $settings['testimonial_image'] ) ? $settings['testimonial_image'] : array();
+		$image_url  = isset( $image_data['url'] ) ? (string) $image_data['url'] : '';
+
+		// Image dimensions.
+		$img_size = $this->resolve_slider_size( $settings['image_size'] ?? null, 63 );
+
+		// Image border-radius (e.g. 50px on all sides = circle).
+		$border_radius_css = $this->resolve_trbl_css( $settings['image_border_radius'] ?? null );
+
+		// Image border-width (border-color inherits from theme).
+		$border_width_css = $this->resolve_trbl_css( $settings['image_border_width'] ?? null );
+
+		// Custom id / classes.
+		$custom_id      = isset( $settings['_element_id'] ) ? trim( (string) $settings['_element_id'] ) : '';
+		$custom_classes = $this->sanitize_custom_classes( isset( $settings['_css_classes'] ) ? (string) $settings['_css_classes'] : '' );
+
+		$segments = array();
+
+		// ── 1. Content / quote ─────────────────────────────────────────────────
+		if ( '' !== trim( $content ) ) {
+			$safe = wp_kses_post( $content );
+			if ( ! preg_match( '/<(p|div|blockquote|ul|ol|h[1-6])\b/i', $safe ) ) {
+				$safe = '<p>' . $safe . '</p>';
+			}
+			$segments[] = '<div class="testimonial-content">' . $safe . '</div>';
+		}
+
+		// ── 2. Author row: image beside name/job ───────────────────────────────
+		$author_parts = array();
+
+		if ( '' !== $image_url ) {
+			$img_styles = array(
+				'width:' . $img_size . 'px',
+				'height:' . $img_size . 'px',
+				'object-fit:cover',
+				'display:block',
+				'flex-shrink:0',
+			);
+
+			if ( '' !== $border_radius_css ) {
+				$img_styles[] = 'border-radius:' . $border_radius_css;
+			}
+
+			$has_border = '' !== $border_width_css && '0px' !== $border_width_css && '0' !== $border_width_css;
+			if ( $has_border ) {
+				$img_styles[] = 'border-width:' . $border_width_css;
+				$img_styles[] = 'border-style:solid';
+			}
+
+			$author_parts[] = sprintf(
+				'<img src="%1$s" alt="%2$s" class="testimonial-image" style="%3$s"/>',
+				esc_url( $image_url ),
+				esc_attr( $name ),
+				esc_attr( implode( ';', $img_styles ) )
+			);
+		}
+
+		$meta_parts = array();
+		if ( '' !== $name ) {
+			$meta_parts[] = '<strong class="testimonial-name">' . esc_html( $name ) . '</strong>';
+		}
+		if ( '' !== $job ) {
+			$meta_parts[] = '<span class="testimonial-job">' . esc_html( $job ) . '</span>';
+		}
+		if ( ! empty( $meta_parts ) ) {
+			$author_parts[] = '<div class="testimonial-meta" style="display:flex;flex-direction:column;justify-content:center;gap:2px;">'
+				. implode( '', $meta_parts )
+				. '</div>';
+		}
+
+		if ( ! empty( $author_parts ) ) {
+			$segments[] = '<div class="testimonial-author" style="display:flex;flex-direction:row;align-items:center;gap:12px;margin-top:16px;">'
+				. implode( '', $author_parts )
+				. '</div>';
+		}
+
+		if ( empty( $segments ) ) {
 			return '';
 		}
 
@@ -41,155 +120,105 @@ class Testimonial_Widget_Handler implements Widget_Handler_Interface {
 			Style_Parser::save_custom_css( $custom_css );
 		}
 
-		$attributes           = Style_Parser::parse_container_styles( $settings );
-		$attributes['layout'] = array( 'type' => 'constrained' );
+		$wrapper_classes = array_merge(
+			array( 'testimonial-widget', 'has-text-align-' . $alignment ),
+			$custom_classes
+		);
 
-		return Block_Builder::build( 'group', $attributes, implode( '', $child_blocks ) );
+		$wrapper_attrs  = 'class="' . esc_attr( implode( ' ', array_unique( $wrapper_classes ) ) ) . '"';
+		$wrapper_attrs .= ' style="text-align:' . esc_attr( $alignment ) . '"';
+
+		if ( '' !== $custom_id ) {
+			$wrapper_attrs .= ' id="' . esc_attr( $custom_id ) . '"';
+		}
+
+		$html = '<div ' . $wrapper_attrs . '>' . "\n" . implode( "\n", $segments ) . "\n" . '</div>';
+
+		return Block_Builder::build( 'html', array(), $html );
 	}
 
 	/**
-	 * Render the testimonial content.
+	 * Resolve a numeric slider size from an Elementor size object or raw number.
 	 *
-	 * @param array $settings Widget settings.
+	 * @param mixed $value   Elementor size value.
+	 * @param int   $default Fallback size.
+	 *
+	 * @return int Resolved integer size.
 	 */
-	private function render_content_block( array $settings ): string {
-		$content = isset( $settings['testimonial_content'] ) ? (string) $settings['testimonial_content'] : (string) ( $settings['content'] ?? $settings['testimonial_text'] ?? '' );
-		if ( '' === trim( $content ) ) {
+	private function resolve_slider_size( $value, int $default ): int {
+		if ( is_array( $value ) && isset( $value['size'] ) && is_numeric( $value['size'] ) ) {
+			return (int) round( (float) $value['size'] );
+		}
+		if ( is_numeric( $value ) ) {
+			return (int) round( (float) $value );
+		}
+		return $default;
+	}
+
+	/**
+	 * Resolve an Elementor TRBL dimension object to a CSS shorthand string.
+	 *
+	 * Returns empty string when all sides are absent or zero.
+	 *
+	 * @param mixed $value Elementor TRBL object (assoc array with top/right/bottom/left keys).
+	 *
+	 * @return string CSS shorthand value, e.g. "50px" or "4px 8px".
+	 */
+	private function resolve_trbl_css( $value ): string {
+		if ( ! is_array( $value ) ) {
 			return '';
 		}
 
-		$text_settings = array(
-			'editor'       => $content,
-			'text_color'   => $settings['content_color'] ?? $settings['text_color'] ?? '',
-			'_css_classes' => $settings['content_css_classes'] ?? '',
-			'_element_id'  => $settings['content_element_id'] ?? '',
+		$unit = isset( $value['unit'] ) && '' !== (string) $value['unit'] ? (string) $value['unit'] : 'px';
+
+		$sides = array(
+			isset( $value['top'] )    ? (string) $value['top']    : '',
+			isset( $value['right'] )  ? (string) $value['right']  : '',
+			isset( $value['bottom'] ) ? (string) $value['bottom'] : '',
+			isset( $value['left'] )   ? (string) $value['left']   : '',
 		);
 
-		$text_settings += $this->remap_typography_settings( $settings, 'content_' );
-
-		$handler = new Text_Editor_Widget_Handler();
-
-		return $handler->handle( array( 'settings' => $text_settings ) );
-	}
-
-	/**
-	 * Render the author/name block.
-	 *
-	 * @param array $settings Widget settings.
-	 */
-	private function render_author_block( array $settings ): string {
-		$name = isset( $settings['testimonial_name'] ) ? (string) $settings['testimonial_name'] : (string) ( $settings['name'] ?? '' );
-		$role = isset( $settings['testimonial_job'] ) ? (string) $settings['testimonial_job'] : (string) ( $settings['job'] ?? '' );
-
-		$parts = array();
-		if ( '' !== trim( $name ) ) {
-			$parts[] = $name;
-		}
-		if ( '' !== trim( $role ) ) {
-			$parts[] = $role;
-		}
-
-		if ( empty( $parts ) ) {
-			return '';
-		}
-
-		$text = esc_html( implode( ' — ', $parts ) );
-
-		$attributes = array(
-			'className' => 'testimonial-author has-small-font-size',
-		);
-
-		$author_classes = array( 'testimonial-author', 'has-small-font-size' );
-		$inline_style   = '';
-
-		$spacing      = Style_Parser::parse_spacing( $settings );
-		$spacing_attr = isset( $spacing['attributes'] ) ? $spacing['attributes'] : array();
-		$spacing_css  = isset( $spacing['style'] ) ? $spacing['style'] : '';
-
-		$typography      = Style_Parser::parse_typography( $settings );
-		$typography_attr = isset( $typography['attributes'] ) ? $typography['attributes'] : array();
-		$typography_css  = isset( $typography['style'] ) ? $typography['style'] : '';
-
-		$color = isset( $settings['name_color'] ) ? strtolower( (string) $settings['name_color'] ) : '';
-		if ( '' !== $color ) {
-			if ( $this->is_preset_slug( $color ) ) {
-				$attributes['textColor'] = $color;
-			} else {
-				$attributes['style']['color']['text'] = $color;
-				$inline_style                         = 'color:' . $color . ';';
+		// If any side is missing, bail.
+		foreach ( $sides as $side ) {
+			if ( '' === $side ) {
+				return '';
 			}
 		}
 
-		if ( ! empty( $spacing_attr ) ) {
-			$attributes['style']['spacing'] = $spacing_attr;
-		}
-
-		if ( ! empty( $typography_attr ) ) {
-			$attributes['style']['typography'] = $typography_attr;
-		}
-
-		$style_parts = array();
-
-		if ( '' !== $spacing_css ) {
-			$style_parts[] = $spacing_css;
-		}
-
-		if ( '' !== $typography_css ) {
-			$style_parts[] = $typography_css;
-		}
-
-		if ( '' !== $inline_style ) {
-			$style_parts[] = $inline_style;
-		}
-
-		$style_attr = '';
-		if ( ! empty( $style_parts ) ) {
-			$style_attr = ' style="' . esc_attr( implode( '', $style_parts ) ) . '"';
-		}
-
-		$markup = sprintf(
-			'<p class="%s"%s>%s</p>',
-			esc_attr( implode( ' ', array_unique( $author_classes ) ) ),
-			$style_attr,
-			$text
+		$vals = array_map(
+			static function ( string $v ) use ( $unit ): string {
+				return $v . $unit;
+			},
+			$sides
 		);
 
-		return Block_Builder::build( 'paragraph', $attributes, $markup );
+		// Simplify: all-equal → single value; top=bottom & right=left → two values.
+		if ( 1 === count( array_unique( $vals ) ) ) {
+			return $vals[0];
+		}
+		if ( $vals[0] === $vals[2] && $vals[1] === $vals[3] ) {
+			return $vals[0] . ' ' . $vals[1];
+		}
+
+		return implode( ' ', $vals );
 	}
 
 	/**
-	 * Remap typography settings using a prefix.
+	 * Sanitize custom class strings.
 	 *
-	 * @param array $settings Widget settings.
-	 * @param string $prefix Prefix to strip.
+	 * @param string $class_string Space-separated class string.
+	 *
+	 * @return array Array of sanitized class names.
 	 */
-	private function remap_typography_settings( array $settings, string $prefix ): array {
-		$mapped      = array();
-		$prefix_base = $prefix . 'typography_';
-		$prefix_len  = strlen( $prefix_base );
-
-		foreach ( $settings as $key => $value ) {
-			if ( 0 !== strpos( $key, $prefix_base ) ) {
+	private function sanitize_custom_classes( string $class_string ): array {
+		$classes = array();
+		foreach ( preg_split( '/\s+/', $class_string ) as $class ) {
+			$clean = Style_Parser::clean_class( $class );
+			if ( '' === $clean ) {
 				continue;
 			}
-
-			$suffix = substr( $key, $prefix_len );
-			if ( false === $suffix ) {
-				continue;
-			}
-
-			$mapped[ 'typography_' . $suffix ] = $value;
+			$classes[] = $clean;
 		}
-
-		return $mapped;
-	}
-
-	/**
-	 * Check whether the provided color is a preset slug.
-	 *
-	 * @param string $color Color string.
-	 */
-	private function is_preset_slug( string $color ): bool {
-		return '' !== $color && false === strpos( $color, '#' ) && false === strpos( $color, 'rgb' );
+		return array_values( array_unique( $classes ) );
 	}
 }
