@@ -1,0 +1,28 @@
+.wp-block-progressus-testimonial {
+  &.testimonial-widget {
+    .testimonial-content {
+      p {
+        margin: 0;
+      }
+    }
+
+    .testimonial-author {
+      .testimonial-image {
+        flex-shrink: 0;
+      }
+
+      .testimonial-meta {
+        .testimonial-name {
+          display: block;
+          font-weight: 600;
+        }
+
+        .testimonial-job {
+          display: block;
+          opacity: 0.7;
+          font-size: 0.9em;
+        }
+      }
+    }
+  }
+}
