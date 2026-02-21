@@ -61,6 +61,7 @@ use function wp_reset_postdata;
 use function wp_update_custom_css_post;
 use function wp_send_json_error;
 use function wp_send_json_success;
+use function wp_slash;
 use function wp_unslash;
 use function strtotime;
 use function switch_theme;
@@ -405,6 +406,7 @@ class Batch_Convert_Wizard {
 				'status'  => 'skipped',
 				'message' => '',
 				'target'  => 0,
+				'converted_post_id' => 0,
 			);
 			$duration  = 0;
 			$view_url  = '';
@@ -419,7 +421,8 @@ class Batch_Convert_Wizard {
 				$start_time = microtime( true );
 				$result     = $this->process_single_post( (int) $page_info['id'], $options );
 				$duration   = max( 0, microtime( true ) - $start_time );
-				$view_url   = $result['target'] ? get_permalink( (int) $result['target'] ) : '';
+				$converted_post_id = ! empty( $result['converted_post_id'] ) ? (int) $result['converted_post_id'] : (int) $result['target'];
+				$view_url          = $converted_post_id ? get_permalink( $converted_post_id ) : '';
 				$keep_meta  = ! empty( $page_info['keep_meta'] );
 
 				$result_entry = array(
@@ -428,6 +431,7 @@ class Batch_Convert_Wizard {
 					'status'    => $result['status'],
 					'message'   => $result['message'],
 					'target'    => $result['target'],
+					'converted_post_id' => $converted_post_id,
 					'duration'  => $duration,
 					'view_url'  => $view_url,
 					'keep_meta' => $keep_meta,
@@ -451,6 +455,7 @@ class Batch_Convert_Wizard {
 					'status'    => $template_result['status'],
 					'message'   => $template_result['message'],
 					'target'    => $template_result['target'],
+					'converted_post_id' => (int) $template_result['target'],
 					'duration'  => $duration,
 					'view_url'  => $view_url,
 					'keep_meta' => false,
@@ -1289,6 +1294,7 @@ class Batch_Convert_Wizard {
 			'assign_template' => false,
 			'keep_meta'       => true,
 			'skip_converted'  => $skip_converted,
+            'conflict_policy' => $conflict_policy,
 		);
 
 		if ( 'overwrite' === $conflict_policy ) {
@@ -1301,7 +1307,41 @@ class Batch_Convert_Wizard {
 
 		return $options;
 	}
+    /**
+     * Validate a candidate converted target ID.
+     *
+     * We must never treat the Elementor source as the target, and we must refuse
+     * any candidate that still has Elementor data.
+     *
+     * @param int $source_id Source Elementor page ID.
+     * @param int $candidate_id Candidate target ID from stored meta.
+     */
+    private function validate_converted_target_id( int $source_id, int $candidate_id ): int {
+        if ( $candidate_id <= 0 ) {
+            return 0;
+        }
 
+        if ( $candidate_id === $source_id ) {
+            return 0;
+        }
+
+        $candidate = get_post( $candidate_id );
+        if ( ! ( $candidate instanceof WP_Post ) ) {
+            return 0;
+        }
+
+        if ( 'page' !== $candidate->post_type ) {
+            return 0;
+        }
+
+        // If it still has Elementor JSON, it is not a clean Gutenberg copy.
+        $elementor_data = get_post_meta( $candidate_id, '_elementor_data', true );
+        if ( ! empty( $elementor_data ) ) {
+            return 0;
+        }
+
+        return $candidate_id;
+    }
 	/**
 	 * Handle requested theme switch and optional Additional CSS migration.
 	 *
@@ -1620,6 +1660,7 @@ class Batch_Convert_Wizard {
 			'status'  => 'skipped',
 			'message' => '',
 			'target'  => 0,
+			'converted_post_id' => 0,
 		);
 
 		if ( ! $post || 'page' !== $post->post_type ) {
@@ -1629,18 +1670,26 @@ class Batch_Convert_Wizard {
 			return $result;
 		}
 
-		$target_id = $this->get_existing_target_id( $post_id );
-		if ( ! empty( $options['skip_converted'] ) && $this->has_been_converted( $post_id, $target_id ) ) {
-			$title             = get_the_title( $post_id );
+        $source_id      = $post_id;
+        $conflict_policy = isset( $options['conflict_policy'] ) ? sanitize_key( (string) $options['conflict_policy'] ) : 'skip';
+
+        $existing_target_id = $this->validate_converted_target_id(
+                $source_id,
+                $this->get_existing_target_id( $source_id )
+        );
+
+        if ( ! empty( $options['skip_converted'] ) && $existing_target_id > 0 && $this->has_been_converted( $source_id, $existing_target_id ) ) {
+            $title             = get_the_title( $source_id );
 			$message           = sprintf( esc_html__( 'Skipped: “%s” is already converted.', 'elementor-to-gutenberg' ), $title );
 			$result['message'] = $message;
-			$result['target']  = $target_id;
+			$result['target']  = $existing_target_id;
+			$result['converted_post_id'] = $existing_target_id;
 
 			return $result;
 		}
 
-		$json_data = get_post_meta( $post_id, '_elementor_data', true );
-		$template  = (string) get_page_template_slug( $post_id );
+		$json_data = get_post_meta( $source_id, '_elementor_data', true );
+		$template  = (string) get_page_template_slug( $source_id );
 		if ( empty( $json_data ) ) {
 			$message           = esc_html__( 'Skipped: Elementor data not found.', 'elementor-to-gutenberg' );
 			$result['message'] = $message;
@@ -1670,70 +1719,124 @@ class Batch_Convert_Wizard {
 			$content = Admin_Settings::instance()->wrap_content_full_width( $content );
 		}
 
-		if ( 'update' === $options['mode'] ) {
-			$content = Admin_Settings::instance()->replace_page_wrapper_token( $content, $post_id );
-		}
+        $content = Admin_Settings::instance()->replace_page_wrapper_token( $content, $source_id );
 
-		if ( 'update' === $options['mode'] ) {
-			$save      = wp_update_post(
-				array(
-					'ID'           => $post_id,
-					'post_content' => $content,
-				),
-				true
-			);
-			$target_id = is_wp_error( $save ) ? 0 : (int) $save;
-		} else {
-			$save      = wp_insert_post(
-				array(
-					'post_title'   => get_the_title( $post_id ) . ' (Gutenberg)',
-					'post_type'    => get_post_type( $post_id ),
-					'post_status'  => get_post_status( $post_id ),
-					'post_author'  => (int) $post->post_author,
-					'post_parent'  => (int) $post->post_parent,
-					'post_content' => $content,
-				),
-				true
-			);
-			$target_id = is_wp_error( $save ) ? 0 : (int) $save;
+        $write_id           = 0;
+        $created_new_target = false;
 
-			if ( $target_id && ! empty( $options['keep_meta'] ) ) {
-				$this->copy_post_meta( $post_id, $target_id );
-			}
-		}
+        if ( $existing_target_id > 0 ) {
+            if ( 'duplicate' === $conflict_policy ) {
+                $write_id = 0;
+            } elseif ( 'overwrite' === $conflict_policy || 'update' === $options['mode'] ) {
+                $write_id = $existing_target_id;
+            } else {
+                $title             = get_the_title( $source_id );
+                $message           = sprintf( esc_html__( 'Skipped: “%s” already has a converted copy.', 'elementor-to-gutenberg' ), $title );
+                $result['message'] = $message;
+                $result['target']  = $existing_target_id;
+                $result['converted_post_id'] = $existing_target_id;
 
-		if ( empty( $target_id ) ) {
+                return $result;
+            }
+        }
+
+
+        if ( $write_id > 0 ) {
+            $save = wp_update_post(
+                    array(
+                            'ID'           => $write_id,
+                            'post_content' => wp_slash( $content ),
+                    ),
+                    true
+            );
+        } else {
+            $save = wp_insert_post(
+                    array(
+                            'post_title'   => get_the_title( $source_id ) . ' (Gutenberg)',
+                            'post_type'    => get_post_type( $source_id ),
+                            'post_status'  => get_post_status( $source_id ),
+                            'post_author'  => (int) $post->post_author,
+                            'post_parent'  => (int) $post->post_parent,
+                            'post_content' => wp_slash( $content ),
+                    ),
+                    true
+            );
+            $created_new_target = ! is_wp_error( $save );
+        }
+
+        $write_id = is_wp_error( $save ) ? 0 : (int) $save;
+
+		if ( empty( $write_id ) ) {
 			$message           = esc_html__( 'Failed: could not save Gutenberg content.', 'elementor-to-gutenberg' );
 			$result['status']  = 'error';
 			$result['message'] = $message;
 
 			return $result;
 		}
+        $this->clear_elementor_render_meta( $write_id );
 
-		if ( 'update' === $options['mode'] ) {
-			Admin_Settings::instance()->finalize_converted_post( $target_id, $content, false );
-		} else {
-			Admin_Settings::instance()->finalize_converted_post( $target_id, $content, true );
-		}
+        // Link the target to its source for future resolution.
+        update_post_meta( $write_id, '_ele2gb_source_id', $source_id );
+
+        if ( ! $this->is_overwrite_conversion_sane( $write_id ) ) {
+            $result['status']  = 'error';
+            $result['message'] = esc_html__( 'Failed: sanity check failed after saving Gutenberg content.', 'elementor-to-gutenberg' );
+
+            return $result;
+        }
+
+        // Meta handling:
+        // - new target: copy all safe meta
+        // - existing target: update-mode copy (thumbnail only)
+        if ( ! empty( $options['keep_meta'] ) ) {
+            if ( $created_new_target ) {
+                $this->copy_post_meta( $source_id, $write_id );
+            } else {
+                $this->copy_post_meta( $source_id, $write_id, true );
+            }
+        }
+
+        Admin_Settings::instance()->finalize_converted_post( $write_id, $content, $created_new_target );
 
 		if ( ! empty( $options['assign_template'] ) ) {
-			update_post_meta( $target_id, '_wp_page_template', self::TEMPLATE_SLUG );
+			update_post_meta( $write_id, '_wp_page_template', self::TEMPLATE_SLUG );
 		}
 
-		$this->normalize_page_template( $template, $target_id );
+		$this->normalize_page_template( $template, $write_id );
+        
 
-		if ( 'update' === $options['mode'] && ! empty( $options['keep_meta'] ) ) {
-			$this->copy_post_meta( $post_id, $target_id, true );
-		}
-
-		$title   = get_the_title( $post_id );
+		$title   = get_the_title( $source_id );
 		$message = sprintf( esc_html__( 'Converted “%s” to Gutenberg blocks.', 'elementor-to-gutenberg' ), $title );
 
 		$result['status']  = 'success';
 		$result['message'] = $message;
-		$result['target']  = $target_id;
+		$result['target']  = $write_id;
+		$result['converted_post_id'] = $write_id;
 
 		return $result;
+	}
+
+	/**
+	 * Remove Elementor meta that forces Elementor rendering.
+	 *
+	 * @param int $post_id Post ID.
+	 */
+	private function clear_elementor_render_meta( int $post_id ): void {
+		delete_post_meta( $post_id, '_elementor_data' );
+		delete_post_meta( $post_id, '_elementor_edit_mode' );
+		delete_post_meta( $post_id, '_elementor_version' );
+	}
+
+	/**
+	 * Verify overwrite conversion persisted Gutenberg content and removed Elementor override.
+	 *
+	 * @param int $post_id Post ID.
+	 */
+	private function is_overwrite_conversion_sane( int $post_id ): bool {
+		$saved_content  = (string) get_post_field( 'post_content', $post_id );
+		$elementor_data = get_post_meta( $post_id, '_elementor_data', true );
+
+		return false !== strpos( $saved_content, '<!-- wp:' ) && empty( $elementor_data );
 	}
 
 	/**
@@ -1821,6 +1924,10 @@ class Batch_Convert_Wizard {
 	 */
 	private function get_existing_target_id( int $post_id ): int {
 		$last_result = get_post_meta( $post_id, '_ele2gb_last_result', true );
+		if ( is_array( $last_result ) && ! empty( $last_result['converted_post_id'] ) ) {
+			return absint( $last_result['converted_post_id'] );
+		}
+
 		if ( is_array( $last_result ) && ! empty( $last_result['target'] ) ) {
 			return absint( $last_result['target'] );
 		}
@@ -2472,12 +2579,18 @@ class Batch_Convert_Wizard {
 
 		$results = array_map(
 			static function ( array $item ): array {
+				$converted_post_id = isset( $item['converted_post_id'] ) ? (int) $item['converted_post_id'] : 0;
+				if ( $converted_post_id <= 0 && ! empty( $item['target'] ) ) {
+					$converted_post_id = (int) $item['target'];
+				}
+
 				return array(
 					'id'       => (int) $item['id'],
 					'title'    => $item['title'],
 					'status'   => $item['status'],
 					'message'  => $item['message'],
 					'target'   => $item['target'],
+					'convertedPostId' => $converted_post_id,
 					'duration' => $item['duration'],
 					'viewUrl'  => $item['view_url'],
 					'keepMeta' => ! empty( $item['keep_meta'] ),
@@ -2727,6 +2840,7 @@ class Batch_Convert_Wizard {
 			'status'  => $result_entry['status'],
 			'message' => $result_entry['message'],
 			'target'  => $result_entry['target'],
+			'converted_post_id' => isset( $result_entry['converted_post_id'] ) ? (int) $result_entry['converted_post_id'] : (int) $result_entry['target'],
 			'time'    => $time,
 		);
 
@@ -2734,16 +2848,17 @@ class Batch_Convert_Wizard {
 		update_post_meta( $source_id, '_ele2gb_last_result', $data );
 
 		// Store also on the converted page (if any).
-		if ( ! empty( $result_entry['target'] ) ) {
-			update_post_meta( $result_entry['target'], '_ele2gb_last_result', $data );
+		$converted_post_id = isset( $result_entry['converted_post_id'] ) ? (int) $result_entry['converted_post_id'] : (int) $result_entry['target'];
+		if ( $converted_post_id > 0 ) {
+			update_post_meta( $converted_post_id, '_ele2gb_last_result', $data );
 		}
 
 		// Mark as "converted" only when success.
 		if ( 'success' === $result_entry['status'] ) {
 			update_post_meta( $source_id, '_ele2gb_last_converted', $time );
 
-			if ( ! empty( $result_entry['target'] ) ) {
-				update_post_meta( $result_entry['target'], '_ele2gb_last_converted', $time );
+			if ( $converted_post_id > 0 ) {
+				update_post_meta( $converted_post_id, '_ele2gb_last_converted', $time );
 			}
 		}
 	}
