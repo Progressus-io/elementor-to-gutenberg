@@ -177,11 +177,29 @@ class Style_Parser {
 			$base['text-transform'] = $text_transform;
 		}
 
+		$font_style = self::sanitize_font_style_value( $settings['typography_font_style'] ?? '' );
+		if ( '' !== $font_style ) {
+			$base['font-style'] = $font_style;
+		}
+
+		$text_decoration = self::sanitize_text_decoration_value( $settings['typography_text_decoration'] ?? '' );
+		if ( '' !== $text_decoration ) {
+			$base['text-decoration'] = $text_decoration;
+		}
+
 		$letter_spacing = self::normalize_dimension( $settings['typography_letter_spacing'] ?? null, 'px' );
 		if ( null !== $letter_spacing ) {
 			$letter_spacing = self::sanitize_letter_spacing_value( $letter_spacing );
 			if ( '' !== $letter_spacing && ! self::is_zero_dimension( $letter_spacing ) ) {
 				$base['letter-spacing'] = $letter_spacing;
+			}
+		}
+
+		$word_spacing = self::normalize_dimension( $settings['typography_word_spacing'] ?? null, 'px' );
+		if ( null !== $word_spacing ) {
+			$word_spacing = self::sanitize_word_spacing_value( $word_spacing );
+			if ( '' !== $word_spacing && ! self::is_zero_dimension( $word_spacing ) ) {
+				$base['word-spacing'] = $word_spacing;
 			}
 		}
 

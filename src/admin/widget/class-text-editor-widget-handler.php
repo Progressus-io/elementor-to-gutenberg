@@ -447,11 +447,8 @@ class Text_Editor_Widget_Handler implements Widget_Handler_Interface {
 			return;
 		}
 
-		$selector_base = '.' . $element_class;
-		$selectors     = array(
-			$selector_base . '.wp-block-paragraph',
-			$selector_base . '.wp-block-list',
-		);
+		$paragraph_selector = '.' . $element_class . '.wp-block-paragraph, .' . $element_class . ' .wp-block-paragraph';
+		$list_selector      = '.' . $element_class . '.wp-block-list, .' . $element_class . ' .wp-block-list';
 
 		$typography = Style_Parser::extract_typography_css_rules( $settings );
 		$base_rules = isset( $typography['base'] ) && is_array( $typography['base'] ) ? $typography['base'] : array();
@@ -464,24 +461,21 @@ class Text_Editor_Widget_Handler implements Widget_Handler_Interface {
 		}
 
 		if ( ! empty( $base_rules ) ) {
-			foreach ( $selectors as $selector ) {
-				$collector->register_rule( $selector, $base_rules, 'widget-text-editor-base' );
-			}
+			$collector->register_rule( $paragraph_selector, $base_rules, 'widget-text-editor-base' );
+			$collector->register_rule( $list_selector, $base_rules, 'widget-text-editor-base' );
 		}
 
 		$tablet = isset( $typography['tablet'] ) && is_array( $typography['tablet'] ) ? $typography['tablet'] : array();
 		$mobile = isset( $typography['mobile'] ) && is_array( $typography['mobile'] ) ? $typography['mobile'] : array();
 
 		if ( ! empty( $tablet ) ) {
-			foreach ( $selectors as $selector ) {
-				$collector->register_media_rule( '(max-width: ' . (string) Style_Parser::BREAKPOINT_TABLET_MAX . 'px)', $selector, $tablet, 'widget-text-editor-tablet' );
-			}
+			$collector->register_media_rule( '(max-width: ' . (string) Style_Parser::BREAKPOINT_TABLET_MAX . 'px)', $paragraph_selector, $tablet, 'widget-text-editor-tablet' );
+			$collector->register_media_rule( '(max-width: ' . (string) Style_Parser::BREAKPOINT_TABLET_MAX . 'px)', $list_selector, $tablet, 'widget-text-editor-tablet' );
 		}
 
 		if ( ! empty( $mobile ) ) {
-			foreach ( $selectors as $selector ) {
-				$collector->register_media_rule( '(max-width: ' . (string) Style_Parser::BREAKPOINT_MOBILE_MAX . 'px)', $selector, $mobile, 'widget-text-editor-mobile' );
-			}
+			$collector->register_media_rule( '(max-width: ' . (string) Style_Parser::BREAKPOINT_MOBILE_MAX . 'px)', $paragraph_selector, $mobile, 'widget-text-editor-mobile' );
+			$collector->register_media_rule( '(max-width: ' . (string) Style_Parser::BREAKPOINT_MOBILE_MAX . 'px)', $list_selector, $mobile, 'widget-text-editor-mobile' );
 		}
 	}
 

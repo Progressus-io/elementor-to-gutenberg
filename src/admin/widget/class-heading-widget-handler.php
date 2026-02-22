@@ -121,7 +121,7 @@ class Heading_Widget_Handler implements Widget_Handler_Interface {
 			return;
 		}
 
-		$selector   = '.' . $element_class . '.wp-block-heading';
+		$selector   = '.' . $element_class . '.wp-block-heading, .' . $element_class . ' .wp-block-heading';
 		$typography = Style_Parser::extract_typography_css_rules( $settings );
 		$base_rules = isset( $typography['base'] ) && is_array( $typography['base'] ) ? $typography['base'] : array();
 
