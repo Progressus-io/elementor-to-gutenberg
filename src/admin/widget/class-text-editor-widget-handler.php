@@ -185,6 +185,11 @@ class Text_Editor_Widget_Handler implements Widget_Handler_Interface {
 			$inline_styles['font-style'] = $font_style;
 		}
 
+		$collector = Block_Output_Builder::get_collector();
+		if ( null !== $collector && '' !== $font_family ) {
+			$collector->add_font_usage( $font_family, $font_weight, $font_style );
+		}
+
 		$text_decoration = Style_Parser::sanitize_text_decoration_value( $computed['text-decoration'] ?? '' );
 		if ( '' === $text_decoration && isset( $setting_typography['textDecoration'] ) ) {
 			$text_decoration = Style_Parser::sanitize_text_decoration_value( $setting_typography['textDecoration'] );

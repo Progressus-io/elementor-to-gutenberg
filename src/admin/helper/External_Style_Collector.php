@@ -21,6 +21,20 @@ class External_Style_Collector {
 	private array $media_rules = array();
 
 	/**
+	 * Kit/page rules printed first (lower precedence).
+	 *
+	 * @var array<string, array<string, string>>
+	 */
+	private array $rules_kit = array();
+
+	/**
+	 * Kit/page media rules printed first (lower precedence).
+	 *
+	 * @var array<string, array<string, array<string, string>>>
+	 */
+	private array $media_rules_kit = array();
+
+	/**
 	 * Inventory for externalized declarations and drops.
 	 *
 	 * @var array<string, array<string, array>>
@@ -30,6 +44,78 @@ class External_Style_Collector {
 		'dropped'      => array(),
 		'conversions'  => array(),
 	);
+
+	/**
+	 * Collected per-conversion font usage.
+	 *
+	 * @var array<string, array<string, array<string, bool>>>
+	 */
+	private array $font_usage = array();
+
+	/**
+	 * Register font usage from converted typography.
+	 *
+	 * @param string $raw_family Raw font-family declaration.
+	 * @param string $weight Font weight value.
+	 * @param string $style Font style value.
+	 *
+	 * @return void
+	 */
+	public function add_font_usage( string $raw_family, string $weight, string $style ): void {
+		$family = Elementor_Fonts_Service::normalize_font_family( $raw_family );
+		$family = Elementor_Fonts_Service::apply_font_alias_map( $family );
+
+		if ( '' === $family || Elementor_Fonts_Service::is_system_font( $family ) ) {
+			return;
+		}
+
+		if ( ! isset( $this->font_usage[ $family ] ) ) {
+			$this->font_usage[ $family ] = array(
+				'weights' => array(),
+				'italics' => array(),
+			);
+		}
+
+		$normalized_weight = Style_Parser::sanitize_font_weight_value( $weight );
+		if ( '' === $normalized_weight ) {
+			$normalized_weight = '400';
+		}
+
+		$italic = '0';
+		$style  = strtolower( trim( $style ) );
+		if ( 'italic' === $style || 'oblique' === $style ) {
+			$italic = '1';
+		}
+
+		$this->font_usage[ $family ]['weights'][ $normalized_weight ] = true;
+		$this->font_usage[ $family ]['italics'][ $italic ]            = true;
+	}
+
+	/**
+	 * Get collected font usage in persistent schema.
+	 *
+	 * @return array<string, array<string, array<int, string>>>
+	 */
+	public function get_font_usage(): array {
+		$output = array();
+
+		foreach ( $this->font_usage as $family => $data ) {
+			$weights = array_keys( $data['weights'] ?? array() );
+			$italics = array_keys( $data['italics'] ?? array() );
+
+			sort( $weights, SORT_NATURAL );
+			sort( $italics, SORT_NATURAL );
+
+			$output[ $family ] = array(
+				'weights' => array_values( $weights ),
+				'italics' => array_values( $italics ),
+			);
+		}
+
+		ksort( $output, SORT_NATURAL | SORT_FLAG_CASE );
+
+		return $output;
+	}
 
 	/**
 	 * Externalize known risky style leaves from Gutenberg attrs.
@@ -165,13 +251,39 @@ class External_Style_Collector {
 		}
 
 		$declarations = $this->append_important_declarations( $declarations );
-		$this->add_rule( $selector, $declarations );
+
+		if ( $this->is_kit_reason( $reason ) ) {
+			$this->add_rule_to_bucket( $this->rules_kit, $selector, $declarations );
+		} else {
+			$this->add_rule( $selector, $declarations );
+		}
 
 		$this->inventory['externalized'][] = array(
 			'block'  => 'page',
 			'rules'  => $declarations,
 			'reason' => '' === $reason ? 'custom-rule' : $reason,
 		);
+	}
+
+	/**
+	 * Add sanitized declarations to a provided rules bucket.
+	 *
+	 * @param array<string, array<string, string>> $bucket Rules bucket (by ref).
+	 * @param string $selector CSS selector.
+	 * @param array<string, mixed> $declarations Declarations to append.
+	 *
+	 * @return void
+	 */
+	private function add_rule_to_bucket( array &$bucket, string $selector, array $declarations ): void {
+		if ( ! isset( $bucket[ $selector ] ) ) {
+			$bucket[ $selector ] = array();
+		}
+
+		$declarations = $this->sanitize_declarations( $declarations );
+
+		foreach ( $declarations as $prop => $val ) {
+			$bucket[ $selector ][ $prop ] = (string) $val;
+		}
 	}
 
 	/**
@@ -194,17 +306,30 @@ class External_Style_Collector {
 		}
 
 		$declarations = $this->append_important_declarations( $declarations );
-		if ( ! isset( $this->media_rules[ $media_query ] ) ) {
-			$this->media_rules[ $media_query ] = array();
-		}
-
-		if ( ! isset( $this->media_rules[ $media_query ][ $selector ] ) ) {
-			$this->media_rules[ $media_query ][ $selector ] = array();
-		}
-
 		$declarations = $this->sanitize_declarations( $declarations );
-		foreach ( $declarations as $prop => $val ) {
-			$this->media_rules[ $media_query ][ $selector ][ $prop ] = (string) $val;
+
+		$is_kit = $this->is_kit_reason( $reason );
+
+		if ( $is_kit ) {
+			if ( ! isset( $this->media_rules_kit[ $media_query ] ) ) {
+				$this->media_rules_kit[ $media_query ] = array();
+			}
+			if ( ! isset( $this->media_rules_kit[ $media_query ][ $selector ] ) ) {
+				$this->media_rules_kit[ $media_query ][ $selector ] = array();
+			}
+			foreach ( $declarations as $prop => $val ) {
+				$this->media_rules_kit[ $media_query ][ $selector ][ $prop ] = (string) $val;
+			}
+		} else {
+			if ( ! isset( $this->media_rules[ $media_query ] ) ) {
+				$this->media_rules[ $media_query ] = array();
+			}
+			if ( ! isset( $this->media_rules[ $media_query ][ $selector ] ) ) {
+				$this->media_rules[ $media_query ][ $selector ] = array();
+			}
+			foreach ( $declarations as $prop => $val ) {
+				$this->media_rules[ $media_query ][ $selector ][ $prop ] = (string) $val;
+			}
 		}
 
 		$this->inventory['externalized'][] = array(
@@ -282,12 +407,42 @@ class External_Style_Collector {
 	 * @return string
 	 */
 	public function render_css(): string {
-		if ( empty( $this->rules ) ) {
+
+		if (
+			empty( $this->rules ) &&
+			empty( $this->rules_kit ) &&
+			empty( $this->media_rules ) &&
+			empty( $this->media_rules_kit )
+		) {
 			return '';
 		}
 
 		$out = '';
-		foreach ( $this->rules as $selector => $declarations ) {
+
+		$out .= $this->render_rules_bucket( $this->rules_kit );
+
+		$out .= $this->render_rules_bucket( $this->rules );
+
+		$out .= $this->render_media_bucket( $this->media_rules_kit );
+		$out .= $this->render_media_bucket( $this->media_rules );
+
+		return $out;
+	}
+
+	/**
+	 * Render a rules bucket.
+	 *
+	 * @param array<string, array<string, string>> $bucket
+	 *
+	 * @return string
+	 */
+	private function render_rules_bucket( array $bucket ): string {
+		if ( empty( $bucket ) ) {
+			return '';
+		}
+
+		$out = '';
+		foreach ( $bucket as $selector => $declarations ) {
 			if ( empty( $declarations ) ) {
 				continue;
 			}
@@ -304,7 +459,23 @@ class External_Style_Collector {
 			$out .= "}\n";
 		}
 
-		foreach ( $this->media_rules as $media_query => $selectors ) {
+		return $out;
+	}
+
+	/**
+	 * Render a media rules bucket.
+	 *
+	 * @param array<string, array<string, array<string, string>>> $bucket
+	 *
+	 * @return string
+	 */
+	private function render_media_bucket( array $bucket ): string {
+		if ( empty( $bucket ) ) {
+			return '';
+		}
+
+		$out = '';
+		foreach ( $bucket as $media_query => $selectors ) {
 			if ( empty( $selectors ) ) {
 				continue;
 			}
@@ -580,5 +751,22 @@ class External_Style_Collector {
 		}
 
 		return $updated;
+	}
+
+	/**
+	 * Determine if a rule reason belongs to kit/page typography bucket.
+	 *
+	 * @param string $reason Reason/context label.
+	 *
+	 * @return bool
+	 */
+	private function is_kit_reason( string $reason ): bool {
+		$reason = strtolower( trim( $reason ) );
+		if ( '' === $reason ) {
+			return false;
+		}
+
+		// Admin_Settings uses: kit-typography-body / kit-typography-headings etc.
+		return ( 0 === strpos( $reason, 'kit-' ) );
 	}
 }

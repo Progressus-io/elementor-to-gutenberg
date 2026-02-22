@@ -1803,7 +1803,7 @@ class Batch_Convert_Wizard {
 		}
 
 		$this->normalize_page_template( $template, $write_id );
-        
+
 
 		$title   = get_the_title( $source_id );
 		$message = sprintf( esc_html__( 'Converted “%s” to Gutenberg blocks.', 'elementor-to-gutenberg' ), $title );

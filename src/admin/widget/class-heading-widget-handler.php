@@ -125,6 +125,12 @@ class Heading_Widget_Handler implements Widget_Handler_Interface {
 		$typography = Style_Parser::extract_typography_css_rules( $settings );
 		$base_rules = isset( $typography['base'] ) && is_array( $typography['base'] ) ? $typography['base'] : array();
 
+		$collector->add_font_usage(
+			(string) ( $typography['font_family'] ?? '' ),
+			(string) ( $base_rules['font-weight'] ?? '' ),
+			(string) ( $base_rules['font-style'] ?? '' )
+		);
+
 		$color_data = Style_Parser::extract_text_color_css_value( $settings, 'title_color' );
 		if ( '' !== $color_data['color'] ) {
 			$base_rules['color'] = $color_data['color'];
