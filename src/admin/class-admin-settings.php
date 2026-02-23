@@ -391,6 +391,8 @@ class Admin_Settings {
 			External_CSS_Service::save_post_css( $post_id, (string) $css );
 		}
 
+		$this->persist_post_used_fonts( $post_id );
+
 		return $updated_content;
 	}
 
@@ -431,6 +433,31 @@ class Admin_Settings {
 		}
 
 		return $this->external_css_collector->render_css();
+	}
+
+	/**
+	 * Persist collected converted-font usage for the target post.
+	 *
+	 * @param int $post_id Post ID.
+	 *
+	 * @return void
+	 */
+	private function persist_post_used_fonts( int $post_id ): void {
+		if ( $post_id <= 0 || null === $this->external_css_collector ) {
+			return;
+		}
+
+		$fonts = $this->external_css_collector->get_font_usage();
+		if ( empty( $fonts ) ) {
+			delete_post_meta( $post_id, '_etg_used_fonts' );
+			delete_post_meta( $post_id, '_etg_used_fonts_hash' );
+			return;
+		}
+
+		$hash = md5( (string) wp_json_encode( $fonts ) );
+
+		update_post_meta( $post_id, '_etg_used_fonts', $fonts );
+		update_post_meta( $post_id, '_etg_used_fonts_hash', $hash );
 	}
 
 	/**
@@ -498,6 +525,18 @@ class Admin_Settings {
 		$body_rules    = Style_Parser::build_typography_declarations( $body_settings );
 		$heading_rules = Style_Parser::build_typography_declarations( $heading_settings );
 
+		$this->external_css_collector->add_font_usage(
+			(string) ( $body_rules['font-family'] ?? '' ),
+			(string) ( $body_rules['font-weight'] ?? '' ),
+			(string) ( $body_rules['font-style'] ?? '' )
+		);
+
+		$this->external_css_collector->add_font_usage(
+			(string) ( $heading_rules['font-family'] ?? '' ),
+			(string) ( $heading_rules['font-weight'] ?? '' ),
+			(string) ( $heading_rules['font-style'] ?? '' )
+		);
+
 		$extra_classes = array();
 
 		if ( isset( $body_rules['font-family'] ) ) {
@@ -521,7 +560,7 @@ class Admin_Settings {
 			$this->external_css_collector->register_rule( $base_selector, $body_rules, 'kit-typography-body' );
 		}
 
-		if ( ! empty( $heading_rules ) ) {
+		if ( ! empty( $heading_rules ) && ! empty( $heading_settings['typography_typography'] ) ) {
 			$selectors = array(
 				$base_selector . ' h1',
 				$base_selector . ' h2',

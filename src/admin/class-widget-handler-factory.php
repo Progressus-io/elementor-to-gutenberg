@@ -7,6 +7,8 @@
 
 namespace Progressus\Gutenberg\Admin;
 
+use Progressus\Gutenberg\Admin\Widget\WP_Widget_Handler;
+
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -60,6 +62,12 @@ class Widget_Handler_Factory {
 		'posts'                     => 'Progressus\Gutenberg\Admin\Widget\Posts_Widget_Handler',
 		'search-form'               => 'Progressus\Gutenberg\Admin\Widget\Search_Form_Widget_Handler',
 		'search'                    => 'Progressus\Gutenberg\Admin\Widget\Search_Form_Widget_Handler',
+		'soundcloud'                => 'Progressus\Gutenberg\Admin\Widget\Generic_Elementor_Widget_Handler',
+		'testimonial'               => 'Progressus\Gutenberg\Admin\Widget\Generic_Elementor_Widget_Handler',
+		'alert'                     => 'Progressus\Gutenberg\Admin\Widget\Generic_Elementor_Widget_Handler',
+		'rating'                    => 'Progressus\Gutenberg\Admin\Widget\Generic_Elementor_Widget_Handler',
+		'image-carousel'            => 'Progressus\Gutenberg\Admin\Widget\Generic_Elementor_Widget_Handler',
+		'image_carousel'            => 'Progressus\Gutenberg\Admin\Widget\Generic_Elementor_Widget_Handler',
 	);
 
 	/**
@@ -70,6 +78,9 @@ class Widget_Handler_Factory {
 	 * @return Widget_Handler_Interface|null The widget handler or null if not found.
 	 */
 	public static function get_handler( string $widget_type ): ?Widget_Handler_Interface {
+		if ( 0 === strpos( $widget_type, 'wp-widget-' ) ) {
+			return new WP_Widget_Handler();
+		}
 		$handler_class = self::$handlers[ $widget_type ] ?? null;
 		if ( null === $handler_class ) {
 			return null;

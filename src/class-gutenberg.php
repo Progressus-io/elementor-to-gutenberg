@@ -30,6 +30,14 @@ class Gutenberg {
 	 */
 	protected static ?Gutenberg $instance = null;
 
+
+	/**
+	 * Runtime registry to prevent duplicate font enqueues.
+	 *
+	 * @var array<string, bool>
+	 */
+	private array $enqueued_font_handles = array();
+
 	/**
 	 * Construct the plugin.
 	 */
@@ -99,6 +107,7 @@ class Gutenberg {
 		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_converted_page_css' ), 9999 );
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_converted_page_css' ), 9999 );
 		add_filter( 'wp_theme_json_data_default', array( $this, 'inject_elementor_typography_theme_json' ) );
+		add_filter( 'wp_resource_hints', array( $this, 'add_font_resource_hints' ), 10, 2 );
 	}
 
 	/**
@@ -112,7 +121,7 @@ class Gutenberg {
 			GUTENBERG_PLUGIN_VERSION
 		);
 
-		$this->enqueue_elementor_fonts();
+		$this->enqueue_converted_post_fonts( $this->detect_editor_post_id() );
 	}
 
 	/**
@@ -181,7 +190,7 @@ class Gutenberg {
 			);
 		}
 
-		$this->enqueue_elementor_fonts();
+		$this->enqueue_converted_post_fonts();
 
 		// Enqueue form submission script if form block is present
 		if ( has_block( 'progressus/form' ) ) {
@@ -200,20 +209,83 @@ class Gutenberg {
 	}
 
 	/**
-	 * Enqueue Elementor kit fonts when available.
+	 * Enqueue converted post fonts.
+	 *
+	 * @param int|null $post_id Optional post ID.
 	 *
 	 * @return void
 	 */
-	private function enqueue_elementor_fonts(): void {
-		$requirements = Elementor_Fonts_Service::get_font_requirements();
-		$url          = Elementor_Fonts_Service::build_google_fonts_url( $requirements );
+	private function enqueue_converted_post_fonts( ?int $post_id = null ): void {
+		if ( null === $post_id ) {
+			if ( ! is_singular() ) {
+				return;
+			}
+			$post_id = (int) get_queried_object_id();
+		}
 
+		if ( $post_id <= 0 ) {
+			return;
+		}
+
+		$url = Elementor_Fonts_Service::get_post_fonts_url( $post_id );
 		if ( '' === $url ) {
 			return;
 		}
 
-		wp_enqueue_style( 'progressus-elementor-kit-fonts', $url, array(), null );
+		$handle = 'etg-google-fonts-' . md5( $url );
+		if ( isset( $this->enqueued_font_handles[ $handle ] ) ) {
+			return;
+		}
+
+		wp_enqueue_style( $handle, $url, array(), null );
+		$this->enqueued_font_handles[ $handle ] = true;
 	}
+
+	/**
+	 * Add Google Fonts preconnect hints.
+	 *
+	 * @param array $urls Existing hint entries.
+	 * @param string $relation_type Relation type.
+	 *
+	 * @return array
+	 */
+	public function add_font_resource_hints( array $urls, string $relation_type ): array {
+		if ( 'preconnect' !== $relation_type ) {
+			return $urls;
+		}
+
+		$urls[] = 'https://fonts.googleapis.com';
+		$urls[] = array(
+			'href'        => 'https://fonts.gstatic.com',
+			'crossorigin' => 'anonymous',
+		);
+
+		return $urls;
+	}
+
+	/**
+	 * Detect current edited post ID in block editor.
+	 *
+	 * @return int
+	 */
+	private function detect_editor_post_id(): int {
+		if ( isset( $_GET['post'] ) ) {
+			return (int) $_GET['post'];
+		}
+
+		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+		if ( is_object( $screen ) && isset( $screen->post_id ) ) {
+			return (int) $screen->post_id;
+		}
+
+		global $post;
+		if ( is_object( $post ) && isset( $post->ID ) ) {
+			return (int) $post->ID;
+		}
+
+		return 0;
+	}
+
 
 	/**
 	 * Initialize the plugin.
