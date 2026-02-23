@@ -79,8 +79,7 @@ class Icon_List_Widget_Handler implements Widget_Handler_Interface {
 				$classes[]          = 'has-text-color';
 				$classes[]          = 'has-' . Style_Parser::clean_class( $resolved_color['slug'] ) . '-color';
 			} elseif ( '' !== $resolved_color['color'] ) {
-				$attrs['style']['color']['text'] = $resolved_color['color'];
-				$classes[]                       = 'has-text-color';
+				$classes[] = 'has-text-color';
 			}
 
 			if ( '' !== $resolved_color['color'] ) {
@@ -127,24 +126,6 @@ class Icon_List_Widget_Handler implements Widget_Handler_Interface {
 			}
 		}
 
-		$align = Alignment_Helper::detect_alignment( $settings, array( 'align', 'alignment' ) );
-		if ( '' !== $align ) {
-			$attrs['textAlign'] = $align;
-
-			switch ( $align ) {
-				case 'center':
-					$classes[] = 'has-text-align-center';
-					break;
-				case 'right':
-					$classes[] = 'has-text-align-right';
-					break;
-				case 'left':
-				default:
-					$classes[] = 'has-text-align-left';
-					break;
-			}
-		}
-
 		if ( '' !== $custom_class ) {
 			$classes[] = $custom_class;
 		}
@@ -160,7 +141,7 @@ class Icon_List_Widget_Handler implements Widget_Handler_Interface {
 			}
 
 			// Match the design: uppercase social names.
-			$label = strtoupper( $label_raw );
+			$label = $label_raw;
 
 			$url = '';
 			if (
@@ -172,28 +153,39 @@ class Icon_List_Widget_Handler implements Widget_Handler_Interface {
 			}
 
 			if ( '' !== $url ) {
-				$parts[] = sprintf(
+				$item_content = sprintf(
 					'<a href="%s"%s>%s</a>',
 					esc_url( $url ),
 					$anchor_color_style,
-					esc_html( $label )
+					$label
 				);
 			} else {
-				$parts[] = esc_html( $label );
+				$item_content = $label;
 			}
+
+			$parts[] = sprintf( '<!-- wp:list-item --><li>%s</li><!-- /wp:list-item -->', $item_content );
 		}
 
 		if ( empty( $parts ) ) {
 			return '';
 		}
 
-		// Join items with non-breaking spaces so they stay visually grouped inline.
-		$html_text = implode( '&nbsp;&nbsp;&nbsp;', $parts );
+		$list_items = implode( "\n", $parts );
 
 		// Save custom CSS if present.
 		if ( '' !== $custom_css ) {
 			Style_Parser::save_custom_css( $custom_css );
 		}
+
+		// wp-block-list is always output by Gutenberg's save function — include it
+		// so our stored HTML matches and block validation passes.
+		array_unshift( $classes, 'wp-block-list' );
+
+		// Remove bullets via injected CSS (avoids style attribute mismatches with
+		// Gutenberg's block validator).
+		$no_bullets_css = '.wp-block-list';
+		Style_Parser::save_custom_css( $no_bullets_css );
+		$classes[] = 'no-bullets';
 
 		$attrs_json = '';
 		if ( ! empty( $attrs ) ) {
@@ -206,10 +198,10 @@ class Icon_List_Widget_Handler implements Widget_Handler_Interface {
 		}
 
 		return sprintf(
-			'<!-- wp:paragraph%s --><p%s>%s</p><!-- /wp:paragraph -->' . "\n",
+			'<!-- wp:list%s --><ul%s>%s</ul><!-- /wp:list -->' . "\n",
 			$attrs_json,
 			$class_attr,
-			$html_text
+			$list_items
 		);
 	}
 }
