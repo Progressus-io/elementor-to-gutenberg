@@ -1,0 +1,79 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "progressus/testimonial",
+  "version": "1.0.0",
+  "title": "Testimonial",
+  "category": "design",
+  "icon": "format-quote",
+  "description": "Single testimonial with avatar, name, job title and quote.",
+  "supports": {
+    "html": false,
+    "anchor": true
+  },
+  "attributes": {
+    "content": {
+      "type": "string",
+      "default": ""
+    },
+    "name": {
+      "type": "string",
+      "default": ""
+    },
+    "job": {
+      "type": "string",
+      "default": ""
+    },
+    "alignment": {
+      "type": "string",
+      "default": "left"
+    },
+    "imageUrl": {
+      "type": "string",
+      "default": ""
+    },
+    "imageId": {
+      "type": "number",
+      "default": 0
+    },
+    "imageSize": {
+      "type": "number",
+      "default": 63
+    },
+    "imageBorderRadius": {
+      "type": "object",
+      "default": {
+        "top": "0",
+        "right": "0",
+        "bottom": "0",
+        "left": "0",
+        "unit": "px"
+      }
+    },
+    "imageBorderWidth": {
+      "type": "object",
+      "default": {
+        "top": "0",
+        "right": "0",
+        "bottom": "0",
+        "left": "0",
+        "unit": "px"
+      }
+    },
+    "imageBorderColor": {
+      "type": "string",
+      "default": ""
+    },
+    "customId": {
+      "type": "string",
+      "default": ""
+    },
+    "customClass": {
+      "type": "string",
+      "default": ""
+    }
+  },
+  "textdomain": "progressus-gutenberg",
+  "editorScript": "file:./index.js",
+  "style": "file:./style-index.css"
+}
