@@ -649,7 +649,15 @@ class Admin_Settings {
 			return $this->render_container( $element );
 		}
 
-		if ( 'widget' === $el_type ) {
+		if ( 'section' === $el_type ) {
+			return $this->render_legacy_section( $element );
+		}
+
+		if ( 'column' === $el_type ) {
+			return $this->render_legacy_column( $element );
+		}
+
+		if ( 'widget' === $el_type || isset( $element['widgetType'] ) ) {
 			$widget_type = $element['widgetType'] ?? '';
 			$handler     = Widget_Handler_Factory::get_handler( $widget_type );
 			if ( null !== $handler ) {
@@ -660,6 +668,108 @@ class Admin_Settings {
 		}
 
 		return $this->render_placeholder_block( $element );
+	}
+
+	/**
+	 * Render a legacy section element.
+	 *
+	 * @param array $element Elementor section element.
+	 */
+	private function render_legacy_section( array $element ): string {
+		$children = is_array( $element['elements'] ?? null ) ? $element['elements'] : array();
+		$settings = is_array( $element['settings'] ?? null ) ? $element['settings'] : array();
+
+		$attributes = Style_Parser::parse_container_styles( $settings );
+		$attributes = $this->add_legacy_unique_class( $attributes, $element );
+
+		if ( isset( $settings['layout'] ) && 'full_width' === $settings['layout'] ) {
+			$attributes['align'] = 'full';
+		}
+
+		$column_children = array();
+		foreach ( $children as $child ) {
+			if ( ! is_array( $child ) || ! isset( $child['elType'] ) || 'column' !== $child['elType'] ) {
+				continue;
+			}
+
+			$column_children[] = $child;
+		}
+
+		if ( count( $column_children ) >= 2 ) {
+			$inner_html = '';
+			foreach ( $column_children as $column_element ) {
+				$content = $this->render_legacy_column( $column_element );
+				if ( '' === trim( $content ) ) {
+					continue;
+				}
+
+				$inner_html .= $content;
+			}
+
+			if ( '' === trim( $inner_html ) ) {
+				return '';
+			}
+
+			return Block_Builder::build( 'columns', $attributes, $inner_html );
+		}
+
+		$inner_html = '';
+		foreach ( $children as $child ) {
+			if ( ! is_array( $child ) ) {
+				continue;
+			}
+
+			$inner_html .= $this->render_element( $child );
+		}
+
+		if ( '' === trim( $inner_html ) ) {
+			return '';
+		}
+
+		return Block_Builder::build( 'group', $attributes, $inner_html );
+	}
+
+	/**
+	 * Render a legacy column element.
+	 *
+	 * @param array $element Elementor column element.
+	 */
+	private function render_legacy_column( array $element ): string {
+		$children = is_array( $element['elements'] ?? null ) ? $element['elements'] : array();
+		$settings = is_array( $element['settings'] ?? null ) ? $element['settings'] : array();
+
+		$attributes = Style_Parser::parse_container_styles( $settings );
+		$attributes = $this->add_legacy_unique_class( $attributes, $element );
+
+		if ( isset( $settings['_column_size'] ) && is_numeric( $settings['_column_size'] ) ) {
+			$attributes['width'] = (string) $settings['_column_size'] . '%';
+		}
+
+		$inner_html = '';
+		foreach ( $children as $child ) {
+			if ( ! is_array( $child ) ) {
+				continue;
+			}
+
+			$inner_html .= $this->render_element( $child );
+		}
+
+		return Block_Builder::build( 'column', $attributes, $inner_html );
+	}
+
+	/**
+	 * Add legacy element unique class to block attributes.
+	 *
+	 * @param array $attributes Block attributes.
+	 * @param array $element Elementor element.
+	 */
+	private function add_legacy_unique_class( array $attributes, array $element ): array {
+		$unique_class = Style_Parser::get_element_unique_class( $element );
+		if ( '' === $unique_class ) {
+			return $attributes;
+		}
+
+		return $this->add_class_to_attributes( $attributes, $unique_class );
 	}
 
 	/**
