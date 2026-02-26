@@ -29,6 +29,10 @@ use function wp_unslash;
 use function esc_attr;
 use function wp_json_encode;
 use function wp_update_post;
+use function add_management_page;
+use function add_filter;
+use function admin_url;
+use function sprintf;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -71,7 +75,8 @@ class Admin_Settings {
 	 */
 	public function __construct() {
 		add_action( 'admin_menu', array( $this, 'add_admin_menu' ) );
-		add_action( 'admin_init', array( $this, 'settings_init' ) );
+		add_action( 'admin_menu', array( $this, 'add_tools_menu' ) );
+		add_filter( 'plugin_action_links_' . GUTENBERG_PLUGIN_BASENAME, array( $this, 'add_plugin_action_links' ) );
 		add_filter( 'page_row_actions', array( $this, 'myplugin_add_convert_button' ), 10, 2 );
 		add_action( 'admin_post_myplugin_convert_page', array( $this, 'myplugin_handle_convert_page' ) );
 	}
@@ -165,8 +170,8 @@ class Admin_Settings {
 	 */
 	public function add_admin_menu(): void {
 		add_menu_page(
-			esc_html__( 'Elementor To Gutenberg Settings', 'elementor-to-gutenberg' ),
-			esc_html__( 'Elementor To Gutenberg Settings', 'elementor-to-gutenberg' ),
+			esc_html__( 'Migration Tool – Elementor to Gutenberg', 'elementor-to-gutenberg' ),
+			esc_html__( 'Migration Tool – Elementor to Gutenberg', 'elementor-to-gutenberg' ),
 			'manage_options',
 			'gutenberg-settings',
 			array( $this, 'settings_page_content' ),
@@ -175,42 +180,46 @@ class Admin_Settings {
 		);
 	}
 
+
 	/**
-	 * Initialize settings.
+	 * Add Tools menu entry that points to the existing settings page.
 	 */
-	public function settings_init(): void {
-		register_setting(
-			'gutenberg_settings_group',
-			'gutenberg_json_data',
-			array(
-				'sanitize_callback' => array( $this, 'handle_json_upload' ),
-			)
-		);
-
-		add_settings_section(
-			'gutenberg_settings_section',
-			esc_html__( 'Upload JSON Data', 'elementor-to-gutenberg' ),
-			null,
-			'gutenberg-settings'
-		);
-
-		add_settings_field(
-			'gutenberg_json_upload',
-			esc_html__( 'JSON File', 'elementor-to-gutenberg' ),
-			array( $this, 'json_upload_field_callback' ),
+	public function add_tools_menu(): void {
+		add_management_page(
+			esc_html__( 'Migration Tool – Elementor to Gutenberg', 'elementor-to-gutenberg' ),
+			esc_html__( 'Migration Tool: Elementor → Gutenberg', 'elementor-to-gutenberg' ),
+			'manage_options',
 			'gutenberg-settings',
-			'gutenberg_settings_section'
+			array( $this, 'settings_page_content' )
 		);
 	}
 
 	/**
-	 * Render JSON upload field.
+	 * Add quick links on the Plugins screen.
+	 *
+	 * @param array<string, string> $links Existing links.
+	 *
+	 * @return array<string, string>
 	 */
-	public function json_upload_field_callback(): void {
-		?>
-        <input type="file" name="json_upload" accept=".json"/>
-		<?php
+	public function add_plugin_action_links( array $links ): array {
+		$wizard_link = sprintf(
+			'<a href="%s">%s</a>',
+			esc_url( $this->get_wizard_url() ),
+			esc_html__( 'Open Migration Wizard', 'elementor-to-gutenberg' )
+		);
+
+		array_unshift( $links, $wizard_link );
+
+		return $links;
 	}
+
+	/**
+	 * Get direct URL to the migration wizard.
+	 */
+	private function get_wizard_url(): string {
+		return admin_url( 'admin.php?page=' . Batch_Convert_Wizard::MENU_SLUG );
+	}
+
 
 	/**
 	 * Handle JSON file upload and conversion.
@@ -291,33 +300,11 @@ class Admin_Settings {
 	public function settings_page_content(): void {
 		?>
         <div class="wrap">
-            <h1><?php esc_html_e( 'Gutenberg Settings', 'elementor-to-gutenberg' ); ?></h1>
-			<?php settings_errors( 'gutenberg_json_data' ); ?>
-            <form method="post" action="options.php" enctype="multipart/form-data" id="json-upload-form">
-				<?php
-				settings_fields( 'gutenberg_settings_group' );
-				do_settings_sections( 'gutenberg-settings' );
-				submit_button( esc_html__( 'Upload JSON File', 'elementor-to-gutenberg' ), 'primary', 'json-upload-btn' );
-				?>
-                <span id="json-upload-spinner" style="display:none;margin-left:10px;">
-					<img src="<?php echo esc_url( admin_url( 'images/spinner.gif' ) ); ?>"
-                         alt="<?php esc_attr_e( 'Loading', 'elementor-to-gutenberg' ); ?>"/> <?php esc_html_e( 'Uploading...', 'elementor-to-gutenberg' ); ?>
-				</span>
-            </form>
-            <script>
-                (function () {
-                    'use strict';
-                    var form = document.getElementById('json-upload-form');
-                    var button = document.getElementById('json-upload-btn');
-                    var spinner = document.getElementById('json-upload-spinner');
-                    if (form && button && spinner) {
-                        form.addEventListener('submit', function () {
-                            button.disabled = true;
-                            spinner.style.display = 'inline-block';
-                        });
-                    }
-                })();
-            </script>
+            <h1><?php esc_html_e( 'Migration Tool – Elementor to Gutenberg', 'elementor-to-gutenberg' ); ?></h1>
+            <p><?php esc_html_e( 'Professional migration tool to convert Elementor layouts into native Gutenberg blocks.', 'elementor-to-gutenberg' ); ?></p>
+            <p>
+                <a href="<?php echo esc_url( $this->get_wizard_url() ); ?>" class="button button-primary"><?php esc_html_e( 'Open Migration Wizard', 'elementor-to-gutenberg' ); ?></a>
+            </p>
         </div>
 		<?php
 	}

@@ -1,8 +1,8 @@
 <?php
 /**
- * Plugin Name: Elementor To Gutenberg
+ * Plugin Name: Migration Tool – Elementor to Gutenberg
  * Plugin URI: https://progressus.io/
- * Description: Elementor To Gutenberg plugin.
+ * Description: Professional migration tool to convert Elementor layouts into native Gutenberg blocks
  * Author: Progressus
  * Author URI: https://progressus.io/
  * Version: 1.0.0
