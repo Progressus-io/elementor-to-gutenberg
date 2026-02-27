@@ -74,7 +74,6 @@ class Admin_Settings {
 	 * Constructor.
 	 */
 	public function __construct() {
-		add_action( 'admin_menu', array( $this, 'add_admin_menu' ) );
 		add_action( 'admin_menu', array( $this, 'add_tools_menu' ) );
 		add_filter( 'plugin_action_links_' . GUTENBERG_PLUGIN_BASENAME, array( $this, 'add_plugin_action_links' ) );
 		add_filter( 'page_row_actions', array( $this, 'myplugin_add_convert_button' ), 10, 2 );
@@ -164,22 +163,6 @@ class Admin_Settings {
 
 		return $new_page_id;
 	}
-
-	/**
-	 * Add admin menu page.
-	 */
-	public function add_admin_menu(): void {
-		add_menu_page(
-			esc_html__( 'Migration Tool – Elementor to Gutenberg', 'elementor-to-gutenberg' ),
-			esc_html__( 'Migration Tool – Elementor to Gutenberg', 'elementor-to-gutenberg' ),
-			'manage_options',
-			'gutenberg-settings',
-			array( $this, 'settings_page_content' ),
-			'dashicons-admin-generic',
-			100
-		);
-	}
-
 
 	/**
 	 * Add Tools menu entry that points to the existing settings page.

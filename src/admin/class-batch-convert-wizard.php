@@ -157,7 +157,7 @@ class Batch_Convert_Wizard {
 	 */
 	public function register_menu(): void {
 		add_submenu_page(
-			'gutenberg-settings',
+			'tools.php',
 			esc_html__( 'Conversion Wizard', 'elementor-to-gutenberg' ),
 			esc_html__( 'Conversion Wizard', 'elementor-to-gutenberg' ),
 			'edit_pages',
