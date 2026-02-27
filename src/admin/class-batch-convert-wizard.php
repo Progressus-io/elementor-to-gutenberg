@@ -220,6 +220,7 @@ class Batch_Convert_Wizard {
         <div class="wrap ele2gb-wizard-wrap">
             <h1 class="wp-heading-inline"><?php esc_html_e( 'Gutenberg Conversion Wizard', 'elementor-to-gutenberg' ); ?></h1>
             <p class="description"><?php esc_html_e( 'Convert Elementor pages to Gutenberg blocks.', 'elementor-to-gutenberg' ); ?></p>
+            <?php Admin_Settings::render_conversion_warning_notice(); ?>
             <div id="ele2gb-batch-convert-root" class="ele2gb-wizard-root" aria-live="polite"></div>
         </div>
 		<?php

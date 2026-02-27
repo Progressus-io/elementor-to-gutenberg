@@ -220,6 +220,24 @@ class Admin_Settings {
 		return admin_url( 'admin.php?page=' . Batch_Convert_Wizard::MENU_SLUG );
 	}
 
+	/**
+	 * Render migration support warning notice.
+	 */
+	public static function render_conversion_warning_notice(): void {
+		?>
+        <div class="notice notice-warning">
+            <p><strong><?php echo esc_html__( 'Before you migrate: important compatibility limits', 'elementor-to-gutenberg' ); ?></strong></p>
+            <ul>
+                <li><?php echo esc_html__( 'Elementor Pro widgets and advanced Pro features are only partially supported, and output is not guaranteed to match exactly.', 'elementor-to-gutenberg' ); ?></li>
+                <li><?php echo esc_html__( 'Only Elementor-compatible themes are supported. ThemeForest themes, custom themes, and unknown themes are not supported.', 'elementor-to-gutenberg' ); ?></li>
+                <li><?php echo esc_html__( 'Animations and motion effects are not converted.', 'elementor-to-gutenberg' ); ?></li>
+                <li><?php echo esc_html__( 'Responsive tablet/mobile values are not first-class Gutenberg attributes, so responsive results may differ.', 'elementor-to-gutenberg' ); ?></li>
+                <li><?php echo esc_html__( 'Dynamic content, and third-party widgets may need manual cleanup after migration.', 'elementor-to-gutenberg' ); ?></li>
+            </ul>
+        </div>
+		<?php
+	}
+
 
 	/**
 	 * Handle JSON file upload and conversion.
@@ -302,6 +320,7 @@ class Admin_Settings {
         <div class="wrap">
             <h1><?php esc_html_e( 'Migration Tool – Elementor to Gutenberg', 'elementor-to-gutenberg' ); ?></h1>
             <p><?php esc_html_e( 'Professional migration tool to convert Elementor layouts into native Gutenberg blocks.', 'elementor-to-gutenberg' ); ?></p>
+            <?php self::render_conversion_warning_notice(); ?>
             <p>
                 <a href="<?php echo esc_url( $this->get_wizard_url() ); ?>" class="button button-primary"><?php esc_html_e( 'Open Migration Wizard', 'elementor-to-gutenberg' ); ?></a>
             </p>
