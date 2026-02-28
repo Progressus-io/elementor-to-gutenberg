@@ -21,6 +21,7 @@ use function date_i18n;
 use function delete_user_meta;
 use function esc_html__;
 use function get_current_user_id;
+use function get_bloginfo;
 use function get_edit_post_link;
 use function get_post_thumbnail_id;
 use function get_option;
@@ -287,12 +288,9 @@ class Batch_Convert_Wizard {
 		}
 
 		$theme_result = $this->maybe_switch_theme( $change_theme, $new_theme, $copy_custom_css, $mode );
+		$warnings     = array();
 		if ( is_wp_error( $theme_result ) ) {
-			wp_send_json_error(
-				array(
-					'message' => $theme_result->get_error_message(),
-				)
-			);
+			$warnings[] = $this->build_theme_warning_from_error( $theme_result );
 		}
 
 		if ( $apply_full_width ) {
@@ -340,6 +338,7 @@ class Batch_Convert_Wizard {
 				'error'   => 0,
 				'partial' => 0,
 			),
+			'warnings'        => $warnings,
 			'results'         => array(),
 		);
 
@@ -594,6 +593,8 @@ class Batch_Convert_Wizard {
 			'name'         => $current_theme->get( 'Name' ),
 			'slug'         => $current_stylesheet,
 			'isBlockTheme' => method_exists( $current_theme, 'is_block_theme' ) ? (bool) $current_theme->is_block_theme() : (bool) wp_is_block_theme(),
+			'screenshot'   => $current_theme->get_screenshot(),
+			'isInstalled'  => true,
 		);
 
 		$installed = array();
@@ -603,6 +604,8 @@ class Batch_Convert_Wizard {
 					'name'     => $theme->get( 'Name' ),
 					'slug'     => $slug,
 					'isActive' => $slug === $current_stylesheet,
+					'screenshot' => $theme->get_screenshot(),
+					'isInstalled' => true,
 				);
 			}
 		}
@@ -620,6 +623,8 @@ class Batch_Convert_Wizard {
 				continue;
 			}
 
+			$theme['isInstalled'] = false;
+			$theme['screenshot']  = 'https://s.w.org/themes/' . $theme['slug'] . '/screenshot.png';
 			$suggested[] = $theme;
 		}
 
@@ -1412,6 +1417,31 @@ class Batch_Convert_Wizard {
 		return true;
 	}
 
+	/**
+	 * Convert a theme WP_Error into a non-fatal job warning.
+	 *
+	 * @param WP_Error $error Theme operation error.
+	 */
+	private function build_theme_warning_from_error( WP_Error $error ): array {
+		$warning_code = 'theme_switch_failed';
+		$error_code   = (string) $error->get_error_code();
+
+		if ( false !== strpos( $error_code, 'install' ) ) {
+			$warning_code = 'theme_install_failed';
+		}
+
+		$message = esc_html__( 'Theme install/switch failed — conversion continued using current theme. To use this theme, please update WordPress.', 'elementor-to-gutenberg' );
+		if ( false !== strpos( $error_code, 'incompatible' ) || ( false !== strpos( strtolower( $error->get_error_message() ), 'requires' ) && false !== strpos( strtolower( $error->get_error_message() ), 'wordpress' ) ) ) {
+			$warning_code = 'theme_incompatible_wp';
+		}
+
+		return array(
+			'code'    => $warning_code,
+			'message' => $message,
+			'details' => $error->get_error_message(),
+		);
+	}
+
     /**
      * Apply full-width layout settings to the active block theme global styles.
      *
@@ -1615,6 +1645,13 @@ class Batch_Convert_Wizard {
 
 		if ( is_wp_error( $api ) ) {
 			return $api;
+		}
+
+		if ( ! empty( $api->requires ) && version_compare( get_bloginfo( 'version' ), (string) $api->requires, '<' ) ) {
+			return new WP_Error(
+				'ele2gb-theme-incompatible-wp',
+				esc_html__( 'This theme requires a newer WordPress version.', 'elementor-to-gutenberg' )
+			);
 		}
 
 		if ( empty( $api->download_link ) ) {
@@ -2651,6 +2688,7 @@ class Batch_Convert_Wizard {
 			'startedAt'      => (int) $job['started_at'],
 			'completedAt'    => (int) $job['completed_at'],
 			'duration'       => $duration,
+			'warnings'       => array_values( $job['warnings'] ?? array() ),
 		);
 	}
 
@@ -2700,15 +2738,26 @@ class Batch_Convert_Wizard {
 			'conflictDuplicate'      => esc_html__( 'Create duplicates with “(Converted)” suffix', 'elementor-to-gutenberg' ),
 			'themeStepTitle'         => esc_html__( 'Theme compatibility', 'elementor-to-gutenberg' ),
 			'themeStepDesc'          => esc_html__( 'Block themes work best with Gutenberg. You can keep your current theme or switch to a compatible one before conversion.', 'elementor-to-gutenberg' ),
+			'themeCompatibilityNote' => esc_html__( 'Some themes may require a newer WordPress version.', 'elementor-to-gutenberg' ),
 			'themeCurrentGood'       => esc_html__( 'Your current theme already supports Gutenberg and block templates.', 'elementor-to-gutenberg' ),
 			'themeSelectPrompt'      => esc_html__( 'Select a block theme for best compatibility.', 'elementor-to-gutenberg' ),
 			'themeKeepCurrent'       => esc_html__( 'Keep current theme', 'elementor-to-gutenberg' ),
 			'themeSuggestedCore'     => esc_html__( 'Suggested core block themes', 'elementor-to-gutenberg' ),
 			'themeInstalledList'     => esc_html__( 'Installed block themes', 'elementor-to-gutenberg' ),
 			'themeNoInstalled'       => esc_html__( 'No compatible block themes are installed.', 'elementor-to-gutenberg' ),
+			'themeSelectedSummary'   => esc_html__( 'Selected: %s', 'elementor-to-gutenberg' ),
+			'themeUsingCurrentSummary' => esc_html__( 'Using current theme: %s', 'elementor-to-gutenberg' ),
+			'themeStatusInstalled'   => esc_html__( 'Installed', 'elementor-to-gutenberg' ),
+			'themeStatusNotInstalled' => esc_html__( 'Not installed', 'elementor-to-gutenberg' ),
+			'themeBlockLabel'        => esc_html__( 'Block theme', 'elementor-to-gutenberg' ),
+			'themeSelected'          => esc_html__( 'Selected', 'elementor-to-gutenberg' ),
+			'themeActionUseTheme'    => esc_html__( 'Use this theme', 'elementor-to-gutenberg' ),
+			'themeActionInstall'     => esc_html__( 'Install', 'elementor-to-gutenberg' ),
+			'themeActionActive'      => esc_html__( 'Active', 'elementor-to-gutenberg' ),
 			'copyAdditionalCss'      => esc_html__( 'Copy Additional CSS from the current theme', 'elementor-to-gutenberg' ),
 			'themeSwitchError'       => esc_html__( 'Unable to switch themes. Please try again or choose a different theme.', 'elementor-to-gutenberg' ),
 			'themeActiveLabel'       => esc_html__( 'Active', 'elementor-to-gutenberg' ),
+			'themeWarningInline'     => esc_html__( 'Theme step failed — conversion continued using current theme. Update WordPress to use this theme.', 'elementor-to-gutenberg' ),
 			'layoutStepTitle'        => esc_html__( 'Layout settings', 'elementor-to-gutenberg' ),
 			'layoutStepDesc'         => esc_html__( 'Apply full-width layout defaults to the active block theme.', 'elementor-to-gutenberg' ),
 			'fullWidthLabel'         => esc_html__( 'Set site to Full Width (1440px)', 'elementor-to-gutenberg' ),

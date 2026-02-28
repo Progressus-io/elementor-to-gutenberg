@@ -791,31 +791,113 @@
             return container;
         }
 
-        renderThemeOption(theme, radioName) {
-            const label = document.createElement('label');
-            label.className = 'ele2gb-theme-card';
-            const input = document.createElement('input');
-            input.type = 'radio';
-            input.name = radioName;
-            input.value = theme.slug;
-            input.checked = (this.state.selectedThemeSlug || this.getCurrentThemeSlug()) === theme.slug;
-            input.addEventListener('change', () => {
-                this.state.selectedThemeSlug = theme.slug;
-                this.state.changeTheme = theme.slug !== this.getCurrentThemeSlug();
-                if (this.state.mode === 'auto' && this.state.changeTheme) {
-                    this.state.copyCustomCss = true;
-                }
-                this.clearNotice();
-                this.render();
-            });
-            label.appendChild(input);
-
-            const title = createElement('h3', null, theme.name || theme.slug);
-            label.appendChild(title);
-            if (theme.isActive) {
-                label.appendChild(createElement('span', 'ele2gb-status-badge ele2gb-status-converted', this.strings.themeActiveLabel || 'Active'));
+        getJobWarnings() {
+            if (!this.state.job || !Array.isArray(this.state.job.warnings)) {
+                return [];
             }
-            return label;
+            return this.state.job.warnings;
+        }
+
+        getThemeWarnings() {
+            return this.getJobWarnings().filter((warning) => {
+                return warning && typeof warning.code === 'string' && warning.code.indexOf('theme_') === 0;
+            });
+        }
+
+        renderThemeWarnings() {
+            const warnings = this.getThemeWarnings();
+            if (!warnings.length) {
+                return null;
+            }
+
+            const wrapper = createElement('div', 'ele2gb-theme-warning-list');
+            warnings.forEach((warning) => {
+                const message = warning.message || this.strings.themeWarningInline || 'Theme step failed — conversion continued using current theme. Update WordPress to use this theme.';
+                const details = warning.details ? ' ' + warning.details : '';
+                wrapper.appendChild(createElement('div', 'ele2gb-alert ele2gb-alert-warning', message + details));
+            });
+            return wrapper;
+        }
+
+        selectTheme(slug) {
+            this.state.selectedThemeSlug = slug;
+            this.state.changeTheme = slug !== this.getCurrentThemeSlug();
+            if (this.state.mode === 'auto' && this.state.changeTheme) {
+                this.state.copyCustomCss = true;
+            }
+            this.clearNotice();
+            this.render();
+        }
+
+        renderThemeCard(theme) {
+            const isSelected = (this.state.selectedThemeSlug || this.getCurrentThemeSlug()) === theme.slug;
+            const isActive = !!theme.isActive || theme.slug === this.getCurrentThemeSlug();
+            const isInstalled = theme.isInstalled !== false;
+            const card = createElement('article', 'ele2gb-theme-browser-card' + (isSelected ? ' is-selected' : ''));
+
+            const preview = createElement('div', 'ele2gb-theme-card-preview');
+            if (theme.screenshot) {
+                const image = document.createElement('img');
+                image.src = theme.screenshot;
+                image.alt = theme.name || theme.slug;
+                preview.appendChild(image);
+            } else {
+                preview.appendChild(createElement('div', 'ele2gb-theme-card-no-preview', theme.name || theme.slug));
+            }
+
+            const actions = createElement('div', 'ele2gb-theme-card-actions');
+            const buttonLabel = isActive
+                ? (this.strings.themeActionActive || 'Active')
+                : (isInstalled ? (this.strings.themeActionUseTheme || 'Use this theme') : (this.strings.themeActionInstall || 'Install'));
+            const buttonClass = 'button button-primary' + (isActive ? ' disabled' : '');
+            const actionButton = createButton(buttonLabel, buttonClass);
+            actionButton.disabled = isActive;
+            actionButton.addEventListener('click', (event) => {
+                event.preventDefault();
+                if (!isActive) {
+                    this.selectTheme(theme.slug);
+                }
+            });
+            actions.appendChild(actionButton);
+            preview.appendChild(actions);
+            card.appendChild(preview);
+
+            const body = createElement('div', 'ele2gb-theme-card-body');
+            const titleRow = createElement('div', 'ele2gb-theme-card-title-row');
+            titleRow.appendChild(createElement('h3', 'ele2gb-theme-card-title', theme.name || theme.slug));
+
+            const statusText = isActive
+                ? (this.strings.themeActiveLabel || 'Active')
+                : (isInstalled ? (this.strings.themeStatusInstalled || 'Installed') : (this.strings.themeStatusNotInstalled || 'Not installed'));
+            titleRow.appendChild(createElement('span', 'ele2gb-theme-status-pill', statusText));
+            body.appendChild(titleRow);
+
+            const labels = createElement('div', 'ele2gb-theme-card-labels');
+            labels.appendChild(createElement('span', 'ele2gb-theme-chip', this.strings.themeBlockLabel || 'Block theme'));
+            if (isSelected && !isActive) {
+                labels.appendChild(createElement('span', 'ele2gb-theme-chip ele2gb-theme-chip-selected', this.strings.themeSelected || 'Selected'));
+            }
+            body.appendChild(labels);
+
+            const selector = document.createElement('input');
+            selector.type = 'radio';
+            selector.name = 'ele2gb-theme-choice';
+            selector.value = theme.slug;
+            selector.checked = isSelected;
+            selector.className = 'screen-reader-text';
+            selector.addEventListener('change', () => this.selectTheme(theme.slug));
+            body.appendChild(selector);
+
+            card.addEventListener('click', (event) => {
+                if (event.target.tagName && event.target.tagName.toLowerCase() === 'button') {
+                    return;
+                }
+                this.selectTheme(theme.slug);
+            });
+
+            card.appendChild(body);
+
+            return card;
         }
 
         renderThemeStep() {
@@ -825,45 +907,48 @@
                 container.appendChild(createElement('p', 'ele2gb-step-description', this.strings.themeStepDesc));
             }
 
-            const radioName = 'ele2gb-theme-choice';
-            const optionsWrapper = createElement('div', 'ele2gb-theme-options');
+            const warningList = this.renderThemeWarnings();
+            if (warningList) {
+                container.appendChild(warningList);
+            }
 
+            if (this.strings.themeCompatibilityNote) {
+                container.appendChild(createElement('p', 'ele2gb-step-description', this.strings.themeCompatibilityNote));
+            }
+
+            const browser = createElement('div', 'ele2gb-theme-browser-grid');
             const currentTheme = {
                 slug: this.getCurrentThemeSlug(),
                 name: this.getCurrentThemeName(),
                 isActive: true,
+                isInstalled: true,
+                screenshot: this.themes.currentTheme && this.themes.currentTheme.screenshot ? this.themes.currentTheme.screenshot : '',
             };
-            optionsWrapper.appendChild(this.renderThemeOption(currentTheme, radioName));
+            browser.appendChild(this.renderThemeCard(currentTheme));
 
             const installed = Array.isArray(this.themes.installedBlockThemes) ? this.themes.installedBlockThemes : [];
             const suggested = Array.isArray(this.themes.suggestedCoreThemes) ? this.themes.suggestedCoreThemes : [];
 
-            if (installed.length) {
-                optionsWrapper.appendChild(createElement('h3', null, this.strings.themeInstalledList || 'Installed block themes'));
-                installed
-                    .filter((theme) => theme.slug !== currentTheme.slug)
-                    .forEach((theme) => {
-                        optionsWrapper.appendChild(this.renderThemeOption(theme, radioName));
-                    });
-            } else {
-                optionsWrapper.appendChild(createElement('p', 'ele2gb-step-description', this.strings.themeNoInstalled || 'No compatible block themes are installed.'));
-            }
-
-            if (suggested.length) {
-                optionsWrapper.appendChild(createElement('h3', null, this.strings.themeSuggestedCore || 'Suggested core block themes'));
-                suggested.forEach((theme) => {
-                    optionsWrapper.appendChild(this.renderThemeOption(theme, radioName));
+            installed
+                .filter((theme) => theme.slug !== currentTheme.slug)
+                .forEach((theme) => {
+                    browser.appendChild(this.renderThemeCard(theme));
                 });
-            }
 
-            container.appendChild(optionsWrapper);
+            suggested.forEach((theme) => {
+                browser.appendChild(this.renderThemeCard(theme));
+            });
 
-            if (this.isCurrentThemeBlock()) {
-                container.appendChild(createElement('p', 'ele2gb-step-description', this.strings.themeCurrentGood || 'Your current theme already supports Gutenberg and block templates.'));
-            } else {
-                container.appendChild(createElement('p', 'ele2gb-step-description', this.strings.themeSelectPrompt || 'Select a block theme for best compatibility.'));
-            }
+            container.appendChild(browser);
 
+            const selectedTheme = this.getSelectedTheme();
+            const selectedName = (selectedTheme && selectedTheme.name) || this.getCurrentThemeName();
+            const selectedSummary = this.willChangeTheme()
+                ? formatString(this.strings.themeSelectedSummary || 'Selected: %s', selectedName)
+                : formatString(this.strings.themeUsingCurrentSummary || 'Using current theme: %s', this.getCurrentThemeName());
+            container.appendChild(createElement('p', 'ele2gb-theme-selected-summary', selectedSummary));
+
+            const cssPanel = createElement('div', 'ele2gb-theme-options-panel');
             if (this.willChangeTheme() && this.state.mode === 'custom') {
                 const cssWrapper = document.createElement('label');
                 cssWrapper.className = 'ele2gb-inline-toggle';
@@ -876,9 +961,12 @@
                 });
                 cssWrapper.appendChild(checkbox);
                 cssWrapper.appendChild(createElement('span', null, this.strings.copyAdditionalCss || 'Copy Additional CSS from the current theme'));
-                container.appendChild(cssWrapper);
+                cssPanel.appendChild(cssWrapper);
             } else if (this.willChangeTheme() && this.state.mode === 'auto') {
-                container.appendChild(createElement('p', 'ele2gb-step-description', this.strings.copyAdditionalCss || 'Copy Additional CSS from the current theme'));
+                cssPanel.appendChild(createElement('p', 'ele2gb-step-description', this.strings.copyAdditionalCss || 'Copy Additional CSS from the current theme'));
+            }
+            if (cssPanel.childNodes.length) {
+                container.appendChild(cssPanel);
             }
 
             const buttons = createElement('div', 'ele2gb-wizard-buttons');
@@ -1330,6 +1418,11 @@
             const container = createElement('div');
             container.appendChild(createElement('h2', 'ele2gb-wizard-step-title', this.strings.reviewTitle || 'Review & Confirm'));
 
+            const reviewWarnings = this.renderThemeWarnings();
+            if (reviewWarnings) {
+                container.appendChild(reviewWarnings);
+            }
+
             const selectedCount = this.state.selectedPageIds.size;
             const convertedSelected = this.getSelectedPages().filter((page) => page.conversionStatus === 'converted').length;
             const convertCount = this.state.skipConverted ? Math.max(0, selectedCount - convertedSelected) : selectedCount;
@@ -1423,6 +1516,11 @@
 
             if (this.state.resumed) {
                 container.appendChild(createElement('div', 'ele2gb-alert ele2gb-alert-info', this.strings.resumeJob || 'Resuming an active conversion job.'));
+            }
+
+            const progressWarnings = this.renderThemeWarnings();
+            if (progressWarnings) {
+                container.appendChild(progressWarnings);
             }
 
             const job = this.state.job;
