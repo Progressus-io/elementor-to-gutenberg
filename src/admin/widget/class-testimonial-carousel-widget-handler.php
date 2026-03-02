@@ -128,17 +128,33 @@ class Testimonial_Carousel_Widget_Handler implements Widget_Handler_Interface {
 		}
 
 		$raw_line_height = 1.5;
+		$lh_unit         = $settings['content_typography_line_height']['unit'] ?? '';
 		if ( isset( $settings['content_typography_line_height']['size'] ) ) {
 			$raw_line_height = $settings['content_typography_line_height']['size'];
 		}
 
 		// Content typography.
+		$font_size_val = (int) ( $settings['content_typography_font_size']['size'] ?? 16 );
+
+		// save.js always appends 'px' to lineHeight, so we must store a pixel value.
+		// When Elementor provides a unitless multiplier (or em), convert to px via fontSize.
+		if ( is_numeric( $raw_line_height ) ) {
+			if ( 'px' === $lh_unit ) {
+				$line_height_px = (float) $raw_line_height;
+			} else {
+				// Treat as a CSS multiplier (e.g. 1.5) and convert to pixels.
+				$line_height_px = round( (float) $raw_line_height * $font_size_val, 2 );
+			}
+		} else {
+			$line_height_px = round( 1.5 * $font_size_val, 2 );
+		}
+
 		$content_typography              = array(
-			'fontSize'       => (int) ( $settings['content_typography_font_size']['size'] ?? 16 ),
+			'fontSize'       => $font_size_val,
 			'fontWeight'     => $settings['content_typography_font_weight'] ?? 'normal',
 			'fontStyle'      => $settings['content_typography_font_style'] ?? 'normal',
 			'textDecoration' => $settings['content_typography_text_decoration'] ?? 'none',
-			'lineHeight'     => is_numeric( $raw_line_height ) ? (float) $raw_line_height : 1.5,
+			'lineHeight'     => $line_height_px,
 			'letterSpacing'  => (float) ( $settings['content_typography_letter_spacing']['size'] ?? 0 ),
 			'wordSpacing'    => (float) ( $settings['content_typography_word_spacing']['size'] ?? 0 ),
 			'fontFamily'     => $settings['content_typography_font_family'] ?? '',
@@ -320,7 +336,7 @@ class Testimonial_Carousel_Widget_Handler implements Widget_Handler_Interface {
 		$custom_class              = $attributes['customClass'] ?? '';
 
 
-		$line_height = (string) ( $content_typography['lineHeight'] ?? '1.5' );
+		$line_height = (string) ( $content_typography['lineHeight'] ?? '24' );
 		$line_height = trim( $line_height );
 		if ( is_numeric( $line_height ) ) {
 			$line_height = rtrim( rtrim( sprintf( '%.6F', (float) $line_height ), '0' ), '.' ) . 'px';
@@ -328,9 +344,10 @@ class Testimonial_Carousel_Widget_Handler implements Widget_Handler_Interface {
 			$line_height = $line_height . 'px';
 		}
 
-		$content_style = sprintf(
-			'color:%s;font-size:%dpx;font-weight:%s;font-style:%s;text-decoration:%s;line-height:%s;letter-spacing:%spx;word-spacing:%spx;font-family:%s;margin-bottom:%dpx',
-			$content_color,
+		$content_color_style = '' !== $content_color ? 'color:' . $content_color . ';' : '';
+		$content_style       = sprintf(
+			'%sfont-size:%dpx;font-weight:%s;font-style:%s;text-decoration:%s;line-height:%s;letter-spacing:%spx;word-spacing:%spx;font-family:%s;margin-bottom:%dpx',
+			$content_color_style,
 			(int) ( $content_typography['fontSize'] ?? 16 ),
 			(string) ( $content_typography['fontWeight'] ?? 'normal' ),
 			(string) ( $content_typography['fontStyle'] ?? 'normal' ),
@@ -364,9 +381,10 @@ class Testimonial_Carousel_Widget_Handler implements Widget_Handler_Interface {
 		$html .= '<div class="swiper"><div class="swiper-wrapper">';
 
 		foreach ( $slides as $slide ) {
-			$slide_style = sprintf(
-				'background-color:%s;border:%dpx solid %s;border-radius:%dpx;padding:%dpx %dpx %dpx %dpx;text-align:%s;max-width:%d%%;margin:0 auto',
-				$slide_background_color,
+			$slide_bg_style = '' !== $slide_background_color ? 'background-color:' . $slide_background_color . ';' : '';
+			$slide_style    = sprintf(
+				'%sborder:%dpx solid %s;border-radius:%dpx;padding:%dpx %dpx %dpx %dpx;text-align:%s;max-width:%d%%;margin:0 auto',
+				$slide_bg_style,
 				$slide_border_size['top'],
 				$slide_border_color ?: '#ddd',
 				$slide_border_radius,
@@ -378,7 +396,7 @@ class Testimonial_Carousel_Widget_Handler implements Widget_Handler_Interface {
 				$width
 			);
 
-			$line_height = (string) ( $content_typography['lineHeight'] ?? '1.5' );
+			$line_height = (string) ( $content_typography['lineHeight'] ?? '24' );
 			$line_height = trim( $line_height );
 			if ( is_numeric( $line_height ) ) {
 				$line_height = rtrim( rtrim( sprintf( '%.6F', (float) $line_height ), '0' ), '.' ) . 'px';
@@ -386,9 +404,10 @@ class Testimonial_Carousel_Widget_Handler implements Widget_Handler_Interface {
 				$line_height = $line_height . 'px';
 			}
 
-			$content_style = sprintf(
-				'color:%s;font-size:%dpx;font-weight:%s;font-style:%s;text-decoration:%s;line-height:%s;letter-spacing:%spx;word-spacing:%spx;font-family:%s;margin-bottom:%dpx',
-				$content_color,
+			$content_color_style = '' !== $content_color ? 'color:' . $content_color . ';' : '';
+			$content_style       = sprintf(
+				'%sfont-size:%dpx;font-weight:%s;font-style:%s;text-decoration:%s;line-height:%s;letter-spacing:%spx;word-spacing:%spx;font-family:%s;margin-bottom:%dpx',
+				$content_color_style,
 				(int) ( $content_typography['fontSize'] ?? 16 ),
 				(string) ( $content_typography['fontWeight'] ?? 'normal' ),
 				(string) ( $content_typography['fontStyle'] ?? 'normal' ),
