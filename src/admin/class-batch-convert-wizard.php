@@ -8,6 +8,7 @@
 namespace Progressus\Gutenberg\Admin;
 
 use Progressus\Gutenberg\Admin\Admin_Settings;
+use Progressus\Gutenberg\Gutenberg;
 use WP_Error;
 use WP_Post;
 use WP_Query;
@@ -88,8 +89,6 @@ class Batch_Convert_Wizard {
 	private const NONCE_NAME = 'nonce';
 
 	private const JOB_TRANSIENT_PREFIX = 'ele2gb_job_';
-
-	private const TEMPLATE_SLUG = 'elementor-to-gutenberg-full-width.php';
 
 	private const JOB_TRANSIENT_TTL = 6 * HOUR_IN_SECONDS;
 
@@ -1727,7 +1726,6 @@ class Batch_Convert_Wizard {
 		}
 
 		$json_data = get_post_meta( $source_id, '_elementor_data', true );
-		$template  = (string) get_page_template_slug( $source_id );
 		if ( empty( $json_data ) ) {
 			$message           = esc_html__( 'Skipped: Elementor data not found.', 'elementor-to-gutenberg' );
 			$result['message'] = $message;
@@ -1823,9 +1821,7 @@ class Batch_Convert_Wizard {
             return $result;
         }
 
-        // Meta handling:
-        // - new target: copy all safe meta
-        // - existing target: update-mode copy (thumbnail only)
+
         if ( ! empty( $options['keep_meta'] ) ) {
             if ( $created_new_target ) {
                 $this->copy_post_meta( $source_id, $write_id );
@@ -1836,11 +1832,9 @@ class Batch_Convert_Wizard {
 
         Admin_Settings::instance()->finalize_converted_post( $write_id, $content, $created_new_target );
 
-		if ( ! empty( $options['assign_template'] ) ) {
-			update_post_meta( $write_id, '_wp_page_template', self::TEMPLATE_SLUG );
-		}
-
-		$this->normalize_page_template( $template, $write_id );
+		$is_full_width_source = $this->is_full_width_source_page( $source_id, $decoded, $json_data );
+		$target_template      = $this->determine_target_template_slug( $source_id, $is_full_width_source );
+		$this->apply_target_page_template( $write_id, $target_template );
 
 
 		$title   = get_the_title( $source_id );
@@ -1904,7 +1898,7 @@ class Batch_Convert_Wizard {
 			return;
 		}
 
-		$skip_keys = array( '_edit_lock', '_edit_last', '_elementor_data' );
+		$skip_keys = array( '_edit_lock', '_edit_last', '_elementor_data', '_wp_page_template', 'wp_template' );
 
 		foreach ( $meta as $key => $values ) {
 			if ( 0 === strpos( $key, '_elementor_' ) ) {
@@ -2914,38 +2908,166 @@ class Batch_Convert_Wizard {
 	}
 
 	/**
-	 * Ensure Elementor-specific templates are reset to the default template after conversion.
+	 * Determine the final target template slug for a converted page.
 	 *
-	 * @param string $source_template Template slug from the source page.
-	 * @param int $target_id Converted page ID.
+	 * @param int $source_id Source Elementor page ID.
+	 * @param bool $is_full_width_source Whether source page should be treated as full-width.
 	 */
-	private function normalize_page_template( string $source_template, int $target_id ): void {
-		if ( ! $target_id ) {
-			return;
-		}
+    private function determine_target_template_slug( int $source_id, bool $is_full_width_source ): string {
+        if ( ! $is_full_width_source ) {
+            return 'default';
+        }
 
-		if ( '' === $source_template || 'default' === $source_template ) {
-			return;
-		}
+        if ( ! function_exists( 'register_block_template' ) ) {
+            return 'default';
+        }
 
-		if ( ! $this->is_elementor_template_slug( $source_template ) ) {
-			return;
-		}
+        if ( ! function_exists( 'wp_is_block_theme' ) || ! wp_is_block_theme() ) {
+            return 'default';
+        }
 
-		update_post_meta( $target_id, '_wp_page_template', 'default' );
-	}
+        $template_id = Gutenberg::FULL_WIDTH_TEMPLATE_ID;
+        if ( $this->is_block_template_available_for_page( $template_id ) ) {
+            $slug = $template_id;
+            if ( false !== strpos( $template_id, '//' ) ) {
+                $parts = explode( '//', $template_id, 2 );
+                $slug  = isset( $parts[1] ) ? (string) $parts[1] : $template_id;
+            }
 
+            if ( '' !== $slug ) {
+                return $slug;
+            }
+        }
+
+        return 'default';
+    }
+
+    
 	/**
-	 * Determine whether the template slug belongs to an Elementor template.
+	 * Verify block template is available for page post type.
 	 *
-	 * @param string $template_slug Template slug to check.
+	 * @param string $template_id Full template ID.
 	 */
-	private function is_elementor_template_slug( string $template_slug ): bool {
-		if ( '' === $template_slug ) {
+	private function is_block_template_available_for_page( string $template_id ): bool {
+		if ( '' === $template_id ) {
 			return false;
 		}
 
-		return 0 === strpos( $template_slug, 'elementor' );
+		if ( function_exists( 'get_block_template' ) ) {
+			$template = get_block_template( $template_id, 'wp_template' );
+
+			return $template instanceof \WP_Block_Template;
+		}
+
+		if ( function_exists( 'get_block_templates' ) ) {
+			$slug = $template_id;
+			if ( false !== strpos( $template_id, '//' ) ) {
+				$parts = explode( '//', $template_id, 2 );
+				$slug  = $parts[1];
+			}
+
+			$templates = get_block_templates(
+				array(
+					'slug__in'  => array( $slug ),
+					'post_type' => 'page',
+				),
+				'wp_template'
+			);
+
+			if ( is_array( $templates ) ) {
+				foreach ( $templates as $template ) {
+					if ( isset( $template->id ) && $template_id === (string) $template->id ) {
+						return true;
+					}
+				}
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Apply page template metadata to the converted target page only.
+	 *
+	 * @param int $target_id Target Gutenberg page ID.
+	 * @param string $template_slug Template slug or template ID.
+	 */
+	private function apply_target_page_template( int $target_id, string $template_slug ): void {
+        if ( $target_id <= 0 ) {
+			return;
+		}
+
+		if ( '' === $template_slug || 'default' === $template_slug ) {
+			update_post_meta( $target_id, '_wp_page_template', 'default' );
+		} else {
+			update_post_meta( $target_id, '_wp_page_template', $template_slug );
+		}
+
+		delete_post_meta( $target_id, 'wp_template' );
+		clean_post_cache( $target_id );
+
+		$resolved = (string) get_post_meta( $target_id, '_wp_page_template', true );
+		if ( '' === $resolved ) {
+			update_post_meta( $target_id, '_wp_page_template', 'default' );
+			clean_post_cache( $target_id );
+		}
+	}
+
+	/**
+	 * Detect whether a source Elementor page should be treated as full-width.
+	 *
+	 * @param int $source_id Source page ID.
+	 * @param mixed $decoded Elementor JSON decoded payload.
+	 * @param string $json_data Raw Elementor JSON string.
+	 */
+	private function is_full_width_source_page( int $source_id, $decoded, string $json_data ): bool {
+		$template_slug = (string) get_page_template_slug( $source_id );
+		if ( in_array( $template_slug, array( 'elementor_canvas', 'elementor_full_width', 'elementor_header_footer' ), true ) ) {
+			return true;
+		}
+
+		if ( '' !== $template_slug && 0 === strpos( $template_slug, 'elementor' ) ) {
+			return true;
+		}
+
+		$page_settings = get_post_meta( $source_id, '_elementor_page_settings', true );
+		if ( is_array( $page_settings ) ) {
+			$page_layout = isset( $page_settings['page_layout'] ) ? (string) $page_settings['page_layout'] : '';
+			$template    = isset( $page_settings['template'] ) ? (string) $page_settings['template'] : '';
+			if ( '' !== $page_layout && false !== strpos( $page_layout, 'elementor' ) ) {
+				return true;
+			}
+			if ( '' !== $template && false !== strpos( $template, 'elementor' ) ) {
+				return true;
+			}
+			if ( in_array( $page_layout, array( 'canvas', 'full_width', 'elementor_canvas', 'elementor_full_width' ), true ) ) {
+				return true;
+			}
+		}
+
+		$haystack = $json_data;
+		if ( is_array( $decoded ) ) {
+			$reencoded = wp_json_encode( $decoded );
+			if ( is_string( $reencoded ) && '' !== $reencoded ) {
+				$haystack = $reencoded;
+			}
+		}
+
+		$indicators = array(
+			'stretch_section',
+			'"content_width":"full_width"',
+			'100vw',
+			'calc(50% - 50vw)',
+			'margin-left:-',
+		);
+
+		foreach ( $indicators as $indicator ) {
+			if ( false !== stripos( $haystack, $indicator ) ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**
