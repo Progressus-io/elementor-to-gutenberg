@@ -20,14 +20,16 @@ class Container_Classifier {
 	 */
 	public static function is_grid( array $element ): bool {
 		$settings    = is_array( $element['settings'] ?? null ) ? $element['settings'] : array();
-		$child_count = count( self::get_children( $element ) );
+		$direction   = self::get_flex_direction( $settings );
+
+		$has_explicit_grid_signal = false;
 
 		if ( self::has_class( $element, 'e-grid' ) ) {
-			return true;
+			$has_explicit_grid_signal = true;
 		}
 
 		if ( isset( $settings['container_type'] ) && 'grid' === $settings['container_type'] ) {
-			return true;
+			$has_explicit_grid_signal = true;
 		}
 
 		$grid_hints = array(
@@ -40,15 +42,20 @@ class Container_Classifier {
 
 		foreach ( $grid_hints as $hint ) {
 			if ( isset( $settings[ $hint ] ) && '' !== $settings[ $hint ] ) {
-				return true;
+				$has_explicit_grid_signal = true;
+				break;
 			}
 		}
 
 		if ( self::is_repeating_card_layout( $element ) ) {
-			return true;
+			$has_explicit_grid_signal = true;
 		}
 
-		return $child_count > 4;
+		if ( in_array( $direction, array( 'column', 'column-reverse' ), true ) ) {
+			return false;
+		}
+
+		return $has_explicit_grid_signal;
 	}
 
 	/**
@@ -60,6 +67,10 @@ class Container_Classifier {
 	public static function get_grid_column_count( array $element, int $child_count ): int {
 		$child_count = max( 1, $child_count );
 		$settings    = is_array( $element['settings'] ?? null ) ? $element['settings'] : array();
+
+		if ( in_array( self::get_flex_direction( $settings ), array( 'column', 'column-reverse' ), true ) ) {
+			return 1;
+		}
 
 		if ( isset( $settings['grid_columns_grid'] ) && is_array( $settings['grid_columns_grid'] ) ) {
 			$size = $settings['grid_columns_grid']['size'] ?? null;
