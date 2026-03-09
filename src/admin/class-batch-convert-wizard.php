@@ -8,6 +8,7 @@
 namespace Progressus\Gutenberg\Admin;
 
 use Progressus\Gutenberg\Admin\Admin_Settings;
+use Progressus\Gutenberg\Gutenberg;
 use WP_Error;
 use WP_Post;
 use WP_Query;
@@ -21,6 +22,7 @@ use function date_i18n;
 use function delete_user_meta;
 use function esc_html__;
 use function get_current_user_id;
+use function get_bloginfo;
 use function get_edit_post_link;
 use function get_post_thumbnail_id;
 use function get_option;
@@ -87,8 +89,6 @@ class Batch_Convert_Wizard {
 	private const NONCE_NAME = 'nonce';
 
 	private const JOB_TRANSIENT_PREFIX = 'ele2gb_job_';
-
-	private const TEMPLATE_SLUG = 'elementor-to-gutenberg-full-width.php';
 
 	private const JOB_TRANSIENT_TTL = 6 * HOUR_IN_SECONDS;
 
@@ -157,7 +157,7 @@ class Batch_Convert_Wizard {
 	 */
 	public function register_menu(): void {
 		add_submenu_page(
-			'gutenberg-settings',
+			'tools.php',
 			esc_html__( 'Conversion Wizard', 'elementor-to-gutenberg' ),
 			esc_html__( 'Conversion Wizard', 'elementor-to-gutenberg' ),
 			'edit_pages',
@@ -220,6 +220,7 @@ class Batch_Convert_Wizard {
         <div class="wrap ele2gb-wizard-wrap">
             <h1 class="wp-heading-inline"><?php esc_html_e( 'Gutenberg Conversion Wizard', 'elementor-to-gutenberg' ); ?></h1>
             <p class="description"><?php esc_html_e( 'Convert Elementor pages to Gutenberg blocks.', 'elementor-to-gutenberg' ); ?></p>
+            <?php Admin_Settings::render_conversion_warning_notice(); ?>
             <div id="ele2gb-batch-convert-root" class="ele2gb-wizard-root" aria-live="polite"></div>
         </div>
 		<?php
@@ -286,12 +287,9 @@ class Batch_Convert_Wizard {
 		}
 
 		$theme_result = $this->maybe_switch_theme( $change_theme, $new_theme, $copy_custom_css, $mode );
+		$warnings     = array();
 		if ( is_wp_error( $theme_result ) ) {
-			wp_send_json_error(
-				array(
-					'message' => $theme_result->get_error_message(),
-				)
-			);
+			$warnings[] = $this->build_theme_warning_from_error( $theme_result );
 		}
 
 		if ( $apply_full_width ) {
@@ -339,6 +337,7 @@ class Batch_Convert_Wizard {
 				'error'   => 0,
 				'partial' => 0,
 			),
+			'warnings'        => $warnings,
 			'results'         => array(),
 		);
 
@@ -593,6 +592,8 @@ class Batch_Convert_Wizard {
 			'name'         => $current_theme->get( 'Name' ),
 			'slug'         => $current_stylesheet,
 			'isBlockTheme' => method_exists( $current_theme, 'is_block_theme' ) ? (bool) $current_theme->is_block_theme() : (bool) wp_is_block_theme(),
+			'screenshot'   => $current_theme->get_screenshot(),
+			'isInstalled'  => true,
 		);
 
 		$installed = array();
@@ -602,6 +603,8 @@ class Batch_Convert_Wizard {
 					'name'     => $theme->get( 'Name' ),
 					'slug'     => $slug,
 					'isActive' => $slug === $current_stylesheet,
+					'screenshot' => $theme->get_screenshot(),
+					'isInstalled' => true,
 				);
 			}
 		}
@@ -619,6 +622,8 @@ class Batch_Convert_Wizard {
 				continue;
 			}
 
+			$theme['isInstalled'] = false;
+			$theme['screenshot']  = 'https://s.w.org/themes/' . $theme['slug'] . '/screenshot.png';
 			$suggested[] = $theme;
 		}
 
@@ -1411,6 +1416,31 @@ class Batch_Convert_Wizard {
 		return true;
 	}
 
+	/**
+	 * Convert a theme WP_Error into a non-fatal job warning.
+	 *
+	 * @param WP_Error $error Theme operation error.
+	 */
+	private function build_theme_warning_from_error( WP_Error $error ): array {
+		$warning_code = 'theme_switch_failed';
+		$error_code   = (string) $error->get_error_code();
+
+		if ( false !== strpos( $error_code, 'install' ) ) {
+			$warning_code = 'theme_install_failed';
+		}
+
+		$message = esc_html__( 'Theme install/switch failed — conversion continued using current theme. To use this theme, please update WordPress.', 'elementor-to-gutenberg' );
+		if ( false !== strpos( $error_code, 'incompatible' ) || ( false !== strpos( strtolower( $error->get_error_message() ), 'requires' ) && false !== strpos( strtolower( $error->get_error_message() ), 'wordpress' ) ) ) {
+			$warning_code = 'theme_incompatible_wp';
+		}
+
+		return array(
+			'code'    => $warning_code,
+			'message' => $message,
+			'details' => $error->get_error_message(),
+		);
+	}
+
     /**
      * Apply full-width layout settings to the active block theme global styles.
      *
@@ -1616,6 +1646,13 @@ class Batch_Convert_Wizard {
 			return $api;
 		}
 
+		if ( ! empty( $api->requires ) && version_compare( get_bloginfo( 'version' ), (string) $api->requires, '<' ) ) {
+			return new WP_Error(
+				'ele2gb-theme-incompatible-wp',
+				esc_html__( 'This theme requires a newer WordPress version.', 'elementor-to-gutenberg' )
+			);
+		}
+
 		if ( empty( $api->download_link ) ) {
 			return new WP_Error(
 				'ele2gb-theme-install-no-download',
@@ -1689,7 +1726,6 @@ class Batch_Convert_Wizard {
 		}
 
 		$json_data = get_post_meta( $source_id, '_elementor_data', true );
-		$template  = (string) get_page_template_slug( $source_id );
 		if ( empty( $json_data ) ) {
 			$message           = esc_html__( 'Skipped: Elementor data not found.', 'elementor-to-gutenberg' );
 			$result['message'] = $message;
@@ -1785,9 +1821,7 @@ class Batch_Convert_Wizard {
             return $result;
         }
 
-        // Meta handling:
-        // - new target: copy all safe meta
-        // - existing target: update-mode copy (thumbnail only)
+
         if ( ! empty( $options['keep_meta'] ) ) {
             if ( $created_new_target ) {
                 $this->copy_post_meta( $source_id, $write_id );
@@ -1798,11 +1832,9 @@ class Batch_Convert_Wizard {
 
         Admin_Settings::instance()->finalize_converted_post( $write_id, $content, $created_new_target );
 
-		if ( ! empty( $options['assign_template'] ) ) {
-			update_post_meta( $write_id, '_wp_page_template', self::TEMPLATE_SLUG );
-		}
-
-		$this->normalize_page_template( $template, $write_id );
+		$is_full_width_source = $this->is_full_width_source_page( $source_id, $decoded, $json_data );
+		$target_template      = $this->determine_target_template_slug( $source_id, $is_full_width_source );
+		$this->apply_target_page_template( $write_id, $target_template );
 
 
 		$title   = get_the_title( $source_id );
@@ -1866,7 +1898,7 @@ class Batch_Convert_Wizard {
 			return;
 		}
 
-		$skip_keys = array( '_edit_lock', '_edit_last', '_elementor_data' );
+		$skip_keys = array( '_edit_lock', '_edit_last', '_elementor_data', '_wp_page_template', 'wp_template' );
 
 		foreach ( $meta as $key => $values ) {
 			if ( 0 === strpos( $key, '_elementor_' ) ) {
@@ -2650,6 +2682,7 @@ class Batch_Convert_Wizard {
 			'startedAt'      => (int) $job['started_at'],
 			'completedAt'    => (int) $job['completed_at'],
 			'duration'       => $duration,
+			'warnings'       => array_values( $job['warnings'] ?? array() ),
 		);
 	}
 
@@ -2699,15 +2732,26 @@ class Batch_Convert_Wizard {
 			'conflictDuplicate'      => esc_html__( 'Create duplicates with “(Converted)” suffix', 'elementor-to-gutenberg' ),
 			'themeStepTitle'         => esc_html__( 'Theme compatibility', 'elementor-to-gutenberg' ),
 			'themeStepDesc'          => esc_html__( 'Block themes work best with Gutenberg. You can keep your current theme or switch to a compatible one before conversion.', 'elementor-to-gutenberg' ),
+			'themeCompatibilityNote' => esc_html__( 'Some themes may require a newer WordPress version.', 'elementor-to-gutenberg' ),
 			'themeCurrentGood'       => esc_html__( 'Your current theme already supports Gutenberg and block templates.', 'elementor-to-gutenberg' ),
 			'themeSelectPrompt'      => esc_html__( 'Select a block theme for best compatibility.', 'elementor-to-gutenberg' ),
 			'themeKeepCurrent'       => esc_html__( 'Keep current theme', 'elementor-to-gutenberg' ),
 			'themeSuggestedCore'     => esc_html__( 'Suggested core block themes', 'elementor-to-gutenberg' ),
 			'themeInstalledList'     => esc_html__( 'Installed block themes', 'elementor-to-gutenberg' ),
 			'themeNoInstalled'       => esc_html__( 'No compatible block themes are installed.', 'elementor-to-gutenberg' ),
+			'themeSelectedSummary'   => esc_html__( 'Selected: %s', 'elementor-to-gutenberg' ),
+			'themeUsingCurrentSummary' => esc_html__( 'Using current theme: %s', 'elementor-to-gutenberg' ),
+			'themeStatusInstalled'   => esc_html__( 'Installed', 'elementor-to-gutenberg' ),
+			'themeStatusNotInstalled' => esc_html__( 'Not installed', 'elementor-to-gutenberg' ),
+			'themeBlockLabel'        => esc_html__( 'Block theme', 'elementor-to-gutenberg' ),
+			'themeSelected'          => esc_html__( 'Selected', 'elementor-to-gutenberg' ),
+			'themeActionUseTheme'    => esc_html__( 'Use this theme', 'elementor-to-gutenberg' ),
+			'themeActionInstall'     => esc_html__( 'Install', 'elementor-to-gutenberg' ),
+			'themeActionActive'      => esc_html__( 'Active', 'elementor-to-gutenberg' ),
 			'copyAdditionalCss'      => esc_html__( 'Copy Additional CSS from the current theme', 'elementor-to-gutenberg' ),
 			'themeSwitchError'       => esc_html__( 'Unable to switch themes. Please try again or choose a different theme.', 'elementor-to-gutenberg' ),
 			'themeActiveLabel'       => esc_html__( 'Active', 'elementor-to-gutenberg' ),
+			'themeWarningInline'     => esc_html__( 'Theme step failed — conversion continued using current theme. Update WordPress to use this theme.', 'elementor-to-gutenberg' ),
 			'layoutStepTitle'        => esc_html__( 'Layout settings', 'elementor-to-gutenberg' ),
 			'layoutStepDesc'         => esc_html__( 'Apply full-width layout defaults to the active block theme.', 'elementor-to-gutenberg' ),
 			'fullWidthLabel'         => esc_html__( 'Set site to Full Width (1440px)', 'elementor-to-gutenberg' ),
@@ -2864,38 +2908,166 @@ class Batch_Convert_Wizard {
 	}
 
 	/**
-	 * Ensure Elementor-specific templates are reset to the default template after conversion.
+	 * Determine the final target template slug for a converted page.
 	 *
-	 * @param string $source_template Template slug from the source page.
-	 * @param int $target_id Converted page ID.
+	 * @param int $source_id Source Elementor page ID.
+	 * @param bool $is_full_width_source Whether source page should be treated as full-width.
 	 */
-	private function normalize_page_template( string $source_template, int $target_id ): void {
-		if ( ! $target_id ) {
-			return;
-		}
+    private function determine_target_template_slug( int $source_id, bool $is_full_width_source ): string {
+        if ( ! $is_full_width_source ) {
+            return 'default';
+        }
 
-		if ( '' === $source_template || 'default' === $source_template ) {
-			return;
-		}
+        if ( ! function_exists( 'register_block_template' ) ) {
+            return 'default';
+        }
 
-		if ( ! $this->is_elementor_template_slug( $source_template ) ) {
-			return;
-		}
+        if ( ! function_exists( 'wp_is_block_theme' ) || ! wp_is_block_theme() ) {
+            return 'default';
+        }
 
-		update_post_meta( $target_id, '_wp_page_template', 'default' );
-	}
+        $template_id = Gutenberg::FULL_WIDTH_TEMPLATE_ID;
+        if ( $this->is_block_template_available_for_page( $template_id ) ) {
+            $slug = $template_id;
+            if ( false !== strpos( $template_id, '//' ) ) {
+                $parts = explode( '//', $template_id, 2 );
+                $slug  = isset( $parts[1] ) ? (string) $parts[1] : $template_id;
+            }
 
+            if ( '' !== $slug ) {
+                return $slug;
+            }
+        }
+
+        return 'default';
+    }
+
+    
 	/**
-	 * Determine whether the template slug belongs to an Elementor template.
+	 * Verify block template is available for page post type.
 	 *
-	 * @param string $template_slug Template slug to check.
+	 * @param string $template_id Full template ID.
 	 */
-	private function is_elementor_template_slug( string $template_slug ): bool {
-		if ( '' === $template_slug ) {
+	private function is_block_template_available_for_page( string $template_id ): bool {
+		if ( '' === $template_id ) {
 			return false;
 		}
 
-		return 0 === strpos( $template_slug, 'elementor' );
+		if ( function_exists( 'get_block_template' ) ) {
+			$template = get_block_template( $template_id, 'wp_template' );
+
+			return $template instanceof \WP_Block_Template;
+		}
+
+		if ( function_exists( 'get_block_templates' ) ) {
+			$slug = $template_id;
+			if ( false !== strpos( $template_id, '//' ) ) {
+				$parts = explode( '//', $template_id, 2 );
+				$slug  = $parts[1];
+			}
+
+			$templates = get_block_templates(
+				array(
+					'slug__in'  => array( $slug ),
+					'post_type' => 'page',
+				),
+				'wp_template'
+			);
+
+			if ( is_array( $templates ) ) {
+				foreach ( $templates as $template ) {
+					if ( isset( $template->id ) && $template_id === (string) $template->id ) {
+						return true;
+					}
+				}
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Apply page template metadata to the converted target page only.
+	 *
+	 * @param int $target_id Target Gutenberg page ID.
+	 * @param string $template_slug Template slug or template ID.
+	 */
+	private function apply_target_page_template( int $target_id, string $template_slug ): void {
+        if ( $target_id <= 0 ) {
+			return;
+		}
+
+		if ( '' === $template_slug || 'default' === $template_slug ) {
+			update_post_meta( $target_id, '_wp_page_template', 'default' );
+		} else {
+			update_post_meta( $target_id, '_wp_page_template', $template_slug );
+		}
+
+		delete_post_meta( $target_id, 'wp_template' );
+		clean_post_cache( $target_id );
+
+		$resolved = (string) get_post_meta( $target_id, '_wp_page_template', true );
+		if ( '' === $resolved ) {
+			update_post_meta( $target_id, '_wp_page_template', 'default' );
+			clean_post_cache( $target_id );
+		}
+	}
+
+	/**
+	 * Detect whether a source Elementor page should be treated as full-width.
+	 *
+	 * @param int $source_id Source page ID.
+	 * @param mixed $decoded Elementor JSON decoded payload.
+	 * @param string $json_data Raw Elementor JSON string.
+	 */
+	private function is_full_width_source_page( int $source_id, $decoded, string $json_data ): bool {
+		$template_slug = (string) get_page_template_slug( $source_id );
+		if ( in_array( $template_slug, array( 'elementor_canvas', 'elementor_full_width', 'elementor_header_footer' ), true ) ) {
+			return true;
+		}
+
+		if ( '' !== $template_slug && 0 === strpos( $template_slug, 'elementor' ) ) {
+			return true;
+		}
+
+		$page_settings = get_post_meta( $source_id, '_elementor_page_settings', true );
+		if ( is_array( $page_settings ) ) {
+			$page_layout = isset( $page_settings['page_layout'] ) ? (string) $page_settings['page_layout'] : '';
+			$template    = isset( $page_settings['template'] ) ? (string) $page_settings['template'] : '';
+			if ( '' !== $page_layout && false !== strpos( $page_layout, 'elementor' ) ) {
+				return true;
+			}
+			if ( '' !== $template && false !== strpos( $template, 'elementor' ) ) {
+				return true;
+			}
+			if ( in_array( $page_layout, array( 'canvas', 'full_width', 'elementor_canvas', 'elementor_full_width' ), true ) ) {
+				return true;
+			}
+		}
+
+		$haystack = $json_data;
+		if ( is_array( $decoded ) ) {
+			$reencoded = wp_json_encode( $decoded );
+			if ( is_string( $reencoded ) && '' !== $reencoded ) {
+				$haystack = $reencoded;
+			}
+		}
+
+		$indicators = array(
+			'stretch_section',
+			'"content_width":"full_width"',
+			'100vw',
+			'calc(50% - 50vw)',
+			'margin-left:-',
+		);
+
+		foreach ( $indicators as $indicator ) {
+			if ( false !== stripos( $haystack, $indicator ) ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**

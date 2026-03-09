@@ -21,6 +21,7 @@ use Progressus\Gutenberg\Admin\Helper\Style_Parser;
  * @package Progressus\Gutenberg
  */
 class Gutenberg {
+	public const FULL_WIDTH_TEMPLATE_ID = 'progressus-etg//full-width-page';
 
 
 	/**
@@ -291,8 +292,32 @@ class Gutenberg {
 	 * Initialize the plugin.
 	 */
 	public function init(): void {
+		$this->register_full_width_page_template();
 		Admin_Settings::instance();
 		Batch_Convert_Wizard::instance();
+	}
+
+	/**
+	 * Register a reusable full-width page block template for converted pages.
+	 */
+	public function register_full_width_page_template(): void {
+		if ( ! function_exists( 'register_block_template' ) ) {
+			return;
+		}
+
+		if ( ! function_exists( 'wp_is_block_theme' ) || ! wp_is_block_theme() ) {
+			return;
+		}
+
+		register_block_template(
+			self::FULL_WIDTH_TEMPLATE_ID,
+			array(
+				'title'       => __( 'ETG Full Width Page', 'elementor-to-gutenberg' ),
+				'description' => __( 'Canvas-like template for converted full width pages', 'elementor-to-gutenberg' ),
+				'post_types'  => array( 'page' ),
+				'content'     => "<!-- wp:group {\"tagName\":\"main\",\"layout\":{\"type\":\"default\"}} -->\n<main class=\"wp-block-group\"><!-- wp:post-content {\"layout\":{\"type\":\"default\"}} /--></main>\n<!-- /wp:group -->",
+			)
+		);
 	}
 
 	/**

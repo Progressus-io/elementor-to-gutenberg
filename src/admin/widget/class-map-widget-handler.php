@@ -21,12 +21,13 @@ class Map_Widget_Handler implements Widget_Handler_Interface {
 	 * Handle conversion of Elementor map widget to Gutenberg block.
 	 *
 	 * @param array $element Elementor element data.
+	 *
 	 * @return string Gutenberg block markup.
 	 */
 	public function handle( array $element ): string {
-		$settings   = $element['settings'] ?? array();
-		$custom_css = $settings['custom_css'] ?? '';
-		$custom_id  = $settings['_element_id'] ?? '';
+		$settings     = $element['settings'] ?? array();
+		$custom_css   = $settings['custom_css'] ?? '';
+		$custom_id    = $settings['_element_id'] ?? '';
 		$custom_class = $settings['_css_classes'] ?? '';
 
 		// Normalize location data.
@@ -38,24 +39,25 @@ class Map_Widget_Handler implements Widget_Handler_Interface {
 
 		$loc['address'] = $settings['address'] ?? '';
 
-		$zoom   = isset( $settings['zoom'] ) ? intval( $settings['zoom']['size'] ) : 14;
-		$height = isset( $settings['height'] ) ? intval( $settings['height'] ) : 400;
+		$zoom = isset( $settings['zoom'] ) ? intval( $settings['zoom']['size'] ) : 14;
+		//$height = isset( $settings['height'] ) ? intval( $settings['height'] ) : 400;
+		$height = $this->get_dimension_size( isset( $settings['height'] ) ? $settings['height'] : 0, 450 );
 
 		// Build attributes that represent the original settings (keep location object and address)
-		$attributes = array(
+		$attributes    = array(
 			'location' => array(
 				'address' => $loc['address'],
 				'lat'     => $loc['lat'] ?? null,
 				'lng'     => $loc['lng'] ?? null,
 			),
-			'address' => $loc['address'],
-			'zoom'    => $zoom,
-			'height'  => $height,
-			'mapType' => $settings['map_type'] ?? ( $settings['mapType'] ?? '' ),
-			'lat'     => $loc['lat'] ?? null,
-			'lng'     => $loc['lng'] ?? null,
+			'address'  => $loc['address'],
+			'zoom'     => $zoom,
+			'height'   => $height,
+			'mapType'  => $settings['map_type'] ?? ( $settings['mapType'] ?? '' ),
+			'lat'      => $loc['lat'] ?? null,
+			'lng'      => $loc['lng'] ?? null,
 		);
-		$spacing    = Style_Parser::parse_spacing( $settings );
+		$spacing       = Style_Parser::parse_spacing( $settings );
 		$spacing_attrs = ! empty( $spacing['attributes'] ) ? $spacing['attributes'] : array();
 
 		$norm_spacing = array(
@@ -91,8 +93,8 @@ class Map_Widget_Handler implements Widget_Handler_Interface {
 			}
 		}
 
-		$attributes['_margin'] = $norm_spacing['margin'];
-		$attributes['_padding'] = $norm_spacing['padding'];
+		$attributes['_margin']          = $norm_spacing['margin'];
+		$attributes['_padding']         = $norm_spacing['padding'];
 		$attributes['style']['spacing'] = $norm_spacing;
 
 		$attrs_json = wp_json_encode( $attributes );
@@ -115,16 +117,16 @@ class Map_Widget_Handler implements Widget_Handler_Interface {
 		// Build shorthand style attribute from normalized spacing to match client-side save output.
 		$style_parts = array();
 		if ( isset( $attributes['_margin'] ) && is_array( $attributes['_margin'] ) ) {
-			$m = $attributes['_margin'];
+			$m             = $attributes['_margin'];
 			$style_parts[] = sprintf( 'margin:%1$spx %2$spx %3$spx %4$spx', intval( $m['top'] ), intval( $m['right'] ), intval( $m['bottom'] ), intval( $m['left'] ) );
 		}
 		if ( isset( $attributes['_padding'] ) && is_array( $attributes['_padding'] ) ) {
-			$p = $attributes['_padding'];
+			$p             = $attributes['_padding'];
 			$style_parts[] = sprintf( 'padding:%1$spx %2$spx %3$spx %4$spx', intval( $p['top'] ), intval( $p['right'] ), intval( $p['bottom'] ), intval( $p['left'] ) );
 		}
 		$style_attr = implode( ';', $style_parts );
 
-		$open = '<!-- wp:progressus/google-map ' . $attrs_json . ' -->';
+		$open  = '<!-- wp:progressus/google-map ' . $attrs_json . ' -->';
 		$inner = '';
 		if ( ! $src ) {
 			$inner = sprintf( '<div class="wp-block-progressus-google-map" style="%1$s"><div style="height:%2$spx;background:#f3f3f3;border:1px solid #ddd"></div></div>', esc_attr( $style_attr ), esc_attr( $height ) );
@@ -135,5 +137,17 @@ class Map_Widget_Handler implements Widget_Handler_Interface {
 		$close = '<!-- /wp:progressus/google-map -->';
 
 		return $open . "\n" . $inner . "\n" . $close . "\n";
+	}
+
+	private function get_dimension_size( $value, $default = 0 ) {
+		if ( is_array( $value ) && isset( $value['size'] ) && '' !== $value['size'] && null !== $value['size'] ) {
+			return absint( $value['size'] );
+		}
+
+		if ( is_numeric( $value ) ) {
+			return absint( $value );
+		}
+
+		return absint( $default );
 	}
 }

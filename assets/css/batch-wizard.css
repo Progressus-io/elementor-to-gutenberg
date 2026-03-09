@@ -288,3 +288,132 @@
         align-items: stretch;
     }
 }
+.ele2gb-theme-browser-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
+    margin: 16px 0;
+}
+
+.ele2gb-theme-browser-card {
+    border: 1px solid #dcdcde;
+    background: #fff;
+    cursor: pointer;
+    transition: box-shadow .2s ease, border-color .2s ease;
+}
+
+.ele2gb-theme-browser-card:hover {
+    border-color: #8c8f94;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .08);
+}
+
+.ele2gb-theme-browser-card.is-selected {
+    border-color: #2271b1;
+    box-shadow: 0 0 0 1px #2271b1;
+}
+
+.ele2gb-theme-card-preview {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    background: #f6f7f7;
+    overflow: hidden;
+}
+
+.ele2gb-theme-card-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.ele2gb-theme-card-no-preview {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #646970;
+    font-size: 13px;
+    text-align: center;
+    padding: 12px;
+}
+
+.ele2gb-theme-card-actions {
+    position: absolute;
+    inset: auto 0 0 0;
+    background: rgba(29, 35, 39, .88);
+    padding: 10px;
+    display: flex;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity .2s ease;
+}
+
+.ele2gb-theme-browser-card:hover .ele2gb-theme-card-actions,
+.ele2gb-theme-browser-card.is-selected .ele2gb-theme-card-actions {
+    opacity: 1;
+}
+
+.ele2gb-theme-card-body {
+    padding: 12px;
+}
+
+.ele2gb-theme-card-title-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    align-items: center;
+}
+
+.ele2gb-theme-card-title {
+    margin: 0;
+    font-size: 15px;
+}
+
+.ele2gb-theme-status-pill {
+    font-size: 11px;
+    border: 1px solid #dcdcde;
+    border-radius: 999px;
+    padding: 1px 8px;
+    color: #3c434a;
+    background: #f6f7f7;
+    white-space: nowrap;
+}
+
+.ele2gb-theme-card-labels {
+    margin-top: 8px;
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.ele2gb-theme-chip {
+    font-size: 11px;
+    border: 1px solid #dcdcde;
+    border-radius: 3px;
+    padding: 1px 6px;
+    background: #fff;
+    color: #50575e;
+}
+
+.ele2gb-theme-chip-selected {
+    border-color: #2271b1;
+    color: #135e96;
+    background: #f0f6fc;
+}
+
+.ele2gb-theme-selected-summary {
+    margin: 8px 0 0;
+    font-weight: 600;
+}
+
+.ele2gb-theme-options-panel {
+    border: 1px solid #dcdcde;
+    border-radius: 4px;
+    padding: 12px;
+    margin-top: 12px;
+    background: #f9f9f9;
+}
+
+.ele2gb-theme-warning-list .ele2gb-alert {
+    margin-bottom: 12px;
+}
