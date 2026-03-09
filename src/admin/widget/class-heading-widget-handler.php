@@ -39,18 +39,19 @@ class Heading_Widget_Handler implements Widget_Handler_Interface {
 		}
 
 		$header_size = isset( $settings['header_size'] ) ? (string) $settings['header_size'] : 'h2';
-		if ( ! preg_match( '/^h[1-6]$/', $header_size ) ) {
-			$header_size = 'h2';
-		}
-		$level = (int) substr( $header_size, 1 );
+		$is_heading  = 1 === preg_match( '/^h[1-6]$/', $header_size );
+		$level       = $is_heading ? (int) substr( $header_size, 1 ) : 0;
 
 		$align         = Alignment_Helper::detect_alignment( $settings, array( 'align' ) );
 		$align_payload = Alignment_Helper::build_text_alignment_payload( $align );
 
 		$attrs = array(
-			'level'     => $level,
-			'className' => 'wp-block-heading',
+			'className' => $is_heading ? 'wp-block-heading' : 'wp-block-paragraph',
 		);
+
+		if ( $is_heading ) {
+			$attrs['level'] = $level;
+		}
 
 		$element_class = Style_Parser::get_element_unique_class( $element );
 		if ( '' !== $element_class ) {
@@ -61,7 +62,47 @@ class Heading_Widget_Handler implements Widget_Handler_Interface {
 			$attrs = array_merge( $attrs, $align_payload['attributes'] );
 		}
 
-		$this->register_heading_external_styles( $element_class, $settings );
+		$this->register_heading_external_styles( $element_class, $settings, $is_heading ? 'wp-block-heading' : 'wp-block-paragraph' );
+
+		if ( ! $is_heading ) {
+			return Block_Builder::build_prepared(
+				'paragraph',
+				$attrs,
+				static function ( array $prepared_attrs ) use ( $title ): string {
+					$classes = array( 'wp-block-paragraph' );
+
+					if ( isset( $prepared_attrs['textAlign'] ) && is_string( $prepared_attrs['textAlign'] ) && '' !== $prepared_attrs['textAlign'] ) {
+						$classes[] = 'has-text-align-' . Style_Parser::clean_class( (string) $prepared_attrs['textAlign'] );
+					}
+
+					if ( isset( $prepared_attrs['className'] ) && is_string( $prepared_attrs['className'] ) && '' !== trim( $prepared_attrs['className'] ) ) {
+						$parts = preg_split( '/\s+/', trim( $prepared_attrs['className'] ) );
+						if ( is_array( $parts ) ) {
+							foreach ( $parts as $part ) {
+								$clean = Style_Parser::clean_class( (string) $part );
+								if ( '' !== $clean ) {
+									$classes[] = $clean;
+								}
+							}
+						}
+					}
+
+					$inner_attrs = array(
+						'class' => implode( ' ', array_values( array_unique( array_filter( $classes ) ) ) ),
+					);
+
+					if ( isset( $prepared_attrs['anchor'] ) && is_string( $prepared_attrs['anchor'] ) && '' !== $prepared_attrs['anchor'] ) {
+						$inner_attrs['id'] = (string) $prepared_attrs['anchor'];
+					}
+
+					return sprintf(
+						'<p %2$s>%1$s</p>',
+						esc_html( $title ),
+						Html_Attribute_Builder::build( $inner_attrs )
+					);
+				}
+			);
+		}
 
 		return Block_Builder::build_prepared(
 			'heading',
@@ -111,7 +152,7 @@ class Heading_Widget_Handler implements Widget_Handler_Interface {
 	 *
 	 * @return void
 	 */
-	private function register_heading_external_styles( string $element_class, array $settings ): void {
+	private function register_heading_external_styles( string $element_class, array $settings, string $block_class ): void {
 		if ( '' === $element_class ) {
 			return;
 		}
@@ -121,7 +162,7 @@ class Heading_Widget_Handler implements Widget_Handler_Interface {
 			return;
 		}
 
-		$selector   = '.' . $element_class . '.wp-block-heading, .' . $element_class . ' .wp-block-heading';
+		$selector   = '.' . $element_class . '.' . $block_class . ', .' . $element_class . ' .' . $block_class;
 		$typography = Style_Parser::extract_typography_css_rules( $settings );
 		$base_rules = isset( $typography['base'] ) && is_array( $typography['base'] ) ? $typography['base'] : array();
 
