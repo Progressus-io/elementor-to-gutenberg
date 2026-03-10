@@ -26,18 +26,7 @@ class Spacer_Widget_Handler implements Widget_Handler_Interface {
 	public function handle( array $element ): string {
 		$settings = isset( $element['settings'] ) && is_array( $element['settings'] ) ? $element['settings'] : array();
 
-		$height = 20;
-		if ( isset( $settings['height'] ) ) {
-			if ( is_array( $settings['height'] ) && isset( $settings['height']['size'] ) && is_numeric( $settings['height']['size'] ) ) {
-				$height = (int) round( (float) $settings['height']['size'] );
-			} elseif ( is_numeric( $settings['height'] ) ) {
-				$height = (int) round( (float) $settings['height'] );
-			}
-		}
-
-		if ( $height < 0 ) {
-			$height = 0;
-		}
+		$height = $this->resolve_height( $settings );
 
 		$custom_class_raw = isset( $settings['_css_classes'] ) ? (string) $settings['_css_classes'] : '';
 		$custom_id        = isset( $settings['_element_id'] ) ? trim( (string) $settings['_element_id'] ) : '';
@@ -60,7 +49,7 @@ class Spacer_Widget_Handler implements Widget_Handler_Interface {
 
 		$attrs = wp_json_encode(
 			array(
-				'height' => $height . 'px',
+				'height' => $height,
 			)
 		);
 
@@ -69,7 +58,7 @@ class Spacer_Widget_Handler implements Widget_Handler_Interface {
 			$id_attr = ' id="' . esc_attr( $custom_id ) . '"';
 		}
 		$block_content = sprintf(
-			"<!-- wp:spacer %1s -->\n<div%2s style=\"height:%3spx\" aria-hidden=\"true\" class=\"%4s\"></div>\n<!-- /wp:spacer -->\n",
+			"<!-- wp:spacer %1s -->\n<div%2s style=\"height:%3s\" aria-hidden=\"true\" class=\"%4s\"></div>\n<!-- /wp:spacer -->\n",
 			$attrs,
 			$id_attr,
 			$height,
@@ -82,5 +71,51 @@ class Spacer_Widget_Handler implements Widget_Handler_Interface {
 		}
 
 		return $block_content;
+	}
+
+	/**
+	 * Resolve spacer height from Elementor spacer settings.
+	 *
+	 * @param array $settings The Elementor widget settings.
+	 *
+	 * @return string Height value with unit.
+	 */
+	private function resolve_height( array $settings ): string {
+		$height_data = null;
+
+		if ( isset( $settings['height'] ) ) {
+			$height_data = $settings['height'];
+		} elseif ( isset( $settings['space'] ) ) {
+			$height_data = $settings['space'];
+		}
+
+		$size = 20;
+		$unit = 'px';
+
+		if ( is_array( $height_data ) ) {
+			if ( isset( $height_data['size'] ) && is_numeric( $height_data['size'] ) ) {
+				$size = (float) $height_data['size'];
+			}
+
+			if ( isset( $height_data['unit'] ) && is_string( $height_data['unit'] ) ) {
+				$candidate_unit = trim( $height_data['unit'] );
+				if ( preg_match( '/^(px|em|rem|vh|vw|%)$/i', $candidate_unit ) ) {
+					$unit = strtolower( $candidate_unit );
+				}
+			}
+		} elseif ( is_numeric( $height_data ) ) {
+			$size = (float) $height_data;
+		}
+
+		if ( $size < 0 ) {
+			$size = 0;
+		}
+
+		$normalized_size = rtrim( rtrim( sprintf( '%.6F', $size ), '0' ), '.' );
+		if ( '' === $normalized_size ) {
+			$normalized_size = '0';
+		}
+
+		return $normalized_size . $unit;
 	}
 }
