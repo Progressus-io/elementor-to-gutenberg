@@ -31,8 +31,10 @@
             return '';
         }
 
-        return template.replace(/%([0-9]+)\$[sd]/g, function (match, index) {
-            const value = values[parseInt(index, 10) - 1];
+        let nextIndex = 0;
+        return template.replace(/%(?:([0-9]+)\$)?([sd])/g, function (match, index) {
+            const valueIndex = index ? parseInt(index, 10) - 1 : nextIndex++;
+            const value = values[valueIndex];
             return value !== undefined ? value : match;
         });
     }
