@@ -274,6 +274,8 @@ class Batch_Convert_Wizard {
 				$all_pages
 			);
 			$skip_converted    = true;
+		} elseif ( 'skip' === $conflict_policy ) {
+			$conflict_policy = 'overwrite';
 		}
 
 		$selected_page_ids = array_values( array_unique( array_filter( $selected_page_ids ) ) );
@@ -1065,6 +1067,11 @@ class Batch_Convert_Wizard {
 	 */
 	private function map_page_to_array( WP_Post $post ): array {
 		$last_result = get_post_meta( $post->ID, '_ele2gb_last_result', true );
+
+		if ( is_array( $last_result ) ) {
+			$last_result = $this->clean_invalid_converted_target_meta( (int) $post->ID, $last_result );
+		}
+
 		$status_key  = is_array( $last_result ) && isset( $last_result['status'] ) ? (string) $last_result['status'] : '';
 		$last_time   = is_array( $last_result ) && ! empty( $last_result['time'] ) ? (string) $last_result['time'] : '';
 		$target_id   = is_array( $last_result ) && ! empty( $last_result['target'] ) ? absint( $last_result['target'] ) : 0;
@@ -1339,6 +1346,10 @@ class Batch_Convert_Wizard {
             return 0;
         }
 
+        if ( 'trash' === get_post_status( $candidate_id ) ) {
+            return 0;
+        }
+
         // If it still has Elementor JSON, it is not a clean Gutenberg copy.
         $elementor_data = get_post_meta( $candidate_id, '_elementor_data', true );
         if ( ! empty( $elementor_data ) ) {
@@ -1347,6 +1358,50 @@ class Batch_Convert_Wizard {
 
         return $candidate_id;
     }
+
+
+	/**
+	 * Remove stale converted target linkage from page conversion meta.
+	 *
+	 * @param int   $source_id Source Elementor page ID.
+	 * @param array $last_result Stored conversion result meta.
+	 */
+    private function clean_invalid_converted_target_meta( int $source_id, array $last_result ): array {
+        $candidate_id = 0;
+
+        if ( ! empty( $last_result['converted_post_id'] ) ) {
+            $candidate_id = absint( $last_result['converted_post_id'] );
+        } elseif ( ! empty( $last_result['target'] ) ) {
+            $candidate_id = absint( $last_result['target'] );
+        }
+
+        if ( $candidate_id <= 0 ) {
+            return $last_result;
+        }
+
+        $valid_target_id = $this->validate_converted_target_id( $source_id, $candidate_id );
+        if ( $valid_target_id > 0 ) {
+            return $last_result;
+        }
+
+        unset(
+                $last_result['target'],
+                $last_result['converted_post_id'],
+                $last_result['status'],
+                $last_result['message'],
+                $last_result['time']
+        );
+
+        if ( empty( $last_result ) ) {
+            delete_post_meta( $source_id, '_ele2gb_last_result' );
+            return array();
+        }
+
+        update_post_meta( $source_id, '_ele2gb_last_result', $last_result );
+
+        return $last_result;
+    }
+    
 	/**
 	 * Handle requested theme switch and optional Additional CSS migration.
 	 *

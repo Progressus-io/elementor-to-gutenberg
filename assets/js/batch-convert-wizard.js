@@ -163,7 +163,8 @@
                 this.state.selectedFooterIds = new Set(this.getTemplatesFor('footer').map((template) => Number(template.id)));
                 this.state.defaultHeaderId = this.pickDefaultTemplate('header', this.state.selectedHeaderIds, defaultHeader);
                 this.state.defaultFooterId = this.pickDefaultTemplate('footer', this.state.selectedFooterIds, defaultFooter);
-                this.state.skipConverted = true;
+                this.state.skipConverted = false;
+                this.state.conflictPolicy = 'overwrite';
                 this.state.tablePage = 1;
             }
 
@@ -450,6 +451,9 @@
         }
 
         shouldShowSkipConvertedOption() {
+            if (this.state.mode === 'custom') {
+                return false;
+            }
             if (!this.state.selectedPageIds.size) {
                 return false;
             }
@@ -1379,12 +1383,17 @@
                     key: 'overwrite',
                     label: this.strings.conflictOverwrite || 'Update existing pages in place (overwrite)'
                 },
-                {key: 'skip', label: this.strings.conflictSkip || 'Skip those pages'},
                 {
                     key: 'duplicate',
                     label: this.strings.conflictDuplicate || 'Create duplicates with “(Converted)” suffix'
                 },
             ];
+
+            if (this.state.mode !== 'custom') {
+                options.splice(1, 0, {key: 'skip', label: this.strings.conflictSkip || 'Skip those pages'});
+            } else if (this.state.conflictPolicy === 'skip') {
+                this.state.conflictPolicy = 'overwrite';
+            }
 
             const wrapper = createElement('div', 'ele2gb-conflict-options');
             options.forEach((option) => {
