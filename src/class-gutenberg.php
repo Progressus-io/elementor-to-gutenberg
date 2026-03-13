@@ -313,9 +313,16 @@ class Gutenberg {
 			self::FULL_WIDTH_TEMPLATE_ID,
 			array(
 				'title'       => __( 'ETG Full Width Page', 'elementor-to-gutenberg' ),
-				'description' => __( 'Canvas-like template for converted full width pages', 'elementor-to-gutenberg' ),
+				'description' => __( 'Template for converted full width pages that keeps the active theme header and footer without forcing constrained page layout.', 'elementor-to-gutenberg' ),
 				'post_types'  => array( 'page' ),
-				'content'     => "<!-- wp:group {\"tagName\":\"main\",\"layout\":{\"type\":\"default\"}} -->\n<main class=\"wp-block-group\"><!-- wp:post-content {\"layout\":{\"type\":\"default\"}} /--></main>\n<!-- /wp:group -->",
+				'content' => sprintf(
+					'<!-- wp:template-part {"slug":"header","theme":"%1$s","tagName":"header"} /-->' . "\n\n" .
+					'<!-- wp:group {"tagName":"main","className":"etg-full-width-page"} -->' . "\n" .
+					'<main class="wp-block-group etg-full-width-page"><!-- wp:post-content /--></main>' . "\n" .
+					'<!-- /wp:group -->' . "\n\n" .
+					'<!-- wp:template-part {"slug":"footer","theme":"%1$s","tagName":"footer"} /-->',
+					get_stylesheet()
+				),
 			)
 		);
 	}

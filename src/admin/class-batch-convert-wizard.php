@@ -249,7 +249,6 @@ class Batch_Convert_Wizard {
 		$mode             = isset( $_POST['mode'] ) ? sanitize_key( wp_unslash( $_POST['mode'] ) ) : 'auto';
 		$conflict_policy  = isset( $_POST['conflictPolicy'] ) ? sanitize_key( wp_unslash( $_POST['conflictPolicy'] ) ) : 'skip';
 		$skip_converted   = ! empty( $_POST['skipConverted'] );
-		$apply_full_width = ! empty( $_POST['applyFullWidth'] );
 
 		$raw_pages         = isset( $_POST['pages'] ) ? wp_unslash( $_POST['pages'] ) : array();
 		$raw_disabled      = isset( $_POST['disabledMeta'] ) ? wp_unslash( $_POST['disabledMeta'] ) : array();
@@ -294,10 +293,6 @@ class Batch_Convert_Wizard {
 			$warnings[] = $this->build_theme_warning_from_error( $theme_result );
 		}
 
-		if ( $apply_full_width ) {
-			$this->apply_full_width_global_styles();
-		}
-
 		$pages     = $this->prepare_job_pages( $selected_page_ids, $disabled_meta_ids );
 		$templates = $this->prepare_job_templates(
 			$mode,
@@ -315,8 +310,7 @@ class Batch_Convert_Wizard {
 			);
 		}
 
-		$options                     = $this->build_job_options( $mode, $conflict_policy, $skip_converted );
-		$options['apply_full_width'] = $apply_full_width;
+		$options = $this->build_job_options( $mode, $conflict_policy, $skip_converted );
 
 		$job_id = uniqid( 'ele2gb_', true );
 
@@ -1496,163 +1490,6 @@ class Batch_Convert_Wizard {
 		);
 	}
 
-    /**
-     * Apply full-width layout settings to the active block theme global styles.
-     *
-     * Uses core resolver logic so it works even if the wp_global_styles post
-     * has not been created yet.
-     */
-    private function apply_full_width_global_styles(): void {
-        $stylesheet = get_stylesheet();
-        if ( '' === $stylesheet ) {
-            error_log( 'ele2gb full width: missing stylesheet' );
-
-            return;
-        }
-
-        if ( ! current_user_can( 'edit_theme_options' ) && ! current_user_can( 'manage_options' ) ) {
-            error_log( 'ele2gb full width: insufficient permissions' );
-
-            return;
-        }
-
-        if ( ! function_exists( 'wp_is_block_theme' ) || ! wp_is_block_theme() ) {
-            error_log( 'ele2gb full width: not a block theme ' . $stylesheet );
-
-            return;
-        }
-
-        $post_id = $this->find_global_styles_post_id_for_theme( $stylesheet );
-        if ( ! $post_id ) {
-            error_log( 'ele2gb full width: no global styles post id for ' . $stylesheet );
-
-            return;
-        }
-
-        $result = $this->update_global_styles_layout_post( $post_id, '1440px', '1440px' );
-        if ( is_wp_error( $result ) ) {
-            error_log( 'ele2gb full width: failed ' . $result->get_error_message() );
-
-            return;
-        }
-
-        error_log( 'ele2gb full width: updated global styles post ' . $post_id . ' for ' . $stylesheet );
-    }
-
-    /**
-     * Find the Global Styles post ID for the given theme stylesheet.
-     *
-     * Prefer core resolver methods first, then fallback to queries.
-     */
-    private function find_global_styles_post_id_for_theme( string $stylesheet ): int {
-        $post_id = 0;
-
-        if ( class_exists( 'WP_Theme_JSON_Resolver' ) && method_exists( 'WP_Theme_JSON_Resolver', 'get_user_global_styles_post_id' ) ) {
-            $post_id = (int) \WP_Theme_JSON_Resolver::get_user_global_styles_post_id();
-        }
-
-        if ( ! $post_id && function_exists( 'wp_get_global_styles_post_id' ) ) {
-            $post_id = (int) \wp_get_global_styles_post_id( $stylesheet );
-        }
-
-        if ( $post_id ) {
-            return $post_id;
-        }
-
-        $slug    = 'wp-global-styles-' . $stylesheet;
-        $by_slug = get_posts(
-                array(
-                        'post_type'      => 'wp_global_styles',
-                        'post_status'    => 'any',
-                        'name'           => $slug,
-                        'posts_per_page' => 1,
-                        'orderby'        => 'ID',
-                        'order'          => 'DESC',
-                )
-        );
-
-        if ( ! empty( $by_slug ) && $by_slug[0] instanceof WP_Post ) {
-            return (int) $by_slug[0]->ID;
-        }
-
-        $query = new WP_Query(
-                array(
-                        'post_type'      => 'wp_global_styles',
-                        'post_status'    => 'any',
-                        'posts_per_page' => 1,
-                        'orderby'        => 'ID',
-                        'order'          => 'DESC',
-                        'tax_query'      => array(
-                                array(
-                                        'taxonomy' => 'wp_theme',
-                                        'field'    => 'slug',
-                                        'terms'    => array( $stylesheet ),
-                                ),
-                        ),
-                )
-        );
-
-        $found = $query->have_posts() ? (int) $query->posts[0]->ID : 0;
-        wp_reset_postdata();
-
-        return $found;
-    }
-
-    /**
-     * Update the layout sizes inside a wp_global_styles post_content JSON.
-     */
-    private function update_global_styles_layout_post( int $post_id, string $content_size, string $wide_size ) {
-        $post = get_post( $post_id );
-        if ( ! ( $post instanceof WP_Post ) ) {
-            return new WP_Error( 'ele2gb-global-styles-missing', 'Global styles post not found' );
-        }
-
-        $data = json_decode( (string) $post->post_content, true );
-        if ( ! is_array( $data ) ) {
-            $data = array();
-        }
-
-        if ( ! isset( $data['settings'] ) || ! is_array( $data['settings'] ) ) {
-            $data['settings'] = array();
-        }
-
-        if ( ! isset( $data['settings']['layout'] ) || ! is_array( $data['settings']['layout'] ) ) {
-            $data['settings']['layout'] = array();
-        }
-
-        $changed = false;
-
-        if ( ! isset( $data['settings']['layout']['contentSize'] ) || $data['settings']['layout']['contentSize'] !== $content_size ) {
-            $data['settings']['layout']['contentSize'] = $content_size;
-            $changed                                   = true;
-        }
-
-        if ( ! isset( $data['settings']['layout']['wideSize'] ) || $data['settings']['layout']['wideSize'] !== $wide_size ) {
-            $data['settings']['layout']['wideSize'] = $wide_size;
-            $changed                                = true;
-        }
-
-        if ( ! $changed ) {
-            return true;
-        }
-        $encoded = wp_json_encode( $data );
-        if ( ! is_string( $encoded ) || '' === $encoded ) {
-            return new WP_Error( 'ele2gb-global-styles-encode', 'Failed to encode global styles JSON' );
-        }
-
-        $saved = wp_update_post(
-                array(
-                        'ID'           => (int) $post_id,
-                        'post_content' => $encoded,
-                ), true
-        );
-        if ( is_wp_error( $saved ) || ! $saved ) {
-            return is_wp_error( $saved ) ? $saved : new WP_Error( 'ele2gb-global-styles-update', 'Failed to update global styles post' );
-        }
-
-        return true;
-    }
-
 	/**
 	 * Install a theme if it is not already available.
 	 *
@@ -2807,12 +2644,8 @@ class Batch_Convert_Wizard {
 			'themeSwitchError'       => __( 'Unable to switch themes. Please try again or choose a different theme.', 'elementor-to-gutenberg' ),
 			'themeActiveLabel'       => __( 'Active', 'elementor-to-gutenberg' ),
 			'themeWarningInline'     => __( 'Theme step failed — conversion continued using current theme. Update WordPress to use this theme.', 'elementor-to-gutenberg' ),
-			'layoutStepTitle'        => __( 'Layout settings', 'elementor-to-gutenberg' ),
-			'layoutStepDesc'         => __( 'Apply full-width layout defaults to the active block theme.', 'elementor-to-gutenberg' ),
-			'fullWidthLabel'         => __( 'Set site to Full Width (1440px)', 'elementor-to-gutenberg' ),
 			'reviewTitle'            => __( 'Review & Confirm', 'elementor-to-gutenberg' ),
 			'reviewSummary'          => __( '%1$d pages selected — %2$d will be converted, %3$d skipped.', 'elementor-to-gutenberg' ),
-			'fullWidthReview'        => __( 'Set site to Full Width (1440px)', 'elementor-to-gutenberg' ),
 			'metaDisabled'           => __( '%1$d pages will be converted without copying meta fields or featured image.', 'elementor-to-gutenberg' ),
 			'startConversion'        => __( 'Start Conversion', 'elementor-to-gutenberg' ),
 			'backgroundInfo'         => __( 'Conversion runs in the background. You can safely close this page.', 'elementor-to-gutenberg' ),
