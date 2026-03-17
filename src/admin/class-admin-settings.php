@@ -621,7 +621,7 @@ class Admin_Settings {
 				continue;
 			}
 
-			$blocks .= $this->render_element( $element );
+			$blocks .= $this->render_element( $element, true );
 		}
 
 		return $blocks;
@@ -632,14 +632,14 @@ class Admin_Settings {
 	 *
 	 * @param array $element Elementor element.
 	 */
-	private function render_element( array $element ): string {
+	private function render_element( array $element, bool $is_top_level = false ): string {
 		$el_type = $element['elType'] ?? '';
 		if ( 'container' === $el_type ) {
-			return $this->render_container( $element );
+			return $this->render_container( $element, $is_top_level );
 		}
 
 		if ( 'section' === $el_type ) {
-			return $this->render_legacy_section( $element );
+			return $this->render_legacy_section( $element, $is_top_level );
 		}
 
 		if ( 'column' === $el_type ) {
@@ -664,14 +664,16 @@ class Admin_Settings {
 	 *
 	 * @param array $element Elementor section element.
 	 */
-	private function render_legacy_section( array $element ): string {
+	private function render_legacy_section( array $element, bool $is_top_level = false ): string {
 		$children = is_array( $element['elements'] ?? null ) ? $element['elements'] : array();
 		$settings = is_array( $element['settings'] ?? null ) ? $element['settings'] : array();
 
 		$attributes = Style_Parser::parse_container_styles( $settings );
 		$attributes = $this->add_legacy_unique_class( $attributes, $element );
 
-		$attributes = $this->apply_full_width_section_attributes( $attributes, $settings );
+		if ( $is_top_level ) {
+			$attributes = $this->apply_full_width_section_attributes( $attributes, $settings );
+		}
 
 		$column_children = array();
 		foreach ( $children as $child ) {
@@ -706,7 +708,7 @@ class Admin_Settings {
 				continue;
 			}
 
-			$inner_html .= $this->render_element( $child );
+			$inner_html .= $this->render_element( $child, false );
 		}
 
 		if ( '' === trim( $inner_html ) ) {
@@ -764,11 +766,13 @@ class Admin_Settings {
 	 *
 	 * @param array $element Elementor container element.
 	 */
-	private function render_container( array $element ): string {
+	private function render_container( array $element, bool $is_top_level = false ): string {
 		$children           = is_array( $element['elements'] ?? null ) ? $element['elements'] : array();
 		$container_settings = is_array( $element['settings'] ?? null ) ? $element['settings'] : array();
 		$container_attr     = Style_Parser::parse_container_styles( $container_settings );
-		$container_attr     = $this->apply_full_width_section_attributes( $container_attr, $container_settings );
+		if ( $is_top_level ) {
+			$container_attr = $this->apply_full_width_section_attributes( $container_attr, $container_settings );
+		}
 
 		$min_height_setting = $container_settings['min_height'] ?? null;
 
@@ -806,7 +810,7 @@ class Admin_Settings {
 
 			$child_data[] = array(
 				'element' => $child,
-				'content' => $this->render_element( $child ),
+				'content' => $this->render_element( $child, false ),
 			);
 		}
 
