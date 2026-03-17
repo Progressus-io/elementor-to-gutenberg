@@ -621,7 +621,7 @@ class Admin_Settings {
 				continue;
 			}
 
-			$blocks .= $this->render_element( $element );
+			$blocks .= $this->render_element( $element, true );
 		}
 
 		return $blocks;
@@ -632,14 +632,14 @@ class Admin_Settings {
 	 *
 	 * @param array $element Elementor element.
 	 */
-	private function render_element( array $element ): string {
+	private function render_element( array $element, bool $is_top_level = false ): string {
 		$el_type = $element['elType'] ?? '';
 		if ( 'container' === $el_type ) {
-			return $this->render_container( $element );
+			return $this->render_container( $element, $is_top_level );
 		}
 
 		if ( 'section' === $el_type ) {
-			return $this->render_legacy_section( $element );
+			return $this->render_legacy_section( $element, $is_top_level );
 		}
 
 		if ( 'column' === $el_type ) {
@@ -664,15 +664,15 @@ class Admin_Settings {
 	 *
 	 * @param array $element Elementor section element.
 	 */
-	private function render_legacy_section( array $element ): string {
+	private function render_legacy_section( array $element, bool $is_top_level = false ): string {
 		$children = is_array( $element['elements'] ?? null ) ? $element['elements'] : array();
 		$settings = is_array( $element['settings'] ?? null ) ? $element['settings'] : array();
 
 		$attributes = Style_Parser::parse_container_styles( $settings );
 		$attributes = $this->add_legacy_unique_class( $attributes, $element );
 
-		if ( isset( $settings['layout'] ) && 'full_width' === $settings['layout'] ) {
-			$attributes['align'] = 'full';
+		if ( $is_top_level ) {
+			$attributes = $this->apply_full_width_section_attributes( $attributes, $settings );
 		}
 
 		$column_children = array();
@@ -708,7 +708,7 @@ class Admin_Settings {
 				continue;
 			}
 
-			$inner_html .= $this->render_element( $child );
+			$inner_html .= $this->render_element( $child, false );
 		}
 
 		if ( '' === trim( $inner_html ) ) {
@@ -766,10 +766,13 @@ class Admin_Settings {
 	 *
 	 * @param array $element Elementor container element.
 	 */
-	private function render_container( array $element ): string {
+	private function render_container( array $element, bool $is_top_level = false ): string {
 		$children           = is_array( $element['elements'] ?? null ) ? $element['elements'] : array();
 		$container_settings = is_array( $element['settings'] ?? null ) ? $element['settings'] : array();
 		$container_attr     = Style_Parser::parse_container_styles( $container_settings );
+		if ( $is_top_level ) {
+			$container_attr = $this->apply_full_width_section_attributes( $container_attr, $container_settings );
+		}
 
 		$min_height_setting = $container_settings['min_height'] ?? null;
 
@@ -807,7 +810,7 @@ class Admin_Settings {
 
 			$child_data[] = array(
 				'element' => $child,
-				'content' => $this->render_element( $child ),
+				'content' => $this->render_element( $child, false ),
 			);
 		}
 
@@ -858,6 +861,67 @@ class Admin_Settings {
 		$layout_type = in_array( 'e-con-full', $container_classes, true ) ? 'default' : 'constrained';
 
 		return $this->render_group( $container_attr, $child_blocks, $layout_type );
+	}
+
+	/**
+	 * Apply shared full-width behavior when Elementor section/container is intended to span viewport width.
+	 *
+	 * @param array $attributes Gutenberg block attributes.
+	 * @param array $settings Elementor element settings.
+	 */
+	private function apply_full_width_section_attributes( array $attributes, array $settings ): array {
+		if ( ! $this->is_full_width_section_intended( $settings ) ) {
+			return $attributes;
+		}
+
+		$attributes['align'] = 'full';
+		$attributes          = $this->add_class_to_attributes( $attributes, 'etg-full-width-section' );
+
+		if ( null !== $this->external_css_collector ) {
+			$this->external_css_collector->register_rule(
+				'.etg-full-width-section',
+				array(
+					'width'        => '100vw',
+					'max-width'    => '100vw',
+					'margin-left'  => 'calc(50% - 50vw)',
+					'margin-right' => 'calc(50% - 50vw)',
+				),
+				'full-width-section'
+			);
+		}
+
+		return $attributes;
+	}
+
+	/**
+	 * Detect full-width section intent from Elementor settings.
+	 *
+	 * @param array $settings Elementor element settings.
+	 */
+	private function is_full_width_section_intended( array $settings ): bool {
+		$layout = isset( $settings['layout'] ) ? (string) $settings['layout'] : '';
+		if ( 'full_width' === $layout ) {
+			return true;
+		}
+
+		$content_width = isset( $settings['content_width'] ) ? (string) $settings['content_width'] : '';
+		if ( 'full_width' === $content_width || 'full' === $content_width ) {
+			return true;
+		}
+
+		$stretch = isset( $settings['stretch_section'] ) ? (string) $settings['stretch_section'] : '';
+		if ( 'section-stretched' === $stretch || 'yes' === $stretch ) {
+			return true;
+		}
+
+		$custom_css = isset( $settings['custom_css'] ) ? strtolower( (string) $settings['custom_css'] ) : '';
+		if ( '' === $custom_css ) {
+			return false;
+		}
+
+		return false !== strpos( $custom_css, '100vw' )
+			|| false !== strpos( $custom_css, 'calc(50% - 50vw)' )
+			|| false !== strpos( $custom_css, 'calc(50%-50vw)' );
 	}
 
 	/**

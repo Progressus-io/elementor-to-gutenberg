@@ -53,9 +53,15 @@ class Elementor_Fonts_Service {
 			}
 
 			$weight_key = str_replace( 'typography_font_family', 'typography_font_weight', $key );
-			$weight     = Style_Parser::sanitize_font_weight_value( $settings[ $weight_key ] ?? '' );
+			$weight     = self::normalize_google_weight( Style_Parser::sanitize_font_weight_value( $settings[ $weight_key ] ?? '' ) );
 
-			$families[ $family ] = array_filter( array( $weight ) );
+			if ( ! isset( $families[ $family ] ) ) {
+				$families[ $family ] = array();
+			}
+
+			if ( '' !== $weight ) {
+				$families[ $family ][] = $weight;
+			}
 		}
 
 		if ( empty( $families ) ) {
@@ -417,7 +423,7 @@ class Elementor_Fonts_Service {
 		$weights = is_array( $weights ) ? $weights : array();
 		$output  = array();
 		foreach ( $weights as $weight ) {
-			$clean = Style_Parser::sanitize_font_weight_value( $weight );
+			$clean = self::normalize_google_weight( Style_Parser::sanitize_font_weight_value( $weight ) );
 			if ( '' === $clean ) {
 				continue;
 			}
@@ -430,7 +436,39 @@ class Elementor_Fonts_Service {
 
 		$keys = array_keys( $output );
 		sort( $keys, SORT_NATURAL );
-		return array_values( $keys );
+
+		return array_values( array_map( 'strval', $keys ) );
+	}
+
+	/**
+	 * Normalize font-weight values for Google Fonts css2 URL usage.
+	 *
+	 * @param string $weight Sanitized weight value.
+	 *
+	 * @return string
+	 */
+	private static function normalize_google_weight( string $weight ): string {
+		$weight = trim( strtolower( $weight ) );
+		if ( '' === $weight ) {
+			return '';
+		}
+
+		$keyword_map = array(
+			'normal'  => '400',
+			'bold'    => '700',
+			'lighter' => '300',
+			'bolder'  => '700',
+		);
+
+		if ( isset( $keyword_map[ $weight ] ) ) {
+			return $keyword_map[ $weight ];
+		}
+
+		if ( preg_match( '/^(100|200|300|400|500|600|700|800|900)$/', $weight ) ) {
+			return $weight;
+		}
+
+		return '';
 	}
 
 	/**
@@ -459,7 +497,8 @@ class Elementor_Fonts_Service {
 
 		$keys = array_keys( $output );
 		sort( $keys, SORT_NATURAL );
-		return array_values( $keys );
+
+		return array_values( array_map( 'strval', $keys ) );
 	}
 
 	/**

@@ -71,7 +71,10 @@ class Gutenberg_Supports_Mapper {
 					'border'     => true,
 				),
 				'attrs' => array(
-					'width' => true,
+					'width'      => true,
+					'url'        => true,
+					'linkTarget' => true,
+					'rel'        => true,
 				),
 			),
 		);

@@ -249,7 +249,6 @@ class Batch_Convert_Wizard {
 		$mode             = isset( $_POST['mode'] ) ? sanitize_key( wp_unslash( $_POST['mode'] ) ) : 'auto';
 		$conflict_policy  = isset( $_POST['conflictPolicy'] ) ? sanitize_key( wp_unslash( $_POST['conflictPolicy'] ) ) : 'skip';
 		$skip_converted   = ! empty( $_POST['skipConverted'] );
-		$apply_full_width = ! empty( $_POST['applyFullWidth'] );
 
 		$raw_pages         = isset( $_POST['pages'] ) ? wp_unslash( $_POST['pages'] ) : array();
 		$raw_disabled      = isset( $_POST['disabledMeta'] ) ? wp_unslash( $_POST['disabledMeta'] ) : array();
@@ -274,6 +273,8 @@ class Batch_Convert_Wizard {
 				$all_pages
 			);
 			$skip_converted    = true;
+		} elseif ( 'skip' === $conflict_policy ) {
+			$conflict_policy = 'overwrite';
 		}
 
 		$selected_page_ids = array_values( array_unique( array_filter( $selected_page_ids ) ) );
@@ -290,10 +291,6 @@ class Batch_Convert_Wizard {
 		$warnings     = array();
 		if ( is_wp_error( $theme_result ) ) {
 			$warnings[] = $this->build_theme_warning_from_error( $theme_result );
-		}
-
-		if ( $apply_full_width ) {
-			$this->apply_full_width_global_styles();
 		}
 
 		$pages     = $this->prepare_job_pages( $selected_page_ids, $disabled_meta_ids );
@@ -313,8 +310,7 @@ class Batch_Convert_Wizard {
 			);
 		}
 
-		$options                     = $this->build_job_options( $mode, $conflict_policy, $skip_converted );
-		$options['apply_full_width'] = $apply_full_width;
+		$options = $this->build_job_options( $mode, $conflict_policy, $skip_converted );
 
 		$job_id = uniqid( 'ele2gb_', true );
 
@@ -1065,6 +1061,11 @@ class Batch_Convert_Wizard {
 	 */
 	private function map_page_to_array( WP_Post $post ): array {
 		$last_result = get_post_meta( $post->ID, '_ele2gb_last_result', true );
+
+		if ( is_array( $last_result ) ) {
+			$last_result = $this->clean_invalid_converted_target_meta( (int) $post->ID, $last_result );
+		}
+
 		$status_key  = is_array( $last_result ) && isset( $last_result['status'] ) ? (string) $last_result['status'] : '';
 		$last_time   = is_array( $last_result ) && ! empty( $last_result['time'] ) ? (string) $last_result['time'] : '';
 		$target_id   = is_array( $last_result ) && ! empty( $last_result['target'] ) ? absint( $last_result['target'] ) : 0;
@@ -1339,6 +1340,10 @@ class Batch_Convert_Wizard {
             return 0;
         }
 
+        if ( 'trash' === get_post_status( $candidate_id ) ) {
+            return 0;
+        }
+
         // If it still has Elementor JSON, it is not a clean Gutenberg copy.
         $elementor_data = get_post_meta( $candidate_id, '_elementor_data', true );
         if ( ! empty( $elementor_data ) ) {
@@ -1347,6 +1352,50 @@ class Batch_Convert_Wizard {
 
         return $candidate_id;
     }
+
+
+	/**
+	 * Remove stale converted target linkage from page conversion meta.
+	 *
+	 * @param int   $source_id Source Elementor page ID.
+	 * @param array $last_result Stored conversion result meta.
+	 */
+    private function clean_invalid_converted_target_meta( int $source_id, array $last_result ): array {
+        $candidate_id = 0;
+
+        if ( ! empty( $last_result['converted_post_id'] ) ) {
+            $candidate_id = absint( $last_result['converted_post_id'] );
+        } elseif ( ! empty( $last_result['target'] ) ) {
+            $candidate_id = absint( $last_result['target'] );
+        }
+
+        if ( $candidate_id <= 0 ) {
+            return $last_result;
+        }
+
+        $valid_target_id = $this->validate_converted_target_id( $source_id, $candidate_id );
+        if ( $valid_target_id > 0 ) {
+            return $last_result;
+        }
+
+        unset(
+                $last_result['target'],
+                $last_result['converted_post_id'],
+                $last_result['status'],
+                $last_result['message'],
+                $last_result['time']
+        );
+
+        if ( empty( $last_result ) ) {
+            delete_post_meta( $source_id, '_ele2gb_last_result' );
+            return array();
+        }
+
+        update_post_meta( $source_id, '_ele2gb_last_result', $last_result );
+
+        return $last_result;
+    }
+    
 	/**
 	 * Handle requested theme switch and optional Additional CSS migration.
 	 *
@@ -1440,163 +1489,6 @@ class Batch_Convert_Wizard {
 			'details' => $error->get_error_message(),
 		);
 	}
-
-    /**
-     * Apply full-width layout settings to the active block theme global styles.
-     *
-     * Uses core resolver logic so it works even if the wp_global_styles post
-     * has not been created yet.
-     */
-    private function apply_full_width_global_styles(): void {
-        $stylesheet = get_stylesheet();
-        if ( '' === $stylesheet ) {
-            error_log( 'ele2gb full width: missing stylesheet' );
-
-            return;
-        }
-
-        if ( ! current_user_can( 'edit_theme_options' ) && ! current_user_can( 'manage_options' ) ) {
-            error_log( 'ele2gb full width: insufficient permissions' );
-
-            return;
-        }
-
-        if ( ! function_exists( 'wp_is_block_theme' ) || ! wp_is_block_theme() ) {
-            error_log( 'ele2gb full width: not a block theme ' . $stylesheet );
-
-            return;
-        }
-
-        $post_id = $this->find_global_styles_post_id_for_theme( $stylesheet );
-        if ( ! $post_id ) {
-            error_log( 'ele2gb full width: no global styles post id for ' . $stylesheet );
-
-            return;
-        }
-
-        $result = $this->update_global_styles_layout_post( $post_id, '1440px', '1440px' );
-        if ( is_wp_error( $result ) ) {
-            error_log( 'ele2gb full width: failed ' . $result->get_error_message() );
-
-            return;
-        }
-
-        error_log( 'ele2gb full width: updated global styles post ' . $post_id . ' for ' . $stylesheet );
-    }
-
-    /**
-     * Find the Global Styles post ID for the given theme stylesheet.
-     *
-     * Prefer core resolver methods first, then fallback to queries.
-     */
-    private function find_global_styles_post_id_for_theme( string $stylesheet ): int {
-        $post_id = 0;
-
-        if ( class_exists( 'WP_Theme_JSON_Resolver' ) && method_exists( 'WP_Theme_JSON_Resolver', 'get_user_global_styles_post_id' ) ) {
-            $post_id = (int) \WP_Theme_JSON_Resolver::get_user_global_styles_post_id();
-        }
-
-        if ( ! $post_id && function_exists( 'wp_get_global_styles_post_id' ) ) {
-            $post_id = (int) \wp_get_global_styles_post_id( $stylesheet );
-        }
-
-        if ( $post_id ) {
-            return $post_id;
-        }
-
-        $slug    = 'wp-global-styles-' . $stylesheet;
-        $by_slug = get_posts(
-                array(
-                        'post_type'      => 'wp_global_styles',
-                        'post_status'    => 'any',
-                        'name'           => $slug,
-                        'posts_per_page' => 1,
-                        'orderby'        => 'ID',
-                        'order'          => 'DESC',
-                )
-        );
-
-        if ( ! empty( $by_slug ) && $by_slug[0] instanceof WP_Post ) {
-            return (int) $by_slug[0]->ID;
-        }
-
-        $query = new WP_Query(
-                array(
-                        'post_type'      => 'wp_global_styles',
-                        'post_status'    => 'any',
-                        'posts_per_page' => 1,
-                        'orderby'        => 'ID',
-                        'order'          => 'DESC',
-                        'tax_query'      => array(
-                                array(
-                                        'taxonomy' => 'wp_theme',
-                                        'field'    => 'slug',
-                                        'terms'    => array( $stylesheet ),
-                                ),
-                        ),
-                )
-        );
-
-        $found = $query->have_posts() ? (int) $query->posts[0]->ID : 0;
-        wp_reset_postdata();
-
-        return $found;
-    }
-
-    /**
-     * Update the layout sizes inside a wp_global_styles post_content JSON.
-     */
-    private function update_global_styles_layout_post( int $post_id, string $content_size, string $wide_size ) {
-        $post = get_post( $post_id );
-        if ( ! ( $post instanceof WP_Post ) ) {
-            return new WP_Error( 'ele2gb-global-styles-missing', 'Global styles post not found' );
-        }
-
-        $data = json_decode( (string) $post->post_content, true );
-        if ( ! is_array( $data ) ) {
-            $data = array();
-        }
-
-        if ( ! isset( $data['settings'] ) || ! is_array( $data['settings'] ) ) {
-            $data['settings'] = array();
-        }
-
-        if ( ! isset( $data['settings']['layout'] ) || ! is_array( $data['settings']['layout'] ) ) {
-            $data['settings']['layout'] = array();
-        }
-
-        $changed = false;
-
-        if ( ! isset( $data['settings']['layout']['contentSize'] ) || $data['settings']['layout']['contentSize'] !== $content_size ) {
-            $data['settings']['layout']['contentSize'] = $content_size;
-            $changed                                   = true;
-        }
-
-        if ( ! isset( $data['settings']['layout']['wideSize'] ) || $data['settings']['layout']['wideSize'] !== $wide_size ) {
-            $data['settings']['layout']['wideSize'] = $wide_size;
-            $changed                                = true;
-        }
-
-        if ( ! $changed ) {
-            return true;
-        }
-        $encoded = wp_json_encode( $data );
-        if ( ! is_string( $encoded ) || '' === $encoded ) {
-            return new WP_Error( 'ele2gb-global-styles-encode', 'Failed to encode global styles JSON' );
-        }
-
-        $saved = wp_update_post(
-                array(
-                        'ID'           => (int) $post_id,
-                        'post_content' => $encoded,
-                ), true
-        );
-        if ( is_wp_error( $saved ) || ! $saved ) {
-            return is_wp_error( $saved ) ? $saved : new WP_Error( 'ele2gb-global-styles-update', 'Failed to update global styles post' );
-        }
-
-        return true;
-    }
 
 	/**
 	 * Install a theme if it is not already available.
@@ -2711,92 +2603,88 @@ class Batch_Convert_Wizard {
 	 */
 	private function get_strings(): array {
 		return array(
-			'step'                   => esc_html__( 'Step %1$s of %2$s — %3$s', 'elementor-to-gutenberg' ),
-			'modeTitle'              => esc_html__( 'Choose Mode', 'elementor-to-gutenberg' ),
-			'modeAutoTitle'          => esc_html__( 'Convert all pages automatically', 'elementor-to-gutenberg' ),
-			'modeAutoDesc'           => esc_html__( 'Run with smart defaults: copy meta & featured image, skip pages already converted.', 'elementor-to-gutenberg' ),
-			'modeCustomTitle'        => esc_html__( 'Choose specific pages', 'elementor-to-gutenberg' ),
-			'modeCustomDesc'         => esc_html__( 'Pick exactly which pages to convert and fine-tune options per page.', 'elementor-to-gutenberg' ),
-			'continue'               => esc_html__( 'Continue', 'elementor-to-gutenberg' ),
-			'back'                   => esc_html__( 'Back', 'elementor-to-gutenberg' ),
-			'selectPagesTitle'       => esc_html__( 'Select Pages', 'elementor-to-gutenberg' ),
-			'selectAll'              => esc_html__( 'Select all', 'elementor-to-gutenberg' ),
-			'selectionSummary'       => esc_html__( '%1$d selected / %2$d total', 'elementor-to-gutenberg' ),
-			'noPagesFound'           => esc_html__( 'No Elementor pages found for conversion.', 'elementor-to-gutenberg' ),
-			'skipConverted'          => esc_html__( 'Skip pages that were already converted', 'elementor-to-gutenberg' ),
-			'disableMeta'            => esc_html__( 'Don’t copy meta fields & featured image', 'elementor-to-gutenberg' ),
-			'conflictsTitle'         => esc_html__( 'Resolve Conflicts', 'elementor-to-gutenberg' ),
-			'conflictDetected'       => esc_html__( '%1$d selected pages already have a converted version.', 'elementor-to-gutenberg' ),
-			'conflictOverwrite'      => esc_html__( 'Update existing pages in place (overwrite)', 'elementor-to-gutenberg' ),
-			'conflictSkip'           => esc_html__( 'Skip those pages', 'elementor-to-gutenberg' ),
-			'conflictDuplicate'      => esc_html__( 'Create duplicates with “(Converted)” suffix', 'elementor-to-gutenberg' ),
-			'themeStepTitle'         => esc_html__( 'Theme compatibility', 'elementor-to-gutenberg' ),
-			'themeStepDesc'          => esc_html__( 'Block themes work best with Gutenberg. You can keep your current theme or switch to a compatible one before conversion.', 'elementor-to-gutenberg' ),
-			'themeCompatibilityNote' => esc_html__( 'Some themes may require a newer WordPress version.', 'elementor-to-gutenberg' ),
-			'themeCurrentGood'       => esc_html__( 'Your current theme already supports Gutenberg and block templates.', 'elementor-to-gutenberg' ),
-			'themeSelectPrompt'      => esc_html__( 'Select a block theme for best compatibility.', 'elementor-to-gutenberg' ),
-			'themeKeepCurrent'       => esc_html__( 'Keep current theme', 'elementor-to-gutenberg' ),
-			'themeSuggestedCore'     => esc_html__( 'Suggested core block themes', 'elementor-to-gutenberg' ),
-			'themeInstalledList'     => esc_html__( 'Installed block themes', 'elementor-to-gutenberg' ),
-			'themeNoInstalled'       => esc_html__( 'No compatible block themes are installed.', 'elementor-to-gutenberg' ),
-			'themeSelectedSummary'   => esc_html__( 'Selected: %s', 'elementor-to-gutenberg' ),
-			'themeUsingCurrentSummary' => esc_html__( 'Using current theme: %s', 'elementor-to-gutenberg' ),
-			'themeStatusInstalled'   => esc_html__( 'Installed', 'elementor-to-gutenberg' ),
-			'themeStatusNotInstalled' => esc_html__( 'Not installed', 'elementor-to-gutenberg' ),
-			'themeBlockLabel'        => esc_html__( 'Block theme', 'elementor-to-gutenberg' ),
-			'themeSelected'          => esc_html__( 'Selected', 'elementor-to-gutenberg' ),
-			'themeActionUseTheme'    => esc_html__( 'Use this theme', 'elementor-to-gutenberg' ),
-			'themeActionInstall'     => esc_html__( 'Install', 'elementor-to-gutenberg' ),
-			'themeActionActive'      => esc_html__( 'Active', 'elementor-to-gutenberg' ),
-			'copyAdditionalCss'      => esc_html__( 'Copy Additional CSS from the current theme', 'elementor-to-gutenberg' ),
-			'themeSwitchError'       => esc_html__( 'Unable to switch themes. Please try again or choose a different theme.', 'elementor-to-gutenberg' ),
-			'themeActiveLabel'       => esc_html__( 'Active', 'elementor-to-gutenberg' ),
-			'themeWarningInline'     => esc_html__( 'Theme step failed — conversion continued using current theme. Update WordPress to use this theme.', 'elementor-to-gutenberg' ),
-			'layoutStepTitle'        => esc_html__( 'Layout settings', 'elementor-to-gutenberg' ),
-			'layoutStepDesc'         => esc_html__( 'Apply full-width layout defaults to the active block theme.', 'elementor-to-gutenberg' ),
-			'fullWidthLabel'         => esc_html__( 'Set site to Full Width (1440px)', 'elementor-to-gutenberg' ),
-			'reviewTitle'            => esc_html__( 'Review & Confirm', 'elementor-to-gutenberg' ),
-			'reviewSummary'          => esc_html__( '%1$d pages selected — %2$d will be converted, %3$d skipped.', 'elementor-to-gutenberg' ),
-			'fullWidthReview'        => esc_html__( 'Set site to Full Width (1440px)', 'elementor-to-gutenberg' ),
-			'metaDisabled'           => esc_html__( '%1$d pages will be converted without copying meta fields or featured image.', 'elementor-to-gutenberg' ),
-			'startConversion'        => esc_html__( 'Start Conversion', 'elementor-to-gutenberg' ),
-			'backgroundInfo'         => esc_html__( 'Conversion runs in the background. You can safely close this page.', 'elementor-to-gutenberg' ),
-			'progressTitle'          => esc_html__( 'Progress & Results', 'elementor-to-gutenberg' ),
-			'converted'              => esc_html__( 'Converted', 'elementor-to-gutenberg' ),
-			'skipped'                => esc_html__( 'Skipped', 'elementor-to-gutenberg' ),
-			'errors'                 => esc_html__( 'Errors', 'elementor-to-gutenberg' ),
-			'duration'               => esc_html__( 'Duration', 'elementor-to-gutenberg' ),
-			'viewConverted'          => esc_html__( 'View converted', 'elementor-to-gutenberg' ),
-			'retry'                  => esc_html__( 'Retry', 'elementor-to-gutenberg' ),
-			'viewPages'              => esc_html__( 'View converted pages', 'elementor-to-gutenberg' ),
-			'startNew'               => esc_html__( 'Start new conversion', 'elementor-to-gutenberg' ),
-			'statusConverted'        => esc_html__( 'Converted', 'elementor-to-gutenberg' ),
-			'statusNotConverted'     => esc_html__( 'Not converted', 'elementor-to-gutenberg' ),
-			'statusPartial'          => esc_html__( 'Partial', 'elementor-to-gutenberg' ),
-			'statusError'            => esc_html__( 'Error', 'elementor-to-gutenberg' ),
-			'statusSkipped'          => esc_html__( 'Skipped', 'elementor-to-gutenberg' ),
-			'statusUnknown'          => esc_html__( 'Unknown', 'elementor-to-gutenberg' ),
-			'tableTitle'             => esc_html__( 'Title', 'elementor-to-gutenberg' ),
-			'tableStatus'            => esc_html__( 'Status', 'elementor-to-gutenberg' ),
-			'tableConversionStatus'  => esc_html__( 'Conversion status', 'elementor-to-gutenberg' ),
-			'tableLastConverted'     => esc_html__( 'Last converted', 'elementor-to-gutenberg' ),
-			'tableActions'           => esc_html__( 'Actions', 'elementor-to-gutenberg' ),
-			'jobCompleted'           => esc_html__( 'Conversion completed successfully in %s.', 'elementor-to-gutenberg' ),
-			'jobCompletedWithErrors' => esc_html__( 'Conversion finished with issues in %s.', 'elementor-to-gutenberg' ),
-			'jobRunning'             => esc_html__( 'Conversion in progress…', 'elementor-to-gutenberg' ),
-			'resumeJob'              => esc_html__( 'Resuming an active conversion job.', 'elementor-to-gutenberg' ),
-			'processing'             => esc_html__( 'Processing…', 'elementor-to-gutenberg' ),
-			'noSelectionError'       => esc_html__( 'Select at least one page or template before continuing.', 'elementor-to-gutenberg' ),
-			'retryFailed'            => esc_html__( 'Unable to retry conversion. Please try again.', 'elementor-to-gutenberg' ),
-			'headerFooterStepTitle'  => esc_html__( 'Header & Footer Templates', 'elementor-to-gutenberg' ),
-			'headersLabel'           => esc_html__( 'Headers', 'elementor-to-gutenberg' ),
-			'footersLabel'           => esc_html__( 'Footers', 'elementor-to-gutenberg' ),
-			'defaultHeaderLabel'     => esc_html__( 'Default header after conversion', 'elementor-to-gutenberg' ),
-			'defaultFooterLabel'     => esc_html__( 'Default footer after conversion', 'elementor-to-gutenberg' ),
-			'headerFooterSummary'    => esc_html__( '%1$d headers and %2$d footers selected for conversion.', 'elementor-to-gutenberg' ),
-			'headerFooterDefaults'   => esc_html__( 'Default header: %1$s — Default footer: %2$s', 'elementor-to-gutenberg' ),
-			'cancel'                 => esc_html__( 'Cancel', 'elementor-to-gutenberg' ),
-			'jobCancelled'           => esc_html__( 'Conversion was cancelled.', 'elementor-to-gutenberg' ),
+			'step'                   => __( 'Step %1$s of %2$s — %3$s', 'elementor-to-gutenberg' ),
+			'modeTitle'              => __( 'Choose Mode', 'elementor-to-gutenberg' ),
+			'modeAutoTitle'          => __( 'Convert all pages automatically', 'elementor-to-gutenberg' ),
+			'modeAutoDesc'           => __( 'Run with smart defaults: copy meta & featured image, skip pages already converted.', 'elementor-to-gutenberg' ),
+			'modeCustomTitle'        => __( 'Choose specific pages', 'elementor-to-gutenberg' ),
+			'modeCustomDesc'         => __( 'Pick exactly which pages to convert and fine-tune options per page.', 'elementor-to-gutenberg' ),
+			'continue'               => __( 'Continue', 'elementor-to-gutenberg' ),
+			'back'                   => __( 'Back', 'elementor-to-gutenberg' ),
+			'selectPagesTitle'       => __( 'Select Pages', 'elementor-to-gutenberg' ),
+			'selectAll'              => __( 'Select all', 'elementor-to-gutenberg' ),
+			'selectionSummary'       => __( '%1$d selected / %2$d total', 'elementor-to-gutenberg' ),
+			'noPagesFound'           => __( 'No Elementor pages found for conversion.', 'elementor-to-gutenberg' ),
+			'skipConverted'          => __( 'Skip pages that were already converted', 'elementor-to-gutenberg' ),
+			'disableMeta'            => __( 'Don’t copy meta fields & featured image', 'elementor-to-gutenberg' ),
+			'conflictsTitle'         => __( 'Resolve Conflicts', 'elementor-to-gutenberg' ),
+			'conflictDetected'       => __( '%1$d selected pages already have a converted version.', 'elementor-to-gutenberg' ),
+			'conflictOverwrite'      => __( 'Update existing pages in place (overwrite)', 'elementor-to-gutenberg' ),
+			'conflictSkip'           => __( 'Skip those pages', 'elementor-to-gutenberg' ),
+			'conflictDuplicate'      => __( 'Create duplicates with “(Converted)” suffix', 'elementor-to-gutenberg' ),
+			'themeStepTitle'         => __( 'Theme compatibility', 'elementor-to-gutenberg' ),
+			'themeStepDesc'          => __( 'Block themes work best with Gutenberg. You can keep your current theme or switch to a compatible one before conversion.', 'elementor-to-gutenberg' ),
+			'themeCompatibilityNote' => __( 'Some themes may require a newer WordPress version.', 'elementor-to-gutenberg' ),
+			'themeCurrentGood'       => __( 'Your current theme already supports Gutenberg and block templates.', 'elementor-to-gutenberg' ),
+			'themeSelectPrompt'      => __( 'Select a block theme for best compatibility.', 'elementor-to-gutenberg' ),
+			'themeKeepCurrent'       => __( 'Keep current theme', 'elementor-to-gutenberg' ),
+			'themeSuggestedCore'     => __( 'Suggested core block themes', 'elementor-to-gutenberg' ),
+			'themeInstalledList'     => __( 'Installed block themes', 'elementor-to-gutenberg' ),
+			'themeNoInstalled'       => __( 'No compatible block themes are installed.', 'elementor-to-gutenberg' ),
+			'themeSelectedSummary'   => __( 'Selected: %s', 'elementor-to-gutenberg' ),
+			'themeUsingCurrentSummary' => __( 'Using current theme: %s', 'elementor-to-gutenberg' ),
+			'themeStatusInstalled'   => __( 'Installed', 'elementor-to-gutenberg' ),
+			'themeStatusNotInstalled' => __( 'Not installed', 'elementor-to-gutenberg' ),
+			'themeBlockLabel'        => __( 'Block theme', 'elementor-to-gutenberg' ),
+			'themeSelected'          => __( 'Selected', 'elementor-to-gutenberg' ),
+			'themeActionUseTheme'    => __( 'Use this theme', 'elementor-to-gutenberg' ),
+			'themeActionInstall'     => __( 'Install', 'elementor-to-gutenberg' ),
+			'themeActionActive'      => __( 'Active', 'elementor-to-gutenberg' ),
+			'copyAdditionalCss'      => __( 'Copy Additional CSS from the current theme', 'elementor-to-gutenberg' ),
+			'themeSwitchError'       => __( 'Unable to switch themes. Please try again or choose a different theme.', 'elementor-to-gutenberg' ),
+			'themeActiveLabel'       => __( 'Active', 'elementor-to-gutenberg' ),
+			'themeWarningInline'     => __( 'Theme step failed — conversion continued using current theme. Update WordPress to use this theme.', 'elementor-to-gutenberg' ),
+			'reviewTitle'            => __( 'Review & Confirm', 'elementor-to-gutenberg' ),
+			'reviewSummary'          => __( '%1$d pages selected — %2$d will be converted, %3$d skipped.', 'elementor-to-gutenberg' ),
+			'metaDisabled'           => __( '%1$d pages will be converted without copying meta fields or featured image.', 'elementor-to-gutenberg' ),
+			'startConversion'        => __( 'Start Conversion', 'elementor-to-gutenberg' ),
+			'backgroundInfo'         => __( 'Conversion runs in the background. You can safely close this page.', 'elementor-to-gutenberg' ),
+			'progressTitle'          => __( 'Progress & Results', 'elementor-to-gutenberg' ),
+			'converted'              => __( 'Converted', 'elementor-to-gutenberg' ),
+			'skipped'                => __( 'Skipped', 'elementor-to-gutenberg' ),
+			'errors'                 => __( 'Errors', 'elementor-to-gutenberg' ),
+			'duration'               => __( 'Duration', 'elementor-to-gutenberg' ),
+			'viewConverted'          => __( 'View converted', 'elementor-to-gutenberg' ),
+			'retry'                  => __( 'Retry', 'elementor-to-gutenberg' ),
+			'viewPages'              => __( 'View converted pages', 'elementor-to-gutenberg' ),
+			'startNew'               => __( 'Start new conversion', 'elementor-to-gutenberg' ),
+			'statusConverted'        => __( 'Converted', 'elementor-to-gutenberg' ),
+			'statusNotConverted'     => __( 'Not converted', 'elementor-to-gutenberg' ),
+			'statusPartial'          => __( 'Partial', 'elementor-to-gutenberg' ),
+			'statusError'            => __( 'Error', 'elementor-to-gutenberg' ),
+			'statusSkipped'          => __( 'Skipped', 'elementor-to-gutenberg' ),
+			'statusUnknown'          => __( 'Unknown', 'elementor-to-gutenberg' ),
+			'tableTitle'             => __( 'Title', 'elementor-to-gutenberg' ),
+			'tableStatus'            => __( 'Status', 'elementor-to-gutenberg' ),
+			'tableConversionStatus'  => __( 'Conversion status', 'elementor-to-gutenberg' ),
+			'tableLastConverted'     => __( 'Last converted', 'elementor-to-gutenberg' ),
+			'tableActions'           => __( 'Actions', 'elementor-to-gutenberg' ),
+			'jobCompleted'           => __( 'Conversion completed successfully in %s.', 'elementor-to-gutenberg' ),
+			'jobCompletedWithErrors' => __( 'Conversion finished with issues in %s.', 'elementor-to-gutenberg' ),
+			'jobRunning'             => __( 'Conversion in progress…', 'elementor-to-gutenberg' ),
+			'resumeJob'              => __( 'Resuming an active conversion job.', 'elementor-to-gutenberg' ),
+			'processing'             => __( 'Processing…', 'elementor-to-gutenberg' ),
+			'noSelectionError'       => __( 'Select at least one page or template before continuing.', 'elementor-to-gutenberg' ),
+			'retryFailed'            => __( 'Unable to retry conversion. Please try again.', 'elementor-to-gutenberg' ),
+			'headerFooterStepTitle'  => __( 'Header & Footer Templates', 'elementor-to-gutenberg' ),
+			'headersLabel'           => __( 'Headers', 'elementor-to-gutenberg' ),
+			'footersLabel'           => __( 'Footers', 'elementor-to-gutenberg' ),
+			'defaultHeaderLabel'     => __( 'Default header after conversion', 'elementor-to-gutenberg' ),
+			'defaultFooterLabel'     => __( 'Default footer after conversion', 'elementor-to-gutenberg' ),
+			'headerFooterSummary'    => __( '%1$d headers and %2$d footers selected for conversion.', 'elementor-to-gutenberg' ),
+			'headerFooterDefaults'   => __( 'Default header: %1$s — Default footer: %2$s', 'elementor-to-gutenberg' ),
+			'cancel'                 => __( 'Cancel', 'elementor-to-gutenberg' ),
+			'jobCancelled'           => __( 'Conversion was cancelled.', 'elementor-to-gutenberg' ),
 		);
 	}
 
