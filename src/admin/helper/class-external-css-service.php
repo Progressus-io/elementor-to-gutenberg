@@ -10,6 +10,7 @@ namespace Progressus\Gutenberg\Admin\Helper;
 use function absint;
 use function current_time;
 use function delete_post_meta;
+use function gmdate;
 use function file_exists;
 use function filemtime;
 use function get_post_meta;
@@ -18,7 +19,9 @@ use function is_readable;
 use function is_string;
 use function json_decode;
 use function maybe_unserialize;
+use function md5;
 use function wp_json_encode;
+use function update_post_meta;
 use function wp_normalize_path;
 use function wp_unslash;
 
@@ -147,6 +150,57 @@ class External_CSS_Service {
 		$meta['path'] = wp_normalize_path( $path );
 
 		return $meta;
+	}
+
+	/**
+	 * Append CSS to an already generated external CSS file for a post.
+	 *
+	 * @param int $post_id Post ID.
+	 * @param string $css CSS to append.
+	 *
+	 * @return bool|\WP_Error
+	 */
+	public static function append_post_css( int $post_id, string $css ) {
+		$post_id = self::resolve_post_id( $post_id );
+		$css     = self::normalize_css( $css );
+
+		if ( '' === $css ) {
+			return true;
+		}
+
+		$meta = self::get_post_css_meta( $post_id );
+		if ( ! is_array( $meta ) || empty( $meta['path'] ) ) {
+			return new \WP_Error(
+				'ele2gb_missing_css_file',
+				'External CSS file reference could not be resolved for this page.'
+			);
+		}
+
+		$path = self::normalize_fs_path( (string) $meta['path'] );
+		if ( ! file_exists( $path ) || ! is_readable( $path ) ) {
+			return new \WP_Error(
+				'ele2gb_css_file_not_found',
+				'External CSS file does not exist or is not readable.'
+			);
+		}
+
+		$current_css = (string) @file_get_contents( $path );
+		$separator   = "\n\n/* AI remediation CSS appended on " . gmdate( 'Y-m-d H:i:s' ) . " UTC */\n";
+		$updated_css = trim( $current_css ) . $separator . $css . "\n";
+
+		if ( ! self::write_file( $path, $updated_css ) ) {
+			return new \WP_Error(
+				'ele2gb_css_write_failed',
+				'Failed to append CSS to external stylesheet file.'
+			);
+		}
+
+		$meta['hash']     = substr( md5( $updated_css ), 0, 12 );
+		$meta['saved_at'] = current_time( 'mysql' );
+		$meta_json        = wp_json_encode( $meta, JSON_UNESCAPED_SLASHES );
+		update_post_meta( $post_id, self::META_KEY, $meta_json );
+
+		return true;
 	}
 
 	/**

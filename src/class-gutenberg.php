@@ -10,6 +10,7 @@ namespace Progressus\Gutenberg;
 defined( 'ABSPATH' ) || exit;
 
 use Progressus\Gutenberg\Admin\Admin_Settings;
+use Progressus\Gutenberg\Admin\AI_Improvement_Admin;
 use Progressus\Gutenberg\Admin\Batch_Convert_Wizard;
 use Progressus\Gutenberg\Admin\Helper\External_CSS_Service;
 use Progressus\Gutenberg\Admin\Helper\Elementor_Fonts_Service;
@@ -295,6 +296,7 @@ class Gutenberg {
 		$this->register_full_width_page_template();
 		Admin_Settings::instance();
 		Batch_Convert_Wizard::instance();
+		AI_Improvement_Admin::instance();
 	}
 
 	/**

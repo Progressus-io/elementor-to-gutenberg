@@ -1627,6 +1627,20 @@
                     viewLink.rel = 'noopener noreferrer';
                     actionsTd.appendChild(viewLink);
                 }
+                if (
+                    result.type === 'page' &&
+                    result.status === 'success' &&
+                    Number(result.convertedPostId || 0) > 0 &&
+                    this.config.aiImproveBaseUrl
+                ) {
+                    const improveLink = document.createElement('a');
+                    const improveUrl = new URL(this.config.aiImproveBaseUrl, window.location.origin);
+                    improveUrl.searchParams.set('target_id', String(result.convertedPostId));
+                    improveUrl.searchParams.set('source_id', String(result.id));
+                    improveLink.href = improveUrl.toString();
+                    improveLink.textContent = this.strings.improveWithAi || 'Improve Page with AI';
+                    actionsTd.appendChild(improveLink);
+                }
                 if (result.status === 'error' && result.type === 'page') {
                     const retryLink = document.createElement('a');
                     retryLink.href = '#';

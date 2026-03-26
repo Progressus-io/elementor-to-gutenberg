@@ -8,6 +8,7 @@
 namespace Progressus\Gutenberg\Admin;
 
 use Progressus\Gutenberg\Admin\Admin_Settings;
+use Progressus\Gutenberg\Admin\AI_Improvement_Admin;
 use Progressus\Gutenberg\Gutenberg;
 use WP_Error;
 use WP_Post;
@@ -196,6 +197,7 @@ class Batch_Convert_Wizard {
 			'ele2gbBatchWizard',
 			array(
 				'ajaxUrl'      => admin_url( 'admin-ajax.php' ),
+				'aiImproveBaseUrl' => admin_url( 'admin.php?page=' . AI_Improvement_Admin::MENU_SLUG ),
 				'nonce'        => wp_create_nonce( self::NONCE_ACTION ),
 				'pages'        => $this->get_elementor_pages_data(),
 				'strings'      => $this->get_strings(),
@@ -2655,6 +2657,7 @@ class Batch_Convert_Wizard {
 			'errors'                 => __( 'Errors', 'elementor-to-gutenberg' ),
 			'duration'               => __( 'Duration', 'elementor-to-gutenberg' ),
 			'viewConverted'          => __( 'View converted', 'elementor-to-gutenberg' ),
+			'improveWithAi'          => __( 'Improve Page with AI', 'elementor-to-gutenberg' ),
 			'retry'                  => __( 'Retry', 'elementor-to-gutenberg' ),
 			'viewPages'              => __( 'View converted pages', 'elementor-to-gutenberg' ),
 			'startNew'               => __( 'Start new conversion', 'elementor-to-gutenberg' ),
