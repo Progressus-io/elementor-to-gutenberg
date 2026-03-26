@@ -6,6 +6,10 @@ export default function save({ attributes }) {
     imageAlt,
     imageWidth,
     imageHeight,
+    imageBorderRadius,
+    imageSpace,
+    wrapperPadding,
+    wrapperMargin,
     title,
     description,
     titleSize,
@@ -34,14 +38,14 @@ export default function save({ attributes }) {
     linkTarget,
     nofollow,
     align,
+    alignment,
     className,
     anchor,
   } = attributes;
 
-  const wrapper_classes = arrayUnique([
-    "wp-block-image-box",
-    className,
-  ])
+  const effectiveAlignment = alignment || align || "left";
+
+  const wrapper_classes = arrayUnique(["wp-block-image-box", className])
     .filter(Boolean)
     .join(" ");
 
@@ -77,13 +81,27 @@ export default function save({ attributes }) {
   );
 
   const imageElement = imageUrl && (
-    <div className="image-box-image">
+    <div
+      className="image-box-image"
+      style={{
+        display: "flex",
+        justifyContent:
+          effectiveAlignment === "center"
+            ? "center"
+            : effectiveAlignment === "right"
+            ? "flex-end"
+            : "flex-start",
+        marginBottom: imageSpace || undefined,
+        width: "100%",
+      }}
+    >
       <img
         src={imageUrl}
         alt={imageAlt || ""}
         style={{
           width: `${imageWidth}px`,
           height: `${imageHeight}px`,
+          borderRadius: imageBorderRadius || undefined,
           objectFit: objectFit || "cover",
           objectPosition: objectPosition || "center center",
           display: "block",
@@ -95,7 +113,11 @@ export default function save({ attributes }) {
   return (
     <div
       className={wrapper_classes}
-      style={{ textAlign: align || "left" }}
+      style={{
+        textAlign: effectiveAlignment,
+        padding: wrapperPadding || undefined,
+        margin: wrapperMargin || undefined,
+      }}
       id={anchor || undefined}
     >
       {imageElement}
