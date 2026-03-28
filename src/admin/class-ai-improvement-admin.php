@@ -10,6 +10,8 @@ namespace Progressus\Gutenberg\Admin;
 use Progressus\Gutenberg\Admin\Helper\AI_Prompt_Builder;
 use Progressus\Gutenberg\Admin\Helper\AI_Workspace_Repository;
 use Progressus\Gutenberg\Admin\Helper\External_CSS_Service;
+use Progressus\Gutenberg\Admin\Helper\AI_Remediation_Screenshot_Api_Service;
+use Progressus\Gutenberg\Admin\Helper\AI_Remediation_Screenshot_Meta_Service;
 use WP_Error;
 use WP_Post;
 
@@ -65,6 +67,7 @@ class AI_Improvement_Admin {
 	private function __construct() {
 		add_action( 'admin_menu', array( $this, 'register_menu' ) );
 		add_action( 'admin_post_ele2gb_ai_update_page', array( $this, 'handle_update_page' ) );
+		add_action( 'admin_post_ele2gb_ai_regenerate_screenshots', array( $this, 'handle_regenerate_screenshots' ) );
 	}
 
 	/**
@@ -145,8 +148,16 @@ class AI_Improvement_Admin {
 		$elementor_json = (string) $elementor_json;
 
 		$existing_workspace = AI_Workspace_Repository::get( $target_id );
-		$elementor_shot     = isset( $existing_workspace['elementor_screenshot'] ) ? (string) $existing_workspace['elementor_screenshot'] : '';
-		$gutenberg_shot     = isset( $existing_workspace['gutenberg_screenshot'] ) ? (string) $existing_workspace['gutenberg_screenshot'] : '';
+
+		// Load screenshot URLs from dedicated meta; fall back to workspace for backward compatibility.
+		$elementor_shot = AI_Remediation_Screenshot_Meta_Service::get_elementor_url( $target_id );
+		$gutenberg_shot = AI_Remediation_Screenshot_Meta_Service::get_gutenberg_url( $target_id );
+		if ( '' === $elementor_shot && isset( $existing_workspace['elementor_screenshot'] ) ) {
+			$elementor_shot = (string) $existing_workspace['elementor_screenshot'];
+		}
+		if ( '' === $gutenberg_shot && isset( $existing_workspace['gutenberg_screenshot'] ) ) {
+			$gutenberg_shot = (string) $existing_workspace['gutenberg_screenshot'];
+		}
 
 		$prompt = AI_Prompt_Builder::build(
 			array(
@@ -160,15 +171,15 @@ class AI_Improvement_Admin {
 		);
 
 		$workspace_to_save = array(
-			'target_post_id'         => $target_id,
-			'source_post_id'         => $source_id,
-			'prepared_prompt'        => $prompt,
-			'elementor_json_snapshot'=> $elementor_json,
-			'gutenberg_snapshot'     => $gutenberg_content,
-			'elementor_screenshot'   => $elementor_shot,
-			'gutenberg_screenshot'   => $gutenberg_shot,
-			'css_result_draft'       => isset( $existing_workspace['css_result_draft'] ) ? (string) $existing_workspace['css_result_draft'] : '',
-			'gutenberg_result_draft' => isset( $existing_workspace['gutenberg_result_draft'] ) ? (string) $existing_workspace['gutenberg_result_draft'] : '',
+			'target_post_id'          => $target_id,
+			'source_post_id'          => $source_id,
+			'prepared_prompt'         => $prompt,
+			'elementor_json_snapshot' => $elementor_json,
+			'gutenberg_snapshot'      => $gutenberg_content,
+			'elementor_screenshot'    => $elementor_shot,
+			'gutenberg_screenshot'    => $gutenberg_shot,
+			'css_result_draft'        => isset( $existing_workspace['css_result_draft'] ) ? (string) $existing_workspace['css_result_draft'] : '',
+			'gutenberg_result_draft'  => isset( $existing_workspace['gutenberg_result_draft'] ) ? (string) $existing_workspace['gutenberg_result_draft'] : '',
 		);
 		AI_Workspace_Repository::save( $target_id, $workspace_to_save );
 
@@ -246,6 +257,35 @@ class AI_Improvement_Admin {
 	}
 
 	/**
+	 * Handle the Regenerate Screenshots action.
+	 *
+	 * Calls the screenshot service for both source and target pages, replaces
+	 * any stored screenshot URLs, and redirects back to the workflow page.
+	 */
+	public function handle_regenerate_screenshots(): void {
+		if ( ! current_user_can( 'edit_pages' ) ) {
+			wp_die( esc_html__( 'You do not have permission to perform this action.', 'elementor-to-gutenberg' ) );
+		}
+
+		$target_id = isset( $_POST['target_id'] ) ? absint( wp_unslash( $_POST['target_id'] ) ) : 0;
+		$source_id = isset( $_POST['source_id'] ) ? absint( wp_unslash( $_POST['source_id'] ) ) : 0;
+
+		check_admin_referer( 'ele2gb_ai_regenerate_screenshots_' . $target_id );
+
+		if ( $target_id <= 0 || $source_id <= 0 ) {
+			wp_die( esc_html__( 'Source or target page is missing.', 'elementor-to-gutenberg' ) );
+		}
+
+		if ( ! current_user_can( 'edit_post', $target_id ) ) {
+			wp_die( esc_html__( 'You do not have permission to edit this page.', 'elementor-to-gutenberg' ) );
+		}
+
+		$result = AI_Remediation_Screenshot_Meta_Service::generate_and_store( $source_id, $target_id, true );
+		$notice = $result['success'] ? 'screenshots_regenerated' : 'screenshots_failed';
+		$this->redirect_with_notice( $source_id, $target_id, $notice );
+	}
+
+	/**
 	 * Redirect with admin notice code.
 	 */
 	private function redirect_with_notice( int $source_id, int $target_id, string $notice_code ): void {
@@ -272,11 +312,13 @@ class AI_Improvement_Admin {
 		}
 
 		$messages = array(
-			'updated'           => array( 'success', esc_html__( 'Page updated and AI CSS appended successfully.', 'elementor-to-gutenberg' ) ),
-			'missing_gutenberg' => array( 'error', esc_html__( 'Gutenberg result is required before updating.', 'elementor-to-gutenberg' ) ),
-			'css_append_failed' => array( 'error', esc_html__( 'Could not append CSS because the external CSS file for this page could not be resolved.', 'elementor-to-gutenberg' ) ),
-			'update_failed'     => array( 'error', esc_html__( 'Failed to update Gutenberg page content.', 'elementor-to-gutenberg' ) ),
-			'invalid_mapping'   => array( 'error', esc_html__( 'Source and target mapping validation failed.', 'elementor-to-gutenberg' ) ),
+			'updated'                 => array( 'success', esc_html__( 'Page updated and AI CSS appended successfully.', 'elementor-to-gutenberg' ) ),
+			'missing_gutenberg'       => array( 'error', esc_html__( 'Gutenberg result is required before updating.', 'elementor-to-gutenberg' ) ),
+			'css_append_failed'       => array( 'error', esc_html__( 'Could not append CSS because the external CSS file for this page could not be resolved.', 'elementor-to-gutenberg' ) ),
+			'update_failed'           => array( 'error', esc_html__( 'Failed to update Gutenberg page content.', 'elementor-to-gutenberg' ) ),
+			'invalid_mapping'         => array( 'error', esc_html__( 'Source and target mapping validation failed.', 'elementor-to-gutenberg' ) ),
+			'screenshots_regenerated' => array( 'success', esc_html__( 'Screenshots regenerated successfully.', 'elementor-to-gutenberg' ) ),
+			'screenshots_failed'      => array( 'error', esc_html__( 'Screenshot regeneration failed. Check the screenshot service settings and connectivity.', 'elementor-to-gutenberg' ) ),
 		);
 
 		if ( ! isset( $messages[ $notice_code ] ) ) {
@@ -292,10 +334,15 @@ class AI_Improvement_Admin {
 
 	/**
 	 * Render workflow form.
+	 *
+	 * The Screenshots section is rendered as a separate, self-contained form so
+	 * it can contain its own submit button without nesting HTML forms. The main
+	 * update form follows immediately after and carries hidden screenshot URL
+	 * inputs so handle_update_page continues to receive and save them.
 	 */
 	private function render_form( WP_Post $target_post, WP_Post $source_post, array $workspace ): void {
-		$target_id  = (int) $target_post->ID;
-		$source_id  = (int) $source_post->ID;
+		$target_id    = (int) $target_post->ID;
+		$source_id    = (int) $source_post->ID;
 		$target_title = get_the_title( $target_id );
 		$source_title = get_the_title( $source_id );
 
@@ -306,6 +353,18 @@ class AI_Improvement_Admin {
 		$gutenberg_result  = isset( $workspace['gutenberg_result_draft'] ) ? (string) $workspace['gutenberg_result_draft'] : '';
 		$elementor_shot    = isset( $workspace['elementor_screenshot'] ) ? (string) $workspace['elementor_screenshot'] : '';
 		$gutenberg_shot    = isset( $workspace['gutenberg_screenshot'] ) ? (string) $workspace['gutenberg_screenshot'] : '';
+
+		$screenshot_status       = AI_Remediation_Screenshot_Meta_Service::get_status( $target_id );
+		$screenshot_generated_at = (string) get_post_meta( $target_id, AI_Remediation_Screenshot_Meta_Service::META_GENERATED_AT, true );
+		$service_configured      = '' !== AI_Remediation_Screenshot_Api_Service::get_endpoint_url();
+
+		$status_labels = array(
+			AI_Remediation_Screenshot_Meta_Service::STATUS_SUCCESS       => esc_html__( 'Generated', 'elementor-to-gutenberg' ),
+			AI_Remediation_Screenshot_Meta_Service::STATUS_FAILED        => esc_html__( 'Generation failed', 'elementor-to-gutenberg' ),
+			AI_Remediation_Screenshot_Meta_Service::STATUS_PENDING       => esc_html__( 'Pending', 'elementor-to-gutenberg' ),
+			AI_Remediation_Screenshot_Meta_Service::STATUS_NOT_GENERATED => esc_html__( 'Not yet generated', 'elementor-to-gutenberg' ),
+		);
+		$status_label = isset( $status_labels[ $screenshot_status ] ) ? $status_labels[ $screenshot_status ] : esc_html( $screenshot_status );
 
 		?>
 		<div class="wrap">
@@ -333,40 +392,61 @@ class AI_Improvement_Admin {
 				</tbody>
 			</table>
 
+			<h2><?php echo esc_html__( 'Screenshots', 'elementor-to-gutenberg' ); ?></h2>
+			<table class="form-table" role="presentation">
+				<tbody>
+				<tr>
+					<th scope="row"><?php echo esc_html__( 'Elementor Screenshot', 'elementor-to-gutenberg' ); ?></th>
+					<td>
+						<?php if ( '' !== $elementor_shot ) : ?>
+							<p><img src="<?php echo esc_url( $elementor_shot ); ?>" alt="" style="max-width:480px;height:auto;border:1px solid #ccd0d4;padding:4px;background:#fff;" /></p>
+						<?php else : ?>
+							<p class="description"><?php echo esc_html__( 'No Elementor screenshot available yet.', 'elementor-to-gutenberg' ); ?></p>
+						<?php endif; ?>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row"><?php echo esc_html__( 'Gutenberg Screenshot', 'elementor-to-gutenberg' ); ?></th>
+					<td>
+						<?php if ( '' !== $gutenberg_shot ) : ?>
+							<p><img src="<?php echo esc_url( $gutenberg_shot ); ?>" alt="" style="max-width:480px;height:auto;border:1px solid #ccd0d4;padding:4px;background:#fff;" /></p>
+						<?php else : ?>
+							<p class="description"><?php echo esc_html__( 'No Gutenberg screenshot available yet.', 'elementor-to-gutenberg' ); ?></p>
+						<?php endif; ?>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row"><?php echo esc_html__( 'Screenshot Status', 'elementor-to-gutenberg' ); ?></th>
+					<td>
+						<?php
+						echo esc_html( $status_label );
+						if ( '' !== $screenshot_generated_at ) {
+							echo ' &mdash; ' . esc_html( $screenshot_generated_at );
+						}
+						if ( ! $service_configured ) {
+							echo ' <span style="color:#b32d2e;">(' . esc_html__( 'Screenshot service not configured. See plugin settings.', 'elementor-to-gutenberg' ) . ')</span>';
+						}
+						?>
+					</td>
+				</tr>
+				</tbody>
+			</table>
+
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="margin-bottom:1.5em;">
+				<?php wp_nonce_field( 'ele2gb_ai_regenerate_screenshots_' . $target_id ); ?>
+				<input type="hidden" name="action" value="ele2gb_ai_regenerate_screenshots" />
+				<input type="hidden" name="target_id" value="<?php echo esc_attr( (string) $target_id ); ?>" />
+				<input type="hidden" name="source_id" value="<?php echo esc_attr( (string) $source_id ); ?>" />
+				<?php submit_button( esc_html__( 'Regenerate Screenshots', 'elementor-to-gutenberg' ), 'secondary', 'ele2gb_regenerate_screenshots_submit', false ); ?>
+			</form>
+
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 				<?php wp_nonce_field( self::NONCE_ACTION ); ?>
 				<input type="hidden" name="action" value="ele2gb_ai_update_page" />
 				<input type="hidden" name="target_id" value="<?php echo esc_attr( (string) $target_id ); ?>" />
 				<input type="hidden" name="source_id" value="<?php echo esc_attr( (string) $source_id ); ?>" />
-
-				<h2><?php echo esc_html__( 'Screenshots', 'elementor-to-gutenberg' ); ?></h2>
-				<p><?php echo esc_html__( 'Add URL references for screenshots you want to share with the external AI tool.', 'elementor-to-gutenberg' ); ?></p>
-				<table class="form-table" role="presentation">
-					<tbody>
-					<tr>
-						<th scope="row"><label for="ele2gb_elementor_screenshot"><?php echo esc_html__( 'Elementor Screenshot URL', 'elementor-to-gutenberg' ); ?></label></th>
-						<td>
-							<input type="url" class="regular-text" id="ele2gb_elementor_screenshot" name="elementor_screenshot" value="<?php echo esc_attr( $elementor_shot ); ?>" />
-							<?php if ( '' !== $elementor_shot ) : ?>
-								<p><img src="<?php echo esc_url( $elementor_shot ); ?>" alt="" style="max-width:480px;height:auto;border:1px solid #ccd0d4;padding:4px;background:#fff;" /></p>
-							<?php else : ?>
-								<p class="description"><?php echo esc_html__( 'No Elementor screenshot attached yet.', 'elementor-to-gutenberg' ); ?></p>
-							<?php endif; ?>
-						</td>
-					</tr>
-					<tr>
-						<th scope="row"><label for="ele2gb_gutenberg_screenshot"><?php echo esc_html__( 'Gutenberg Screenshot URL', 'elementor-to-gutenberg' ); ?></label></th>
-						<td>
-							<input type="url" class="regular-text" id="ele2gb_gutenberg_screenshot" name="gutenberg_screenshot" value="<?php echo esc_attr( $gutenberg_shot ); ?>" />
-							<?php if ( '' !== $gutenberg_shot ) : ?>
-								<p><img src="<?php echo esc_url( $gutenberg_shot ); ?>" alt="" style="max-width:480px;height:auto;border:1px solid #ccd0d4;padding:4px;background:#fff;" /></p>
-							<?php else : ?>
-								<p class="description"><?php echo esc_html__( 'No Gutenberg screenshot attached yet.', 'elementor-to-gutenberg' ); ?></p>
-							<?php endif; ?>
-						</td>
-					</tr>
-					</tbody>
-				</table>
+				<input type="hidden" name="elementor_screenshot" value="<?php echo esc_attr( $elementor_shot ); ?>" />
+				<input type="hidden" name="gutenberg_screenshot" value="<?php echo esc_attr( $gutenberg_shot ); ?>" />
 
 				<h2><?php echo esc_html__( 'Prepared Inputs', 'elementor-to-gutenberg' ); ?></h2>
 				<p><label for="ele2gb_gutenberg_content"><strong><?php echo esc_html__( 'Gutenberg Content', 'elementor-to-gutenberg' ); ?></strong></label></p>

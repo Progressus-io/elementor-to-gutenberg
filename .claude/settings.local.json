@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(wc:*)",
+      "Bash(python3:*)",
+      "Bash(/c/xampp/php/php.exe do-patch.php)",
+      "Bash(/c/xampp/php/php.exe do-patch2.php)",
+      "Bash(/c/xampp/php/php.exe do-patch3.php)",
+      "Bash(/c/xampp/php/php.exe -l /c/xampp/htdocs/ele/wp-content/plugins/elementor-to-gutenberg/src/admin/helper/class-ai-remediation-screenshot-api-service.php)",
+      "Bash(/c/xampp/php/php.exe -l /c/xampp/htdocs/ele/wp-content/plugins/elementor-to-gutenberg/src/admin/helper/class-ai-remediation-screenshot-meta-service.php)",
+      "Bash(/c/xampp/php/php.exe -l /c/xampp/htdocs/ele/wp-content/plugins/elementor-to-gutenberg/src/admin/class-ai-improvement-admin.php)",
+      "Bash(/c/xampp/php/php.exe -l /c/xampp/htdocs/ele/wp-content/plugins/elementor-to-gutenberg/src/admin/class-admin-settings.php)",
+      "Bash(/c/xampp/php/php.exe -l /c/xampp/htdocs/ele/wp-content/plugins/elementor-to-gutenberg/src/admin/class-batch-convert-wizard.php)",
+      "Bash(/c/xampp/php/php.exe do-patch4.php)",
+      "Bash(ls /c/xampp/htdocs/ele/wp-content/plugins/elementor-to-gutenberg/src/admin/helper/class-ai-remediation-*.php)"
+    ]
+  }
+}

@@ -14,6 +14,9 @@ use WP_Error;
 use WP_Post;
 use WP_Query;
 
+use Progressus\Gutenberg\Admin\Helper\AI_Remediation_Screenshot_Api_Service;
+use Progressus\Gutenberg\Admin\Helper\AI_Remediation_Screenshot_Meta_Service;
+
 use function absint;
 use function add_submenu_page;
 use function admin_url;
@@ -436,6 +439,11 @@ class Batch_Convert_Wizard {
 				);
 
 				$this->store_page_conversion_result( (int) $page_info['id'], $result_entry );
+
+				// Auto-generate screenshots for successfully converted pages if the feature is enabled.
+				if ( 'success' === $result['status'] && $converted_post_id > 0 ) {
+					$this->maybe_generate_screenshots( (int) $page_info['id'], $converted_post_id );
+				}
 
 			} else {
 				$template_info = $item['data'];
@@ -1975,7 +1983,7 @@ class Batch_Convert_Wizard {
 		}
 
 		if ( self::TEMPLATE_ROLE_DEFAULT_FOOTER === $template_info['role'] && 'footer' === $template_info['type'] ) {
-			$this->force_block_theme_default_footer( $target_id );
+			$this->orce_block_theme_default_footer( $target_id );
 		}
 
 		if ( $has_targets ) {
@@ -2982,6 +2990,23 @@ class Batch_Convert_Wizard {
 		if ( 'success' === $result_entry['status'] ) {
 			update_post_meta( $template_id, '_ele2gb_last_converted', $time );
 		}
+	}
+
+	/**
+	 * Attempt to generate screenshots for a converted page pair if auto-generation is enabled.
+	 *
+	 * Called after each successful page conversion in the batch wizard. Any failure is stored
+	 * in post meta and does not interrupt the wizard AJAX response.
+	 *
+	 * @param int $source_id Elementor source page ID.
+	 * @param int $target_id Converted Gutenberg page ID.
+	 */
+	private function maybe_generate_screenshots( int $source_id, int $target_id ): void {
+		if ( ! AI_Remediation_Screenshot_Api_Service::is_auto_generate_enabled() ) {
+			return;
+		}
+
+		AI_Remediation_Screenshot_Meta_Service::generate_and_store( $source_id, $target_id, false );
 	}
 
 }

@@ -16,6 +16,7 @@ use Progressus\Gutenberg\Admin\Helper\Style_Parser;
 use Progressus\Gutenberg\Admin\Helper\Alignment_Helper;
 use Progressus\Gutenberg\Admin\Helper\External_CSS_Service;
 use Progressus\Gutenberg\Admin\Helper\External_Style_Collector;
+use Progressus\Gutenberg\Admin\Helper\AI_Remediation_Screenshot_Api_Service;
 
 use function esc_html;
 use function esc_html__;
@@ -78,6 +79,7 @@ class Admin_Settings {
 		add_filter( 'plugin_action_links_' . GUTENBERG_PLUGIN_BASENAME, array( $this, 'add_plugin_action_links' ) );
 		add_filter( 'page_row_actions', array( $this, 'myplugin_add_convert_button' ), 10, 2 );
 		add_action( 'admin_post_myplugin_convert_page', array( $this, 'myplugin_handle_convert_page' ) );
+		add_action( 'admin_post_etg_save_screenshot_settings', array( $this, 'save_screenshot_settings' ) );
 	}
 
 	/**
@@ -296,6 +298,46 @@ class Admin_Settings {
 	}
 
 	/**
+	 * Save screenshot service settings submitted from the settings page form.
+	 *
+	 * Accepts POST data from the screenshot settings form, sanitizes all fields,
+	 * persists them via AI_Remediation_Screenshot_Api_Service, then redirects back.
+	 */
+	public function save_screenshot_settings(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission to change plugin settings.', 'elementor-to-gutenberg' ) );
+		}
+
+		check_admin_referer( 'etg_save_screenshot_settings' );
+
+		$raw = isset( $_POST['etg_screenshot_settings'] ) ? wp_unslash( $_POST['etg_screenshot_settings'] ) : array();
+		$raw = is_array( $raw ) ? $raw : array();
+
+		$endpoint_url  = isset( $raw['endpoint_url'] ) ? esc_url_raw( sanitize_text_field( (string) $raw['endpoint_url'] ) ) : '';
+		$timeout       = isset( $raw['timeout'] ) ? max( 5, min( 120, (int) $raw['timeout'] ) ) : 15;
+		$auto_generate = ! empty( $raw['auto_generate'] );
+
+		$settings = array(
+			'endpoint_url'  => $endpoint_url,
+			'timeout'       => $timeout,
+			'auto_generate' => $auto_generate,
+		);
+
+		AI_Remediation_Screenshot_Api_Service::save_settings( $settings );
+
+		wp_safe_redirect(
+			add_query_arg(
+				array(
+					'page'               => 'gutenberg-settings',
+					'etg_settings_saved' => '1',
+				),
+				admin_url( 'admin.php' )
+			)
+		);
+		exit;
+	}
+
+	/**
 	 * Render settings page content.
 	 */
 	public function settings_page_content(): void {
@@ -307,6 +349,56 @@ class Admin_Settings {
             <p>
                 <a href="<?php echo esc_url( $this->get_wizard_url() ); ?>" class="button button-primary"><?php esc_html_e( 'Open Migration Wizard', 'elementor-to-gutenberg' ); ?></a>
             </p>
+
+            <hr />
+            <h2><?php esc_html_e( 'Screenshot Service Settings', 'elementor-to-gutenberg' ); ?></h2>
+            <?php if ( isset( $_GET['etg_settings_saved'] ) && '1' === $_GET['etg_settings_saved'] ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
+                <div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Screenshot settings saved.', 'elementor-to-gutenberg' ); ?></p></div>
+            <?php endif; ?>
+            <p><?php esc_html_e( 'Configure the external screenshot service that generates page screenshots automatically after conversion.', 'elementor-to-gutenberg' ); ?></p>
+            <?php
+            $screenshot_settings = AI_Remediation_Screenshot_Api_Service::get_settings();
+            $endpoint_url_val    = isset( $screenshot_settings['endpoint_url'] ) ? (string) $screenshot_settings['endpoint_url'] : '';
+            $timeout_val         = isset( $screenshot_settings['timeout'] ) ? (int) $screenshot_settings['timeout'] : 15;
+            $auto_generate_val   = ! empty( $screenshot_settings['auto_generate'] );
+            ?>
+            <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+                <?php wp_nonce_field( 'etg_save_screenshot_settings' ); ?>
+                <input type="hidden" name="action" value="etg_save_screenshot_settings" />
+                <table class="form-table" role="presentation">
+                    <tbody>
+                    <tr>
+                        <th scope="row">
+                            <label for="etg_screenshot_endpoint_url"><?php esc_html_e( 'Screenshot Service URL', 'elementor-to-gutenberg' ); ?></label>
+                        </th>
+                        <td>
+                            <input type="url" id="etg_screenshot_endpoint_url" name="etg_screenshot_settings[endpoint_url]" value="<?php echo esc_attr( $endpoint_url_val ); ?>" class="regular-text" placeholder="https://example.com/screenshot-endpoint" />
+                            <p class="description"><?php esc_html_e( 'Endpoint URL of the external screenshot service. It must accept a POST request with a url parameter and return JSON with success and file_url fields.', 'elementor-to-gutenberg' ); ?></p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="etg_screenshot_timeout"><?php esc_html_e( 'Screenshot Request Timeout', 'elementor-to-gutenberg' ); ?></label>
+                        </th>
+                        <td>
+                            <input type="number" id="etg_screenshot_timeout" name="etg_screenshot_settings[timeout]" value="<?php echo esc_attr( (string) $timeout_val ); ?>" min="5" max="120" class="small-text" />
+                            <span class="description"><?php esc_html_e( 'seconds (5–120)', 'elementor-to-gutenberg' ); ?></span>
+                            <p class="description"><?php esc_html_e( 'Maximum time in seconds to wait for a screenshot response before giving up.', 'elementor-to-gutenberg' ); ?></p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><?php esc_html_e( 'Auto Generate Screenshots After Conversion', 'elementor-to-gutenberg' ); ?></th>
+                        <td>
+                            <label>
+                                <input type="checkbox" name="etg_screenshot_settings[auto_generate]" value="1" <?php checked( $auto_generate_val ); ?> />
+                                <?php esc_html_e( 'Automatically generate screenshots for each page immediately after the conversion wizard converts it.', 'elementor-to-gutenberg' ); ?>
+                            </label>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+                <?php submit_button( esc_html__( 'Save Screenshot Settings', 'elementor-to-gutenberg' ) ); ?>
+            </form>
         </div>
 		<?php
 	}
