@@ -42,22 +42,29 @@ class Claude_Api_Service {
 	/**
 	 * Send a prompt to Claude and return the text response.
 	 *
-	 * @param string $prompt The full prompt text.
+	 * When screenshot URLs are provided they are included as vision image blocks
+	 * so Claude can visually compare the Elementor and Gutenberg pages.
+	 *
+	 * @param string $prompt           The full prompt text.
+	 * @param string $elementor_shot   Optional public URL of the Elementor screenshot.
+	 * @param string $gutenberg_shot   Optional public URL of the Gutenberg screenshot.
 	 * @return array{success: bool, content: string, error: string}
 	 */
-	public static function send( string $prompt ): array {
+	public static function send( string $prompt, string $elementor_shot = '', string $gutenberg_shot = '' ): array {
 		$api_key = self::get_api_key();
 
 		if ( '' === $api_key ) {
 			return array( 'success' => false, 'content' => '', 'error' => 'Claude API key is not configured.' );
 		}
 
+		$content = self::build_message_content( $prompt, $elementor_shot, $gutenberg_shot );
+
 		$body = wp_json_encode(
 			array(
 				'model'      => self::MODEL,
 				'max_tokens' => 8000,
 				'messages'   => array(
-					array( 'role' => 'user', 'content' => $prompt ),
+					array( 'role' => 'user', 'content' => $content ),
 				),
 			)
 		);
@@ -89,6 +96,53 @@ class Claude_Api_Service {
 		}
 
 		return array( 'success' => true, 'content' => (string) $data['content'][0]['text'], 'error' => '' );
+	}
+
+	/**
+	 * Build the message content array for the API request.
+	 *
+	 * If screenshot URLs are provided, prepends them as vision image blocks so
+	 * Claude can see both pages before reading the text prompt. Images without a
+	 * valid URL are silently skipped.
+	 *
+	 * @param string $prompt         Full text prompt.
+	 * @param string $elementor_shot Public URL of the Elementor screenshot (optional).
+	 * @param string $gutenberg_shot Public URL of the Gutenberg screenshot (optional).
+	 * @return string|array A plain string when no images are present, a structured
+	 *                      content array when at least one image URL is provided.
+	 */
+	private static function build_message_content( string $prompt, string $elementor_shot, string $gutenberg_shot ) {
+		$image_blocks = array();
+
+		if ( '' !== $elementor_shot ) {
+			$image_blocks[] = array(
+				'type'   => 'text',
+				'text'   => 'This is a screenshot of the ORIGINAL Elementor page:',
+			);
+			$image_blocks[] = array(
+				'type'   => 'image',
+				'source' => array( 'type' => 'url', 'url' => $elementor_shot ),
+			);
+		}
+
+		if ( '' !== $gutenberg_shot ) {
+			$image_blocks[] = array(
+				'type'   => 'text',
+				'text'   => 'This is a screenshot of the CONVERTED Gutenberg page:',
+			);
+			$image_blocks[] = array(
+				'type'   => 'image',
+				'source' => array( 'type' => 'url', 'url' => $gutenberg_shot ),
+			);
+		}
+
+		if ( empty( $image_blocks ) ) {
+			return $prompt;
+		}
+
+		$image_blocks[] = array( 'type' => 'text', 'text' => $prompt );
+
+		return $image_blocks;
 	}
 
 	/**

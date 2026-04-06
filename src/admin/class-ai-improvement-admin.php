@@ -240,7 +240,10 @@ class AI_Improvement_Admin {
 			)
 		);
 
-		$api_result = Claude_Api_Service::send( $prompt );
+		$elementor_shot = AI_Remediation_Screenshot_Meta_Service::get_elementor_url( $target_id );
+		$gutenberg_shot = AI_Remediation_Screenshot_Meta_Service::get_gutenberg_url( $target_id );
+
+		$api_result = Claude_Api_Service::send( $prompt, $elementor_shot, $gutenberg_shot );
 
 		if ( ! $api_result['success'] ) {
 			set_transient( 'ele2gb_ai_error_' . $target_id, $api_result['error'], 60 );
