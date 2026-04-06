@@ -32,12 +32,17 @@ use function get_post_field;
 use function get_post_meta;
 use function get_the_title;
 use function get_transient;
+use function plugins_url;
+use function sanitize_key;
 use function sanitize_text_field;
 use function set_transient;
 use function sprintf;
 use function update_post_meta;
 use function wp_die;
+use function wp_enqueue_script;
+use function wp_enqueue_style;
 use function wp_json_encode;
+use function wp_localize_script;
 use function wp_nonce_field;
 use function wp_safe_redirect;
 use function wp_unslash;
@@ -74,8 +79,45 @@ class AI_Improvement_Admin {
 	 */
 	private function __construct() {
 		add_action( 'admin_menu', array( $this, 'register_menu' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 		add_action( 'admin_post_ele2gb_ai_auto_improve', array( $this, 'handle_auto_improve' ) );
 		add_action( 'admin_post_ele2gb_ai_regenerate_screenshots', array( $this, 'handle_regenerate_screenshots' ) );
+	}
+
+	/**
+	 * Enqueue page-specific assets.
+	 *
+	 * Only loads on this plugin's AI improvement page.
+	 *
+	 * @param string $hook Current admin page hook suffix.
+	 */
+	public function enqueue_assets( string $hook ): void {
+		if ( empty( $_GET['page'] ) || self::MENU_SLUG !== sanitize_key( wp_unslash( $_GET['page'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			return;
+		}
+
+		wp_enqueue_style(
+			'ele2gb-ai-improve',
+			plugins_url( 'assets/css/ai-improve.css', GUTENBERG_PLUGIN_MAIN_FILE ),
+			array(),
+			GUTENBERG_PLUGIN_VERSION
+		);
+
+		wp_enqueue_script(
+			'ele2gb-ai-improve',
+			plugins_url( 'assets/js/ai-improve.js', GUTENBERG_PLUGIN_MAIN_FILE ),
+			array(),
+			GUTENBERG_PLUGIN_VERSION,
+			true
+		);
+
+		wp_localize_script(
+			'ele2gb-ai-improve',
+			'ele2gbAiImprove',
+			array(
+				'processingLabel' => __( 'Processing…', 'elementor-to-gutenberg' ),
+			)
+		);
 	}
 
 	/**
@@ -484,15 +526,27 @@ class AI_Improvement_Admin {
 				<?php submit_button( esc_html__( 'Regenerate Screenshots', 'elementor-to-gutenberg' ), 'secondary', 'ele2gb_regenerate_screenshots_submit', false ); ?>
 			</form>
 
-			<h2><?php echo esc_html__( 'Automated AI Improvement', 'elementor-to-gutenberg' ); ?></h2>
-			<p><?php echo esc_html__( 'This will call the Claude API to improve the Gutenberg content of this page. The page content and CSS will be updated automatically.', 'elementor-to-gutenberg' ); ?></p>
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<h2><?php echo esc_html__( 'AI Improvement', 'elementor-to-gutenberg' ); ?></h2>
+			<p><?php echo esc_html__( 'Analyse and improve the converted page using AI. The page content and CSS will be updated automatically.', 'elementor-to-gutenberg' ); ?></p>
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="ele2gb-ai-improve-form">
 				<?php wp_nonce_field( self::NONCE_AUTO_IMPROVE ); ?>
 				<input type="hidden" name="action" value="ele2gb_ai_auto_improve" />
 				<input type="hidden" name="target_id" value="<?php echo esc_attr( (string) $target_id ); ?>" />
 				<input type="hidden" name="source_id" value="<?php echo esc_attr( (string) $source_id ); ?>" />
 				<?php submit_button( esc_html__( 'Improve with AI', 'elementor-to-gutenberg' ), 'primary', 'ele2gb_auto_improve_submit', false ); ?>
 			</form>
+
+			<div id="ele2gb-ai-loader" hidden>
+				<div class="ele2gb-ai-loader-card">
+					<svg class="ele2gb-ai-loader-spinner" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+						<circle cx="12" cy="12" r="9" fill="none" stroke="#2271b1" stroke-width="2.5" />
+					</svg>
+					<div>
+						<strong class="ele2gb-ai-loader-title"><?php echo esc_html__( 'Processing…', 'elementor-to-gutenberg' ); ?></strong>
+						<span class="ele2gb-ai-loader-message"><?php echo esc_html__( 'Analysing page structure and generating improvements. This may take up to 2 minutes.', 'elementor-to-gutenberg' ); ?></span>
+					</div>
+				</div>
+			</div>
 		</div>
 		<?php
 	}

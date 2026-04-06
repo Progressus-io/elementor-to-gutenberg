@@ -1,0 +1,44 @@
+#ele2gb-ai-loader {
+	margin-top: 1em;
+}
+
+.ele2gb-ai-loader-card {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	padding: 16px 20px;
+	background: #fff;
+	border-left: 4px solid #2271b1;
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+	max-width: 480px;
+}
+
+.ele2gb-ai-loader-spinner {
+	flex-shrink: 0;
+	width: 24px;
+	height: 24px;
+	transform-origin: center;
+	animation: ele2gb-spin 0.8s linear infinite;
+}
+
+.ele2gb-ai-loader-spinner circle {
+	stroke-dasharray: 28 56;
+	stroke-linecap: round;
+}
+
+@keyframes ele2gb-spin {
+	to {
+		transform: rotate( 360deg );
+	}
+}
+
+.ele2gb-ai-loader-title {
+	display: block;
+	color: #1d2327;
+	font-weight: 600;
+}
+
+.ele2gb-ai-loader-message {
+	color: #646970;
+	font-size: 13px;
+}
