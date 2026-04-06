@@ -5,7 +5,6 @@
     justify-content: center;
 }
 
-/* Optional: tighten heading spacing inside those groups */
 .wp-block-columns .wp-block-group.are-vertically-aligned-center h2,
 .wp-block-columns .wp-block-group.are-vertically-aligned-center h3 {
     margin-top: 0;

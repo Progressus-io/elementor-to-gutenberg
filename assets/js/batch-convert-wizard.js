@@ -1726,6 +1726,8 @@
             this.render();
 
             const page = ai.pages[index];
+            this.showAiOverlay(page.title, index + 1, ai.pages.length);
+
             const formData = new FormData();
             formData.append('action', 'ele2gb_ai_improve_single');
             formData.append('nonce', this.config.aiImproveNonce);
@@ -1735,6 +1737,7 @@
             fetch(this.config.ajaxUrl, {method: 'POST', credentials: 'same-origin', body: formData})
                 .then((response) => response.json())
                 .then((data) => {
+                    this.hideAiOverlay();
                     if (data.success) {
                         ai.pages[index].status = 'done';
                         this.render();
@@ -1748,10 +1751,106 @@
                     }
                 })
                 .catch((err) => {
+                    this.hideAiOverlay();
                     ai.pages[index].status = 'failed';
                     ai.pages[index].error = err.message || (this.strings.aiImproveError || 'An unexpected error occurred.');
                     this.render();
                 });
+        }
+
+        showAiOverlay(pageTitle, current, total) {
+            this.hideAiOverlay();
+
+            // Overlay — inline styles guarantee visibility regardless of CSS load order
+            const overlay = document.createElement('div');
+            overlay.id = 'ele2gb-bulk-ai-overlay';
+            overlay.style.cssText = [
+                'position:fixed',
+                'top:0', 'left:0', 'right:0', 'bottom:0',
+                'z-index:100000',
+                'display:flex',
+                'align-items:center',
+                'justify-content:center',
+                'background:rgba(0,0,0,0.5)',
+            ].join(';');
+
+            // Card
+            const card = document.createElement('div');
+            card.style.cssText = [
+                'display:flex',
+                'flex-direction:column',
+                'align-items:center',
+                'gap:16px',
+                'padding:40px 48px',
+                'background:#fff',
+                'border-radius:12px',
+                'box-shadow:0 20px 60px rgba(0,0,0,0.25),0 4px 16px rgba(0,0,0,0.1)',
+                'text-align:center',
+                'min-width:300px',
+                'max-width:420px',
+            ].join(';');
+
+            // Spinner SVG — uses CSS class for animation only
+            const svgNS = 'http://www.w3.org/2000/svg';
+            const svg = document.createElementNS(svgNS, 'svg');
+            svg.setAttribute('class', 'ele2gb-bulk-ai-overlay-spinner');
+            svg.setAttribute('viewBox', '0 0 44 44');
+            svg.setAttribute('aria-hidden', 'true');
+            svg.style.cssText = 'width:64px;height:64px;flex-shrink:0;';
+
+            const track = document.createElementNS(svgNS, 'circle');
+            track.setAttribute('class', 'track');
+            track.setAttribute('cx', '22'); track.setAttribute('cy', '22');
+            track.setAttribute('r', '20');  track.setAttribute('fill', 'none');
+            track.setAttribute('stroke', '#2271b1'); track.setAttribute('stroke-width', '3');
+            track.style.opacity = '0.12';
+
+            const arc = document.createElementNS(svgNS, 'circle');
+            arc.setAttribute('class', 'arc');
+            arc.setAttribute('cx', '22'); arc.setAttribute('cy', '22');
+            arc.setAttribute('r', '20');  arc.setAttribute('fill', 'none');
+            arc.setAttribute('stroke', '#2271b1'); arc.setAttribute('stroke-width', '3');
+
+            svg.appendChild(track);
+            svg.appendChild(arc);
+            card.appendChild(svg);
+
+            // Title
+            const title = document.createElement('strong');
+            title.textContent = this.strings.aiLoaderTitle || 'Improving with AI\u2026';
+            title.style.cssText = 'display:block;font-size:16px;font-weight:700;color:#1d2327;';
+            card.appendChild(title);
+
+            // Description message
+            const msg = document.createElement('span');
+            msg.textContent = this.strings.aiLoaderMessage || 'Analysing page structure and generating improvements. This may take up to 2 minutes.';
+            msg.style.cssText = 'display:block;margin-top:4px;font-size:13px;color:#646970;line-height:1.5;';
+            card.appendChild(msg);
+
+            // Separator + page name + counter
+            const sep = document.createElement('div');
+            sep.style.cssText = 'width:100%;height:1px;background:#f0f0f1;margin-top:4px;';
+            card.appendChild(sep);
+
+            const sub = document.createElement('span');
+            sub.textContent = pageTitle;
+            sub.style.cssText = 'display:block;font-size:13px;color:#50575e;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+            card.appendChild(sub);
+
+            const counter = document.createElement('span');
+            counter.textContent = current + ' / ' + total;
+            counter.style.cssText = 'display:inline-block;padding:3px 12px;border-radius:999px;background:#f0f6fc;border:1px solid #bcd7f0;color:#135e96;font-size:12px;font-weight:600;';
+            card.appendChild(counter);
+
+            overlay.appendChild(card);
+            document.body.appendChild(overlay);
+        }
+
+        hideAiOverlay() {
+            const existing = document.getElementById('ele2gb-bulk-ai-overlay');
+            if (existing) {
+                existing.remove();
+            }
         }
 
         advanceAiImprove(index) {
@@ -1783,42 +1882,89 @@
 
         renderAiImproveStep() {
             const ai = this.state.aiImprove;
-            const container = createElement('div');
+            const container = createElement('div', 'ele2gb-ai-improve-step');
 
             container.appendChild(createElement('h2', 'ele2gb-wizard-step-title',
                 this.strings.aiImproveTitle || 'AI Improvement'));
 
-            container.appendChild(createElement('div', 'ele2gb-alert ele2gb-alert-warning',
-                this.strings.aiImproveWarning || 'This process calls the AI API once per item. Each call consumes API credits and may take 1–2 minutes per item. Make sure your API key has sufficient credits before starting.'));
+            // ── Pre-start warning ────────────────────────────────────────────
+            if (!ai || !ai.started) {
+                const warning = createElement('div', 'ele2gb-ai-warning-notice');
+                const icon = createElement('span', 'ele2gb-ai-warning-icon', '⚠');
+                const text = createElement('div', 'ele2gb-ai-warning-text');
+                text.appendChild(createElement('strong', null,
+                    this.strings.aiImproveWarningTitle || 'Before you start'));
+                text.appendChild(createElement('p', null,
+                    this.strings.aiImproveWarning || 'This process calls the AI API once per item. Each call consumes API credits and may take 1–2 minutes per item. Make sure your API key has sufficient credits before starting.'));
+                warning.appendChild(icon);
+                warning.appendChild(text);
+                container.appendChild(warning);
+            }
 
             if (!ai || !ai.pages.length) {
-                container.appendChild(createElement('p', null,
+                container.appendChild(createElement('p', 'ele2gb-step-description',
                     this.strings.aiImproveNone || 'No successfully converted items found in this session.'));
                 return container;
             }
 
+            // ── Progress header (shown once running) ─────────────────────────
             if (ai.started) {
                 const done    = ai.pages.filter((p) => p.status === 'done').length;
                 const failed  = ai.pages.filter((p) => p.status === 'failed').length;
                 const skipped = ai.pages.filter((p) => p.status === 'skipped').length;
-                const summaryEl = createElement('div', 'ele2gb-progress-summary');
-                summaryEl.appendChild(createElement('div', null,
-                    (this.strings.converted || 'Done') + ': ' + done + ' / ' + ai.pages.length));
-                summaryEl.appendChild(createElement('div', null,
-                    (this.strings.errors || 'Failed') + ': ' + failed));
-                summaryEl.appendChild(createElement('div', null,
-                    (this.strings.skipped || 'Skipped') + ': ' + skipped));
-                container.appendChild(summaryEl);
+                const settled = done + skipped; // failed rows are paused, not settled
+                const total   = ai.pages.length;
+                const pct     = Math.round((settled / total) * 100);
+                const waiting = failed > 0 && !ai.finished;
+
+                const progressHeader = createElement('div', 'ele2gb-ai-progress-header');
+
+                // Bar + label row
+                const barRow = createElement('div', 'ele2gb-ai-bar-row');
+                const bar    = createElement('div', 'ele2gb-progress-bar ele2gb-progress-bar-large');
+                const fill   = document.createElement('span');
+                fill.style.width = pct + '%';
+                bar.appendChild(fill);
+                barRow.appendChild(bar);
+                const label = createElement('span', 'ele2gb-ai-bar-label',
+                    settled + ' / ' + total);
+                barRow.appendChild(label);
+                progressHeader.appendChild(barRow);
+
+                // Stat chips
+                const chips = createElement('div', 'ele2gb-ai-chips');
+                const chipData = [
+                    {count: done,    label: this.strings.aiStatusDone    || 'Done',    cls: 'chip-done'},
+                    {count: failed,  label: this.strings.aiStatusFailed  || 'Failed',  cls: 'chip-failed'},
+                    {count: skipped, label: this.strings.aiStatusSkipped || 'Skipped', cls: 'chip-skipped'},
+                    {count: total - settled - failed, label: this.strings.aiStatusPending || 'Pending', cls: 'chip-pending'},
+                ];
+                chipData.forEach(({count, label: chipLabel, cls}) => {
+                    const chip = createElement('span', 'ele2gb-ai-chip ' + cls);
+                    chip.appendChild(createElement('strong', null, String(count)));
+                    chip.appendChild(document.createTextNode(' ' + chipLabel));
+                    chips.appendChild(chip);
+                });
+                progressHeader.appendChild(chips);
+
+                // Paused notice when waiting on a failed row
+                if (waiting) {
+                    progressHeader.appendChild(createElement('p', 'ele2gb-ai-paused-notice',
+                        this.strings.aiImprovePaused || 'Paused — review the failed item below, then choose Skip or Retry to continue.'));
+                }
+
+                container.appendChild(progressHeader);
             }
 
+            // ── Items table ──────────────────────────────────────────────────
             const tableWrapper = createElement('div', 'ele2gb-results-table ele2gb-table-wrapper');
-            const table = createElement('table', 'ele2gb-wizard-table');
+            const table = createElement('table', 'ele2gb-wizard-table ele2gb-ai-table');
             const thead = document.createElement('thead');
             const headRow = document.createElement('tr');
             [
-                this.strings.tableTitle || 'Title',
+                this.strings.tableTitle   || 'Title',
                 this.strings.aiImproveType || 'Type',
-                this.strings.tableStatus || 'Status',
+                this.strings.tableStatus  || 'Status',
                 this.strings.tableActions || 'Actions',
             ].forEach((heading) => {
                 const th = document.createElement('th');
@@ -1831,57 +1977,57 @@
             const tbody = document.createElement('tbody');
             ai.pages.forEach((page, i) => {
                 const tr = document.createElement('tr');
+                tr.className = 'ele2gb-ai-row ele2gb-ai-row--' + page.status;
 
+                // Title — strike-through when skipped
                 const titleTd = document.createElement('td');
+                titleTd.className = 'ele2gb-ai-title-cell';
                 titleTd.textContent = page.title;
                 tr.appendChild(titleTd);
 
+                // Type
                 const typeTd = document.createElement('td');
+                typeTd.className = 'ele2gb-ai-type-cell';
                 typeTd.textContent = page.type
                     ? page.type.charAt(0).toUpperCase() + page.type.slice(1)
                     : '';
                 tr.appendChild(typeTd);
 
+                // Status
                 const statusTd = document.createElement('td');
-                statusTd.className = 'status';
+                statusTd.className = 'status ele2gb-ai-status-cell';
+
                 if (page.status === 'pending') {
-                    statusTd.appendChild(createElement('span', 'ele2gb-status-badge ele2gb-status-not_converted',
+                    statusTd.appendChild(this.makeAiStatusBadge('pending',
                         this.strings.aiStatusPending || 'Pending'));
+
                 } else if (page.status === 'processing') {
                     const wrapper = createElement('span', 'ele2gb-ai-processing');
-                    const svgNS = 'http://www.w3.org/2000/svg';
-                    const svg = document.createElementNS(svgNS, 'svg');
-                    svg.setAttribute('class', 'ele2gb-row-spinner');
-                    svg.setAttribute('viewBox', '0 0 24 24');
-                    svg.setAttribute('aria-hidden', 'true');
-                    const circle = document.createElementNS(svgNS, 'circle');
-                    circle.setAttribute('cx', '12');
-                    circle.setAttribute('cy', '12');
-                    circle.setAttribute('r', '9');
-                    circle.setAttribute('fill', 'none');
-                    circle.setAttribute('stroke', '#2271b1');
-                    circle.setAttribute('stroke-width', '2.5');
-                    svg.appendChild(circle);
-                    wrapper.appendChild(svg);
-                    wrapper.appendChild(createElement('span', null, this.strings.aiStatusProcessing || 'Processing…'));
+                    wrapper.appendChild(this.makeRowSpinner());
+                    wrapper.appendChild(createElement('span', null,
+                        this.strings.aiStatusProcessing || 'Processing…'));
                     statusTd.appendChild(wrapper);
+
                 } else if (page.status === 'done') {
-                    statusTd.appendChild(createElement('span', 'ele2gb-status-badge ele2gb-status-converted',
+                    statusTd.appendChild(this.makeAiStatusBadge('done',
                         this.strings.aiStatusDone || 'Done'));
+
                 } else if (page.status === 'failed') {
-                    statusTd.appendChild(createElement('span', 'ele2gb-status-badge ele2gb-status-error',
+                    statusTd.appendChild(this.makeAiStatusBadge('failed',
                         this.strings.aiStatusFailed || 'Failed'));
                     if (page.error) {
-                        statusTd.appendChild(createElement('div', 'ele2gb-ai-error-msg', page.error));
+                        statusTd.appendChild(createElement('p', 'ele2gb-ai-error-msg', page.error));
                     }
+
                 } else if (page.status === 'skipped') {
-                    statusTd.appendChild(createElement('span', 'ele2gb-status-badge ele2gb-status-skipped',
+                    statusTd.appendChild(this.makeAiStatusBadge('skipped',
                         this.strings.aiStatusSkipped || 'Skipped'));
                 }
                 tr.appendChild(statusTd);
 
+                // Actions — Skip / Retry only on failed rows
                 const actionsTd = document.createElement('td');
-                actionsTd.className = 'actions';
+                actionsTd.className = 'actions ele2gb-ai-actions-cell';
                 if (page.status === 'failed') {
                     const skipBtn = createButton(this.strings.skip || 'Skip', 'button button-secondary button-small');
                     skipBtn.addEventListener('click', () => this.skipAiImprovePage(i));
@@ -1898,6 +2044,25 @@
             tableWrapper.appendChild(table);
             container.appendChild(tableWrapper);
 
+            // ── Completion summary ───────────────────────────────────────────
+            if (ai.finished) {
+                const done    = ai.pages.filter((p) => p.status === 'done').length;
+                const failed  = ai.pages.filter((p) => p.status === 'failed').length;
+                const skipped = ai.pages.filter((p) => p.status === 'skipped').length;
+                const allGood = failed === 0;
+                const summary = createElement('div',
+                    'ele2gb-ai-completion ' + (allGood ? 'ele2gb-ai-completion--success' : 'ele2gb-ai-completion--partial'));
+                summary.appendChild(createElement('strong', null,
+                    allGood
+                        ? (this.strings.aiImproveFinishedOk  || 'All items improved successfully.')
+                        : (this.strings.aiImproveFinishedErr || 'Finished with some failures.')));
+                const detail = createElement('span', 'ele2gb-ai-completion-detail',
+                    ' ' + done + ' done · ' + failed + ' failed · ' + skipped + ' skipped');
+                summary.appendChild(detail);
+                container.appendChild(summary);
+            }
+
+            // ── Bottom actions ───────────────────────────────────────────────
             const actions = createElement('div', 'ele2gb-results-actions');
             if (!ai.started) {
                 const startBtn = createButton(
@@ -1920,6 +2085,50 @@
             container.appendChild(actions);
 
             return container;
+        }
+
+        makeAiStatusBadge(status, label) {
+            const map = {
+                pending:    'ele2gb-status-not_converted',
+                processing: 'ele2gb-status-not_converted',
+                done:       'ele2gb-status-converted',
+                failed:     'ele2gb-status-error',
+                skipped:    'ele2gb-status-skipped',
+            };
+            return createElement('span',
+                'ele2gb-status-badge ' + (map[status] || ''), label);
+        }
+
+        makeRowSpinner() {
+            const svgNS = 'http://www.w3.org/2000/svg';
+            const svg   = document.createElementNS(svgNS, 'svg');
+            svg.setAttribute('class', 'ele2gb-row-spinner');
+            svg.setAttribute('viewBox', '0 0 24 24');
+            svg.setAttribute('aria-hidden', 'true');
+
+            // Faint background track
+            const track = document.createElementNS(svgNS, 'circle');
+            track.setAttribute('class', 'track');
+            track.setAttribute('cx', '12');
+            track.setAttribute('cy', '12');
+            track.setAttribute('r', '9');
+            track.setAttribute('fill', 'none');
+            track.setAttribute('stroke', 'currentColor');
+            track.setAttribute('stroke-width', '2.5');
+            svg.appendChild(track);
+
+            // Animated arc
+            const arc = document.createElementNS(svgNS, 'circle');
+            arc.setAttribute('class', 'arc');
+            arc.setAttribute('cx', '12');
+            arc.setAttribute('cy', '12');
+            arc.setAttribute('r', '9');
+            arc.setAttribute('fill', 'none');
+            arc.setAttribute('stroke', 'currentColor');
+            arc.setAttribute('stroke-width', '2.5');
+            svg.appendChild(arc);
+
+            return svg;
         }
 
         // ── End AI Improve step ──────────────────────────────────────────────

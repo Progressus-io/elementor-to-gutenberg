@@ -566,11 +566,12 @@ class AI_Improvement_Admin {
 
 			<div id="ele2gb-ai-loader" hidden>
 				<div class="ele2gb-ai-loader-card">
-					<svg class="ele2gb-ai-loader-spinner" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
-						<circle cx="12" cy="12" r="9" fill="none" stroke="#2271b1" stroke-width="2.5" />
+					<svg class="ele2gb-ai-loader-spinner" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+						<circle class="track" cx="22" cy="22" r="20" fill="none" stroke="#2271b1" stroke-width="3" />
+						<circle class="arc"   cx="22" cy="22" r="20" fill="none" stroke="#2271b1" stroke-width="3" />
 					</svg>
 					<div>
-						<strong class="ele2gb-ai-loader-title"><?php echo esc_html__( 'Processing…', 'elementor-to-gutenberg' ); ?></strong>
+						<strong class="ele2gb-ai-loader-title"><?php echo esc_html__( 'Improving with AI…', 'elementor-to-gutenberg' ); ?></strong>
 						<span class="ele2gb-ai-loader-message"><?php echo esc_html__( 'Analysing page structure and generating improvements. This may take up to 2 minutes.', 'elementor-to-gutenberg' ); ?></span>
 					</div>
 				</div>
