@@ -80,6 +80,7 @@ class Admin_Settings {
 		add_filter( 'page_row_actions', array( $this, 'myplugin_add_convert_button' ), 10, 2 );
 		add_action( 'admin_post_myplugin_convert_page', array( $this, 'myplugin_handle_convert_page' ) );
 		add_action( 'admin_post_etg_save_screenshot_settings', array( $this, 'save_screenshot_settings' ) );
+		add_action( 'admin_post_etg_save_claude_settings', array( $this, 'save_claude_settings' ) );
 	}
 
 	/**
@@ -338,6 +339,35 @@ class Admin_Settings {
 	}
 
 	/**
+	 * Save Claude API settings submitted from the settings page form.
+	 */
+	public function save_claude_settings(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission to change plugin settings.', 'elementor-to-gutenberg' ) );
+		}
+
+		check_admin_referer( 'etg_save_claude_settings' );
+
+		$raw = isset( $_POST['etg_claude_settings'] ) ? wp_unslash( $_POST['etg_claude_settings'] ) : array();
+		$raw = is_array( $raw ) ? $raw : array();
+
+		$api_key = isset( $raw['api_key'] ) ? sanitize_text_field( (string) $raw['api_key'] ) : '';
+
+		update_option( 'etg_claude_settings', array( 'api_key' => $api_key ), false );
+
+		wp_safe_redirect(
+			add_query_arg(
+				array(
+					'page'               => 'gutenberg-settings',
+					'etg_settings_saved' => '1',
+				),
+				admin_url( 'admin.php' )
+			)
+		);
+		exit;
+	}
+
+	/**
 	 * Render settings page content.
 	 */
 	public function settings_page_content(): void {
@@ -351,53 +381,38 @@ class Admin_Settings {
             </p>
 
             <hr />
-            <h2><?php esc_html_e( 'Screenshot Service Settings', 'elementor-to-gutenberg' ); ?></h2>
+            <h2><?php esc_html_e( 'Claude AI Settings', 'elementor-to-gutenberg' ); ?></h2>
             <?php if ( isset( $_GET['etg_settings_saved'] ) && '1' === $_GET['etg_settings_saved'] ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
-                <div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Screenshot settings saved.', 'elementor-to-gutenberg' ); ?></p></div>
+                <div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Settings saved.', 'elementor-to-gutenberg' ); ?></p></div>
             <?php endif; ?>
-            <p><?php esc_html_e( 'Configure the external screenshot service that generates page screenshots automatically after conversion.', 'elementor-to-gutenberg' ); ?></p>
+            <p><?php esc_html_e( 'Configure the Anthropic Claude API key used for automated AI page improvement.', 'elementor-to-gutenberg' ); ?></p>
             <?php
-            $screenshot_settings = AI_Remediation_Screenshot_Api_Service::get_settings();
-            $endpoint_url_val    = isset( $screenshot_settings['endpoint_url'] ) ? (string) $screenshot_settings['endpoint_url'] : '';
-            $timeout_val         = isset( $screenshot_settings['timeout'] ) ? (int) $screenshot_settings['timeout'] : 15;
-            $auto_generate_val   = ! empty( $screenshot_settings['auto_generate'] );
+            $claude_settings = get_option( 'etg_claude_settings', array() );
+            $claude_settings = is_array( $claude_settings ) ? $claude_settings : array();
+            $claude_api_key  = isset( $claude_settings['api_key'] ) ? (string) $claude_settings['api_key'] : '';
             ?>
             <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
-                <?php wp_nonce_field( 'etg_save_screenshot_settings' ); ?>
-                <input type="hidden" name="action" value="etg_save_screenshot_settings" />
+                <?php wp_nonce_field( 'etg_save_claude_settings' ); ?>
+                <input type="hidden" name="action" value="etg_save_claude_settings" />
                 <table class="form-table" role="presentation">
                     <tbody>
                     <tr>
                         <th scope="row">
-                            <label for="etg_screenshot_endpoint_url"><?php esc_html_e( 'Screenshot Service URL', 'elementor-to-gutenberg' ); ?></label>
+                            <label for="etg_claude_api_key"><?php esc_html_e( 'Claude API Key', 'elementor-to-gutenberg' ); ?></label>
                         </th>
                         <td>
-                            <input type="url" id="etg_screenshot_endpoint_url" name="etg_screenshot_settings[endpoint_url]" value="<?php echo esc_attr( $endpoint_url_val ); ?>" class="regular-text" placeholder="https://example.com/screenshot-endpoint" />
-                            <p class="description"><?php esc_html_e( 'Endpoint URL of the external screenshot service. It must accept a POST request with a url parameter and return JSON with success and file_url fields.', 'elementor-to-gutenberg' ); ?></p>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th scope="row">
-                            <label for="etg_screenshot_timeout"><?php esc_html_e( 'Screenshot Request Timeout', 'elementor-to-gutenberg' ); ?></label>
-                        </th>
-                        <td>
-                            <input type="number" id="etg_screenshot_timeout" name="etg_screenshot_settings[timeout]" value="<?php echo esc_attr( (string) $timeout_val ); ?>" min="5" max="120" class="small-text" />
-                            <span class="description"><?php esc_html_e( 'seconds (5–120)', 'elementor-to-gutenberg' ); ?></span>
-                            <p class="description"><?php esc_html_e( 'Maximum time in seconds to wait for a screenshot response before giving up.', 'elementor-to-gutenberg' ); ?></p>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th scope="row"><?php esc_html_e( 'Auto Generate Screenshots After Conversion', 'elementor-to-gutenberg' ); ?></th>
-                        <td>
-                            <label>
-                                <input type="checkbox" name="etg_screenshot_settings[auto_generate]" value="1" <?php checked( $auto_generate_val ); ?> />
-                                <?php esc_html_e( 'Automatically generate screenshots for each page immediately after the conversion wizard converts it.', 'elementor-to-gutenberg' ); ?>
-                            </label>
+                            <input type="password" id="etg_claude_api_key" name="etg_claude_settings[api_key]" value="<?php echo esc_attr( $claude_api_key ); ?>" class="regular-text" />
+                            <?php if ( '' !== $claude_api_key ) : ?>
+                                <span style="color:#46b450;font-weight:600;"><?php esc_html_e( 'Configured', 'elementor-to-gutenberg' ); ?></span>
+                            <?php else : ?>
+                                <span style="color:#b32d2e;"><?php esc_html_e( 'Not configured', 'elementor-to-gutenberg' ); ?></span>
+                            <?php endif; ?>
+                            <p class="description"><?php esc_html_e( 'Your Anthropic API key. Required for the "Improve with AI" automated workflow.', 'elementor-to-gutenberg' ); ?></p>
                         </td>
                     </tr>
                     </tbody>
                 </table>
-                <?php submit_button( esc_html__( 'Save Screenshot Settings', 'elementor-to-gutenberg' ) ); ?>
+                <?php submit_button( esc_html__( 'Save Claude Settings', 'elementor-to-gutenberg' ) ); ?>
             </form>
         </div>
 		<?php

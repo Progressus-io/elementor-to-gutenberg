@@ -124,34 +124,40 @@ class AI_Remediation_Screenshot_Api_Service {
 	}
 
 	/**
-	 * Get the configured screenshot service endpoint URL.
+	 * Hardcoded screenshot service endpoint URL.
+	 */
+	const ENDPOINT_URL = 'http://lvendr.xyz/screanshots';
+
+	/**
+	 * Hardcoded request timeout in seconds.
+	 */
+	const HARDCODED_TIMEOUT = 60;
+
+	/**
+	 * Get the screenshot service endpoint URL.
 	 *
 	 * @return string
 	 */
 	public static function get_endpoint_url(): string {
-		$settings = self::get_settings();
-		return isset( $settings['endpoint_url'] ) ? (string) $settings['endpoint_url'] : '';
+		return self::ENDPOINT_URL;
 	}
 
 	/**
-	 * Get the configured request timeout in seconds, clamped to a safe range.
+	 * Get the request timeout in seconds.
 	 *
 	 * @return int
 	 */
 	public static function get_timeout(): int {
-		$settings = self::get_settings();
-		$timeout  = isset( $settings['timeout'] ) ? (int) $settings['timeout'] : self::DEFAULT_TIMEOUT;
-		return max( 5, min( 120, $timeout ) );
+		return self::HARDCODED_TIMEOUT;
 	}
 
 	/**
-	 * Check whether automatic screenshot generation after conversion is enabled.
+	 * Automatic screenshot generation after conversion is disabled.
 	 *
 	 * @return bool
 	 */
 	public static function is_auto_generate_enabled(): bool {
-		$settings = self::get_settings();
-		return ! empty( $settings['auto_generate'] );
+		return false;
 	}
 
 	/**
