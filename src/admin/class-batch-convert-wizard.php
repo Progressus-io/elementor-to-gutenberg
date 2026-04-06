@@ -92,6 +92,8 @@ class Batch_Convert_Wizard {
 
 	private const NONCE_NAME = 'nonce';
 
+	private const AI_IMPROVE_NONCE_ACTION = 'ele2gb_ai_improve';
+
 	private const JOB_TRANSIENT_PREFIX = 'ele2gb_job_';
 
 	private const JOB_TRANSIENT_TTL = 6 * HOUR_IN_SECONDS;
@@ -154,6 +156,7 @@ class Batch_Convert_Wizard {
 		add_action( 'wp_ajax_ele2gb_start_job', array( $this, 'ajax_start_job' ) );
 		add_action( 'wp_ajax_ele2gb_poll_job', array( $this, 'ajax_poll_job' ) );
 		add_action( 'wp_ajax_ele2gb_cancel_job', array( $this, 'ajax_cancel_job' ) );
+		add_action( 'wp_ajax_ele2gb_ai_improve_single', array( $this, 'ajax_ai_improve_single' ) );
 	}
 
 	/**
@@ -199,9 +202,10 @@ class Batch_Convert_Wizard {
 			'ele2gb-batch-wizard',
 			'ele2gbBatchWizard',
 			array(
-				'ajaxUrl'      => admin_url( 'admin-ajax.php' ),
+				'ajaxUrl'          => admin_url( 'admin-ajax.php' ),
 				'aiImproveBaseUrl' => admin_url( 'admin.php?page=' . AI_Improvement_Admin::MENU_SLUG ),
-				'nonce'        => wp_create_nonce( self::NONCE_ACTION ),
+				'nonce'            => wp_create_nonce( self::NONCE_ACTION ),
+				'aiImproveNonce'   => wp_create_nonce( self::AI_IMPROVE_NONCE_ACTION ),
 				'pages'        => $this->get_elementor_pages_data(),
 				'strings'      => $this->get_strings(),
 				'templates'    => $this->get_header_footer_templates_data(),
@@ -1983,7 +1987,7 @@ class Batch_Convert_Wizard {
 		}
 
 		if ( self::TEMPLATE_ROLE_DEFAULT_FOOTER === $template_info['role'] && 'footer' === $template_info['type'] ) {
-			$this->orce_block_theme_default_footer( $target_id );
+			$this->force_block_theme_default_footer( $target_id );
 		}
 
 		if ( $has_targets ) {
@@ -2667,8 +2671,21 @@ class Batch_Convert_Wizard {
 			'viewConverted'          => __( 'View converted', 'elementor-to-gutenberg' ),
 			'improveWithAi'          => __( 'Improve Page with AI', 'elementor-to-gutenberg' ),
 			'retry'                  => __( 'Retry', 'elementor-to-gutenberg' ),
+			'skip'                   => __( 'Skip', 'elementor-to-gutenberg' ),
 			'viewPages'              => __( 'View converted pages', 'elementor-to-gutenberg' ),
 			'startNew'               => __( 'Start new conversion', 'elementor-to-gutenberg' ),
+			'aiImproveAllBtn'        => __( 'Improve all with AI (%1$d)', 'elementor-to-gutenberg' ),
+			'aiImproveTitle'         => __( 'AI Improvement', 'elementor-to-gutenberg' ),
+			'aiImproveWarning'       => __( 'This process calls the AI API once per item. Each call consumes API credits and may take 1–2 minutes per item. Make sure your API key has sufficient credits before starting.', 'elementor-to-gutenberg' ),
+			'aiImproveStart'         => __( 'Start AI Improvement', 'elementor-to-gutenberg' ),
+			'aiImproveNone'          => __( 'No successfully converted items found in this session.', 'elementor-to-gutenberg' ),
+			'aiImproveError'         => __( 'An unexpected error occurred.', 'elementor-to-gutenberg' ),
+			'aiImproveType'          => __( 'Type', 'elementor-to-gutenberg' ),
+			'aiStatusPending'        => __( 'Pending', 'elementor-to-gutenberg' ),
+			'aiStatusProcessing'     => __( 'Processing…', 'elementor-to-gutenberg' ),
+			'aiStatusDone'           => __( 'Done', 'elementor-to-gutenberg' ),
+			'aiStatusFailed'         => __( 'Failed', 'elementor-to-gutenberg' ),
+			'aiStatusSkipped'        => __( 'Skipped', 'elementor-to-gutenberg' ),
 			'statusConverted'        => __( 'Converted', 'elementor-to-gutenberg' ),
 			'statusNotConverted'     => __( 'Not converted', 'elementor-to-gutenberg' ),
 			'statusPartial'          => __( 'Partial', 'elementor-to-gutenberg' ),
@@ -2768,6 +2785,47 @@ class Batch_Convert_Wizard {
 				'job' => $this->format_job_for_response( $job ),
 			)
 		);
+	}
+
+	/**
+	 * Run AI improvement on a single page via AJAX.
+	 *
+	 * Called sequentially by the bulk AI improve step in the conversion wizard.
+	 * Uses a dedicated nonce separate from the conversion job nonce.
+	 */
+	public function ajax_ai_improve_single(): void {
+		if ( ! current_user_can( 'edit_pages' ) ) {
+			wp_send_json_error(
+				array( 'message' => esc_html__( 'You do not have permission to perform this action.', 'elementor-to-gutenberg' ) ),
+				403
+			);
+		}
+
+		check_ajax_referer( self::AI_IMPROVE_NONCE_ACTION, self::NONCE_NAME );
+
+		$source_id = isset( $_POST['source_id'] ) ? absint( wp_unslash( $_POST['source_id'] ) ) : 0;
+		$target_id = isset( $_POST['target_id'] ) ? absint( wp_unslash( $_POST['target_id'] ) ) : 0;
+
+		if ( $source_id <= 0 || $target_id <= 0 ) {
+			wp_send_json_error(
+				array( 'message' => esc_html__( 'Invalid source or target page ID.', 'elementor-to-gutenberg' ) )
+			);
+		}
+
+		if ( ! current_user_can( 'edit_post', $target_id ) ) {
+			wp_send_json_error(
+				array( 'message' => esc_html__( 'You do not have permission to edit this page.', 'elementor-to-gutenberg' ) ),
+				403
+			);
+		}
+
+		$result = AI_Improvement_Admin::run_improvement( $source_id, $target_id );
+
+		if ( $result['success'] ) {
+			wp_send_json_success();
+		} else {
+			wp_send_json_error( array( 'message' => $result['error'] ) );
+		}
 	}
 
 	/**

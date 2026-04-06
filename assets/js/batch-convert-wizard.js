@@ -112,7 +112,7 @@
                 copyCustomCss: true,
                 disableMetaByDefault: true,
                 enabledMeta: new Set(),
-
+                aiImprove: null,
             };
 
             if (config.activeJob && config.activeJob.id) {
@@ -321,6 +321,9 @@
         }
 
         getStepSequence() {
+            if (this.state.currentStep === 'ai_improve') {
+                return ['progress', 'ai_improve'];
+            }
             if (this.state.job && this.state.currentStep === 'progress') {
                 return ['progress'];
             }
@@ -364,6 +367,8 @@
                     return this.strings.reviewTitle || 'Review & Confirm';
                 case 'progress':
                     return this.strings.progressTitle || 'Progress & Results';
+                case 'ai_improve':
+                    return this.strings.aiImproveTitle || 'AI Improvement';
                 default:
                     return '';
             }
@@ -703,6 +708,7 @@
                 pollTimer: null,
                 lastPayload: null,
                 resumed: false,
+                aiImprove: null,
             });
             this.resetSelectionForMode('auto');
             this.resetThemeSelection();
@@ -1541,7 +1547,17 @@
                 actions.appendChild(cancelBtn);
             }
             if (job.status === 'completed') {
-                const startNew = createButton(this.strings.startNew || 'Start new conversion', 'button button-primary');
+                const aiPages = this.getAiImprovePages();
+                if (aiPages.length > 0 && this.config.aiImproveNonce) {
+                    const count = aiPages.length;
+                    const improveAllBtn = createButton(
+                        formatString(this.strings.aiImproveAllBtn || 'Improve all with AI (%1$d)', count),
+                        'button button-primary'
+                    );
+                    improveAllBtn.addEventListener('click', () => this.initAiImprove());
+                    actions.appendChild(improveAllBtn);
+                }
+                const startNew = createButton(this.strings.startNew || 'Start new conversion', 'button button-secondary');
                 startNew.addEventListener('click', () => this.resetWizard());
                 actions.appendChild(startNew);
             }
@@ -1660,6 +1676,254 @@
             return wrapper;
         }
 
+        // ── AI Improve step ──────────────────────────────────────────────────
+
+        getAiImprovePages() {
+            if (!this.state.job || !Array.isArray(this.state.job.results)) {
+                return [];
+            }
+            return this.state.job.results.filter(
+                (r) => r.status === 'success' && Number(r.convertedPostId || 0) > 0
+            );
+        }
+
+        initAiImprove() {
+            const pages = this.getAiImprovePages().map((r) => ({
+                sourceId: Number(r.id),
+                targetId: Number(r.convertedPostId),
+                title: r.title || '',
+                type: r.type || 'page',
+                status: 'pending',
+                error: '',
+            }));
+            this.state.aiImprove = {pages, currentIndex: 0, started: false, finished: false};
+            this.state.currentStep = 'ai_improve';
+            this.render();
+        }
+
+        startAiImprove() {
+            const ai = this.state.aiImprove;
+            if (!ai || ai.started) {
+                return;
+            }
+            ai.started = true;
+            this.processAiImprovePage(0);
+        }
+
+        processAiImprovePage(index) {
+            const ai = this.state.aiImprove;
+            if (!ai || index >= ai.pages.length) {
+                if (ai) {
+                    ai.finished = true;
+                }
+                this.render();
+                return;
+            }
+
+            ai.currentIndex = index;
+            ai.pages[index].status = 'processing';
+            ai.pages[index].error = '';
+            this.render();
+
+            const page = ai.pages[index];
+            const formData = new FormData();
+            formData.append('action', 'ele2gb_ai_improve_single');
+            formData.append('nonce', this.config.aiImproveNonce);
+            formData.append('source_id', String(page.sourceId));
+            formData.append('target_id', String(page.targetId));
+
+            fetch(this.config.ajaxUrl, {method: 'POST', credentials: 'same-origin', body: formData})
+                .then((response) => response.json())
+                .then((data) => {
+                    if (data.success) {
+                        ai.pages[index].status = 'done';
+                        this.render();
+                        this.advanceAiImprove(index);
+                    } else {
+                        ai.pages[index].status = 'failed';
+                        ai.pages[index].error = (data.data && data.data.message)
+                            ? String(data.data.message)
+                            : (this.strings.aiImproveError || 'An unexpected error occurred.');
+                        this.render();
+                    }
+                })
+                .catch((err) => {
+                    ai.pages[index].status = 'failed';
+                    ai.pages[index].error = err.message || (this.strings.aiImproveError || 'An unexpected error occurred.');
+                    this.render();
+                });
+        }
+
+        advanceAiImprove(index) {
+            const ai = this.state.aiImprove;
+            const next = index + 1;
+            if (!ai || next >= ai.pages.length) {
+                if (ai) {
+                    ai.finished = true;
+                    this.render();
+                }
+                return;
+            }
+            this.processAiImprovePage(next);
+        }
+
+        skipAiImprovePage(index) {
+            const ai = this.state.aiImprove;
+            if (!ai) {
+                return;
+            }
+            ai.pages[index].status = 'skipped';
+            this.render();
+            this.advanceAiImprove(index);
+        }
+
+        retryAiImprovePage(index) {
+            this.processAiImprovePage(index);
+        }
+
+        renderAiImproveStep() {
+            const ai = this.state.aiImprove;
+            const container = createElement('div');
+
+            container.appendChild(createElement('h2', 'ele2gb-wizard-step-title',
+                this.strings.aiImproveTitle || 'AI Improvement'));
+
+            container.appendChild(createElement('div', 'ele2gb-alert ele2gb-alert-warning',
+                this.strings.aiImproveWarning || 'This process calls the AI API once per item. Each call consumes API credits and may take 1–2 minutes per item. Make sure your API key has sufficient credits before starting.'));
+
+            if (!ai || !ai.pages.length) {
+                container.appendChild(createElement('p', null,
+                    this.strings.aiImproveNone || 'No successfully converted items found in this session.'));
+                return container;
+            }
+
+            if (ai.started) {
+                const done    = ai.pages.filter((p) => p.status === 'done').length;
+                const failed  = ai.pages.filter((p) => p.status === 'failed').length;
+                const skipped = ai.pages.filter((p) => p.status === 'skipped').length;
+                const summaryEl = createElement('div', 'ele2gb-progress-summary');
+                summaryEl.appendChild(createElement('div', null,
+                    (this.strings.converted || 'Done') + ': ' + done + ' / ' + ai.pages.length));
+                summaryEl.appendChild(createElement('div', null,
+                    (this.strings.errors || 'Failed') + ': ' + failed));
+                summaryEl.appendChild(createElement('div', null,
+                    (this.strings.skipped || 'Skipped') + ': ' + skipped));
+                container.appendChild(summaryEl);
+            }
+
+            const tableWrapper = createElement('div', 'ele2gb-results-table ele2gb-table-wrapper');
+            const table = createElement('table', 'ele2gb-wizard-table');
+            const thead = document.createElement('thead');
+            const headRow = document.createElement('tr');
+            [
+                this.strings.tableTitle || 'Title',
+                this.strings.aiImproveType || 'Type',
+                this.strings.tableStatus || 'Status',
+                this.strings.tableActions || 'Actions',
+            ].forEach((heading) => {
+                const th = document.createElement('th');
+                th.textContent = heading;
+                headRow.appendChild(th);
+            });
+            thead.appendChild(headRow);
+            table.appendChild(thead);
+
+            const tbody = document.createElement('tbody');
+            ai.pages.forEach((page, i) => {
+                const tr = document.createElement('tr');
+
+                const titleTd = document.createElement('td');
+                titleTd.textContent = page.title;
+                tr.appendChild(titleTd);
+
+                const typeTd = document.createElement('td');
+                typeTd.textContent = page.type
+                    ? page.type.charAt(0).toUpperCase() + page.type.slice(1)
+                    : '';
+                tr.appendChild(typeTd);
+
+                const statusTd = document.createElement('td');
+                statusTd.className = 'status';
+                if (page.status === 'pending') {
+                    statusTd.appendChild(createElement('span', 'ele2gb-status-badge ele2gb-status-not_converted',
+                        this.strings.aiStatusPending || 'Pending'));
+                } else if (page.status === 'processing') {
+                    const wrapper = createElement('span', 'ele2gb-ai-processing');
+                    const svgNS = 'http://www.w3.org/2000/svg';
+                    const svg = document.createElementNS(svgNS, 'svg');
+                    svg.setAttribute('class', 'ele2gb-row-spinner');
+                    svg.setAttribute('viewBox', '0 0 24 24');
+                    svg.setAttribute('aria-hidden', 'true');
+                    const circle = document.createElementNS(svgNS, 'circle');
+                    circle.setAttribute('cx', '12');
+                    circle.setAttribute('cy', '12');
+                    circle.setAttribute('r', '9');
+                    circle.setAttribute('fill', 'none');
+                    circle.setAttribute('stroke', '#2271b1');
+                    circle.setAttribute('stroke-width', '2.5');
+                    svg.appendChild(circle);
+                    wrapper.appendChild(svg);
+                    wrapper.appendChild(createElement('span', null, this.strings.aiStatusProcessing || 'Processing…'));
+                    statusTd.appendChild(wrapper);
+                } else if (page.status === 'done') {
+                    statusTd.appendChild(createElement('span', 'ele2gb-status-badge ele2gb-status-converted',
+                        this.strings.aiStatusDone || 'Done'));
+                } else if (page.status === 'failed') {
+                    statusTd.appendChild(createElement('span', 'ele2gb-status-badge ele2gb-status-error',
+                        this.strings.aiStatusFailed || 'Failed'));
+                    if (page.error) {
+                        statusTd.appendChild(createElement('div', 'ele2gb-ai-error-msg', page.error));
+                    }
+                } else if (page.status === 'skipped') {
+                    statusTd.appendChild(createElement('span', 'ele2gb-status-badge ele2gb-status-skipped',
+                        this.strings.aiStatusSkipped || 'Skipped'));
+                }
+                tr.appendChild(statusTd);
+
+                const actionsTd = document.createElement('td');
+                actionsTd.className = 'actions';
+                if (page.status === 'failed') {
+                    const skipBtn = createButton(this.strings.skip || 'Skip', 'button button-secondary button-small');
+                    skipBtn.addEventListener('click', () => this.skipAiImprovePage(i));
+                    actionsTd.appendChild(skipBtn);
+                    const retryBtn = createButton(this.strings.retry || 'Retry', 'button button-primary button-small');
+                    retryBtn.addEventListener('click', () => this.retryAiImprovePage(i));
+                    actionsTd.appendChild(retryBtn);
+                }
+                tr.appendChild(actionsTd);
+
+                tbody.appendChild(tr);
+            });
+            table.appendChild(tbody);
+            tableWrapper.appendChild(table);
+            container.appendChild(tableWrapper);
+
+            const actions = createElement('div', 'ele2gb-results-actions');
+            if (!ai.started) {
+                const startBtn = createButton(
+                    this.strings.aiImproveStart || 'Start AI Improvement',
+                    'button button-primary'
+                );
+                startBtn.addEventListener('click', () => this.startAiImprove());
+                actions.appendChild(startBtn);
+                const backBtn = createButton(this.strings.back || 'Back', 'button button-secondary');
+                backBtn.addEventListener('click', () => this.goToStep('progress'));
+                actions.appendChild(backBtn);
+            } else if (ai.finished) {
+                const newConvBtn = createButton(
+                    this.strings.startNew || 'Start new conversion',
+                    'button button-primary'
+                );
+                newConvBtn.addEventListener('click', () => this.resetWizard());
+                actions.appendChild(newConvBtn);
+            }
+            container.appendChild(actions);
+
+            return container;
+        }
+
+        // ── End AI Improve step ──────────────────────────────────────────────
+
         render() {
             this.root.innerHTML = '';
             this.root.appendChild(this.renderHeader());
@@ -1690,6 +1954,9 @@
                     break;
                 case 'progress':
                     stepContent = this.renderProgressStep();
+                    break;
+                case 'ai_improve':
+                    stepContent = this.renderAiImproveStep();
                     break;
                 default:
                     stepContent = createElement('div', null, '');

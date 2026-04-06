@@ -32,9 +32,11 @@ use function get_post_field;
 use function get_post_meta;
 use function get_the_title;
 use function get_transient;
+use function is_array;
 use function plugins_url;
 use function sanitize_key;
 use function sanitize_text_field;
+use function trim;
 use function set_transient;
 use function sprintf;
 use function update_post_meta;
@@ -264,6 +266,32 @@ class AI_Improvement_Admin {
 			$this->redirect_with_notice( $source_id, $target_id, 'invalid_mapping' );
 		}
 
+		$result = self::run_improvement( $source_id, $target_id );
+
+		if ( ! $result['success'] ) {
+			$notice = $result['notice'] ?? 'ai_failed';
+			if ( 'ai_failed' === $notice ) {
+				set_transient( 'ele2gb_ai_error_' . $target_id, $result['error'], 60 );
+			}
+			$this->redirect_with_notice( $source_id, $target_id, $notice );
+		}
+
+		$this->redirect_with_notice( $source_id, $target_id, 'updated' );
+	}
+
+	/**
+	 * Core AI improvement logic — shared by the single-page admin handler and
+	 * the bulk AJAX handler in the conversion wizard.
+	 *
+	 * @param int $source_id Elementor source post ID.
+	 * @param int $target_id Converted Gutenberg post ID.
+	 * @return array{success: bool, error: string, notice: string}
+	 */
+	public static function run_improvement( int $source_id, int $target_id ): array {
+		$failure = static function ( string $error, string $notice = 'ai_failed' ): array {
+			return array( 'success' => false, 'error' => $error, 'notice' => $notice );
+		};
+
 		$gutenberg_content = (string) get_post_field( 'post_content', $target_id );
 		$elementor_json    = get_post_meta( $source_id, '_elementor_data', true );
 		if ( is_array( $elementor_json ) ) {
@@ -288,16 +316,18 @@ class AI_Improvement_Admin {
 		$api_result = Claude_Api_Service::send( $prompt, $elementor_shot, $gutenberg_shot );
 
 		if ( ! $api_result['success'] ) {
-			set_transient( 'ele2gb_ai_error_' . $target_id, $api_result['error'], 60 );
-			$this->redirect_with_notice( $source_id, $target_id, 'ai_failed' );
+			return $failure( $api_result['error'], 'ai_failed' );
 		}
 
-		$parsed          = Claude_Api_Service::parse_response( $api_result['content'] );
-		$css_result      = $parsed['css'];
+		$parsed           = Claude_Api_Service::parse_response( $api_result['content'] );
+		$css_result       = $parsed['css'];
 		$gutenberg_result = $parsed['gutenberg'];
 
 		if ( '' === trim( $gutenberg_result ) ) {
-			$this->redirect_with_notice( $source_id, $target_id, 'ai_parse_failed' );
+			return $failure(
+				__( 'No valid Gutenberg content could be parsed from the AI response.', 'elementor-to-gutenberg' ),
+				'ai_parse_failed'
+			);
 		}
 
 		$update_result = wp_update_post(
@@ -309,14 +339,11 @@ class AI_Improvement_Admin {
 		);
 
 		if ( is_wp_error( $update_result ) ) {
-			$this->redirect_with_notice( $source_id, $target_id, 'update_failed' );
+			return $failure( $update_result->get_error_message(), 'update_failed' );
 		}
 
 		if ( '' !== trim( $css_result ) ) {
-			$css_append = External_CSS_Service::append_post_css( $target_id, $css_result );
-			if ( $css_append instanceof WP_Error ) {
-				$this->redirect_with_notice( $source_id, $target_id, 'css_append_failed' );
-			}
+			External_CSS_Service::append_post_css( $target_id, $css_result );
 		}
 
 		$workspace                           = AI_Workspace_Repository::get( $target_id );
@@ -328,7 +355,8 @@ class AI_Improvement_Admin {
 		AI_Workspace_Repository::save( $target_id, $workspace );
 
 		update_post_meta( $target_id, '_ele2gb_last_ai_improved', current_time( 'mysql' ) );
-		$this->redirect_with_notice( $source_id, $target_id, 'updated' );
+
+		return array( 'success' => true, 'error' => '', 'notice' => 'updated' );
 	}
 
 	/**

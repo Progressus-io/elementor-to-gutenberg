@@ -417,3 +417,46 @@
 .ele2gb-theme-warning-list .ele2gb-alert {
     margin-bottom: 12px;
 }
+
+/* ── AI Improve step ──────────────────────────────────────────────────────── */
+
+.ele2gb-ai-processing {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #2271b1;
+    font-weight: 500;
+}
+
+.ele2gb-row-spinner {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    transform-origin: center;
+    animation: ele2gb-row-spin 0.8s linear infinite;
+}
+
+.ele2gb-row-spinner circle {
+    stroke-dasharray: 28 56;
+    stroke-linecap: round;
+}
+
+@keyframes ele2gb-row-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.ele2gb-ai-error-msg {
+    margin-top: 4px;
+    font-size: 12px;
+    color: #8a0015;
+}
+
+.ele2gb-results-table td.actions {
+    white-space: nowrap;
+}
+
+.ele2gb-results-table td.actions .button + .button {
+    margin-left: 6px;
+}
