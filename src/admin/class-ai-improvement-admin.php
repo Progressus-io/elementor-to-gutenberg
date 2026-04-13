@@ -316,6 +316,11 @@ class AI_Improvement_Admin {
 		$api_result = Claude_Api_Service::send( $prompt, $elementor_shot, $gutenberg_shot );
 
 		if ( ! $api_result['success'] ) {
+			self::log_improvement( array(
+				'step'      => 'api_failed',
+				'target_id' => $target_id,
+				'error'     => $api_result['error'],
+			) );
 			return $failure( $api_result['error'], 'ai_failed' );
 		}
 
@@ -323,7 +328,19 @@ class AI_Improvement_Admin {
 		$css_result       = $parsed['css'];
 		$gutenberg_result = $parsed['gutenberg'];
 
+		self::log_improvement( array(
+			'step'              => 'parse_complete',
+			'target_id'         => $target_id,
+			'css_length'        => strlen( $css_result ),
+			'gutenberg_length'  => strlen( $gutenberg_result ),
+			'gutenberg_preview' => substr( $gutenberg_result, 0, 120 ),
+		) );
+
 		if ( '' === trim( $gutenberg_result ) ) {
+			self::log_improvement( array(
+				'step'      => 'parse_failed_empty_gutenberg',
+				'target_id' => $target_id,
+			) );
 			return $failure(
 				__( 'No valid Gutenberg content could be parsed from the AI response.', 'elementor-to-gutenberg' ),
 				'ai_parse_failed'
@@ -339,8 +356,19 @@ class AI_Improvement_Admin {
 		);
 
 		if ( is_wp_error( $update_result ) ) {
+			self::log_improvement( array(
+				'step'      => 'wp_update_post_failed',
+				'target_id' => $target_id,
+				'error'     => $update_result->get_error_message(),
+			) );
 			return $failure( $update_result->get_error_message(), 'update_failed' );
 		}
+
+		self::log_improvement( array(
+			'step'          => 'wp_update_post_success',
+			'target_id'     => $target_id,
+			'returned_id'   => $update_result,
+		) );
 
 		if ( '' !== trim( $css_result ) ) {
 			External_CSS_Service::append_post_css( $target_id, $css_result );
@@ -357,6 +385,27 @@ class AI_Improvement_Admin {
 		update_post_meta( $target_id, '_ele2gb_last_ai_improved', current_time( 'mysql' ) );
 
 		return array( 'success' => true, 'error' => '', 'notice' => 'updated' );
+	}
+
+	/**
+	 * Append a diagnostic log entry to the same log file used by Claude_Api_Service.
+	 *
+	 * @param array $data Associative array of fields to log.
+	 */
+	private static function log_improvement( array $data ): void {
+		$log_file = WP_CONTENT_DIR . '/ele2gb-claude-api.log';
+
+		$entry = array_merge(
+			array( 'timestamp' => gmdate( 'Y-m-d H:i:s' ), 'source' => 'run_improvement' ),
+			$data
+		);
+
+		$line = json_encode( $entry, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES );
+
+		if ( false !== $line ) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+			file_put_contents( $log_file, $line . PHP_EOL . PHP_EOL, FILE_APPEND | LOCK_EX );
+		}
 	}
 
 	/**

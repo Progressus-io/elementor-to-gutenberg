@@ -26,14 +26,12 @@ class AI_Prompt_Builder {
 		$elementor_json    = isset( $context['elementor_json'] ) ? self::normalize_json_text( $context['elementor_json'] ) : '';
 		$gutenberg_content = isset( $context['gutenberg_content'] ) ? (string) $context['gutenberg_content'] : '';
 
+		// NOTE: All instructions live in the system prompt (Claude_Api_Service::get_system_prompt()).
+		// This user message contains only the data Claude needs to work with.
 		$sections = array(
-			"You are improving a converted WordPress page from Elementor to Gutenberg.",
-			"\nGOAL\nReturn improved Gutenberg block markup and CSS remediation that make the Gutenberg page more visually faithful to the original Elementor page.",
-			"\nREMEDIATION INSTRUCTIONS\n1) Preserve semantic structure and content meaning.\n2) Improve spacing, typography, alignment, and responsive behavior where needed.\n3) Keep Gutenberg block comment delimiters valid.\n4) Return two outputs only:\n   - CSS_RESULT: plain CSS only\n   - GUTENBERG_RESULT: full Gutenberg post_content only\n5) Do not include explanations before or after the two outputs.",
-			"\nPAGE CONTEXT\nSource Elementor page ID: {$source_id}\nSource Elementor title: {$source_title}\nTarget Gutenberg page ID: {$target_id}\nTarget Gutenberg title: {$target_title}",
-			"\nELEMENTOR_JSON\n{$elementor_json}",
-			"\nGUTENBERG_CONTENT\n{$gutenberg_content}",
-			"\nOUTPUT FORMAT\nCSS_RESULT:\n<css here>\n\nGUTENBERG_RESULT:\n<full gutenberg content here>",
+			"PAGE CONTEXT\nSource Elementor page ID: {$source_id}\nSource Elementor title: {$source_title}\nTarget Gutenberg page ID: {$target_id}\nTarget Gutenberg title: {$target_title}",
+			"ELEMENTOR_JSON\n{$elementor_json}",
+			"GUTENBERG_CONTENT\n{$gutenberg_content}",
 		);
 
 		return implode( "\n\n", $sections );
