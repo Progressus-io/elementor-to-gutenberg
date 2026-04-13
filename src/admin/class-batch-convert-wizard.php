@@ -8,10 +8,14 @@
 namespace Progressus\Gutenberg\Admin;
 
 use Progressus\Gutenberg\Admin\Admin_Settings;
+use Progressus\Gutenberg\Admin\AI_Improvement_Admin;
 use Progressus\Gutenberg\Gutenberg;
 use WP_Error;
 use WP_Post;
 use WP_Query;
+
+use Progressus\Gutenberg\Admin\Helper\AI_Remediation_Screenshot_Api_Service;
+use Progressus\Gutenberg\Admin\Helper\AI_Remediation_Screenshot_Meta_Service;
 
 use function absint;
 use function add_submenu_page;
@@ -88,6 +92,8 @@ class Batch_Convert_Wizard {
 
 	private const NONCE_NAME = 'nonce';
 
+	private const AI_IMPROVE_NONCE_ACTION = 'ele2gb_ai_improve';
+
 	private const JOB_TRANSIENT_PREFIX = 'ele2gb_job_';
 
 	private const JOB_TRANSIENT_TTL = 6 * HOUR_IN_SECONDS;
@@ -150,6 +156,7 @@ class Batch_Convert_Wizard {
 		add_action( 'wp_ajax_ele2gb_start_job', array( $this, 'ajax_start_job' ) );
 		add_action( 'wp_ajax_ele2gb_poll_job', array( $this, 'ajax_poll_job' ) );
 		add_action( 'wp_ajax_ele2gb_cancel_job', array( $this, 'ajax_cancel_job' ) );
+		add_action( 'wp_ajax_ele2gb_ai_improve_single', array( $this, 'ajax_ai_improve_single' ) );
 	}
 
 	/**
@@ -195,8 +202,10 @@ class Batch_Convert_Wizard {
 			'ele2gb-batch-wizard',
 			'ele2gbBatchWizard',
 			array(
-				'ajaxUrl'      => admin_url( 'admin-ajax.php' ),
-				'nonce'        => wp_create_nonce( self::NONCE_ACTION ),
+				'ajaxUrl'          => admin_url( 'admin-ajax.php' ),
+				'aiImproveBaseUrl' => admin_url( 'admin.php?page=' . AI_Improvement_Admin::MENU_SLUG ),
+				'nonce'            => wp_create_nonce( self::NONCE_ACTION ),
+				'aiImproveNonce'   => wp_create_nonce( self::AI_IMPROVE_NONCE_ACTION ),
 				'pages'        => $this->get_elementor_pages_data(),
 				'strings'      => $this->get_strings(),
 				'templates'    => $this->get_header_footer_templates_data(),
@@ -434,6 +443,11 @@ class Batch_Convert_Wizard {
 				);
 
 				$this->store_page_conversion_result( (int) $page_info['id'], $result_entry );
+
+				// Auto-generate screenshots for successfully converted pages if the feature is enabled.
+				if ( 'success' === $result['status'] && $converted_post_id > 0 ) {
+					$this->maybe_generate_screenshots( (int) $page_info['id'], $converted_post_id );
+				}
 
 			} else {
 				$template_info = $item['data'];
@@ -2655,9 +2669,29 @@ class Batch_Convert_Wizard {
 			'errors'                 => __( 'Errors', 'elementor-to-gutenberg' ),
 			'duration'               => __( 'Duration', 'elementor-to-gutenberg' ),
 			'viewConverted'          => __( 'View converted', 'elementor-to-gutenberg' ),
+			'improveWithAi'          => __( 'Improve Page with AI', 'elementor-to-gutenberg' ),
 			'retry'                  => __( 'Retry', 'elementor-to-gutenberg' ),
+			'skip'                   => __( 'Skip', 'elementor-to-gutenberg' ),
 			'viewPages'              => __( 'View converted pages', 'elementor-to-gutenberg' ),
 			'startNew'               => __( 'Start new conversion', 'elementor-to-gutenberg' ),
+			'aiLoaderTitle'          => __( 'Improving with AI…', 'elementor-to-gutenberg' ),
+			'aiLoaderMessage'        => __( 'Analysing page structure and generating improvements. This may take up to 2 minutes.', 'elementor-to-gutenberg' ),
+			'aiImproveAllBtn'        => __( 'Improve all with AI (%1$d)', 'elementor-to-gutenberg' ),
+			'aiImproveTitle'         => __( 'AI Improvement', 'elementor-to-gutenberg' ),
+			'aiImproveWarningTitle'  => __( 'API credits will be consumed', 'elementor-to-gutenberg' ),
+			'aiImproveWarning'       => __( 'This process calls the AI API once per item. Each call consumes API credits and may take 1–2 minutes per item. Make sure your API key has sufficient credits before starting.', 'elementor-to-gutenberg' ),
+			'aiImproveStart'         => __( 'Start AI Improvement', 'elementor-to-gutenberg' ),
+			'aiImproveNone'          => __( 'No successfully converted items found in this session.', 'elementor-to-gutenberg' ),
+			'aiImproveError'         => __( 'An unexpected error occurred.', 'elementor-to-gutenberg' ),
+			'aiImproveType'          => __( 'Type', 'elementor-to-gutenberg' ),
+			'aiImprovePaused'        => __( 'Paused — a page failed. Review the error below, then skip or retry to continue.', 'elementor-to-gutenberg' ),
+			'aiImproveFinishedOk'    => __( 'All items improved successfully.', 'elementor-to-gutenberg' ),
+			'aiImproveFinishedErr'   => __( 'Finished with issues — %1$d done, %2$d failed, %3$d skipped.', 'elementor-to-gutenberg' ),
+			'aiStatusPending'        => __( 'Pending', 'elementor-to-gutenberg' ),
+			'aiStatusProcessing'     => __( 'Processing…', 'elementor-to-gutenberg' ),
+			'aiStatusDone'           => __( 'Done', 'elementor-to-gutenberg' ),
+			'aiStatusFailed'         => __( 'Failed', 'elementor-to-gutenberg' ),
+			'aiStatusSkipped'        => __( 'Skipped', 'elementor-to-gutenberg' ),
 			'statusConverted'        => __( 'Converted', 'elementor-to-gutenberg' ),
 			'statusNotConverted'     => __( 'Not converted', 'elementor-to-gutenberg' ),
 			'statusPartial'          => __( 'Partial', 'elementor-to-gutenberg' ),
@@ -2757,6 +2791,47 @@ class Batch_Convert_Wizard {
 				'job' => $this->format_job_for_response( $job ),
 			)
 		);
+	}
+
+	/**
+	 * Run AI improvement on a single page via AJAX.
+	 *
+	 * Called sequentially by the bulk AI improve step in the conversion wizard.
+	 * Uses a dedicated nonce separate from the conversion job nonce.
+	 */
+	public function ajax_ai_improve_single(): void {
+		if ( ! current_user_can( 'edit_pages' ) ) {
+			wp_send_json_error(
+				array( 'message' => esc_html__( 'You do not have permission to perform this action.', 'elementor-to-gutenberg' ) ),
+				403
+			);
+		}
+
+		check_ajax_referer( self::AI_IMPROVE_NONCE_ACTION, self::NONCE_NAME );
+
+		$source_id = isset( $_POST['source_id'] ) ? absint( wp_unslash( $_POST['source_id'] ) ) : 0;
+		$target_id = isset( $_POST['target_id'] ) ? absint( wp_unslash( $_POST['target_id'] ) ) : 0;
+
+		if ( $source_id <= 0 || $target_id <= 0 ) {
+			wp_send_json_error(
+				array( 'message' => esc_html__( 'Invalid source or target page ID.', 'elementor-to-gutenberg' ) )
+			);
+		}
+
+		if ( ! current_user_can( 'edit_post', $target_id ) ) {
+			wp_send_json_error(
+				array( 'message' => esc_html__( 'You do not have permission to edit this page.', 'elementor-to-gutenberg' ) ),
+				403
+			);
+		}
+
+		$result = AI_Improvement_Admin::run_improvement( $source_id, $target_id );
+
+		if ( $result['success'] ) {
+			wp_send_json_success();
+		} else {
+			wp_send_json_error( array( 'message' => $result['error'] ) );
+		}
 	}
 
 	/**
@@ -2979,6 +3054,23 @@ class Batch_Convert_Wizard {
 		if ( 'success' === $result_entry['status'] ) {
 			update_post_meta( $template_id, '_ele2gb_last_converted', $time );
 		}
+	}
+
+	/**
+	 * Attempt to generate screenshots for a converted page pair if auto-generation is enabled.
+	 *
+	 * Called after each successful page conversion in the batch wizard. Any failure is stored
+	 * in post meta and does not interrupt the wizard AJAX response.
+	 *
+	 * @param int $source_id Elementor source page ID.
+	 * @param int $target_id Converted Gutenberg page ID.
+	 */
+	private function maybe_generate_screenshots( int $source_id, int $target_id ): void {
+		if ( ! AI_Remediation_Screenshot_Api_Service::is_auto_generate_enabled() ) {
+			return;
+		}
+
+		AI_Remediation_Screenshot_Meta_Service::generate_and_store( $source_id, $target_id, false );
 	}
 
 }

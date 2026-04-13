@@ -16,6 +16,7 @@ use Progressus\Gutenberg\Admin\Helper\Style_Parser;
 use Progressus\Gutenberg\Admin\Helper\Alignment_Helper;
 use Progressus\Gutenberg\Admin\Helper\External_CSS_Service;
 use Progressus\Gutenberg\Admin\Helper\External_Style_Collector;
+use Progressus\Gutenberg\Admin\Helper\AI_Remediation_Screenshot_Api_Service;
 
 use function esc_html;
 use function esc_html__;
@@ -78,6 +79,8 @@ class Admin_Settings {
 		add_filter( 'plugin_action_links_' . GUTENBERG_PLUGIN_BASENAME, array( $this, 'add_plugin_action_links' ) );
 		add_filter( 'page_row_actions', array( $this, 'myplugin_add_convert_button' ), 10, 2 );
 		add_action( 'admin_post_myplugin_convert_page', array( $this, 'myplugin_handle_convert_page' ) );
+		add_action( 'admin_post_etg_save_screenshot_settings', array( $this, 'save_screenshot_settings' ) );
+		add_action( 'admin_post_etg_save_claude_settings', array( $this, 'save_claude_settings' ) );
 	}
 
 	/**
@@ -296,6 +299,75 @@ class Admin_Settings {
 	}
 
 	/**
+	 * Save screenshot service settings submitted from the settings page form.
+	 *
+	 * Accepts POST data from the screenshot settings form, sanitizes all fields,
+	 * persists them via AI_Remediation_Screenshot_Api_Service, then redirects back.
+	 */
+	public function save_screenshot_settings(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission to change plugin settings.', 'elementor-to-gutenberg' ) );
+		}
+
+		check_admin_referer( 'etg_save_screenshot_settings' );
+
+		$raw = isset( $_POST['etg_screenshot_settings'] ) ? wp_unslash( $_POST['etg_screenshot_settings'] ) : array();
+		$raw = is_array( $raw ) ? $raw : array();
+
+		$endpoint_url  = isset( $raw['endpoint_url'] ) ? esc_url_raw( sanitize_text_field( (string) $raw['endpoint_url'] ) ) : '';
+		$timeout       = isset( $raw['timeout'] ) ? max( 5, min( 120, (int) $raw['timeout'] ) ) : 15;
+		$auto_generate = ! empty( $raw['auto_generate'] );
+
+		$settings = array(
+			'endpoint_url'  => $endpoint_url,
+			'timeout'       => $timeout,
+			'auto_generate' => $auto_generate,
+		);
+
+		AI_Remediation_Screenshot_Api_Service::save_settings( $settings );
+
+		wp_safe_redirect(
+			add_query_arg(
+				array(
+					'page'               => 'gutenberg-settings',
+					'etg_settings_saved' => '1',
+				),
+				admin_url( 'admin.php' )
+			)
+		);
+		exit;
+	}
+
+	/**
+	 * Save Claude API settings submitted from the settings page form.
+	 */
+	public function save_claude_settings(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission to change plugin settings.', 'elementor-to-gutenberg' ) );
+		}
+
+		check_admin_referer( 'etg_save_claude_settings' );
+
+		$raw = isset( $_POST['etg_claude_settings'] ) ? wp_unslash( $_POST['etg_claude_settings'] ) : array();
+		$raw = is_array( $raw ) ? $raw : array();
+
+		$api_key = isset( $raw['api_key'] ) ? sanitize_text_field( (string) $raw['api_key'] ) : '';
+
+		update_option( 'etg_claude_settings', array( 'api_key' => $api_key ), false );
+
+		wp_safe_redirect(
+			add_query_arg(
+				array(
+					'page'               => 'gutenberg-settings',
+					'etg_settings_saved' => '1',
+				),
+				admin_url( 'admin.php' )
+			)
+		);
+		exit;
+	}
+
+	/**
 	 * Render settings page content.
 	 */
 	public function settings_page_content(): void {
@@ -307,6 +379,41 @@ class Admin_Settings {
             <p>
                 <a href="<?php echo esc_url( $this->get_wizard_url() ); ?>" class="button button-primary"><?php esc_html_e( 'Open Migration Wizard', 'elementor-to-gutenberg' ); ?></a>
             </p>
+
+            <hr />
+            <h2><?php esc_html_e( 'Claude AI Settings', 'elementor-to-gutenberg' ); ?></h2>
+            <?php if ( isset( $_GET['etg_settings_saved'] ) && '1' === $_GET['etg_settings_saved'] ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
+                <div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Settings saved.', 'elementor-to-gutenberg' ); ?></p></div>
+            <?php endif; ?>
+            <p><?php esc_html_e( 'Configure the Anthropic Claude API key used for automated AI page improvement.', 'elementor-to-gutenberg' ); ?></p>
+            <?php
+            $claude_settings = get_option( 'etg_claude_settings', array() );
+            $claude_settings = is_array( $claude_settings ) ? $claude_settings : array();
+            $claude_api_key  = isset( $claude_settings['api_key'] ) ? (string) $claude_settings['api_key'] : '';
+            ?>
+            <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+                <?php wp_nonce_field( 'etg_save_claude_settings' ); ?>
+                <input type="hidden" name="action" value="etg_save_claude_settings" />
+                <table class="form-table" role="presentation">
+                    <tbody>
+                    <tr>
+                        <th scope="row">
+                            <label for="etg_claude_api_key"><?php esc_html_e( 'Claude API Key', 'elementor-to-gutenberg' ); ?></label>
+                        </th>
+                        <td>
+                            <input type="password" id="etg_claude_api_key" name="etg_claude_settings[api_key]" value="<?php echo esc_attr( $claude_api_key ); ?>" class="regular-text" />
+                            <?php if ( '' !== $claude_api_key ) : ?>
+                                <span style="color:#46b450;font-weight:600;"><?php esc_html_e( 'Configured', 'elementor-to-gutenberg' ); ?></span>
+                            <?php else : ?>
+                                <span style="color:#b32d2e;"><?php esc_html_e( 'Not configured', 'elementor-to-gutenberg' ); ?></span>
+                            <?php endif; ?>
+                            <p class="description"><?php esc_html_e( 'Your Anthropic API key. Required for the "Improve with AI" automated workflow.', 'elementor-to-gutenberg' ); ?></p>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+                <?php submit_button( esc_html__( 'Save Claude Settings', 'elementor-to-gutenberg' ) ); ?>
+            </form>
         </div>
 		<?php
 	}
