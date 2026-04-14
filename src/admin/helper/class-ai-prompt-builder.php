@@ -25,16 +25,18 @@ class AI_Prompt_Builder {
 		$target_title      = isset( $context['target_title'] ) ? (string) $context['target_title'] : '';
 		$elementor_json    = isset( $context['elementor_json'] ) ? self::normalize_json_text( $context['elementor_json'] ) : '';
 		$gutenberg_content = isset( $context['gutenberg_content'] ) ? (string) $context['gutenberg_content'] : '';
+		$current_css       = isset( $context['current_css'] ) ? trim( (string) $context['current_css'] ) : '';
+		$template_type     = isset( $context['template_type'] ) ? trim( (string) $context['template_type'] ) : '';
 
-		$current_css = isset( $context['current_css'] ) ? trim( (string) $context['current_css'] ) : '';
-
-		// NOTE: All instructions live in the system prompt (Claude_Api_Service::get_system_prompt()).
-		// This user message contains only the data Claude needs to work with.
 		$css_namespace = 'etg-page-' . $source_id;
 
-		$sections = array(
-			"PAGE CONTEXT\nSource Elementor page ID: {$source_id}\nSource Elementor title: {$source_title}\nTarget Gutenberg page ID: {$target_id}\nTarget Gutenberg title: {$target_title}\nCSS Namespace: .{$css_namespace}",
-		);
+		$sections = array();
+
+		if ( '' !== $template_type ) {
+			$sections[] = "TEMPLATE_FOCUS\nThis is an Elementor {$template_type} template. The screenshot shows the full page. Focus only on the {$template_type} area. Do not touch anything outside the {$template_type}.";
+		}
+
+		$sections[] = "PAGE CONTEXT\nSource Elementor page ID: {$source_id}\nSource Elementor title: {$source_title}\nTarget Gutenberg page ID: {$target_id}\nTarget Gutenberg title: {$target_title}\nCSS Namespace: .{$css_namespace}";
 
 		if ( '' !== $current_css ) {
 			$sections[] = "CURRENT_CSS\n{$current_css}";
@@ -63,6 +65,7 @@ class AI_Prompt_Builder {
 		$gutenberg_content = isset( $context['gutenberg_content'] ) ? (string) $context['gutenberg_content'] : '';
 		$current_css       = isset( $context['current_css'] ) ? trim( (string) $context['current_css'] ) : '';
 		$focus_instruction = isset( $context['focus_instruction'] ) ? trim( (string) $context['focus_instruction'] ) : '';
+		$template_type     = isset( $context['template_type'] ) ? trim( (string) $context['template_type'] ) : '';
 
 		$css_namespace = 'etg-page-' . $source_id;
 
@@ -70,10 +73,14 @@ class AI_Prompt_Builder {
 			? $focus_instruction
 			: 'No specific instruction provided. Perform a general improvement pass: compare the screenshots and fix any remaining visual differences between the Elementor original and the Gutenberg page.';
 
-		$sections = array(
-			"USER_FOCUS\n{$focus_line}",
-			"PAGE CONTEXT\nSource Elementor page ID: {$source_id}\nSource Elementor title: {$source_title}\nTarget Gutenberg page ID: {$target_id}\nTarget Gutenberg title: {$target_title}\nCSS Namespace: .{$css_namespace}",
-		);
+		$sections = array();
+
+		if ( '' !== $template_type ) {
+			$sections[] = "TEMPLATE_FOCUS\nThis is an Elementor {$template_type} template. The screenshot shows the full page. Focus only on the {$template_type} area. Do not touch anything outside the {$template_type}.";
+		}
+
+		$sections[] = "USER_FOCUS\n{$focus_line}";
+		$sections[] = "PAGE CONTEXT\nSource Elementor page ID: {$source_id}\nSource Elementor title: {$source_title}\nTarget Gutenberg page ID: {$target_id}\nTarget Gutenberg title: {$target_title}\nCSS Namespace: .{$css_namespace}";
 
 		if ( '' !== $current_css ) {
 			$sections[] = "CURRENT_CSS\n{$current_css}";

@@ -30,6 +30,7 @@ use function esc_url;
 use function get_post;
 use function get_post_field;
 use function get_post_meta;
+use function get_post_type;
 use function get_the_title;
 use function get_transient;
 use function is_array;
@@ -306,6 +307,11 @@ class AI_Improvement_Admin {
 
 		$current_css = self::read_post_css( $target_id );
 
+		$template_type = '';
+		if ( 'elementor_library' === get_post_type( $source_id ) ) {
+			$template_type = (string) get_post_meta( $source_id, '_elementor_template_type', true );
+		}
+
 		$prompt = AI_Prompt_Builder::build(
 			array(
 				'source_id'         => $source_id,
@@ -315,6 +321,7 @@ class AI_Improvement_Admin {
 				'elementor_json'    => $elementor_json,
 				'gutenberg_content' => $gutenberg_content,
 				'current_css'       => $current_css,
+				'template_type'     => $template_type,
 			)
 		);
 
@@ -380,6 +387,10 @@ class AI_Improvement_Admin {
 
 		if ( '' !== trim( $css_result ) ) {
 			External_CSS_Service::save_post_css( $target_id, $css_result );
+		}
+
+		if ( 'elementor_library' === get_post_type( $source_id ) ) {
+			External_CSS_Service::register_global_css_post( $target_id );
 		}
 
 		$workspace                           = AI_Workspace_Repository::get( $target_id );
@@ -488,6 +499,11 @@ class AI_Improvement_Admin {
 
 		$current_css = self::read_post_css( $target_id );
 
+		$template_type = '';
+		if ( 'elementor_library' === get_post_type( $source_id ) ) {
+			$template_type = (string) get_post_meta( $source_id, '_elementor_template_type', true );
+		}
+
 		$prompt = AI_Prompt_Builder::build_refinement(
 			array(
 				'source_id'         => $source_id,
@@ -498,6 +514,7 @@ class AI_Improvement_Admin {
 				'gutenberg_content' => $gutenberg_content,
 				'current_css'       => $current_css,
 				'focus_instruction' => $focus_instruction,
+				'template_type'     => $template_type,
 			)
 		);
 
@@ -563,6 +580,10 @@ class AI_Improvement_Admin {
 		// Replace the full CSS file on every refinement run.
 		if ( '' !== trim( $css_result ) ) {
 			External_CSS_Service::save_post_css( $target_id, $css_result );
+		}
+
+		if ( 'elementor_library' === get_post_type( $source_id ) ) {
+			External_CSS_Service::register_global_css_post( $target_id );
 		}
 
 		$workspace                           = AI_Workspace_Repository::get( $target_id );

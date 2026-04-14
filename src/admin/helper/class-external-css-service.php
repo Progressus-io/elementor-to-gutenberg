@@ -10,16 +10,19 @@ namespace Progressus\Gutenberg\Admin\Helper;
 use function absint;
 use function current_time;
 use function delete_post_meta;
+use function get_option;
 use function gmdate;
 use function file_exists;
 use function filemtime;
 use function get_post_meta;
+use function in_array;
 use function is_array;
 use function is_readable;
 use function is_string;
 use function json_decode;
 use function maybe_unserialize;
 use function md5;
+use function update_option;
 use function wp_json_encode;
 use function update_post_meta;
 use function wp_normalize_path;
@@ -330,6 +333,24 @@ class External_CSS_Service {
 	}
 
 	/**
+	 * Register a post ID whose CSS should be enqueued on every frontend page.
+	 *
+	 * Used for converted header/footer template posts whose CSS must load
+	 * globally, not just when viewing that specific post.
+	 *
+	 * @param int $post_id Post ID.
+	 */
+	public static function register_global_css_post( int $post_id ): void {
+		$post_id = self::resolve_post_id( $post_id );
+		$ids     = (array) get_option( '_etg_global_css_post_ids', array() );
+
+		if ( ! in_array( $post_id, $ids, true ) ) {
+			$ids[] = $post_id;
+			update_option( '_etg_global_css_post_ids', $ids, false );
+		}
+	}
+
+	/**
 	 * Enqueue CSS for the "current" post context (frontend or editor).
 	 *
 	 * @return void
@@ -355,6 +376,14 @@ class External_CSS_Service {
 
 		if ( $post_id > 0 ) {
 			self::enqueue_post_css( $post_id );
+		}
+
+		$global_ids = (array) get_option( '_etg_global_css_post_ids', array() );
+		foreach ( $global_ids as $global_id ) {
+			$global_id = (int) $global_id;
+			if ( $global_id > 0 ) {
+				self::enqueue_post_css( $global_id );
+			}
 		}
 	}
 

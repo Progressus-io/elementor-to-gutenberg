@@ -1644,7 +1644,7 @@
                     actionsTd.appendChild(viewLink);
                 }
                 if (
-                    result.type === 'page' &&
+                    (result.type === 'page' || result.type === 'header' || result.type === 'footer') &&
                     result.status === 'success' &&
                     Number(result.convertedPostId || 0) > 0 &&
                     this.config.aiImproveBaseUrl
