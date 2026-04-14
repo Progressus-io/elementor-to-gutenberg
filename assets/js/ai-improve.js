@@ -6,19 +6,62 @@
 		return;
 	}
 
-	var config = window.ele2gbAiImprove;
-	var form   = document.getElementById( 'ele2gb-ai-improve-form' );
-	var loader = document.getElementById( 'ele2gb-ai-loader' );
-	var btn    = document.getElementById( 'ele2gb_auto_improve_submit' );
+	var config     = window.ele2gbAiImprove;
+	var loader     = document.getElementById( 'ele2gb-ai-loader' );
+	var loaderTitle = loader ? loader.querySelector( '.ele2gb-ai-loader-title' ) : null;
 
-	if ( ! form || ! loader || ! btn ) {
-		return;
+	// ── Round 1: Improve with AI ──────────────────────────────────────────────
+	var improveForm = document.getElementById( 'ele2gb-ai-improve-form' );
+	var improveBtn  = document.getElementById( 'ele2gb_auto_improve_submit' );
+
+	if ( improveForm && improveBtn && loader ) {
+		improveForm.addEventListener( 'submit', function () {
+			improveBtn.disabled = true;
+			improveBtn.value    = config.processingLabel;
+			if ( loaderTitle ) {
+				loaderTitle.textContent = config.improvingLabel || loaderTitle.textContent;
+			}
+			loader.removeAttribute( 'hidden' );
+		} );
 	}
 
-	form.addEventListener( 'submit', function () {
-		btn.disabled = true;
-		btn.value    = config.processingLabel;
-		loader.removeAttribute( 'hidden' );
+	// ── Round 2+: Refine with AI ──────────────────────────────────────────────
+	var refineForm  = document.getElementById( 'ele2gb-ai-refine-form' );
+	var refineBtn   = document.getElementById( 'ele2gb_refine_submit' );
+	var focusInput  = document.getElementById( 'ele2gb-focus-instruction' );
+
+	if ( refineForm && refineBtn && loader ) {
+		refineForm.addEventListener( 'submit', function () {
+			refineBtn.disabled = true;
+			refineBtn.value    = config.processingLabel;
+			if ( loaderTitle ) {
+				loaderTitle.textContent = config.refiningLabel || loaderTitle.textContent;
+			}
+			loader.removeAttribute( 'hidden' );
+		} );
+	}
+
+	// ── Suggestion chips ──────────────────────────────────────────────────────
+	var chips = document.querySelectorAll( '.ele2gb-suggestion-chip' );
+
+	chips.forEach( function ( chip ) {
+		chip.addEventListener( 'click', function () {
+			if ( ! focusInput ) {
+				return;
+			}
+
+			var suggestion = chip.getAttribute( 'data-suggestion' ) || chip.textContent.trim();
+			var current    = focusInput.value.trim();
+
+			if ( '' === current ) {
+				focusInput.value = suggestion;
+			} else {
+				focusInput.value = current + '. ' + suggestion;
+			}
+
+			focusInput.focus();
+			chip.classList.add( 'ele2gb-suggestion-chip--active' );
+		} );
 	} );
 
 } )( window, document );
