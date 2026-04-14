@@ -305,7 +305,7 @@ class AI_Improvement_Admin {
 		}
 		$elementor_json = (string) $elementor_json;
 
-		$current_css = self::read_post_css( $target_id );
+		$current_css = self::fix_css_namespace( self::read_post_css( $target_id ), $source_id, $target_id );
 
 		$template_type = '';
 		if ( 'elementor_library' === get_post_type( $source_id ) ) {
@@ -497,7 +497,7 @@ class AI_Improvement_Admin {
 		}
 		$elementor_json = (string) $elementor_json;
 
-		$current_css = self::read_post_css( $target_id );
+		$current_css = self::fix_css_namespace( self::read_post_css( $target_id ), $source_id, $target_id );
 
 		$template_type = '';
 		if ( 'elementor_library' === get_post_type( $source_id ) ) {

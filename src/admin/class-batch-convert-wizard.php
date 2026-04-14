@@ -16,6 +16,7 @@ use WP_Query;
 
 use Progressus\Gutenberg\Admin\Helper\AI_Remediation_Screenshot_Api_Service;
 use Progressus\Gutenberg\Admin\Helper\AI_Remediation_Screenshot_Meta_Service;
+use Progressus\Gutenberg\Admin\Helper\External_CSS_Service;
 
 use function absint;
 use function add_submenu_page;
@@ -1974,6 +1975,7 @@ class Batch_Convert_Wizard {
 		}
 
 		Admin_Settings::instance()->finalize_converted_post( $target_id, $content, true );
+		External_CSS_Service::register_global_css_post( $target_id );
 
 		$this->store_template_part_meta( $target_id, $template_info );
 		$this->update_template_part_role( $target_id, (string) $template_info['role'], (string) $template_info['type'] );
