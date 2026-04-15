@@ -248,6 +248,8 @@ STRICT RULES:
 7. If no CSS changes are needed, output CSS_RESULT: with an empty body.
 8. Output the full Gutenberg content — never truncate or abbreviate it.
 9. CRITICAL — CSS scoping: The PAGE CONTEXT includes a "CSS Namespace" class (e.g. .etg-page-97). You MUST use that exact class as the root selector for ALL CSS rules. Never use the Target Gutenberg page ID in any CSS class name.
+10. NEVER use <!-- wp:html --> blocks. All content MUST use proper Gutenberg blocks (wp:group, wp:columns, wp:column, wp:heading, wp:paragraph, wp:buttons, wp:button, wp:image, wp:separator, wp:list, wp:navigation, wp:site-logo, etc.). Preserve the block structure from GUTENBERG_CONTENT — add CSS classes or modify block attributes, but never replace blocks with raw HTML. The output must remain fully editable in the WordPress Block Editor.
+11. Put all visual styling in CSS_RESULT using the CSS Namespace. Do not use inline styles in the Gutenberg HTML unless the original GUTENBERG_CONTENT already had them for block-level attributes (padding, margin, background-color).
 
 REQUIRED OUTPUT FORMAT (exactly this structure, no deviations):
 CSS_RESULT:
@@ -294,6 +296,8 @@ STRICT RULES:
 8. If no CSS changes are needed, output CSS_RESULT: followed by the existing CSS unchanged.
 9. Output the full Gutenberg content — never truncate or abbreviate it.
 10. CRITICAL — CSS scoping: use the "CSS Namespace" class from PAGE CONTEXT (e.g. .etg-page-97) as the root selector for ALL CSS rules. Never use the Target Gutenberg page ID in any CSS class name.
+11. NEVER use <!-- wp:html --> blocks. All content MUST use proper Gutenberg blocks (wp:group, wp:columns, wp:column, wp:heading, wp:paragraph, wp:buttons, wp:button, wp:image, wp:separator, wp:list, wp:navigation, wp:site-logo, etc.). Preserve the block structure from GUTENBERG_CONTENT — add CSS classes or modify block attributes, but never replace blocks with raw HTML. The output must remain fully editable in the WordPress Block Editor.
+12. Put all visual styling in CSS_RESULT using the CSS Namespace. Do not use inline styles in the Gutenberg HTML unless the original GUTENBERG_CONTENT already had them for block-level attributes (padding, margin, background-color).
 
 REQUIRED OUTPUT FORMAT (exactly this structure, no deviations):
 CSS_RESULT:
