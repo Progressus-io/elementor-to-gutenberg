@@ -16,6 +16,7 @@ use WP_Query;
 
 use Progressus\Gutenberg\Admin\Helper\AI_Remediation_Screenshot_Api_Service;
 use Progressus\Gutenberg\Admin\Helper\AI_Remediation_Screenshot_Meta_Service;
+use Progressus\Gutenberg\Admin\Helper\Claude_Api_Service;
 use Progressus\Gutenberg\Admin\Helper\External_CSS_Service;
 
 use function absint;
@@ -214,6 +215,8 @@ class Batch_Convert_Wizard {
 				'activeJob'    => $this->get_active_job_for_user(),
 				'userCanEdit'  => current_user_can( 'edit_pages' ),
 				'maxBatchSize' => 1,
+				'aiConfigured' => '' !== Claude_Api_Service::get_api_key(),
+				'preflight'    => $this->build_preflight_summary(),
 			)
 		);
 	}
@@ -246,7 +249,29 @@ class Batch_Convert_Wizard {
 			array(
 				'pages'     => $this->get_elementor_pages_data(),
 				'templates' => $this->get_header_footer_templates_data(),
+				'preflight' => $this->build_preflight_summary(),
 			)
+		);
+	}
+
+	private function build_preflight_summary(): array {
+		$pages           = $this->get_elementor_pages_data();
+		$eligible_count  = 0;
+		$converted_count = 0;
+		foreach ( $pages as $page ) {
+			if ( 'converted' !== $page['conversionStatus'] ) {
+				$eligible_count++;
+			} else {
+				$converted_count++;
+			}
+		}
+		$templates_data = $this->get_header_footer_templates_data();
+		return array(
+			'eligibleCount'  => $eligible_count,
+			'convertedCount' => $converted_count,
+			'headersCount'   => $templates_data['counts']['headers'],
+			'footersCount'   => $templates_data['counts']['footers'],
+			'aiConfigured'   => '' !== Claude_Api_Service::get_api_key(),
 		);
 	}
 
@@ -2620,11 +2645,21 @@ class Batch_Convert_Wizard {
 	private function get_strings(): array {
 		return array(
 			'step'                   => __( 'Step %1$s of %2$s — %3$s', 'elementor-to-gutenberg' ),
+			'stepLabelMode'          => __( 'Mode', 'elementor-to-gutenberg' ),
+			'stepLabelTheme'         => __( 'Theme', 'elementor-to-gutenberg' ),
+			'stepLabelSelect'        => __( 'Pages', 'elementor-to-gutenberg' ),
+			'stepLabelTemplates'     => __( 'Templates', 'elementor-to-gutenberg' ),
+			'stepLabelConflicts'     => __( 'Conflicts', 'elementor-to-gutenberg' ),
+			'stepLabelReview'        => __( 'Review', 'elementor-to-gutenberg' ),
+			'stepLabelProgress'      => __( 'Convert', 'elementor-to-gutenberg' ),
+			'stepLabelAiImprove'     => __( 'AI Improve', 'elementor-to-gutenberg' ),
 			'modeTitle'              => __( 'Choose Mode', 'elementor-to-gutenberg' ),
 			'modeAutoTitle'          => __( 'Convert all pages automatically', 'elementor-to-gutenberg' ),
-			'modeAutoDesc'           => __( 'Run with smart defaults: copy meta & featured image, skip pages already converted.', 'elementor-to-gutenberg' ),
+			'modeAutoDesc'           => __( 'Converts all eligible items, skips already converted, uses default settings.', 'elementor-to-gutenberg' ),
+			'modeAutoSubtext'        => __( 'Recommended for first-time runs', 'elementor-to-gutenberg' ),
 			'modeCustomTitle'        => __( 'Choose specific pages', 'elementor-to-gutenberg' ),
-			'modeCustomDesc'         => __( 'Pick exactly which pages to convert and fine-tune options per page.', 'elementor-to-gutenberg' ),
+			'modeCustomDesc'         => __( 'Select exact pages and templates — best for testing or staged migration.', 'elementor-to-gutenberg' ),
+			'modeCustomSubtext'      => __( 'For testing or staged migration', 'elementor-to-gutenberg' ),
 			'continue'               => __( 'Continue', 'elementor-to-gutenberg' ),
 			'back'                   => __( 'Back', 'elementor-to-gutenberg' ),
 			'selectPagesTitle'       => __( 'Select Pages', 'elementor-to-gutenberg' ),
@@ -2633,6 +2668,19 @@ class Batch_Convert_Wizard {
 			'noPagesFound'           => __( 'No Elementor pages found for conversion.', 'elementor-to-gutenberg' ),
 			'skipConverted'          => __( 'Skip pages that were already converted', 'elementor-to-gutenberg' ),
 			'disableMeta'            => __( 'Don’t copy meta fields & featured image', 'elementor-to-gutenberg' ),
+			'copyMeta'               => __( 'Copy metadata and featured image', 'elementor-to-gutenberg' ),
+			'selectAllEligible'      => __( 'Select all eligible', 'elementor-to-gutenberg' ),
+			'clearSelection'         => __( 'Clear selection', 'elementor-to-gutenberg' ),
+			'selectionChip'          => __( '%1$d selected', 'elementor-to-gutenberg' ),
+			'filterAll'              => __( 'All', 'elementor-to-gutenberg' ),
+			'filterEligible'         => __( 'Eligible', 'elementor-to-gutenberg' ),
+			'filterConverted'        => __( 'Converted', 'elementor-to-gutenberg' ),
+			'filterFailed'           => __( 'Failed', 'elementor-to-gutenberg' ),
+			'filterUnconverted'      => __( 'Unconverted', 'elementor-to-gutenberg' ),
+			'searchPlaceholder'      => __( 'Search by title…', 'elementor-to-gutenberg' ),
+			'statusReady'            => __( 'Ready', 'elementor-to-gutenberg' ),
+			'statusAlreadyConverted' => __( 'Already converted', 'elementor-to-gutenberg' ),
+			'statusFailedLastRun'    => __( 'Failed last run', 'elementor-to-gutenberg' ),
 			'conflictsTitle'         => __( 'Resolve Conflicts', 'elementor-to-gutenberg' ),
 			'conflictDetected'       => __( '%1$d selected pages already have a converted version.', 'elementor-to-gutenberg' ),
 			'conflictOverwrite'      => __( 'Update existing pages in place (overwrite)', 'elementor-to-gutenberg' ),
@@ -2670,8 +2718,11 @@ class Batch_Convert_Wizard {
 			'skipped'                => __( 'Skipped', 'elementor-to-gutenberg' ),
 			'errors'                 => __( 'Errors', 'elementor-to-gutenberg' ),
 			'duration'               => __( 'Duration', 'elementor-to-gutenberg' ),
-			'viewConverted'          => __( 'View converted', 'elementor-to-gutenberg' ),
-			'improveWithAi'          => __( 'Improve Page with AI', 'elementor-to-gutenberg' ),
+			'viewConverted'          => __( 'View', 'elementor-to-gutenberg' ),
+			'viewConvertedTooltip'   => __( 'View converted page', 'elementor-to-gutenberg' ),
+			'improveWithAi'          => __( 'Improve with AI', 'elementor-to-gutenberg' ),
+			'improveWithAiTooltip'   => __( 'Improve this page with AI', 'elementor-to-gutenberg' ),
+			'retryTooltip'           => __( 'Retry this conversion', 'elementor-to-gutenberg' ),
 			'retry'                  => __( 'Retry', 'elementor-to-gutenberg' ),
 			'skip'                   => __( 'Skip', 'elementor-to-gutenberg' ),
 			'viewPages'              => __( 'View converted pages', 'elementor-to-gutenberg' ),
@@ -2680,8 +2731,34 @@ class Batch_Convert_Wizard {
 			'aiLoaderMessage'        => __( 'Analysing page structure and generating improvements. This may take up to 2 minutes.', 'elementor-to-gutenberg' ),
 			'aiImproveAllBtn'        => __( 'Improve all with AI (%1$d)', 'elementor-to-gutenberg' ),
 			'aiImproveTitle'         => __( 'AI Improvement', 'elementor-to-gutenberg' ),
-			'aiImproveWarningTitle'  => __( 'API credits will be consumed', 'elementor-to-gutenberg' ),
-			'aiImproveWarning'       => __( 'This process calls the AI API once per item. Each call consumes API credits and may take 1–2 minutes per item. Make sure your API key has sufficient credits before starting.', 'elementor-to-gutenberg' ),
+			'aiImproveWarningTitle'  => __( 'AI credits will be used', 'elementor-to-gutenberg' ),
+			'aiImproveWarning'       => __( 'This will use AI credits once per selected item. Make sure your API key has sufficient credits before starting.', 'elementor-to-gutenberg' ),
+			'aiReadinessTitle'       => __( 'Pre-flight checklist', 'elementor-to-gutenberg' ),
+			'aiReadinessAllReady'    => __( '✓ Ready to start', 'elementor-to-gutenberg' ),
+			'aiReadinessApiValid'    => __( 'API key configured', 'elementor-to-gutenberg' ),
+			'aiReadinessApiInvalid'  => __( 'API key not configured', 'elementor-to-gutenberg' ),
+			'aiReadinessApiMissing'  => __( 'AI features require a valid API key. ', 'elementor-to-gutenberg' ),
+			'aiReadinessCredits'     => __( 'Estimated: ~%1$d API call(s), ~1–2 minutes per item', 'elementor-to-gutenberg' ),
+			'goToSettings'           => __( 'Go to Settings →', 'elementor-to-gutenberg' ),
+			'editSection'            => __( 'Edit', 'elementor-to-gutenberg' ),
+			'reviewDesc'             => __( 'Double-check the plan below before starting. You can edit any section from here.', 'elementor-to-gutenberg' ),
+			'reviewStatPages'        => __( 'Pages to convert', 'elementor-to-gutenberg' ),
+			'reviewStatHeaders'      => __( 'Headers', 'elementor-to-gutenberg' ),
+			'reviewStatFooters'      => __( 'Footers', 'elementor-to-gutenberg' ),
+			'reviewStatSkipped'      => __( 'To skip', 'elementor-to-gutenberg' ),
+			'reviewSectionScope'     => __( 'Scope', 'elementor-to-gutenberg' ),
+			'reviewSectionTheme'     => __( 'Theme', 'elementor-to-gutenberg' ),
+			'reviewSectionTemplates' => __( 'Templates', 'elementor-to-gutenberg' ),
+			'reviewSectionConflicts' => __( 'Conflicts', 'elementor-to-gutenberg' ),
+			'safetyNote'             => __( 'Recommended to run on a staging environment if your site is live. Conversion runs in the background — you can safely close this page.', 'elementor-to-gutenberg' ),
+			'aiStageAnalyzing'       => __( 'Analyzing…', 'elementor-to-gutenberg' ),
+			'aiStageGenerating'      => __( 'Generating…', 'elementor-to-gutenberg' ),
+			'aiStageSaving'          => __( 'Saving…', 'elementor-to-gutenberg' ),
+			'resultsNeedsAttention'  => __( 'Needs attention', 'elementor-to-gutenberg' ),
+			'resultsCompleted'       => __( 'Completed successfully', 'elementor-to-gutenberg' ),
+			'errorNoOutput'          => __( 'No Gutenberg output was generated. The source may contain unsupported widgets or empty content.', 'elementor-to-gutenberg' ),
+			'improveSuccessful'      => __( 'Improve successful items with AI (%1$d)', 'elementor-to-gutenberg' ),
+			'themeChangeWarning'     => __( 'Changing the active theme may affect the live site appearance. Test on staging when possible.', 'elementor-to-gutenberg' ),
 			'aiImproveStart'         => __( 'Start AI Improvement', 'elementor-to-gutenberg' ),
 			'aiImproveNone'          => __( 'No successfully converted items found in this session.', 'elementor-to-gutenberg' ),
 			'aiImproveError'         => __( 'An unexpected error occurred.', 'elementor-to-gutenberg' ),
