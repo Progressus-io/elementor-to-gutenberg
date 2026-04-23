@@ -113,6 +113,8 @@
                 disableMetaByDefault: true,
                 enabledMeta: new Set(),
                 aiImprove: null,
+                filterStatus: 'all',
+                searchQuery: '',
             };
 
             if (config.activeJob && config.activeJob.id) {
@@ -689,6 +691,9 @@
                     if (response && Array.isArray(response.pages)) {
                         this.pages = response.pages;
                     }
+                    if (response && response.preflight) {
+                        this.config.preflight = response.preflight;
+                    }
                 })
                 .catch(() => {
                     // Silent fail; optional refresh.
@@ -716,21 +721,59 @@
             this.render();
         }
 
+        getStepShortLabel(step) {
+            const map = {
+                mode:       this.strings.stepLabelMode       || 'Mode',
+                theme:      this.strings.stepLabelTheme      || 'Theme',
+                select:     this.strings.stepLabelSelect     || 'Pages',
+                templates:  this.strings.stepLabelTemplates  || 'Templates',
+                conflicts:  this.strings.stepLabelConflicts  || 'Conflicts',
+                review:     this.strings.stepLabelReview     || 'Review',
+                progress:   this.strings.stepLabelProgress   || 'Convert',
+                ai_improve: this.strings.stepLabelAiImprove  || 'AI Improve',
+            };
+            return map[step] || step;
+        }
+
         renderHeader() {
             const header = createElement('div', 'ele2gb-wizard-header');
             const steps = this.getStepSequence();
-            const index = Math.max(0, steps.indexOf(this.state.currentStep));
-            const title = this.getStepTitle(this.state.currentStep);
-            const stepText = formatString(this.strings.step || 'Step %1$s of %2$s — %3$s', index + 1, steps.length, title);
-            header.appendChild(createElement('div', 'ele2gb-wizard-steps', stepText));
+            const currentIndex = Math.max(0, steps.indexOf(this.state.currentStep));
 
-            const progress = createElement('div', 'ele2gb-progress-bar');
-            const percent = steps.length ? ((index + 1) / steps.length) * 100 : 0;
-            const bar = document.createElement('span');
-            bar.style.width = percent + '%';
-            progress.appendChild(bar);
-            header.appendChild(progress);
+            const stepper = createElement('div', 'ele2gb-stepper');
+            const svgNS = 'http://www.w3.org/2000/svg';
 
+            steps.forEach((step, i) => {
+                let stateClass = '';
+                if (i < currentIndex) {
+                    stateClass = ' is-completed';
+                } else if (i === currentIndex) {
+                    stateClass = ' is-current';
+                }
+
+                const item = createElement('div', 'ele2gb-stepper-item' + stateClass);
+
+                const circle = createElement('div', 'ele2gb-stepper-circle');
+                if (i < currentIndex) {
+                    const checkSvg = document.createElementNS(svgNS, 'svg');
+                    checkSvg.setAttribute('class', 'ele2gb-stepper-check');
+                    checkSvg.setAttribute('viewBox', '0 0 20 20');
+                    checkSvg.setAttribute('fill', 'currentColor');
+                    checkSvg.setAttribute('aria-hidden', 'true');
+                    const path = document.createElementNS(svgNS, 'path');
+                    path.setAttribute('d', 'M7.5 13.5 4 10l1.4-1.4 2.1 2.1 5.1-5.1L14 7z');
+                    checkSvg.appendChild(path);
+                    circle.appendChild(checkSvg);
+                } else {
+                    circle.textContent = String(i + 1);
+                }
+
+                item.appendChild(circle);
+                item.appendChild(createElement('span', 'ele2gb-stepper-label', this.getStepShortLabel(step)));
+                stepper.appendChild(item);
+            });
+
+            header.appendChild(stepper);
             return header;
         }
 
@@ -760,6 +803,26 @@
                 },
             ];
 
+            const preflight = this.config.preflight || {};
+            const svgNS = 'http://www.w3.org/2000/svg';
+
+            const makeIcon = function (pathD) {
+                const wrap = createElement('div', 'ele2gb-mode-card-icon');
+                const svg = document.createElementNS(svgNS, 'svg');
+                svg.setAttribute('viewBox', '0 0 24 24');
+                svg.setAttribute('fill', 'none');
+                svg.setAttribute('stroke', 'currentColor');
+                svg.setAttribute('stroke-width', '2');
+                svg.setAttribute('stroke-linecap', 'round');
+                svg.setAttribute('stroke-linejoin', 'round');
+                svg.setAttribute('aria-hidden', 'true');
+                const path = document.createElementNS(svgNS, 'path');
+                path.setAttribute('d', pathD);
+                svg.appendChild(path);
+                wrap.appendChild(svg);
+                return wrap;
+            };
+
             modes.forEach((mode) => {
                 const card = createElement('label', 'ele2gb-mode-card' + (this.state.modeSelection === mode.key ? ' is-active' : ''));
                 const input = document.createElement('input');
@@ -767,6 +830,7 @@
                 input.name = 'ele2gb-mode';
                 input.value = mode.key;
                 input.checked = this.state.modeSelection === mode.key;
+                input.className = 'screen-reader-text';
                 input.addEventListener('change', () => {
                     this.state.modeSelection = mode.key;
                     if (mode.key === 'auto') {
@@ -775,10 +839,38 @@
                     this.render();
                 });
                 card.appendChild(input);
+
+                // Icon
+                const iconPath = mode.key === 'auto'
+                    ? 'M13 2L3 14h7l-1 8 10-12h-7l1-8z'
+                    : 'M12 20h9M16.5 3.5a2.12 2.12 0 113 3L7 19l-4 1 1-4 12.5-12.5z';
+                card.appendChild(makeIcon(iconPath));
+
+                const subtextKey = mode.key === 'auto' ? 'modeAutoSubtext' : 'modeCustomSubtext';
+                const subtext = this.strings[subtextKey];
+                if (subtext) {
+                    card.appendChild(createElement('p', 'ele2gb-mode-subtext', subtext));
+                }
+
                 const title = createElement('h3', null, mode.title);
                 card.appendChild(title);
                 if (mode.description) {
                     card.appendChild(createElement('p', null, mode.description));
+                }
+
+                if (preflight.eligibleCount !== undefined) {
+                    const contextLine = mode.key === 'auto'
+                        ? formatString(
+                            '%1$d eligible pages · %2$d headers · %3$d footers',
+                            preflight.eligibleCount,
+                            preflight.headersCount || 0,
+                            preflight.footersCount || 0
+                        )
+                        : formatString(
+                            '%1$d total pages available to select',
+                            (preflight.eligibleCount || 0) + (preflight.convertedCount || 0)
+                        );
+                    card.appendChild(createElement('small', 'ele2gb-mode-context-line', contextLine));
                 }
                 grid.appendChild(card);
             });
@@ -839,7 +931,8 @@
             const isSelected = (this.state.selectedThemeSlug || this.getCurrentThemeSlug()) === theme.slug;
             const isActive = !!theme.isActive || theme.slug === this.getCurrentThemeSlug();
             const isInstalled = theme.isInstalled !== false;
-            const card = createElement('article', 'ele2gb-theme-browser-card' + (isSelected ? ' is-selected' : ''));
+            var cardClass = 'ele2gb-theme-browser-card' + (isSelected ? ' is-selected' : '') + (isActive ? ' ele2gb-theme-card--current' : '');
+            const card = createElement('article', cardClass);
 
             const preview = createElement('div', 'ele2gb-theme-card-preview');
             if (theme.screenshot) {
@@ -947,6 +1040,10 @@
 
             container.appendChild(browser);
 
+            if (this.willChangeTheme() && this.strings.themeChangeWarning) {
+                container.appendChild(createElement('div', 'ele2gb-alert ele2gb-alert-warning ele2gb-theme-change-warning', this.strings.themeChangeWarning));
+            }
+
             const selectedTheme = this.getSelectedTheme();
             const selectedName = (selectedTheme && selectedTheme.name) || this.getCurrentThemeName();
             const selectedSummary = this.willChangeTheme()
@@ -996,6 +1093,74 @@
                 container.appendChild(createElement('p', null, this.strings.noPagesFound || 'No Elementor pages found.'));
                 return container;
             }
+
+            const toolbar = createElement('div', 'ele2gb-select-toolbar');
+
+            const searchInput = document.createElement('input');
+            searchInput.type = 'text';
+            searchInput.className = 'regular-text';
+            searchInput.placeholder = this.strings.searchPlaceholder || 'Search by title\u2026';
+            searchInput.value = this.state.searchQuery || '';
+            searchInput.addEventListener('input', () => {
+                this.state.searchQuery = searchInput.value;
+                this.state.tablePage = 1;
+                this.render();
+            });
+            toolbar.appendChild(searchInput);
+
+            const filterSelect = document.createElement('select');
+            const filterOptions = [
+                {value: 'all',           label: this.strings.filterAll         || 'All'},
+                {value: 'eligible',      label: this.strings.filterEligible    || 'Eligible'},
+                {value: 'not_converted', label: this.strings.filterUnconverted || 'Unconverted'},
+                {value: 'converted',     label: this.strings.filterConverted   || 'Converted'},
+                {value: 'failed',        label: this.strings.filterFailed      || 'Failed'},
+            ];
+            filterOptions.forEach(function (opt) {
+                const option = document.createElement('option');
+                option.value = opt.value;
+                option.textContent = opt.label;
+                filterSelect.appendChild(option);
+            });
+            filterSelect.value = this.state.filterStatus || 'all';
+            filterSelect.addEventListener('change', () => {
+                this.state.filterStatus = filterSelect.value;
+                this.state.tablePage = 1;
+                this.render();
+            });
+            toolbar.appendChild(filterSelect);
+
+            const bulkActions = createElement('div', 'ele2gb-select-bulk-actions');
+            const selectedCount = this.state.selectedPageIds.size;
+            if (selectedCount > 0) {
+                bulkActions.appendChild(createElement('span', 'ele2gb-selection-chip',
+                    formatString(this.strings.selectionChip || '%1$d selected', selectedCount)));
+            }
+            const selectEligibleLink = document.createElement('a');
+            selectEligibleLink.href = '#';
+            selectEligibleLink.textContent = this.strings.selectAllEligible || 'Select all eligible';
+            selectEligibleLink.addEventListener('click', (event) => {
+                event.preventDefault();
+                this.pages.forEach((page) => {
+                    if (page.conversionStatus !== 'converted') {
+                        this.state.selectedPageIds.add(page.id);
+                    }
+                });
+                this.render();
+            });
+            bulkActions.appendChild(selectEligibleLink);
+
+            const clearLink = document.createElement('a');
+            clearLink.href = '#';
+            clearLink.textContent = this.strings.clearSelection || 'Clear selection';
+            clearLink.addEventListener('click', (event) => {
+                event.preventDefault();
+                this.state.selectedPageIds = new Set();
+                this.render();
+            });
+            bulkActions.appendChild(clearLink);
+            toolbar.appendChild(bulkActions);
+            container.appendChild(toolbar);
 
             const tableWrapper = createElement('div', 'ele2gb-table-wrapper');
             const table = createElement('table', 'ele2gb-wizard-table widefat fixed striped');
@@ -1074,8 +1239,7 @@
                 const conversionTd = document.createElement('td');
                 const badgeInfo = STATUS_BADGES[page.conversionStatus] || STATUS_BADGES.not_converted;
                 const badge = createElement('span', 'ele2gb-status-badge ' + (badgeInfo ? badgeInfo.className : ''));
-                const badgeLabel = badgeInfo ? (this.strings[badgeInfo.labelKey] || badgeInfo.labelKey) : (this.strings.statusUnknown || 'Unknown');
-                badge.textContent = badgeLabel;
+                badge.textContent = this.getPageStatusLabel(page.conversionStatus);
                 conversionTd.appendChild(badge);
                 tr.appendChild(conversionTd);
 
@@ -1093,12 +1257,12 @@
                     this.state.disabledMeta.has(page.id) ||
                     (this.state.disableMetaByDefault && !this.state.enabledMeta.has(page.id));
 
-                metaCheckbox.checked = isDisabled;
+                metaCheckbox.checked = !isDisabled;
                 metaCheckbox.addEventListener('change', () => {
-                    this.toggleDisableMeta(page.id, metaCheckbox.checked);
+                    this.toggleDisableMeta(page.id, !metaCheckbox.checked);
                 });
                 metaToggle.appendChild(metaCheckbox);
-                metaToggle.appendChild(createElement('span', null, this.strings.disableMeta || 'Don’t copy meta fields & featured image'));
+                metaToggle.appendChild(createElement('span', null, this.strings.copyMeta || 'Copy metadata and featured image'));
                 actionsTd.appendChild(metaToggle);
                 tr.appendChild(actionsTd);
 
@@ -1115,7 +1279,7 @@
             }
 
             if (this.shouldShowSkipConvertedOption()) {
-                const skipWrapper = createElement('div', 'ele2gb-step-description');
+                const skipWrapper = createElement('div', 'ele2gb-skip-converted-wrapper');
                 const skipCheckbox = document.createElement('input');
                 skipCheckbox.type = 'checkbox';
                 skipCheckbox.checked = this.state.skipConverted;
@@ -1128,7 +1292,6 @@
                 skipLabel.htmlFor = 'ele2gb-skip-converted';
                 skipLabel.textContent = this.strings.skipConverted || 'Skip pages that were already converted';
                 skipWrapper.appendChild(skipCheckbox);
-                skipWrapper.appendChild(createElement('span', null, ' '));
                 skipWrapper.appendChild(skipLabel);
                 container.appendChild(skipWrapper);
             }
@@ -1156,7 +1319,9 @@
 
         renderTemplatesGroup(type, label) {
             const container = createElement('div', 'ele2gb-template-group');
-            container.appendChild(createElement('h3', null, label));
+            if (label) {
+                container.appendChild(createElement('h3', null, label));
+            }
 
             const templates = this.getTemplatesFor(type);
             const selectedSet = type === 'header' ? this.state.selectedHeaderIds : this.state.selectedFooterIds;
@@ -1207,17 +1372,24 @@
                 const titleTd = document.createElement('td');
                 const titleWrapper = createElement('div', 'ele2gb-template-title', template.title);
                 titleTd.appendChild(titleWrapper);
-                const metaLine = createElement('div', 'ele2gb-template-meta');
+                const metaParts = [];
+                if (template.postType) {
+                    metaParts.push(template.postType);
+                }
                 if (template.sourceLabel) {
-                    const source = createElement('span', 'ele2gb-template-source', template.sourceLabel);
-                    metaLine.appendChild(source);
+                    metaParts.push(template.sourceLabel);
+                }
+                if (template.id) {
+                    metaParts.push('ID ' + template.id);
+                }
+                if (template.lastConverted) {
+                    metaParts.push('Last updated ' + template.lastConverted);
+                }
+                if (metaParts.length) {
+                    titleTd.appendChild(createElement('div', 'ele2gb-template-meta', metaParts.join(' · ')));
                 }
                 if (template.isLikelyGlobal) {
-                    const flag = createElement('span', 'ele2gb-template-flag', this.strings.likelyGlobal || 'Likely global');
-                    metaLine.appendChild(flag);
-                }
-                if (metaLine.childNodes.length) {
-                    titleTd.appendChild(metaLine);
+                    titleTd.appendChild(createElement('span', 'ele2gb-template-flag', this.strings.likelyGlobal || 'Likely global'));
                 }
                 tr.appendChild(titleTd);
 
@@ -1279,8 +1451,17 @@
             const container = createElement('div');
             container.appendChild(createElement('h2', 'ele2gb-wizard-step-title', this.strings.headerFooterStepTitle || 'Header & Footer Templates'));
 
-            container.appendChild(this.renderTemplatesGroup('header', this.strings.headersLabel || 'Headers'));
-            container.appendChild(this.renderTemplatesGroup('footer', this.strings.footersLabel || 'Footers'));
+            const headerSection = createElement('div', 'ele2gb-template-section ele2gb-template-section--header');
+            headerSection.appendChild(createElement('p', 'ele2gb-template-section-heading', this.strings.headersLabel || 'Headers'));
+            headerSection.appendChild(this.renderTemplatesGroup('header', ''));
+            container.appendChild(headerSection);
+
+            container.appendChild(createElement('hr', 'ele2gb-template-section-divider'));
+
+            const footerSection = createElement('div', 'ele2gb-template-section ele2gb-template-section--footer');
+            footerSection.appendChild(createElement('p', 'ele2gb-template-section-heading', this.strings.footersLabel || 'Footers'));
+            footerSection.appendChild(this.renderTemplatesGroup('footer', ''));
+            container.appendChild(footerSection);
 
             const buttons = createElement('div', 'ele2gb-wizard-buttons');
             const backBtn = createButton(this.strings.back || 'Back', 'button button-secondary');
@@ -1304,7 +1485,7 @@
         }
 
         renderPagination() {
-            const totalPages = Math.max(1, Math.ceil(this.pages.length / this.state.perPage));
+            const totalPages = Math.max(1, Math.ceil(this.getFilteredPages().length / this.state.perPage));
             if (totalPages <= 1) {
                 return null;
             }
@@ -1333,9 +1514,52 @@
             return pagination;
         }
 
+        getFilteredPages() {
+            let pages = this.pages.slice();
+            const q = (this.state.searchQuery || '').trim().toLowerCase();
+            if (q) {
+                pages = pages.filter(function (page) {
+                    return page.title.toLowerCase().indexOf(q) !== -1;
+                });
+            }
+            const f = this.state.filterStatus || 'all';
+            if (f === 'eligible') {
+                pages = pages.filter(function (page) { return page.conversionStatus !== 'converted'; });
+            } else if (f === 'converted') {
+                pages = pages.filter(function (page) { return page.conversionStatus === 'converted'; });
+            } else if (f === 'failed') {
+                pages = pages.filter(function (page) { return page.conversionStatus === 'error'; });
+            } else if (f === 'not_converted') {
+                pages = pages.filter(function (page) { return page.conversionStatus === 'not_converted'; });
+            }
+            return pages;
+        }
+
         getVisiblePages() {
             const start = (this.state.tablePage - 1) * this.state.perPage;
-            return this.pages.slice(start, start + this.state.perPage);
+            return this.getFilteredPages().slice(start, start + this.state.perPage);
+        }
+
+        getPageStatusLabel(conversionStatus) {
+            if (conversionStatus === 'converted') {
+                return this.strings.statusAlreadyConverted || 'Already converted';
+            }
+            if (conversionStatus === 'error') {
+                return this.strings.statusFailedLastRun || 'Failed last run';
+            }
+            if (conversionStatus === 'not_converted') {
+                return this.strings.statusReady || 'Ready';
+            }
+            const badgeInfo = STATUS_BADGES[conversionStatus];
+            return badgeInfo ? (this.strings[badgeInfo.labelKey] || conversionStatus) : conversionStatus;
+        }
+
+        normalizeResultMessage(message) {
+            if (!message) { return ''; }
+            if (message.indexOf('conversion produced no Gutenberg content') !== -1) {
+                return this.strings.errorNoOutput || 'No Gutenberg output was generated. The source may contain unsupported widgets or empty content.';
+            }
+            return message;
         }
 
         renderConflictStep() {
@@ -1392,9 +1616,40 @@
             return container;
         }
 
+        buildReviewStatTile(value, label) {
+            const tile = createElement('div', 'ele2gb-review-stat');
+            tile.appendChild(createElement('div', 'ele2gb-review-stat-value', String(value)));
+            tile.appendChild(createElement('div', 'ele2gb-review-stat-label', label));
+            return tile;
+        }
+
+        buildReviewSection(title, editStep, bodyBuilder) {
+            const section = createElement('div', 'ele2gb-review-section');
+            const header = createElement('div', 'ele2gb-review-section-header');
+            header.appendChild(createElement('h3', 'ele2gb-review-section-title', title));
+            if (editStep) {
+                const edit = document.createElement('a');
+                edit.href = '#';
+                edit.className = 'ele2gb-review-section-edit';
+                edit.textContent = this.strings.editSection || 'Edit';
+                edit.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.goToStep(editStep);
+                });
+                header.appendChild(edit);
+            }
+            section.appendChild(header);
+            const body = createElement('div', 'ele2gb-review-section-body');
+            bodyBuilder(body);
+            section.appendChild(body);
+            return section;
+        }
+
         renderReviewStep() {
             const container = createElement('div');
             container.appendChild(createElement('h2', 'ele2gb-wizard-step-title', this.strings.reviewTitle || 'Review & Confirm'));
+            container.appendChild(createElement('p', 'ele2gb-step-description',
+                this.strings.reviewDesc || 'Double-check the plan below before starting. You can edit any section from here.'));
 
             const reviewWarnings = this.renderThemeWarnings();
             if (reviewWarnings) {
@@ -1405,75 +1660,130 @@
             const convertedSelected = this.getSelectedPages().filter((page) => page.conversionStatus === 'converted').length;
             const convertCount = this.state.skipConverted ? Math.max(0, selectedCount - convertedSelected) : selectedCount;
             const skippedCount = selectedCount - convertCount;
+            const headerCount = this.state.selectedHeaderIds.size;
+            const footerCount = this.state.selectedFooterIds.size;
 
-            const summary = formatString(this.strings.reviewSummary || '%1$d pages selected — %2$d will be converted, %3$d skipped.', selectedCount, convertCount, skippedCount);
-            const list = document.createElement('ul');
-            list.className = 'ele2gb-review-list';
-            list.appendChild(createElement('li', null, summary));
+            const dashboard = createElement('div', 'ele2gb-review-dashboard');
 
-            const modeLabel = this.state.mode === 'auto' ? (this.strings.modeAutoTitle || 'Convert all pages automatically') : (this.strings.modeCustomTitle || 'Choose specific pages');
-            list.appendChild(createElement('li', null, modeLabel));
-
-            const selectedTheme = this.getSelectedTheme();
-            if (this.willChangeTheme()) {
-                const themeName = (selectedTheme && selectedTheme.name) || (this.state.selectedThemeSlug || '');
-                list.appendChild(createElement('li', null, (this.strings.themeSelectPrompt || 'Select a block theme for best compatibility.') + ': ' + themeName));
-                if (this.shouldCopyCss()) {
-                    list.appendChild(createElement('li', null, this.strings.copyAdditionalCss || 'Copy Additional CSS from the current theme'));
-                }
-            } else if (this.getCurrentThemeName()) {
-                list.appendChild(createElement('li', null, (this.strings.themeKeepCurrent || 'Keep current theme') + ': ' + this.getCurrentThemeName()));
-            }
-
-            if (this.shouldShowConflictStep()) {
-                let policyLabel = '';
-                switch (this.state.conflictPolicy) {
-                    case 'overwrite':
-                        policyLabel = this.strings.conflictOverwrite || 'Update existing pages in place (overwrite)';
-                        break;
-                    case 'duplicate':
-                        policyLabel = this.strings.conflictDuplicate || 'Create duplicates with “(Converted)” suffix';
-                        break;
-                    default:
-                        policyLabel = this.strings.conflictSkip || 'Skip those pages';
-                }
-                list.appendChild(createElement('li', null, policyLabel));
-            }
-
-            if (this.state.disabledMeta.size > 0) {
-                const metaNote = formatString(this.strings.metaDisabled || '%1$d pages will be converted without copying meta fields or featured image.', this.state.disabledMeta.size);
-                list.appendChild(createElement('li', null, metaNote));
-            }
-
+            // Stat tiles row
+            const stats = createElement('div', 'ele2gb-review-stats');
+            stats.appendChild(this.buildReviewStatTile(convertCount, this.strings.reviewStatPages || 'Pages to convert'));
             if (this.state.mode === 'custom') {
-                const headerCount = this.state.selectedHeaderIds.size;
-                const footerCount = this.state.selectedFooterIds.size;
-                if (headerCount || footerCount) {
-                    list.appendChild(createElement('li', null, formatString(this.strings.headerFooterSummary || '%1$d headers and %2$d footers selected for conversion.', headerCount, footerCount)));
-                    const defaultHeader = headerCount ? this.getTemplateById(this.state.defaultHeaderId) : null;
-                    const defaultFooter = footerCount ? this.getTemplateById(this.state.defaultFooterId) : null;
-                    const headerTitle = defaultHeader ? defaultHeader.title : '—';
-                    const footerTitle = defaultFooter ? defaultFooter.title : '—';
-                    list.appendChild(createElement('li', null, formatString(this.strings.headerFooterDefaults || 'Default header: %1$s — Default footer: %2$s', headerTitle, footerTitle)));
+                stats.appendChild(this.buildReviewStatTile(headerCount, this.strings.reviewStatHeaders || 'Headers'));
+                stats.appendChild(this.buildReviewStatTile(footerCount, this.strings.reviewStatFooters || 'Footers'));
+            }
+            if (skippedCount > 0) {
+                stats.appendChild(this.buildReviewStatTile(skippedCount, this.strings.reviewStatSkipped || 'To skip'));
+            }
+            dashboard.appendChild(stats);
+
+            // Scope section
+            dashboard.appendChild(this.buildReviewSection(
+                this.strings.reviewSectionScope || 'Scope',
+                'mode',
+                (body) => {
+                    const ul = document.createElement('ul');
+                    const modeLabel = this.state.mode === 'auto'
+                        ? (this.strings.modeAutoTitle || 'Convert all pages automatically')
+                        : (this.strings.modeCustomTitle || 'Choose specific pages');
+                    ul.appendChild(createElement('li', null, modeLabel));
+                    ul.appendChild(createElement('li', null, formatString('%1$d pages selected, %2$d will convert, %3$d skipped', selectedCount, convertCount, skippedCount)));
+                    if (this.state.disabledMeta.size > 0) {
+                        ul.appendChild(createElement('li', null,
+                            formatString(this.strings.metaDisabled || '%1$d pages will be converted without copying meta fields or featured image.', this.state.disabledMeta.size)
+                        ));
+                    }
+                    body.appendChild(ul);
                 }
+            ));
+
+            // Theme section
+            dashboard.appendChild(this.buildReviewSection(
+                this.strings.reviewSectionTheme || 'Theme',
+                'theme',
+                (body) => {
+                    const selectedTheme = this.getSelectedTheme();
+                    const ul = document.createElement('ul');
+                    if (this.willChangeTheme()) {
+                        const themeName = (selectedTheme && selectedTheme.name) || (this.state.selectedThemeSlug || '');
+                        ul.appendChild(createElement('li', null, 'Switching to: ' + themeName));
+                        if (this.shouldCopyCss()) {
+                            ul.appendChild(createElement('li', null, this.strings.copyAdditionalCss || 'Copy Additional CSS from the current theme'));
+                        }
+                    } else if (this.getCurrentThemeName()) {
+                        ul.appendChild(createElement('li', null, (this.strings.themeKeepCurrent || 'Keep current theme') + ': ' + this.getCurrentThemeName()));
+                    }
+                    body.appendChild(ul);
+                }
+            ));
+
+            // Templates section (custom mode)
+            if (this.state.mode === 'custom' && (headerCount || footerCount)) {
+                dashboard.appendChild(this.buildReviewSection(
+                    this.strings.reviewSectionTemplates || 'Templates',
+                    'templates',
+                    (body) => {
+                        const ul = document.createElement('ul');
+                        ul.appendChild(createElement('li', null, formatString(this.strings.headerFooterSummary || '%1$d headers and %2$d footers selected for conversion.', headerCount, footerCount)));
+                        const defaultHeader = headerCount ? this.getTemplateById(this.state.defaultHeaderId) : null;
+                        const defaultFooter = footerCount ? this.getTemplateById(this.state.defaultFooterId) : null;
+                        const headerTitle = defaultHeader ? defaultHeader.title : '—';
+                        const footerTitle = defaultFooter ? defaultFooter.title : '—';
+                        ul.appendChild(createElement('li', null, formatString(this.strings.headerFooterDefaults || 'Default header: %1$s — Default footer: %2$s', headerTitle, footerTitle)));
+                        body.appendChild(ul);
+                    }
+                ));
             }
 
-            container.appendChild(list);
-            container.appendChild(createElement('p', 'ele2gb-wizard-footer-note', this.strings.backgroundInfo || 'Conversion runs in the background. You can safely close this page.'));
+            // Conflicts section
+            if (this.shouldShowConflictStep()) {
+                dashboard.appendChild(this.buildReviewSection(
+                    this.strings.reviewSectionConflicts || 'Conflicts',
+                    'conflicts',
+                    (body) => {
+                        let policyLabel = '';
+                        switch (this.state.conflictPolicy) {
+                            case 'overwrite':
+                                policyLabel = this.strings.conflictOverwrite || 'Update existing pages in place (overwrite)';
+                                break;
+                            case 'duplicate':
+                                policyLabel = this.strings.conflictDuplicate || 'Create duplicates with \u201C(Converted)\u201D suffix';
+                                break;
+                            default:
+                                policyLabel = this.strings.conflictSkip || 'Skip those pages';
+                        }
+                        const ul = document.createElement('ul');
+                        ul.appendChild(createElement('li', null, policyLabel));
+                        body.appendChild(ul);
+                    }
+                ));
+            }
+
+            container.appendChild(dashboard);
+
+            // Safety note
+            const safety = createElement('div', 'ele2gb-safety-note');
+            safety.appendChild(createElement('span', 'ele2gb-safety-note-icon', '\u{1F6E1}'));
+            safety.appendChild(createElement('span', null, this.strings.safetyNote || 'Recommended to run on a staging environment if your site is live. Conversion runs in the background — you can safely close this page.'));
+            container.appendChild(safety);
 
             const buttons = createElement('div', 'ele2gb-wizard-buttons');
             const backBtn = createButton(this.strings.back || 'Back', 'button button-secondary');
             backBtn.addEventListener('click', () => this.goToPrevious());
-            buttons.appendChild(backBtn);
+            const buttonsLeft = createElement('div', 'ele2gb-wizard-buttons-left');
+            buttonsLeft.appendChild(backBtn);
+            buttons.appendChild(buttonsLeft);
 
-            const startBtn = createButton(this.strings.startConversion || 'Start Conversion', 'button button-primary');
+            const buttonsRight = createElement('div', 'ele2gb-wizard-buttons-right');
+            const startBtn = createButton(this.strings.startConversion || 'Start Conversion', 'button button-primary button-large');
             startBtn.disabled = this.state.isSubmitting;
             startBtn.addEventListener('click', () => {
                 if (!this.state.isSubmitting) {
                     this.startConversion();
                 }
             });
-            buttons.appendChild(startBtn);
+            buttonsRight.appendChild(startBtn);
+            buttons.appendChild(buttonsRight);
             container.appendChild(buttons);
 
             return container;
@@ -1509,10 +1819,18 @@
             const successCount = job.counts && job.counts.success ? job.counts.success : 0;
             const skippedCount = job.counts && job.counts.skipped ? job.counts.skipped : 0;
             const errorCount = job.counts && job.counts.error ? job.counts.error : 0;
-            summary.appendChild(createElement('div', null, (this.strings.converted || 'Converted') + ': ' + successCount));
-            summary.appendChild(createElement('div', null, (this.strings.skipped || 'Skipped') + ': ' + skippedCount));
-            summary.appendChild(createElement('div', null, (this.strings.errors || 'Errors') + ': ' + errorCount));
-            summary.appendChild(createElement('div', null, (this.strings.duration || 'Duration') + ': ' + formatDuration(job.duration)));
+
+            const makeTile = function (value, label, modifier) {
+                const tile = createElement('div', 'ele2gb-stat-tile' + (modifier ? ' ele2gb-stat-tile--' + modifier : ''));
+                tile.appendChild(createElement('div', 'ele2gb-stat-tile-value', String(value)));
+                tile.appendChild(createElement('div', 'ele2gb-stat-tile-label', label));
+                return tile;
+            };
+
+            summary.appendChild(makeTile(successCount, this.strings.converted || 'Converted', successCount > 0 ? 'success' : 'muted'));
+            summary.appendChild(makeTile(skippedCount, this.strings.skipped || 'Skipped', 'muted'));
+            summary.appendChild(makeTile(errorCount, this.strings.errors || 'Errors', errorCount > 0 ? 'error' : 'muted'));
+            summary.appendChild(makeTile(formatDuration(job.duration), this.strings.duration || 'Duration', 'muted'));
             container.appendChild(summary);
 
             let message = '';
@@ -1529,11 +1847,6 @@
             }
 
             const actions = createElement('div', 'ele2gb-results-actions');
-            const viewLink = document.createElement('a');
-            viewLink.className = 'button button-secondary';
-            viewLink.href = 'edit.php?post_type=page';
-            viewLink.textContent = this.strings.viewPages || 'View converted pages';
-            actions.appendChild(viewLink);
             if (job.status !== 'completed') {
                 const cancelBtn = createButton(this.strings.cancel || 'Cancel', 'button button-secondary');
                 cancelBtn.addEventListener('click', () => {
@@ -1550,26 +1863,88 @@
                 const aiPages = this.getAiImprovePages();
                 if (aiPages.length > 0 && this.config.aiImproveNonce) {
                     const count = aiPages.length;
-                    const improveAllBtn = createButton(
-                        formatString(this.strings.aiImproveAllBtn || 'Improve all with AI (%1$d)', count),
-                        'button button-primary'
-                    );
-                    improveAllBtn.addEventListener('click', () => this.initAiImprove());
+                    const improveAllBtn = this.buildActionPill({
+                        variant: 'ai-primary',
+                        label: formatString(this.strings.improveSuccessful || 'Improve %1$d items with AI', count),
+                        iconPath: [
+                            'M12 2v4', 'M12 18v4', 'M4.93 4.93l2.83 2.83', 'M16.24 16.24l2.83 2.83',
+                            'M2 12h4', 'M18 12h4', 'M4.93 19.07l2.83-2.83', 'M16.24 7.76l2.83-2.83'
+                        ],
+                        onClick: () => this.initAiImprove()
+                    });
                     actions.appendChild(improveAllBtn);
                 }
-                const startNew = createButton(this.strings.startNew || 'Start new conversion', 'button button-secondary');
-                startNew.addEventListener('click', () => this.resetWizard());
-                actions.appendChild(startNew);
+                actions.appendChild(this.buildActionPill({
+                    variant: 'view-secondary',
+                    href: 'edit.php?post_type=page',
+                    label: this.strings.viewPages || 'View converted pages',
+                    iconPath: [
+                        'M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z',
+                        'M14 2v6h6',
+                        'M16 13H8', 'M16 17H8', 'M10 9H8'
+                    ]
+                }));
+                actions.appendChild(this.buildActionPill({
+                    variant: 'neutral',
+                    label: this.strings.startNew || 'Start new conversion',
+                    iconPath: ['M12 5v14', 'M5 12h14'],
+                    onClick: () => this.resetWizard()
+                }));
             }
             container.appendChild(actions);
 
             return container;
         }
 
-        renderResultsTable() {
-            if (!this.state.job || !Array.isArray(this.state.job.results) || !this.state.job.results.length) {
-                return null;
+        buildActionPill(opts) {
+            const svgNS = 'http://www.w3.org/2000/svg';
+            const el = opts.href
+                ? document.createElement('a')
+                : document.createElement('button');
+            el.className = 'ele2gb-action-pill ele2gb-action-pill--' + (opts.variant || 'default');
+            if (opts.href) {
+                el.href = opts.href;
+                if (opts.external) {
+                    el.target = '_blank';
+                    el.rel = 'noopener noreferrer';
+                }
+            } else {
+                el.type = 'button';
             }
+            if (opts.title) { el.title = opts.title; }
+            if (opts.onClick) {
+                el.addEventListener('click', opts.onClick);
+            }
+            if (opts.iconPath) {
+                const svg = document.createElementNS(svgNS, 'svg');
+                svg.setAttribute('class', 'ele2gb-action-pill-icon');
+                svg.setAttribute('viewBox', '0 0 24 24');
+                svg.setAttribute('fill', 'none');
+                svg.setAttribute('stroke', 'currentColor');
+                svg.setAttribute('stroke-width', '2');
+                svg.setAttribute('stroke-linecap', 'round');
+                svg.setAttribute('stroke-linejoin', 'round');
+                svg.setAttribute('aria-hidden', 'true');
+                if (Array.isArray(opts.iconPath)) {
+                    opts.iconPath.forEach(function (d) {
+                        const p = document.createElementNS(svgNS, 'path');
+                        p.setAttribute('d', d);
+                        svg.appendChild(p);
+                    });
+                } else {
+                    const p = document.createElementNS(svgNS, 'path');
+                    p.setAttribute('d', opts.iconPath);
+                    svg.appendChild(p);
+                }
+                el.appendChild(svg);
+            }
+            if (opts.label) {
+                el.appendChild(createElement('span', 'ele2gb-action-pill-label', opts.label));
+            }
+            return el;
+        }
+
+        buildResultsTable(results) {
             const wrapper = createElement('div', 'ele2gb-results-table ele2gb-table-wrapper');
             const table = createElement('table', 'ele2gb-wizard-table');
             const thead = document.createElement('thead');
@@ -1588,7 +1963,7 @@
             table.appendChild(thead);
 
             const tbody = document.createElement('tbody');
-            this.state.job.results.forEach((result) => {
+            results.forEach((result) => {
                 const tr = document.createElement('tr');
 
                 const titleTd = document.createElement('td');
@@ -1623,8 +1998,9 @@
                 const badgeInfo = STATUS_BADGES[resultConfig.badge] || STATUS_BADGES.not_converted;
                 const badge = createElement('span', 'ele2gb-status-badge ' + badgeInfo.className, this.strings[resultConfig.labelKey] || result.status);
                 statusTd.appendChild(badge);
-                if (result.message) {
-                    statusTd.appendChild(createElement('div', null, result.message));
+                const displayMessage = this.normalizeResultMessage(result.message);
+                if (displayMessage) {
+                    statusTd.appendChild(createElement('div', null, displayMessage));
                 }
                 tr.appendChild(statusTd);
 
@@ -1635,38 +2011,57 @@
 
                 const actionsTd = document.createElement('td');
                 actionsTd.className = 'actions';
+                const actionGroup = createElement('div', 'ele2gb-action-group');
+
                 if (result.viewUrl) {
-                    const viewLink = document.createElement('a');
-                    viewLink.href = result.viewUrl;
-                    viewLink.textContent = this.strings.viewConverted || 'View converted';
-                    viewLink.target = '_blank';
-                    viewLink.rel = 'noopener noreferrer';
-                    actionsTd.appendChild(viewLink);
+                    actionGroup.appendChild(this.buildActionPill({
+                        variant: 'view',
+                        href: result.viewUrl,
+                        external: true,
+                        label: this.strings.viewConverted || 'View',
+                        title: this.strings.viewConvertedTooltip || 'View converted page',
+                        iconPath: [
+                            'M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z',
+                            'M12 15a3 3 0 100-6 3 3 0 000 6z'
+                        ]
+                    }));
                 }
                 if (
-                    result.type === 'page' &&
+                    (result.type === 'page' || result.type === 'header' || result.type === 'footer') &&
                     result.status === 'success' &&
                     Number(result.convertedPostId || 0) > 0 &&
                     this.config.aiImproveBaseUrl
                 ) {
-                    const improveLink = document.createElement('a');
                     const improveUrl = new URL(this.config.aiImproveBaseUrl, window.location.origin);
                     improveUrl.searchParams.set('target_id', String(result.convertedPostId));
                     improveUrl.searchParams.set('source_id', String(result.id));
-                    improveLink.href = improveUrl.toString();
-                    improveLink.textContent = this.strings.improveWithAi || 'Improve Page with AI';
-                    actionsTd.appendChild(improveLink);
+                    actionGroup.appendChild(this.buildActionPill({
+                        variant: 'ai',
+                        href: improveUrl.toString(),
+                        label: this.strings.improveWithAi || 'Improve with AI',
+                        title: this.strings.improveWithAiTooltip || 'Improve this page with AI',
+                        iconPath: [
+                            'M12 2v4', 'M12 18v4', 'M4.93 4.93l2.83 2.83', 'M16.24 16.24l2.83 2.83',
+                            'M2 12h4', 'M18 12h4', 'M4.93 19.07l2.83-2.83', 'M16.24 7.76l2.83-2.83'
+                        ]
+                    }));
                 }
                 if (result.status === 'error' && result.type === 'page') {
-                    const retryLink = document.createElement('a');
-                    retryLink.href = '#';
-                    retryLink.textContent = this.strings.retry || 'Retry';
-                    retryLink.addEventListener('click', (event) => {
-                        event.preventDefault();
-                        this.retryConversionForPage(result.id, result.keepMeta);
-                    });
-                    actionsTd.appendChild(retryLink);
+                    actionGroup.appendChild(this.buildActionPill({
+                        variant: 'retry',
+                        label: this.strings.retry || 'Retry',
+                        title: this.strings.retryTooltip || 'Retry this conversion',
+                        iconPath: [
+                            'M1 4v6h6',
+                            'M3.51 15a9 9 0 102.13-9.36L1 10'
+                        ],
+                        onClick: (event) => {
+                            event.preventDefault();
+                            this.retryConversionForPage(result.id, result.keepMeta);
+                        }
+                    }));
                 }
+                actionsTd.appendChild(actionGroup);
                 tr.appendChild(actionsTd);
 
                 tbody.appendChild(tr);
@@ -1674,6 +2069,25 @@
             table.appendChild(tbody);
             wrapper.appendChild(table);
             return wrapper;
+        }
+
+        renderResultsTable() {
+            if (!this.state.job || !Array.isArray(this.state.job.results) || !this.state.job.results.length) {
+                return null;
+            }
+            const results = this.state.job.results;
+            const errors    = results.filter(function (r) { return r.status === 'error' || r.status === 'partial'; });
+            const successes = results.filter(function (r) { return r.status === 'success' || r.status === 'skipped'; });
+            const container = createElement('div', 'ele2gb-results-sections');
+            if (errors.length) {
+                container.appendChild(createElement('h3', 'ele2gb-results-section-title ele2gb-results-section-title--error', this.strings.resultsNeedsAttention || 'Needs attention'));
+                container.appendChild(this.buildResultsTable(errors));
+            }
+            if (successes.length) {
+                container.appendChild(createElement('h3', 'ele2gb-results-section-title ele2gb-results-section-title--success', this.strings.resultsCompleted || 'Completed successfully'));
+                container.appendChild(this.buildResultsTable(successes));
+            }
+            return container;
         }
 
         // ── AI Improve step ──────────────────────────────────────────────────
@@ -1726,7 +2140,7 @@
             this.render();
 
             const page = ai.pages[index];
-            this.showAiOverlay(page.title, index + 1, ai.pages.length);
+            this.showAiOverlay(page.title, index + 1, ai.pages.length, 'analyzing');
 
             const formData = new FormData();
             formData.append('action', 'ele2gb_ai_improve_single');
@@ -1758,7 +2172,7 @@
                 });
         }
 
-        showAiOverlay(pageTitle, current, total) {
+        showAiOverlay(pageTitle, current, total, stage) {
             this.hideAiOverlay();
 
             // Overlay — inline styles guarantee visibility regardless of CSS load order
@@ -1821,11 +2235,47 @@
             title.style.cssText = 'display:block;font-size:16px;font-weight:700;color:#1d2327;';
             card.appendChild(title);
 
-            // Description message
+            // Stage dots
+            const stageStrip = document.createElement('div');
+            stageStrip.style.cssText = 'display:flex;align-items:center;gap:8px;margin-top:6px;';
+            const stageKeys = ['analyzing', 'generating', 'saving'];
+            const stageLabels = {
+                analyzing:  this.strings.aiStageAnalyzing  || 'Analyzing\u2026',
+                generating: this.strings.aiStageGenerating || 'Generating\u2026',
+                saving:     this.strings.aiStageSaving     || 'Saving\u2026',
+            };
+            const dots = {};
+            stageKeys.forEach(function (k, i) {
+                if (i > 0) {
+                    const sep = document.createElement('span');
+                    sep.style.cssText = 'width:18px;height:1px;background:#dcdcde;';
+                    stageStrip.appendChild(sep);
+                }
+                const dot = document.createElement('span');
+                dot.style.cssText = 'width:8px;height:8px;border-radius:50%;background:#dcdcde;transition:background 200ms ease;';
+                dots[k] = dot;
+                stageStrip.appendChild(dot);
+            });
+            card.appendChild(stageStrip);
+
+            // Description message with stage cycling
             const msg = document.createElement('span');
-            msg.textContent = this.strings.aiLoaderMessage || 'Analysing page structure and generating improvements. This may take up to 2 minutes.';
-            msg.style.cssText = 'display:block;margin-top:4px;font-size:13px;color:#646970;line-height:1.5;';
+            const currentStage = stage || 'analyzing';
+            msg.textContent = stageLabels[currentStage];
+            msg.style.cssText = 'display:block;margin-top:2px;font-size:13px;color:#2271b1;font-weight:600;line-height:1.5;';
             card.appendChild(msg);
+            dots[currentStage].style.background = '#2271b1';
+
+            const timerIds = [];
+            timerIds.push(window.setTimeout(function () {
+                msg.textContent = stageLabels.generating;
+                dots.generating.style.background = '#2271b1';
+            }, 6000));
+            timerIds.push(window.setTimeout(function () {
+                msg.textContent = stageLabels.saving;
+                dots.saving.style.background = '#2271b1';
+            }, 22000));
+            overlay.dataset.timerIds = JSON.stringify(timerIds);
 
             // Separator + page name + counter
             const sep = document.createElement('div');
@@ -1849,6 +2299,10 @@
         hideAiOverlay() {
             const existing = document.getElementById('ele2gb-bulk-ai-overlay');
             if (existing) {
+                try {
+                    const ids = JSON.parse(existing.dataset.timerIds || '[]');
+                    ids.forEach(function (id) { window.clearTimeout(id); });
+                } catch (e) {}
                 existing.remove();
             }
         }
@@ -1887,15 +2341,64 @@
             container.appendChild(createElement('h2', 'ele2gb-wizard-step-title',
                 this.strings.aiImproveTitle || 'AI Improvement'));
 
-            // ── Pre-start warning ────────────────────────────────────────────
+            // ── Pre-start panel ──────────────────────────────────────────────
             if (!ai || !ai.started) {
+                const apiConfigured = !!this.config.aiConfigured;
+                const itemCount = ai ? ai.pages.length : 0;
+                const allReady = apiConfigured && itemCount > 0;
+
+                const panel = createElement('div', 'ele2gb-ai-readiness-panel');
+                const panelHeader = createElement('div', 'ele2gb-ai-readiness-header');
+                panelHeader.appendChild(createElement('h3', 'ele2gb-ai-readiness-title',
+                    this.strings.aiReadinessTitle || 'Pre-flight checklist'));
+                if (allReady) {
+                    panelHeader.appendChild(createElement('span', 'ele2gb-ai-readiness-all-ready',
+                        this.strings.aiReadinessAllReady || '\u2713 Ready to start'));
+                }
+                panel.appendChild(panelHeader);
+
+                const makeRow = function (ok, label) {
+                    const row = createElement('div', 'ele2gb-ai-readiness-row');
+                    const icon = createElement('div', 'ele2gb-ai-readiness-icon ele2gb-ai-readiness-icon--' + (ok ? 'ok' : 'error'), ok ? '\u2713' : '\u00D7');
+                    row.appendChild(icon);
+                    row.appendChild(createElement('span', 'ele2gb-ai-readiness-status' + (ok ? '' : ' is-invalid'), label));
+                    return row;
+                };
+                const makeInfoRow = function (label) {
+                    const row = createElement('div', 'ele2gb-ai-readiness-row');
+                    const icon = createElement('div', 'ele2gb-ai-readiness-icon ele2gb-ai-readiness-icon--info', 'i');
+                    row.appendChild(icon);
+                    row.appendChild(createElement('span', null, label));
+                    return row;
+                };
+
+                panel.appendChild(makeRow(apiConfigured,
+                    apiConfigured
+                        ? (this.strings.aiReadinessApiValid || 'API key configured')
+                        : (this.strings.aiReadinessApiInvalid || 'API key not configured')
+                ));
+                panel.appendChild(makeRow(itemCount > 0, itemCount + ' item' + (itemCount !== 1 ? 's' : '') + ' ready for improvement'));
+                panel.appendChild(makeInfoRow(formatString(this.strings.aiReadinessCredits || 'Estimated: ~%1$d API call(s), ~1–2 minutes per item', itemCount)));
+
+                container.appendChild(panel);
+
+                if (!apiConfigured) {
+                    const apiAlert = createElement('div', 'ele2gb-alert ele2gb-alert-error');
+                    apiAlert.appendChild(document.createTextNode(this.strings.aiReadinessApiMissing || 'AI features require a valid API key. '));
+                    const settingsLink = document.createElement('a');
+                    settingsLink.href = 'admin.php?page=gutenberg-settings';
+                    settingsLink.textContent = this.strings.goToSettings || 'Go to Settings \u2192';
+                    apiAlert.appendChild(settingsLink);
+                    container.appendChild(apiAlert);
+                }
+
                 const warning = createElement('div', 'ele2gb-ai-warning-notice');
-                const icon = createElement('span', 'ele2gb-ai-warning-icon', '⚠');
+                const icon = createElement('span', 'ele2gb-ai-warning-icon', '\u26A0');
                 const text = createElement('div', 'ele2gb-ai-warning-text');
                 text.appendChild(createElement('strong', null,
-                    this.strings.aiImproveWarningTitle || 'Before you start'));
+                    this.strings.aiImproveWarningTitle || 'AI credits will be used'));
                 text.appendChild(createElement('p', null,
-                    this.strings.aiImproveWarning || 'This process calls the AI API once per item. Each call consumes API credits and may take 1–2 minutes per item. Make sure your API key has sufficient credits before starting.'));
+                    this.strings.aiImproveWarning || 'This will use AI credits once per selected item. Make sure your API key has sufficient credits before starting.'));
                 warning.appendChild(icon);
                 warning.appendChild(text);
                 container.appendChild(warning);
@@ -2069,6 +2572,7 @@
                     this.strings.aiImproveStart || 'Start AI Improvement',
                     'button button-primary'
                 );
+                startBtn.disabled = !this.config.aiConfigured;
                 startBtn.addEventListener('click', () => this.startAiImprove());
                 actions.appendChild(startBtn);
                 const backBtn = createButton(this.strings.back || 'Back', 'button button-secondary');

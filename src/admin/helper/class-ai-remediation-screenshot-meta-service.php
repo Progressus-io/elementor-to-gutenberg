@@ -12,10 +12,17 @@
 namespace Progressus\Gutenberg\Admin\Helper;
 
 use function current_time;
+use function get_option;
 use function get_permalink;
 use function get_post_meta;
+use function get_post_status;
+use function get_post_type;
+use function home_url;
 use function implode;
+use function is_wp_error;
+use function update_option;
 use function update_post_meta;
+use function wp_insert_post;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -176,8 +183,13 @@ class AI_Remediation_Screenshot_Meta_Service {
 			);
 		}
 
-		$source_url = (string) get_permalink( $source_id );
-		$target_url = (string) get_permalink( $target_id );
+		if ( 'elementor_library' === get_post_type( $source_id ) ) {
+			$source_url = home_url( '/' );
+			$target_url = self::get_or_create_preview_page_url();
+		} else {
+			$source_url = (string) get_permalink( $source_id );
+			$target_url = (string) get_permalink( $target_id );
+		}
 
 		if ( '' === $source_url || '' === $target_url ) {
 			$error = __( 'Could not resolve public URLs for the source or target page.', 'elementor-to-gutenberg' );
@@ -220,5 +232,40 @@ class AI_Remediation_Screenshot_Meta_Service {
 			'success' => true,
 			'error'   => '',
 		);
+	}
+
+	/**
+	 * Get or create the dedicated preview page used for header/footer screenshots.
+	 *
+	 * The page is created once, its ID stored in the _etg_hf_preview_page_id option,
+	 * and reused on every subsequent call. If the stored page is missing or no longer
+	 * published a new one is created to replace it.
+	 *
+	 * @return string Public permalink of the preview page, or home_url('/') on failure.
+	 */
+	private static function get_or_create_preview_page_url(): string {
+		$option_key = '_etg_hf_preview_page_id';
+		$page_id    = (int) get_option( $option_key, 0 );
+
+		if ( $page_id > 0 && 'publish' === get_post_status( $page_id ) ) {
+			return (string) get_permalink( $page_id );
+		}
+
+		$new_id = wp_insert_post(
+			array(
+				'post_title'   => 'ETG Header & Footer Preview',
+				'post_content' => '<!-- wp:paragraph --><p>This page is used by the Elementor to Gutenberg plugin to preview header and footer templates.</p><!-- /wp:paragraph -->',
+				'post_status'  => 'publish',
+				'post_type'    => 'page',
+			)
+		);
+
+		if ( is_wp_error( $new_id ) || $new_id <= 0 ) {
+			return home_url( '/' );
+		}
+
+		update_option( $option_key, $new_id );
+
+		return (string) get_permalink( $new_id );
 	}
 }

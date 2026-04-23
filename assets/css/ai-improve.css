@@ -89,3 +89,47 @@
 	font-size: 13px;
 	line-height: 1.5;
 }
+
+/* ── Refinement section ───────────────────────────────────────────────────── */
+
+.ele2gb-refine-suggestions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 16px;
+	max-width: 800px;
+}
+
+.ele2gb-refine-suggestions-label {
+	font-size: 13px;
+	color: #646970;
+	font-weight: 600;
+	flex-shrink: 0;
+}
+
+.ele2gb-suggestion-chip {
+	display: inline-flex;
+	align-items: center;
+	padding: 4px 12px;
+	background: #f0f6fc;
+	border: 1px solid #c3d4e4;
+	border-radius: 20px;
+	font-size: 12px;
+	color: #2271b1;
+	cursor: pointer;
+	transition: background 0.15s, border-color 0.15s, color 0.15s;
+	line-height: 1.5;
+}
+
+.ele2gb-suggestion-chip:hover {
+	background: #2271b1;
+	border-color: #2271b1;
+	color: #fff;
+}
+
+.ele2gb-suggestion-chip--active {
+	background: #135e96;
+	border-color: #135e96;
+	color: #fff;
+}

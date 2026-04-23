@@ -30,12 +30,14 @@ use function esc_url;
 use function get_post;
 use function get_post_field;
 use function get_post_meta;
+use function get_post_type;
 use function get_the_title;
 use function get_transient;
 use function is_array;
 use function plugins_url;
 use function sanitize_key;
 use function sanitize_text_field;
+use function sanitize_textarea_field;
 use function trim;
 use function set_transient;
 use function sprintf;
@@ -57,6 +59,7 @@ class AI_Improvement_Admin {
 	public const MENU_SLUG = 'ele2gb-ai-improvement';
 
 	private const NONCE_AUTO_IMPROVE = 'ele2gb_ai_auto_improve';
+	private const NONCE_REFINE       = 'ele2gb_ai_refine';
 
 	/**
 	 * Singleton instance.
@@ -83,6 +86,7 @@ class AI_Improvement_Admin {
 		add_action( 'admin_menu', array( $this, 'register_menu' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 		add_action( 'admin_post_ele2gb_ai_auto_improve', array( $this, 'handle_auto_improve' ) );
+		add_action( 'admin_post_ele2gb_ai_refine', array( $this, 'handle_refine' ) );
 		add_action( 'admin_post_ele2gb_ai_regenerate_screenshots', array( $this, 'handle_regenerate_screenshots' ) );
 	}
 
@@ -118,6 +122,8 @@ class AI_Improvement_Admin {
 			'ele2gbAiImprove',
 			array(
 				'processingLabel' => __( 'Processing…', 'elementor-to-gutenberg' ),
+				'improvingLabel'  => __( 'Improving with AI…', 'elementor-to-gutenberg' ),
+				'refiningLabel'   => __( 'Refining with AI…', 'elementor-to-gutenberg' ),
 			)
 		);
 	}
@@ -299,6 +305,13 @@ class AI_Improvement_Admin {
 		}
 		$elementor_json = (string) $elementor_json;
 
+		$current_css = self::fix_css_namespace( self::read_post_css( $target_id ), $source_id, $target_id );
+
+		$template_type = '';
+		if ( 'elementor_library' === get_post_type( $source_id ) ) {
+			$template_type = (string) get_post_meta( $source_id, '_elementor_template_type', true );
+		}
+
 		$prompt = AI_Prompt_Builder::build(
 			array(
 				'source_id'         => $source_id,
@@ -307,6 +320,8 @@ class AI_Improvement_Admin {
 				'target_title'      => get_the_title( $target_id ),
 				'elementor_json'    => $elementor_json,
 				'gutenberg_content' => $gutenberg_content,
+				'current_css'       => $current_css,
+				'template_type'     => $template_type,
 			)
 		);
 
@@ -316,14 +331,31 @@ class AI_Improvement_Admin {
 		$api_result = Claude_Api_Service::send( $prompt, $elementor_shot, $gutenberg_shot );
 
 		if ( ! $api_result['success'] ) {
+			self::log_improvement( array(
+				'step'      => 'api_failed',
+				'target_id' => $target_id,
+				'error'     => $api_result['error'],
+			) );
 			return $failure( $api_result['error'], 'ai_failed' );
 		}
 
 		$parsed           = Claude_Api_Service::parse_response( $api_result['content'] );
-		$css_result       = $parsed['css'];
+		$css_result       = self::fix_css_namespace( $parsed['css'], $source_id, $target_id );
 		$gutenberg_result = $parsed['gutenberg'];
 
+		self::log_improvement( array(
+			'step'              => 'parse_complete',
+			'target_id'         => $target_id,
+			'css_length'        => strlen( $css_result ),
+			'gutenberg_length'  => strlen( $gutenberg_result ),
+			'gutenberg_preview' => substr( $gutenberg_result, 0, 120 ),
+		) );
+
 		if ( '' === trim( $gutenberg_result ) ) {
+			self::log_improvement( array(
+				'step'      => 'parse_failed_empty_gutenberg',
+				'target_id' => $target_id,
+			) );
 			return $failure(
 				__( 'No valid Gutenberg content could be parsed from the AI response.', 'elementor-to-gutenberg' ),
 				'ai_parse_failed'
@@ -339,11 +371,26 @@ class AI_Improvement_Admin {
 		);
 
 		if ( is_wp_error( $update_result ) ) {
+			self::log_improvement( array(
+				'step'      => 'wp_update_post_failed',
+				'target_id' => $target_id,
+				'error'     => $update_result->get_error_message(),
+			) );
 			return $failure( $update_result->get_error_message(), 'update_failed' );
 		}
 
+		self::log_improvement( array(
+			'step'          => 'wp_update_post_success',
+			'target_id'     => $target_id,
+			'returned_id'   => $update_result,
+		) );
+
 		if ( '' !== trim( $css_result ) ) {
-			External_CSS_Service::append_post_css( $target_id, $css_result );
+			External_CSS_Service::save_post_css( $target_id, $css_result );
+		}
+
+		if ( 'elementor_library' === get_post_type( $source_id ) ) {
+			External_CSS_Service::register_global_css_post( $target_id );
 		}
 
 		$workspace                           = AI_Workspace_Repository::get( $target_id );
@@ -357,6 +404,245 @@ class AI_Improvement_Admin {
 		update_post_meta( $target_id, '_ele2gb_last_ai_improved', current_time( 'mysql' ) );
 
 		return array( 'success' => true, 'error' => '', 'notice' => 'updated' );
+	}
+
+	/**
+	 * Append a diagnostic log entry to the same log file used by Claude_Api_Service.
+	 *
+	 * @param array $data Associative array of fields to log.
+	 */
+	private static function log_improvement( array $data ): void {
+		$log_file = WP_CONTENT_DIR . '/ele2gb-claude-api.log';
+
+		$entry = array_merge(
+			array( 'timestamp' => gmdate( 'Y-m-d H:i:s' ), 'source' => 'run_improvement' ),
+			$data
+		);
+
+		$line = json_encode( $entry, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES );
+
+		if ( false !== $line ) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+			file_put_contents( $log_file, $line . PHP_EOL . PHP_EOL, FILE_APPEND | LOCK_EX );
+		}
+	}
+
+	/**
+	 * Handle the "Refine with AI" action (Round 2+).
+	 *
+	 * Takes fresh screenshots, then sends the current page state plus the user's
+	 * focus instruction to Claude for a targeted refinement pass.
+	 */
+	public function handle_refine(): void {
+		if ( ! current_user_can( 'edit_pages' ) ) {
+			wp_die( esc_html__( 'You do not have permission to perform this action.', 'elementor-to-gutenberg' ) );
+		}
+
+		check_admin_referer( self::NONCE_REFINE );
+
+		$target_id         = isset( $_POST['target_id'] ) ? absint( wp_unslash( $_POST['target_id'] ) ) : 0;
+		$source_id         = isset( $_POST['source_id'] ) ? absint( wp_unslash( $_POST['source_id'] ) ) : 0;
+		$focus_instruction = isset( $_POST['focus_instruction'] ) ? sanitize_textarea_field( wp_unslash( $_POST['focus_instruction'] ) ) : '';
+
+		if ( $target_id <= 0 || $source_id <= 0 ) {
+			wp_die( esc_html__( 'Source or target page is missing.', 'elementor-to-gutenberg' ) );
+		}
+
+		if ( ! current_user_can( 'edit_post', $target_id ) ) {
+			wp_die( esc_html__( 'You do not have permission to edit this page.', 'elementor-to-gutenberg' ) );
+		}
+
+		$stored_source_id = (int) get_post_meta( $target_id, '_ele2gb_source_id', true );
+		if ( $stored_source_id > 0 && $stored_source_id !== $source_id ) {
+			$this->redirect_with_notice( $source_id, $target_id, 'invalid_mapping' );
+		}
+
+		// Take fresh screenshots right before sending to Claude.
+		AI_Remediation_Screenshot_Meta_Service::generate_and_store( $source_id, $target_id, true );
+
+		$result = self::run_refinement( $source_id, $target_id, $focus_instruction );
+
+		if ( ! $result['success'] ) {
+			$notice = $result['notice'] ?? 'ai_failed';
+			if ( 'ai_failed' === $notice ) {
+				set_transient( 'ele2gb_ai_error_' . $target_id, $result['error'], 60 );
+			}
+			$this->redirect_with_notice( $source_id, $target_id, $notice );
+		}
+
+		$this->redirect_with_notice( $source_id, $target_id, 'refined' );
+	}
+
+	/**
+	 * Core refinement logic — Round 2+ targeted improvement.
+	 *
+	 * Sends the current page state, fresh screenshots, and user's focus instruction
+	 * to Claude using the refinement system prompt. The full CSS file is replaced
+	 * with the result on every run.
+	 *
+	 * @param int    $source_id         Elementor source post ID.
+	 * @param int    $target_id         Converted Gutenberg post ID.
+	 * @param string $focus_instruction User's instruction on what to fix.
+	 * @return array{success: bool, error: string, notice: string}
+	 */
+	public static function run_refinement( int $source_id, int $target_id, string $focus_instruction ): array {
+		$failure = static function ( string $error, string $notice = 'ai_failed' ): array {
+			return array( 'success' => false, 'error' => $error, 'notice' => $notice );
+		};
+
+		$gutenberg_content = (string) get_post_field( 'post_content', $target_id );
+		$elementor_json    = get_post_meta( $source_id, '_elementor_data', true );
+		if ( is_array( $elementor_json ) ) {
+			$elementor_json = wp_json_encode( $elementor_json, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
+		}
+		$elementor_json = (string) $elementor_json;
+
+		$current_css = self::fix_css_namespace( self::read_post_css( $target_id ), $source_id, $target_id );
+
+		$template_type = '';
+		if ( 'elementor_library' === get_post_type( $source_id ) ) {
+			$template_type = (string) get_post_meta( $source_id, '_elementor_template_type', true );
+		}
+
+		$prompt = AI_Prompt_Builder::build_refinement(
+			array(
+				'source_id'         => $source_id,
+				'target_id'         => $target_id,
+				'source_title'      => get_the_title( $source_id ),
+				'target_title'      => get_the_title( $target_id ),
+				'elementor_json'    => $elementor_json,
+				'gutenberg_content' => $gutenberg_content,
+				'current_css'       => $current_css,
+				'focus_instruction' => $focus_instruction,
+				'template_type'     => $template_type,
+			)
+		);
+
+		$elementor_shot = AI_Remediation_Screenshot_Meta_Service::get_elementor_url( $target_id );
+		$gutenberg_shot = AI_Remediation_Screenshot_Meta_Service::get_gutenberg_url( $target_id );
+
+		$api_result = Claude_Api_Service::send(
+			$prompt,
+			$elementor_shot,
+			$gutenberg_shot,
+			Claude_Api_Service::get_refinement_system_prompt()
+		);
+
+		if ( ! $api_result['success'] ) {
+			self::log_improvement( array(
+				'step'      => 'refine_api_failed',
+				'target_id' => $target_id,
+				'error'     => $api_result['error'],
+			) );
+			return $failure( $api_result['error'], 'ai_failed' );
+		}
+
+		$parsed           = Claude_Api_Service::parse_response( $api_result['content'] );
+		$css_result       = self::fix_css_namespace( $parsed['css'], $source_id, $target_id );
+		$gutenberg_result = $parsed['gutenberg'];
+
+		self::log_improvement( array(
+			'step'              => 'refine_parse_complete',
+			'target_id'         => $target_id,
+			'css_length'        => strlen( $css_result ),
+			'gutenberg_length'  => strlen( $gutenberg_result ),
+			'gutenberg_preview' => substr( $gutenberg_result, 0, 120 ),
+		) );
+
+		if ( '' === trim( $gutenberg_result ) ) {
+			self::log_improvement( array(
+				'step'      => 'refine_parse_failed_empty_gutenberg',
+				'target_id' => $target_id,
+			) );
+			return $failure(
+				__( 'No valid Gutenberg content could be parsed from the AI refinement response.', 'elementor-to-gutenberg' ),
+				'ai_parse_failed'
+			);
+		}
+
+		$update_result = wp_update_post(
+			array(
+				'ID'           => $target_id,
+				'post_content' => $gutenberg_result,
+			),
+			true
+		);
+
+		if ( is_wp_error( $update_result ) ) {
+			self::log_improvement( array(
+				'step'      => 'refine_wp_update_post_failed',
+				'target_id' => $target_id,
+				'error'     => $update_result->get_error_message(),
+			) );
+			return $failure( $update_result->get_error_message(), 'update_failed' );
+		}
+
+		// Replace the full CSS file on every refinement run.
+		if ( '' !== trim( $css_result ) ) {
+			External_CSS_Service::save_post_css( $target_id, $css_result );
+		}
+
+		if ( 'elementor_library' === get_post_type( $source_id ) ) {
+			External_CSS_Service::register_global_css_post( $target_id );
+		}
+
+		$workspace                           = AI_Workspace_Repository::get( $target_id );
+		$workspace['target_post_id']         = $target_id;
+		$workspace['source_post_id']         = $source_id;
+		$workspace['css_result_draft']       = $css_result;
+		$workspace['gutenberg_result_draft'] = $gutenberg_result;
+		$workspace['updated_at']             = current_time( 'mysql' );
+		AI_Workspace_Repository::save( $target_id, $workspace );
+
+		update_post_meta( $target_id, '_ele2gb_last_ai_improved', current_time( 'mysql' ) );
+
+		return array( 'success' => true, 'error' => '', 'notice' => 'refined' );
+	}
+
+	/**
+	 * Correct the CSS namespace if Claude used the target ID instead of the source ID.
+	 *
+	 * The Gutenberg page HTML wrapper always uses etg-page-{source_id} as its class,
+	 * so all CSS selectors must target that class. Claude sometimes uses the target ID
+	 * instead. This method replaces any wrong occurrences as a guaranteed safety net.
+	 *
+	 * @param string $css       Raw CSS from Claude.
+	 * @param int    $source_id Elementor source post ID (correct namespace).
+	 * @param int    $target_id Converted Gutenberg post ID (wrong namespace to replace).
+	 * @return string
+	 */
+	private static function fix_css_namespace( string $css, int $source_id, int $target_id ): string {
+		if ( $source_id === $target_id || '' === $css ) {
+			return $css;
+		}
+
+		return str_replace(
+			'etg-page-' . $target_id,
+			'etg-page-' . $source_id,
+			$css
+		);
+	}
+
+	/**
+	 * Read the current CSS file content for a post.
+	 *
+	 * Returns an empty string if no CSS file exists yet.
+	 *
+	 * @param int $target_id Target post ID.
+	 * @return string
+	 */
+	private static function read_post_css( int $target_id ): string {
+		$css_meta = External_CSS_Service::get_post_css_meta( $target_id );
+		if ( ! is_array( $css_meta ) || empty( $css_meta['path'] ) ) {
+			return '';
+		}
+
+		$path = (string) $css_meta['path'];
+		if ( ! file_exists( $path ) || ! is_readable( $path ) ) {
+			return '';
+		}
+
+		return (string) file_get_contents( $path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
 	}
 
 	/**
@@ -439,6 +725,7 @@ class AI_Improvement_Admin {
 			'screenshots_regenerated' => array( 'success', esc_html__( 'Screenshots regenerated successfully.', 'elementor-to-gutenberg' ) ),
 			'screenshots_failed'      => array( 'error', esc_html__( 'Screenshot regeneration failed. Check the screenshot service settings and connectivity.', 'elementor-to-gutenberg' ) ),
 			'ai_parse_failed'         => array( 'error', esc_html__( 'Claude returned a response but no valid Gutenberg content could be parsed.', 'elementor-to-gutenberg' ) ),
+			'refined'                 => array( 'success', esc_html__( 'Page refined successfully. Fresh screenshots were captured before this run.', 'elementor-to-gutenberg' ) ),
 		);
 
 		if ( ! isset( $messages[ $notice_code ] ) ) {
@@ -483,7 +770,6 @@ class AI_Improvement_Admin {
 		?>
 		<div class="wrap">
 			<h1><?php echo esc_html__( 'Improve Page with AI', 'elementor-to-gutenberg' ); ?></h1>
-			<p><?php echo esc_html__( 'Click "Improve with AI" to automatically improve this converted page using the Claude API.', 'elementor-to-gutenberg' ); ?></p>
 
 			<table class="form-table" role="presentation">
 				<tbody>
@@ -554,15 +840,61 @@ class AI_Improvement_Admin {
 				<?php submit_button( esc_html__( 'Regenerate Screenshots', 'elementor-to-gutenberg' ), 'secondary', 'ele2gb_regenerate_screenshots_submit', false ); ?>
 			</form>
 
-			<h2><?php echo esc_html__( 'AI Improvement', 'elementor-to-gutenberg' ); ?></h2>
-			<p><?php echo esc_html__( 'Analyse and improve the converted page using AI. The page content and CSS will be updated automatically.', 'elementor-to-gutenberg' ); ?></p>
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="ele2gb-ai-improve-form">
-				<?php wp_nonce_field( self::NONCE_AUTO_IMPROVE ); ?>
-				<input type="hidden" name="action" value="ele2gb_ai_auto_improve" />
-				<input type="hidden" name="target_id" value="<?php echo esc_attr( (string) $target_id ); ?>" />
-				<input type="hidden" name="source_id" value="<?php echo esc_attr( (string) $source_id ); ?>" />
-				<?php submit_button( esc_html__( 'Improve with AI', 'elementor-to-gutenberg' ), 'primary', 'ele2gb_auto_improve_submit', false ); ?>
-			</form>
+			<?php
+			$last_improved = (string) get_post_meta( $target_id, '_ele2gb_last_ai_improved', true );
+			if ( '' === $last_improved ) :
+				// ── Round 1: page has never been improved ─────────────────────
+				?>
+				<h2><?php echo esc_html__( 'AI Improvement', 'elementor-to-gutenberg' ); ?></h2>
+				<p><?php echo esc_html__( 'Analyse and improve the converted page using AI. The page content and CSS will be updated automatically.', 'elementor-to-gutenberg' ); ?></p>
+				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="ele2gb-ai-improve-form">
+					<?php wp_nonce_field( self::NONCE_AUTO_IMPROVE ); ?>
+					<input type="hidden" name="action" value="ele2gb_ai_auto_improve" />
+					<input type="hidden" name="target_id" value="<?php echo esc_attr( (string) $target_id ); ?>" />
+					<input type="hidden" name="source_id" value="<?php echo esc_attr( (string) $source_id ); ?>" />
+					<?php submit_button( esc_html__( 'Improve with AI', 'elementor-to-gutenberg' ), 'primary', 'ele2gb_auto_improve_submit', false ); ?>
+				</form>
+			<?php else :
+				// ── Round 2+: page has been improved at least once ────────────
+				$suggestions = array(
+					__( 'Fix hero section spacing and alignment', 'elementor-to-gutenberg' ),
+					__( 'Match typography — font sizes and weights', 'elementor-to-gutenberg' ),
+					__( 'Improve button styles and colors', 'elementor-to-gutenberg' ),
+					__( 'Fix colors and contrast', 'elementor-to-gutenberg' ),
+					__( 'Fix image sizing and alignment', 'elementor-to-gutenberg' ),
+					__( 'Fix section padding and spacing', 'elementor-to-gutenberg' ),
+					__( 'Improve heading styles', 'elementor-to-gutenberg' ),
+					__( 'Fix navigation menu styling', 'elementor-to-gutenberg' ),
+				);
+				?>
+				<h2><?php echo esc_html__( 'Refine with AI', 'elementor-to-gutenberg' ); ?></h2>
+				<p><?php echo esc_html__( 'The page has been improved. Tell the AI exactly what to focus on next. Fresh screenshots will be captured automatically before this run.', 'elementor-to-gutenberg' ); ?></p>
+
+				<div class="ele2gb-refine-suggestions">
+					<span class="ele2gb-refine-suggestions-label"><?php echo esc_html__( 'Quick suggestions:', 'elementor-to-gutenberg' ); ?></span>
+					<?php foreach ( $suggestions as $suggestion ) : ?>
+						<button type="button" class="ele2gb-suggestion-chip" data-suggestion="<?php echo esc_attr( $suggestion ); ?>">
+							<?php echo esc_html( $suggestion ); ?>
+						</button>
+					<?php endforeach; ?>
+				</div>
+
+				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="ele2gb-ai-refine-form">
+					<?php wp_nonce_field( self::NONCE_REFINE ); ?>
+					<input type="hidden" name="action" value="ele2gb_ai_refine" />
+					<input type="hidden" name="target_id" value="<?php echo esc_attr( (string) $target_id ); ?>" />
+					<input type="hidden" name="source_id" value="<?php echo esc_attr( (string) $source_id ); ?>" />
+					<textarea
+						name="focus_instruction"
+						id="ele2gb-focus-instruction"
+						rows="4"
+						placeholder="<?php echo esc_attr__( 'Describe what needs fixing, e.g. "The hero section spacing is too tight and the heading font is too small"', 'elementor-to-gutenberg' ); ?>"
+						style="width:100%;max-width:800px;margin-bottom:1em;font-size:14px;"
+					></textarea>
+					<br />
+					<?php submit_button( esc_html__( 'Refine with AI', 'elementor-to-gutenberg' ), 'primary', 'ele2gb_refine_submit', false ); ?>
+				</form>
+			<?php endif; ?>
 
 			<div id="ele2gb-ai-loader" hidden>
 				<div class="ele2gb-ai-loader-card">
