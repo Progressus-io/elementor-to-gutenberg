@@ -476,12 +476,24 @@ class Block_Builder {
 	 * @return string
 	 */
 	public static function build_style_attribute( array $attrs, string $block_slug = '' ): string {
-		if ( empty( $attrs['style'] ) || ! is_array( $attrs['style'] ) ) {
-			return '';
+		$style_rules = array();
+
+		if ( 'column' === $block_slug && isset( $attrs['width'] ) ) {
+			$width = trim( (string) $attrs['width'] );
+			if ( '' !== $width ) {
+				$style_rules[] = 'flex-basis:' . $width;
+			}
 		}
 
-		$style       = $attrs['style'];
-		$style_rules = array();
+		if ( empty( $attrs['style'] ) || ! is_array( $attrs['style'] ) ) {
+			if ( empty( $style_rules ) ) {
+				return '';
+			}
+
+			return esc_attr( implode( ';', $style_rules ) );
+		}
+
+		$style = $attrs['style'];
 
 		// Keep margin only (matches Gutenberg serialization).
 		if ( 'button' === $block_slug ) {
