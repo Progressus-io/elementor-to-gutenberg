@@ -58,7 +58,7 @@ class Text_Editor_Widget_Handler implements Widget_Handler_Interface {
 			$base_attributes['className'] = implode( ' ', array_unique( $custom_classes ) );
 		}
 
-		$element_class = Style_Parser::get_element_unique_class( $element );
+		$element_class = Style_Parser::get_element_widget_class_string( $element );
 		if ( '' !== $element_class ) {
 			$base_attributes['className'] = trim( (string) ( $base_attributes['className'] ?? '' ) . ' ' . $element_class );
 		}

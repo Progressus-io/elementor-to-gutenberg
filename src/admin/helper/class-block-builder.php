@@ -140,6 +140,10 @@ class Block_Builder {
 				'class' => $wrapper_class,
 			);
 
+			if ( ! empty( $attrs['anchor'] ) ) {
+				$attrs_for_wrapper['id'] = (string) $attrs['anchor'];
+			}
+
 			if ( '' !== $style_attr ) {
 				$attrs_for_wrapper['style'] = trim( $style_attr );
 			}
@@ -401,6 +405,14 @@ class Block_Builder {
 			$attrs_for_wrapper = array(
 				'class' => $wrapper_class,
 			);
+
+			// Anchor → id attribute on the wrapper element. Matches Gutenberg's
+			// native serialization for blocks like wp:group / wp:heading where
+			// the `anchor` block attribute renders as `id="..."` on the DOM node
+			// (used for in-page navigation, e.g. #superior-support).
+			if ( ! empty( $attrs['anchor'] ) ) {
+				$attrs_for_wrapper['id'] = (string) $attrs['anchor'];
+			}
 
 			if ( '' !== $style_attr ) {
 				$attrs_for_wrapper['style'] = trim( $style_attr );

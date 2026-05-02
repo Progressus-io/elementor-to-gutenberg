@@ -149,6 +149,68 @@ class Style_Parser {
 	}
 
 	/**
+	 * Extract author-supplied CSS classes from a widget element.
+	 *
+	 * Widgets carry custom classes under `_css_classes` (e.g. `bw-title` on a
+	 * heading widget, `bw-desc` on a text-editor widget, `part-logo` on an
+	 * image widget). Some plugins use the unprefixed `css_classes` form too,
+	 * so we read both for safety.
+	 *
+	 * @param array $element Elementor element data.
+	 *
+	 * @return string Sanitized space-separated class string, or empty.
+	 */
+	public static function get_element_author_classes( array $element ): string {
+		$settings = isset( $element['settings'] ) && is_array( $element['settings'] )
+			? $element['settings']
+			: array();
+
+		$collected = array();
+
+		foreach ( array( '_css_classes', 'css_classes' ) as $key ) {
+			if ( ! isset( $settings[ $key ] ) || '' === $settings[ $key ] ) {
+				continue;
+			}
+
+			$sanitized = self::sanitize_class_string( $settings[ $key ] );
+			if ( '' === $sanitized ) {
+				continue;
+			}
+
+			$collected[] = $sanitized;
+		}
+
+		return '' === implode( ' ', $collected ) ? '' : trim( implode( ' ', $collected ) );
+	}
+
+	/**
+	 * Build a combined widget className string of "etg-el-{id} {author_classes}".
+	 *
+	 * Widget handlers that build their own className string can call this
+	 * instead of `get_element_unique_class()` to also include the author's
+	 * Elementor `_css_classes` / `css_classes` values.
+	 *
+	 * @param array $element Elementor element data.
+	 *
+	 * @return string Class string (may be empty).
+	 */
+	public static function get_element_widget_class_string( array $element ): string {
+		$parts = array();
+
+		$unique = self::get_element_unique_class( $element );
+		if ( '' !== $unique ) {
+			$parts[] = $unique;
+		}
+
+		$author = self::get_element_author_classes( $element );
+		if ( '' !== $author ) {
+			$parts[] = $author;
+		}
+
+		return implode( ' ', $parts );
+	}
+
+	/**
 	 * Extract typography declarations for base/tablet/mobile from Elementor settings.
 	 *
 	 * @param array $settings Elementor settings.
@@ -1870,9 +1932,25 @@ class Style_Parser {
 			$attributes['style']['dimensions']['minHeight'] = $min_height;
 		}
 
-		$custom_classes = self::sanitize_class_string( $settings['_css_classes'] ?? '' );
-		if ( '' !== $custom_classes ) {
-			$attributes['className'] = self::append_class( $attributes['className'] ?? '', $custom_classes );
+		// Elementor stores author-supplied CSS classes under two keys depending on
+		// element type: widgets use `_css_classes` while sections/containers use the
+		// unprefixed `css_classes`. Read both so author classes (e.g. `single-featurem`,
+		// `features-section1`, `part-logo`, `first-bw`) survive the conversion.
+		foreach ( array( '_css_classes', 'css_classes' ) as $css_classes_key ) {
+			$custom_classes = self::sanitize_class_string( $settings[ $css_classes_key ] ?? '' );
+			if ( '' !== $custom_classes ) {
+				$attributes['className'] = self::append_class( $attributes['className'] ?? '', $custom_classes );
+			}
+		}
+
+		// Elementor stores the author-supplied CSS ID in `_element_id`. Map it to the
+		// `anchor` attribute so wp:group / wp:heading / etc. emit it as the `id`
+		// attribute (e.g. `id="home-section-2"`, `id="superior-support"`).
+		if ( ! empty( $settings['_element_id'] ) ) {
+			$anchor_id = self::clean_class( (string) $settings['_element_id'] );
+			if ( '' !== $anchor_id ) {
+				$attributes['anchor'] = $anchor_id;
+			}
 		}
 		if (
 			isset( $settings['box_shadow_box_shadow_type'], $settings['box_shadow_box_shadow'] )
