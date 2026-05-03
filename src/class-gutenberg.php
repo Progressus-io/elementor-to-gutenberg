@@ -180,8 +180,6 @@ class Gutenberg {
 			return true;
 		}
 
-		// Block-theme templates store the template id (theme//slug) on the
-		// page meta `_wp_page_template`. Match the slug portion against ours.
 		$block_template_id = self::FULL_WIDTH_TEMPLATE_ID;
 		if ( $assigned === $block_template_id ) {
 			return true;

@@ -2960,16 +2960,6 @@ class Batch_Convert_Wizard {
             return 'default';
         }
 
-        // Use the classic-template path slug for both classic AND block themes.
-        // Our `template_include` filter (in class-gutenberg.php) intercepts the
-        // request, finds the file inside the plugin folder, and loads it
-        // directly — bypassing the theme's default page template (which would
-        // otherwise wrap the content in `.has-global-padding`,
-        // `is-layout-constrained`, etc.). This works regardless of whether the
-        // theme is classic or block-based, and dodges the previous regression
-        // where the slug `full-width-page` was unrecognized because the block
-        // template was registered under the `progressus-etg` namespace rather
-        // than the active theme.
         return Gutenberg::FULL_WIDTH_PAGE_TEMPLATE_SLUG;
     }
 

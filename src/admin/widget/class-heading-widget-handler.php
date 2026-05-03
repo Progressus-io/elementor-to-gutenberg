@@ -53,10 +53,6 @@ class Heading_Widget_Handler implements Widget_Handler_Interface {
 			$attrs['level'] = $level;
 		}
 
-		// Build the className list: unique element class + author classes from
-		// `_css_classes` / `css_classes` (e.g. `bw-title`). Keep the unique class
-		// alone (without author classes) for CSS-selector use below — the
-		// register_heading_external_styles helper expects a single class.
 		$unique_class       = Style_Parser::get_element_unique_class( $element );
 		$widget_class_chain = Style_Parser::get_element_widget_class_string( $element );
 
