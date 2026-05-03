@@ -446,6 +446,65 @@
 }
 
 /* ============================================================
+   POST-TYPE TABS & MASTER SELECT
+   ============================================================ */
+
+.ele2gb-master-select-row {
+    display: flex;
+    align-items: center;
+    margin: 12px 0 6px;
+}
+
+.ele2gb-master-select-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    color: var(--ele2gb-text);
+    cursor: pointer;
+}
+
+.ele2gb-master-select-checkbox {
+    margin: 0;
+}
+
+.ele2gb-tab-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 8px 0 14px;
+    border-bottom: 1px solid var(--ele2gb-border);
+    padding-bottom: 0;
+}
+
+.ele2gb-tab {
+    appearance: none;
+    background: transparent;
+    border: 1px solid transparent;
+    border-bottom: none;
+    border-radius: var(--ele2gb-radius-md) var(--ele2gb-radius-md) 0 0;
+    padding: 8px 14px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ele2gb-text-muted, #50575e);
+    margin-bottom: -1px;
+}
+
+.ele2gb-tab:hover {
+    color: var(--ele2gb-text);
+    background: var(--ele2gb-surface-alt);
+}
+
+.ele2gb-tab.is-active {
+    color: var(--ele2gb-primary);
+    background: var(--ele2gb-surface);
+    border-color: var(--ele2gb-border);
+    border-bottom-color: var(--ele2gb-surface);
+    font-weight: 600;
+}
+
+/* ============================================================
    TABLES
    ============================================================ */
 
