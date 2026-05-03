@@ -24,6 +24,17 @@ use Progressus\Gutenberg\Admin\Helper\Style_Parser;
 class Gutenberg {
 	public const FULL_WIDTH_TEMPLATE_ID = 'progressus-etg//full-width-page';
 
+	/**
+	 * Slug used as the value of `_wp_page_template` for converted pages on
+	 * classic themes. Matches the file name of templates/etg-full-width-page.php.
+	 */
+	public const FULL_WIDTH_PAGE_TEMPLATE_SLUG = 'templates/etg-full-width-page.php';
+
+	/**
+	 * CSS handle for the global stylesheet that styles the template.
+	 */
+	public const FULL_WIDTH_CSS_HANDLE = 'etg-full-width-page';
+
 
 	/**
 	 * Instance to call certain functions globally within the plugin
@@ -48,6 +59,147 @@ class Gutenberg {
 		add_action( 'gutenberg_plugin_activated', array( $this, 'activation_hooks' ) );
 		add_action( 'gutenberg_plugin_deactivated', array( $this, 'deactivation_hooks' ) );
 		add_action( 'init', array( $this, 'register_blocks' ) );
+
+		add_filter( 'theme_page_templates', array( $this, 'register_classic_page_template' ), 10, 4 );
+		add_filter( 'template_include', array( $this, 'load_classic_page_template' ), 999 );
+
+		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_full_width_page_css' ), 999 );
+
+		add_filter( 'body_class', array( $this, 'add_full_width_page_body_class' ), 999 );
+	}
+
+	/**
+	 * Append our template to the Page Attributes "Template" dropdown for
+	 * classic themes. Block themes use register_block_template() instead.
+	 *
+	 * @param array  $templates  Existing template list.
+	 * @param mixed  $theme      WP_Theme instance.
+	 * @param mixed  $post       WP_Post or null.
+	 * @param string $post_type  Post type for the listing.
+	 *
+	 * @return array
+	 */
+	public function register_classic_page_template( $templates, $theme = null, $post = null, $post_type = '' ) {
+		if ( ! is_array( $templates ) ) {
+			$templates = array();
+		}
+
+		if ( '' !== $post_type && 'page' !== $post_type ) {
+			return $templates;
+		}
+
+		$templates[ self::FULL_WIDTH_PAGE_TEMPLATE_SLUG ] = __( 'ETG Full Width Page', 'elementor-to-gutenberg' );
+
+		return $templates;
+	}
+
+	/**
+	 * Resolve a request for our classic-theme template to the file shipped
+	 * inside the plugin (instead of the active theme folder).
+	 *
+	 * @param string $template Path resolved by core.
+	 *
+	 * @return string
+	 */
+	public function load_classic_page_template( $template ) {
+		if ( ! is_singular( 'page' ) ) {
+			return $template;
+		}
+
+		$assigned = (string) get_page_template_slug( get_queried_object_id() );
+		if ( self::FULL_WIDTH_PAGE_TEMPLATE_SLUG !== $assigned ) {
+			return $template;
+		}
+
+		$plugin_template = trailingslashit( GUTENBERG_PLUGIN_DIR_PATH ) . self::FULL_WIDTH_PAGE_TEMPLATE_SLUG;
+		if ( file_exists( $plugin_template ) ) {
+			return $plugin_template;
+		}
+
+		return $template;
+	}
+
+	/**
+	 * Add a body class when the Full Width Page template is in effect.
+	 *
+	 * @param array $classes Existing body classes.
+	 *
+	 * @return array
+	 */
+	public function add_full_width_page_body_class( $classes ): array {
+		if ( ! is_array( $classes ) ) {
+			$classes = array();
+		}
+
+		if ( ! is_singular( 'page' ) ) {
+			return $classes;
+		}
+
+		if ( $this->is_full_width_template_active( get_queried_object_id() ) ) {
+			$classes[] = 'etg-full-width-page-active';
+		}
+
+		return $classes;
+	}
+
+	/**
+	 * Front-end: enqueue the global stylesheet only when our template is
+	 * being rendered (classic-theme slug match OR block-theme template ID match).
+	 */
+	public function enqueue_full_width_page_css(): void {
+		if ( ! is_singular( 'page' ) ) {
+			return;
+		}
+
+		if ( ! $this->is_full_width_template_active( get_queried_object_id() ) ) {
+			return;
+		}
+
+		wp_enqueue_style(
+			self::FULL_WIDTH_CSS_HANDLE,
+			trailingslashit( GUTENBERG_PLUGIN_DIR_URL ) . 'assets/css/etg-full-width-page.css',
+			array(),
+			defined( 'GUTENBERG_PLUGIN_VERSION' ) ? GUTENBERG_PLUGIN_VERSION : null
+		);
+	}
+
+	/**
+	 * True when the given page is using the ETG Full Width Page template
+	 * (either the classic-theme PHP template or the block-theme registered
+	 * template).
+	 *
+	 * @param int $post_id Post ID.
+	 */
+	public function is_full_width_template_active( int $post_id ): bool {
+		if ( $post_id <= 0 ) {
+			return false;
+		}
+
+		$assigned = (string) get_page_template_slug( $post_id );
+		if ( self::FULL_WIDTH_PAGE_TEMPLATE_SLUG === $assigned ) {
+			return true;
+		}
+
+		// Block-theme templates store the template id (theme//slug) on the
+		// page meta `_wp_page_template`. Match the slug portion against ours.
+		$block_template_id = self::FULL_WIDTH_TEMPLATE_ID;
+		if ( $assigned === $block_template_id ) {
+			return true;
+		}
+		$slug_only = $assigned;
+		if ( false !== strpos( $assigned, '//' ) ) {
+			$parts     = explode( '//', $assigned, 2 );
+			$slug_only = isset( $parts[1] ) ? (string) $parts[1] : $assigned;
+		}
+		if ( false !== strpos( $block_template_id, '//' ) ) {
+			$parts        = explode( '//', $block_template_id, 2 );
+			$theirs_slug  = isset( $parts[1] ) ? (string) $parts[1] : '';
+			if ( '' !== $theirs_slug && $slug_only === $theirs_slug ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**

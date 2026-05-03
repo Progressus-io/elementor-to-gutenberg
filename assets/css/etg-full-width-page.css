@@ -1,0 +1,114 @@
+/**
+ * Global CSS for the ETG Full Width Page template.
+ *
+ * Goal: replicate Elementor's "Elementor Full Width" page template visual
+ * baseline so converted pages look identical to the originals.
+ *
+ *   - Strip theme padding (`.has-global-padding`, content-area padding) so
+ *     converted sections reach the viewport edge.
+ *   - Remove default block-gap between top-level sections (Elementor sections
+ *     butt directly together unless they declare margin themselves).
+ *   - Guarantee alignfull blocks span the full viewport (scrollbar-safe).
+ *   - Hide any post title that classic themes auto-render outside the_content.
+ */
+
+/* Body reset for both classic-template and block-theme renderings.
+   `.page-template-templates-etg-full-width-page-php` is the body class WP
+   adds when `_wp_page_template` is set to our PHP slug. Block themes also
+   pick up the body class through our `body_class` filter
+   (`etg-full-width-page-active`). */
+body.page-template-templates-etg-full-width-page-php,
+body.etg-full-width-page-active {
+	margin: 0 !important;
+	padding: 0 !important;
+}
+
+/* Wipe the WP/theme global root padding tokens that .has-global-padding
+   reads from. This stops any inherited `.has-global-padding` wrapper
+   (theme's <main> or block-canvas root) from indenting our content.
+   Scoped to the body to avoid leaking into the admin or other pages. */
+body.page-template-templates-etg-full-width-page-php,
+body.etg-full-width-page-active {
+	--wp--style--root--padding-top: 0;
+	--wp--style--root--padding-right: 0;
+	--wp--style--root--padding-bottom: 0;
+	--wp--style--root--padding-left: 0;
+	--wp--style--block-gap: 0;
+}
+
+/* Defensive overrides for any leftover `.has-global-padding` or
+   `.is-layout-constrained` wrapper that the active theme injects above
+   our content (e.g. TwentyTwentyFive's `<main class="has-global-padding
+   is-layout-constrained">`). Forces them edge-to-edge inside our template. */
+body.page-template-templates-etg-full-width-page-php .has-global-padding,
+body.etg-full-width-page-active .has-global-padding {
+	padding-left: 0 !important;
+	padding-right: 0 !important;
+}
+
+body.page-template-templates-etg-full-width-page-php .wp-block-group.is-layout-constrained,
+body.etg-full-width-page-active .wp-block-group.is-layout-constrained {
+	margin-top: 0 !important;
+	margin-bottom: 0 !important;
+}
+
+body.page-template-templates-etg-full-width-page-php main,
+body.etg-full-width-page-active main {
+	margin: 0 !important;
+	padding: 0 !important;
+	max-width: none !important;
+}
+
+/* Our own template wrapper. */
+.etg-full-width-page {
+	width: 100%;
+	max-width: none !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	box-sizing: border-box;
+}
+
+/* Classic themes occasionally wrap the_content() in .entry-content with
+   padding. Our template doesn't, but if a child theme injects something,
+   neutralize it. */
+.etg-full-width-page > .entry-content,
+.etg-full-width-page .entry-content {
+	max-width: none;
+	margin: 0;
+	padding: 0;
+}
+
+/* Top-level sections converted by ETG — butt together, no extra block-gap. */
+.etg-full-width-page > .wp-block-group,
+.etg-full-width-page > .wp-block-group.alignfull {
+	margin-top: 0;
+	margin-bottom: 0;
+}
+
+/* Force alignfull to actually span viewport even on themes whose alignfull
+   handling is incomplete. Scrollbar-safe — only stretches by the difference
+   between the parent's content area and the viewport, never overshoots. */
+.etg-full-width-page .alignfull {
+	margin-left: calc(50% - 50vw);
+	margin-right: calc(50% - 50vw);
+	max-width: 100vw;
+	box-sizing: border-box;
+}
+
+/* Reset the stacking gap that core injects between siblings inside the
+   wrapper. Section margins are still honored when explicitly declared on
+   the converted group. */
+.etg-full-width-page {
+	--wp--style--block-gap: 0;
+}
+
+/* Hide auto-rendered post titles when a classic theme echoes them outside
+   the template (rare, but Hello child themes occasionally do this). */
+body.page-template-templates-etg-full-width-page-php .entry-title,
+body.page-template-templates-etg-full-width-page-php .page-title,
+body.page-template-templates-etg-full-width-page-php .wp-block-post-title,
+body.etg-full-width-page-active .entry-title,
+body.etg-full-width-page-active .page-title,
+body.etg-full-width-page-active .wp-block-post-title {
+	display: none;
+}

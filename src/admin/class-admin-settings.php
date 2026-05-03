@@ -186,6 +186,9 @@ class Admin_Settings {
 		$new_page_id = $this->insert_new_page( $page_id, $blocks );
 		if ( $new_page_id ) {
 			$this->finalize_converted_post( (int) $new_page_id, (string) $blocks, true );
+			if ( self::source_uses_elementor_full_width_template( (int) $page_id ) ) {
+				$this->assign_etg_full_width_template( (int) $new_page_id );
+			}
 		}
 
 		if ( $new_page_id ) {
@@ -194,6 +197,76 @@ class Admin_Settings {
 		}
 
 		wp_die( 'Failed to create Gutenberg page.' );
+	}
+
+	/**
+	 * Detect whether the source page is using one of Elementor's full-width
+	 * page templates (Elementor Canvas, Elementor Full Width, Elementor
+	 * Header/Footer) or has an explicit full-width Elementor page setting.
+	 *
+	 * Same logic the batch wizard uses, lifted into a small static helper so
+	 * the row-action convert path can reuse it without spinning up the
+	 * wizard class.
+	 *
+	 * @param int $source_id Source Elementor page ID.
+	 */
+	public static function source_uses_elementor_full_width_template( int $source_id ): bool {
+		if ( $source_id <= 0 ) {
+			return false;
+		}
+
+		$template_slug = (string) get_page_template_slug( $source_id );
+		$elementor_templates = array( 'elementor_canvas', 'elementor_full_width', 'elementor_header_footer' );
+		if ( in_array( $template_slug, $elementor_templates, true ) ) {
+			return true;
+		}
+		if ( '' !== $template_slug && 0 === strpos( $template_slug, 'elementor' ) ) {
+			return true;
+		}
+
+		$page_settings = get_post_meta( $source_id, '_elementor_page_settings', true );
+		if ( is_array( $page_settings ) ) {
+			$page_layout = isset( $page_settings['page_layout'] ) ? (string) $page_settings['page_layout'] : '';
+			$template    = isset( $page_settings['template'] ) ? (string) $page_settings['template'] : '';
+
+			if ( '' !== $page_layout && false !== strpos( $page_layout, 'elementor' ) ) {
+				return true;
+			}
+			if ( '' !== $template && false !== strpos( $template, 'elementor' ) ) {
+				return true;
+			}
+			if ( in_array( $page_layout, array( 'canvas', 'full_width', 'elementor_canvas', 'elementor_full_width' ), true ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Assign the ETG Full Width Page template to the converted page.
+	 *
+	 * Always stores the classic-template path slug (`templates/etg-full-width-page.php`)
+	 * — the `template_include` filter in class-gutenberg.php intercepts the
+	 * request and loads the plugin's template file regardless of whether the
+	 * active theme is classic or block-based. Storing the same slug for both
+	 * theme types avoids the previous block-theme lookup miss where the slug
+	 * `full-width-page` was unrecognized because the block template was
+	 * registered under the `progressus-etg` namespace rather than the active
+	 * theme.
+	 *
+	 * @param int $target_id Converted page ID.
+	 */
+	private function assign_etg_full_width_template( int $target_id ): void {
+		if ( $target_id <= 0 ) {
+			return;
+		}
+
+		$slug = \Progressus\Gutenberg\Gutenberg::FULL_WIDTH_PAGE_TEMPLATE_SLUG;
+
+		update_post_meta( $target_id, '_wp_page_template', $slug );
+		delete_post_meta( $target_id, 'wp_template' );
+		clean_post_cache( $target_id );
 	}
 
 	/**
@@ -645,10 +718,18 @@ class Admin_Settings {
 		$extra_class = $this->collect_page_typography_rules( $page_class );
 		$class_name  = trim( $page_class . ' ' . $extra_class );
 
+		// Zero the block-gap so converted sections butt directly together.
+		// Elementor sections have no default vertical gap between them; any
+		// section that wants explicit space declares its own margin.
 		$attributes = array(
 			'align'     => 'full',
 			'className' => $class_name,
 			'layout'    => $this->build_top_level_constrained_layout(),
+			'style'     => array(
+				'spacing' => array(
+					'blockGap' => '0',
+				),
+			),
 		);
 
 		return Block_Builder::build( 'group', $attributes, $content );
@@ -877,8 +958,9 @@ class Admin_Settings {
 			}
 
 			if ( $is_top_level ) {
-				$split         = $this->split_section_attrs_for_wrap( $attributes );
-				$columns_block = Block_Builder::build( 'columns', $split['inner'], $inner_html );
+				$split           = $this->split_section_attrs_for_wrap( $attributes );
+				$inner_attr      = $this->propagate_flex_gap_to_inner( $split['inner'], $settings );
+				$columns_block   = Block_Builder::build( 'columns', $inner_attr, $inner_html );
 
 				return $this->wrap_top_level_columns_in_group( $split['outer'], $settings, $columns_block );
 			}
@@ -1053,7 +1135,7 @@ class Admin_Settings {
 		if ( $is_top_level && $wraps_columns_style ) {
 			$split          = $this->split_section_attrs_for_wrap( $container_attr );
 			$outer_attr     = $split['outer'];
-			$inner_attr     = $split['inner'];
+			$inner_attr     = $this->propagate_flex_gap_to_inner( $split['inner'], $container_settings );
 
 			if ( Container_Classifier::is_grid( $element ) ) {
 				$columns     = Container_Classifier::get_grid_column_count( $element, $child_count );
@@ -1172,12 +1254,55 @@ class Admin_Settings {
 	 * @param string $columns_inner_html Already-built wp:columns block markup.
 	 */
 	private function wrap_top_level_columns_in_group( array $section_attributes, array $settings, string $columns_inner_html ): string {
-		$outer_attrs           = $section_attributes;
-		$outer_attrs           = $this->apply_full_width_section_attributes( $outer_attrs, $settings );
-		$outer_attrs['layout'] = $this->build_top_level_constrained_layout();
-		$outer_attrs           = $this->maybe_add_group_has_background_class( $outer_attrs );
+		$outer_attrs = $section_attributes;
+		$outer_attrs = $this->apply_full_width_section_attributes( $outer_attrs, $settings );
+		$outer_attrs = $this->maybe_add_group_has_background_class( $outer_attrs );
+
+		// Per-section width mode:
+		//   - Sections explicitly marked full_width / stretched / content_width:full
+		//     in Elementor want their CONTENT to fill the viewport — no inner cap.
+		//     We emit `layout:default` so the wp:group does not constrain children.
+		//   - All other sections get the boxed treatment: alignfull background,
+		//     constrained inner content at the kit container width.
+		if ( $this->section_wants_full_width_content( $settings ) ) {
+			$outer_attrs['layout'] = array( 'type' => 'default' );
+		} else {
+			$outer_attrs['layout'] = $this->build_top_level_constrained_layout();
+		}
 
 		return Block_Builder::build( 'group', $outer_attrs, $columns_inner_html );
+	}
+
+	/**
+	 * Detect whether an Elementor section explicitly opts into full-viewport
+	 * content (i.e. its inner content should fill the viewport, not the
+	 * 1140-ish content size). True for sections that set any of:
+	 *   - `layout: "full_width"`
+	 *   - `stretch_section: "section-stretched"` / `"yes"`
+	 *   - `content_width: "full_width"` / `"full"`
+	 *
+	 * Boxed sections (and unset/default) return false — they get the
+	 * standard `layout:constrained` inner behavior.
+	 *
+	 * @param array $settings Elementor element settings.
+	 */
+	private function section_wants_full_width_content( array $settings ): bool {
+		$layout = isset( $settings['layout'] ) ? strtolower( (string) $settings['layout'] ) : '';
+		if ( 'full_width' === $layout ) {
+			return true;
+		}
+
+		$stretch = isset( $settings['stretch_section'] ) ? strtolower( (string) $settings['stretch_section'] ) : '';
+		if ( 'section-stretched' === $stretch || 'yes' === $stretch ) {
+			return true;
+		}
+
+		$content_width = isset( $settings['content_width'] ) ? strtolower( (string) $settings['content_width'] ) : '';
+		if ( 'full_width' === $content_width || 'full' === $content_width ) {
+			return true;
+		}
+
+		return false;
 	}
 
 	/**
@@ -1224,6 +1349,68 @@ class Admin_Settings {
 	}
 
 	/**
+	 * Apply Elementor's `flex_gap` setting to inner column/grid attributes as
+	 * `style.spacing.blockGap`. This makes converted sections honor the
+	 * author's chosen column-to-column gap (Elementor v3 containers expose
+	 * this via `flex_gap.column` or `flex_gap.size`).
+	 *
+	 * Without this, wp:columns falls back to its default ~32px gap, which
+	 * does not match sections that authored a different gap (often `0`).
+	 *
+	 * @param array $inner_attrs Inner wp:columns attributes to mutate.
+	 * @param array $settings    Source Elementor settings for the parent section/container.
+	 *
+	 * @return array Mutated inner attributes.
+	 */
+	private function propagate_flex_gap_to_inner( array $inner_attrs, array $settings ): array {
+		if ( empty( $settings['flex_gap'] ) || ! is_array( $settings['flex_gap'] ) ) {
+			return $inner_attrs;
+		}
+
+		$gap_data = $settings['flex_gap'];
+
+		// Prefer the explicit column gap; fall back to the linked `size`.
+		$value = null;
+		foreach ( array( 'column', 'size' ) as $key ) {
+			if ( ! isset( $gap_data[ $key ] ) ) {
+				continue;
+			}
+			$candidate = $gap_data[ $key ];
+			if ( '' === $candidate || null === $candidate ) {
+				continue;
+			}
+			if ( is_numeric( $candidate ) ) {
+				$value = (string) (int) $candidate;
+				break;
+			}
+		}
+
+		if ( null === $value ) {
+			return $inner_attrs;
+		}
+
+		$unit = isset( $gap_data['unit'] ) && '' !== $gap_data['unit'] ? (string) $gap_data['unit'] : 'px';
+
+		// Only known absolute/relative CSS units we trust here.
+		if ( ! in_array( $unit, array( 'px', 'em', 'rem', '%' ), true ) ) {
+			$unit = 'px';
+		}
+
+		$css = $value . $unit;
+
+		if ( ! isset( $inner_attrs['style'] ) || ! is_array( $inner_attrs['style'] ) ) {
+			$inner_attrs['style'] = array();
+		}
+		if ( ! isset( $inner_attrs['style']['spacing'] ) || ! is_array( $inner_attrs['style']['spacing'] ) ) {
+			$inner_attrs['style']['spacing'] = array();
+		}
+
+		$inner_attrs['style']['spacing']['blockGap'] = $css;
+
+		return $inner_attrs;
+	}
+
+	/**
 	 * Build the layout attribute for a top-level constrained group.
 	 *
 	 * Declaring contentSize/wideSize explicitly frees the converted page from
@@ -1252,19 +1439,89 @@ class Admin_Settings {
 	/**
 	 * Get the configured section content width in pixels. Clamped to [320, 2560] to
 	 * avoid accidental zero/negative values breaking every converted page.
+	 *
+	 * Resolution order (first non-empty wins):
+	 *   1. Plugin option `ele2gb_section_content_width` (user override).
+	 *   2. Elementor's active kit `container_width` setting (auto-detected).
+	 *   3. The hard-coded plugin default (1140 — Hello / SaaSland baseline).
+	 *
+	 * Auto-detect lets users get pixel-correct conversion without ever opening
+	 * the plugin Settings page if their Elementor kit already declares a
+	 * container width.
 	 */
 	private function get_section_content_width_px(): int {
-		$raw = get_option( self::OPTION_SECTION_CONTENT_WIDTH, self::DEFAULT_SECTION_CONTENT_WIDTH );
-		$val = is_numeric( $raw ) ? (int) $raw : self::DEFAULT_SECTION_CONTENT_WIDTH;
+		$raw    = get_option( self::OPTION_SECTION_CONTENT_WIDTH, '' );
+		$option = is_numeric( $raw ) ? (int) $raw : 0;
 
-		if ( $val < 320 ) {
+		if ( $option > 0 ) {
+			return $this->clamp_content_width( $option );
+		}
+
+		$kit_width = $this->read_elementor_kit_container_width();
+		if ( $kit_width > 0 ) {
+			return $this->clamp_content_width( $kit_width );
+		}
+
+		return self::DEFAULT_SECTION_CONTENT_WIDTH;
+	}
+
+	/**
+	 * Clamp a content-width value to a sane range so a corrupt setting
+	 * cannot zero-out every converted page.
+	 */
+	private function clamp_content_width( int $value ): int {
+		if ( $value < 320 ) {
 			return 320;
 		}
-		if ( $val > 2560 ) {
+		if ( $value > 2560 ) {
 			return 2560;
 		}
 
-		return $val;
+		return $value;
+	}
+
+	/**
+	 * Read the active Elementor kit's `container_width` setting (in px).
+	 *
+	 * Elementor stores per-site layout defaults on a "kit" post whose ID
+	 * lives in the `elementor_active_kit` option. The kit's
+	 * `_elementor_page_settings` meta carries `container_width` which is the
+	 * value Elementor uses for boxed-layout sections. Reading it lets us
+	 * default to whatever the user already set in Elementor → Site Settings.
+	 *
+	 * @return int Width in pixels, or 0 if unavailable.
+	 */
+	private function read_elementor_kit_container_width(): int {
+		$kit_id = (int) get_option( 'elementor_active_kit', 0 );
+		if ( $kit_id <= 0 ) {
+			return 0;
+		}
+
+		$settings = get_post_meta( $kit_id, '_elementor_page_settings', true );
+		if ( ! is_array( $settings ) ) {
+			return 0;
+		}
+
+		$container = $settings['container_width'] ?? null;
+
+		if ( is_array( $container ) ) {
+			$size = $container['size'] ?? null;
+			$unit = isset( $container['unit'] ) ? (string) $container['unit'] : 'px';
+
+			if ( null === $size || '' === $size || 'px' !== $unit ) {
+				return 0;
+			}
+
+			$numeric = is_numeric( $size ) ? (int) $size : 0;
+
+			return max( 0, $numeric );
+		}
+
+		if ( is_numeric( $container ) ) {
+			return max( 0, (int) $container );
+		}
+
+		return 0;
 	}
 
 	/**

@@ -1932,10 +1932,6 @@ class Style_Parser {
 			$attributes['style']['dimensions']['minHeight'] = $min_height;
 		}
 
-		// Elementor stores author-supplied CSS classes under two keys depending on
-		// element type: widgets use `_css_classes` while sections/containers use the
-		// unprefixed `css_classes`. Read both so author classes (e.g. `single-featurem`,
-		// `features-section1`, `part-logo`, `first-bw`) survive the conversion.
 		foreach ( array( '_css_classes', 'css_classes' ) as $css_classes_key ) {
 			$custom_classes = self::sanitize_class_string( $settings[ $css_classes_key ] ?? '' );
 			if ( '' !== $custom_classes ) {
@@ -1943,9 +1939,6 @@ class Style_Parser {
 			}
 		}
 
-		// Elementor stores the author-supplied CSS ID in `_element_id`. Map it to the
-		// `anchor` attribute so wp:group / wp:heading / etc. emit it as the `id`
-		// attribute (e.g. `id="home-section-2"`, `id="superior-support"`).
 		if ( ! empty( $settings['_element_id'] ) ) {
 			$anchor_id = self::clean_class( (string) $settings['_element_id'] );
 			if ( '' !== $anchor_id ) {
