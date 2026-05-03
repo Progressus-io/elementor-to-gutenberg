@@ -53,16 +53,18 @@ class Heading_Widget_Handler implements Widget_Handler_Interface {
 			$attrs['level'] = $level;
 		}
 
-		$element_class = Style_Parser::get_element_unique_class( $element );
-		if ( '' !== $element_class ) {
-			$attrs['className'] .= ' ' . $element_class;
+		$unique_class       = Style_Parser::get_element_unique_class( $element );
+		$widget_class_chain = Style_Parser::get_element_widget_class_string( $element );
+
+		if ( '' !== $widget_class_chain ) {
+			$attrs['className'] .= ' ' . $widget_class_chain;
 		}
 
 		if ( ! empty( $align_payload['attributes'] ) ) {
 			$attrs = array_merge( $attrs, $align_payload['attributes'] );
 		}
 
-		$this->register_heading_external_styles( $element_class, $settings, $is_heading ? 'wp-block-heading' : 'wp-block-paragraph' );
+		$this->register_heading_external_styles( $unique_class, $settings, $is_heading ? 'wp-block-heading' : 'wp-block-paragraph' );
 
 		if ( ! $is_heading ) {
 			return Block_Builder::build_prepared(

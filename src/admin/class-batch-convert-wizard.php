@@ -2960,28 +2960,7 @@ class Batch_Convert_Wizard {
             return 'default';
         }
 
-        if ( ! function_exists( 'register_block_template' ) ) {
-            return 'default';
-        }
-
-        if ( ! function_exists( 'wp_is_block_theme' ) || ! wp_is_block_theme() ) {
-            return 'default';
-        }
-
-        $template_id = Gutenberg::FULL_WIDTH_TEMPLATE_ID;
-        if ( $this->is_block_template_available_for_page( $template_id ) ) {
-            $slug = $template_id;
-            if ( false !== strpos( $template_id, '//' ) ) {
-                $parts = explode( '//', $template_id, 2 );
-                $slug  = isset( $parts[1] ) ? (string) $parts[1] : $template_id;
-            }
-
-            if ( '' !== $slug ) {
-                return $slug;
-            }
-        }
-
-        return 'default';
+        return Gutenberg::FULL_WIDTH_PAGE_TEMPLATE_SLUG;
     }
 
     

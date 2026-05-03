@@ -58,6 +58,9 @@ class Gutenberg_Supports_Mapper {
 					'spacing'    => true,
 					'color'      => true,
 					'typography' => true,
+					'dimensions' => true,
+					'background' => true,
+					'border'     => true,
 				),
 				'attrs' => array(
 					'layout' => true,
@@ -75,6 +78,32 @@ class Gutenberg_Supports_Mapper {
 					'url'        => true,
 					'linkTarget' => true,
 					'rel'        => true,
+				),
+			),
+			'columns'   => array(
+				'style' => array(
+					'spacing'    => true,
+					'color'      => true,
+					'typography' => true,
+					'dimensions' => true,
+				),
+				'attrs' => array(
+					'verticalAlignment' => true,
+					'isStackedOnMobile' => true,
+					'layout'            => true,
+				),
+			),
+			'column'    => array(
+				'style' => array(
+					'spacing'    => true,
+					'color'      => true,
+					'typography' => true,
+					'dimensions' => true,
+				),
+				'attrs' => array(
+					'width'             => true,
+					'verticalAlignment' => true,
+					'layout'            => true,
 				),
 			),
 		);

@@ -843,7 +843,6 @@ class AI_Improvement_Admin {
 			<?php
 			$last_improved = (string) get_post_meta( $target_id, '_ele2gb_last_ai_improved', true );
 			if ( '' === $last_improved ) :
-				// ── Round 1: page has never been improved ─────────────────────
 				?>
 				<h2><?php echo esc_html__( 'AI Improvement', 'elementor-to-gutenberg' ); ?></h2>
 				<p><?php echo esc_html__( 'Analyse and improve the converted page using AI. The page content and CSS will be updated automatically.', 'elementor-to-gutenberg' ); ?></p>
