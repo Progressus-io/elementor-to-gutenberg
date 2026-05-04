@@ -30,7 +30,8 @@ use function wp_unslash;
 use function esc_attr;
 use function wp_json_encode;
 use function wp_update_post;
-use function add_management_page;
+use function add_menu_page;
+use function add_submenu_page;
 use function add_filter;
 use function admin_url;
 use function sprintf;
@@ -72,6 +73,34 @@ class Admin_Settings {
 	private const DEFAULT_SECTION_CONTENT_WIDTH = 1140;
 
 	/**
+	 * Option key storing global conversion preferences (currently: copy meta + featured image).
+	 */
+	private const OPTION_CONVERSION_PREFERENCES = 'etg_conversion_preferences';
+
+	/**
+	 * Get global conversion preferences with defaults applied.
+	 *
+	 * @return array{copy_meta_and_featured_image: bool}
+	 */
+	public static function get_conversion_preferences(): array {
+		$raw = get_option( self::OPTION_CONVERSION_PREFERENCES, array() );
+		$raw = is_array( $raw ) ? $raw : array();
+
+		return array(
+			'copy_meta_and_featured_image' => ! empty( $raw['copy_meta_and_featured_image'] ),
+		);
+	}
+
+	/**
+	 * Whether the global "Copy metadata and featured image" preference is enabled.
+	 */
+	public static function is_copy_meta_enabled(): bool {
+		$prefs = self::get_conversion_preferences();
+
+		return ! empty( $prefs['copy_meta_and_featured_image'] );
+	}
+
+	/**
 	 * Get the singleton instance.
 	 *
 	 * @return Admin_Settings
@@ -88,36 +117,50 @@ class Admin_Settings {
 	 * Constructor.
 	 */
 	public function __construct() {
-		add_action( 'admin_menu', array( $this, 'add_tools_menu' ) );
+		add_action( 'admin_menu', array( $this, 'add_admin_menu' ) );
 		add_filter( 'plugin_action_links_' . GUTENBERG_PLUGIN_BASENAME, array( $this, 'add_plugin_action_links' ) );
 		add_filter( 'page_row_actions', array( $this, 'myplugin_add_convert_button' ), 10, 2 );
 		add_action( 'admin_post_myplugin_convert_page', array( $this, 'myplugin_handle_convert_page' ) );
 		add_action( 'admin_post_etg_save_screenshot_settings', array( $this, 'save_screenshot_settings' ) );
-		add_action( 'admin_post_etg_save_claude_settings', array( $this, 'save_claude_settings' ) );
-		add_action( 'admin_post_etg_save_layout_settings', array( $this, 'save_layout_settings' ) );
+		add_action( 'admin_post_etg_save_settings', array( $this, 'save_all_settings' ) );
 	}
 
 	/**
-	 * Save layout settings (section content width) submitted from the settings page.
+	 * Save every setting on the Migration Tool page in a single round-trip.
+	 *
+	 * Why: the page renders one form with all sections so users hit one button.
 	 */
-	public function save_layout_settings(): void {
+	public function save_all_settings(): void {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'You do not have permission to change plugin settings.', 'elementor-to-gutenberg' ) );
 		}
 
-		check_admin_referer( 'etg_save_layout_settings' );
+		check_admin_referer( 'etg_save_settings' );
 
-		$raw   = isset( $_POST['etg_layout_settings'] ) ? wp_unslash( $_POST['etg_layout_settings'] ) : array();
-		$raw   = is_array( $raw ) ? $raw : array();
-		$width = isset( $raw['section_content_width'] ) ? (int) $raw['section_content_width'] : self::DEFAULT_SECTION_CONTENT_WIDTH;
+		$claude_raw = isset( $_POST['etg_claude_settings'] ) ? wp_unslash( $_POST['etg_claude_settings'] ) : array();
+		$claude_raw = is_array( $claude_raw ) ? $claude_raw : array();
+		$api_key    = isset( $claude_raw['api_key'] ) ? sanitize_text_field( (string) $claude_raw['api_key'] ) : '';
+		update_option( 'etg_claude_settings', array( 'api_key' => $api_key ), false );
 
+		$prefs_raw = isset( $_POST['etg_conversion_preferences'] ) ? wp_unslash( $_POST['etg_conversion_preferences'] ) : array();
+		$prefs_raw = is_array( $prefs_raw ) ? $prefs_raw : array();
+		update_option(
+			self::OPTION_CONVERSION_PREFERENCES,
+			array(
+				'copy_meta_and_featured_image' => ! empty( $prefs_raw['copy_meta_and_featured_image'] ),
+			),
+			false
+		);
+
+		$layout_raw = isset( $_POST['etg_layout_settings'] ) ? wp_unslash( $_POST['etg_layout_settings'] ) : array();
+		$layout_raw = is_array( $layout_raw ) ? $layout_raw : array();
+		$width      = isset( $layout_raw['section_content_width'] ) ? (int) $layout_raw['section_content_width'] : self::DEFAULT_SECTION_CONTENT_WIDTH;
 		if ( $width < 320 ) {
 			$width = 320;
 		}
 		if ( $width > 2560 ) {
 			$width = 2560;
 		}
-
 		update_option( self::OPTION_SECTION_CONTENT_WIDTH, $width, false );
 
 		wp_safe_redirect(
@@ -290,12 +333,26 @@ class Admin_Settings {
 	}
 
 	/**
-	 * Add Tools menu entry that points to the existing settings page.
+	 * Register the plugin's top-level admin menu and its Settings submenu.
+	 *
+	 * Why: the user wants the plugin promoted out of "Tools" into the main
+	 * dashboard sidebar so it sits alongside other site-wide tools.
 	 */
-	public function add_tools_menu(): void {
-		add_management_page(
+	public function add_admin_menu(): void {
+		add_menu_page(
 			esc_html__( 'Migration Tool – Elementor to Gutenberg', 'elementor-to-gutenberg' ),
-			esc_html__( 'Migration Tool: Elementor → Gutenberg', 'elementor-to-gutenberg' ),
+			esc_html__( 'Migration Tool', 'elementor-to-gutenberg' ),
+			'manage_options',
+			'gutenberg-settings',
+			array( $this, 'settings_page_content' ),
+			'dashicons-migrate',
+			76
+		);
+
+		add_submenu_page(
+			'gutenberg-settings',
+			esc_html__( 'Settings', 'elementor-to-gutenberg' ),
+			esc_html__( 'Settings', 'elementor-to-gutenberg' ),
 			'manage_options',
 			'gutenberg-settings',
 			array( $this, 'settings_page_content' )
@@ -461,61 +518,33 @@ class Admin_Settings {
 	}
 
 	/**
-	 * Save Claude API settings submitted from the settings page form.
-	 */
-	public function save_claude_settings(): void {
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( esc_html__( 'You do not have permission to change plugin settings.', 'elementor-to-gutenberg' ) );
-		}
-
-		check_admin_referer( 'etg_save_claude_settings' );
-
-		$raw = isset( $_POST['etg_claude_settings'] ) ? wp_unslash( $_POST['etg_claude_settings'] ) : array();
-		$raw = is_array( $raw ) ? $raw : array();
-
-		$api_key = isset( $raw['api_key'] ) ? sanitize_text_field( (string) $raw['api_key'] ) : '';
-
-		update_option( 'etg_claude_settings', array( 'api_key' => $api_key ), false );
-
-		wp_safe_redirect(
-			add_query_arg(
-				array(
-					'page'               => 'gutenberg-settings',
-					'etg_settings_saved' => '1',
-				),
-				admin_url( 'admin.php' )
-			)
-		);
-		exit;
-	}
-
-	/**
 	 * Render settings page content.
 	 */
 	public function settings_page_content(): void {
+		$claude_settings  = get_option( 'etg_claude_settings', array() );
+		$claude_settings  = is_array( $claude_settings ) ? $claude_settings : array();
+		$claude_api_key   = isset( $claude_settings['api_key'] ) ? (string) $claude_settings['api_key'] : '';
+		$copy_meta_enabled = self::is_copy_meta_enabled();
+		$current_width    = $this->get_section_content_width_px();
 		?>
         <div class="wrap">
             <h1><?php esc_html_e( 'Migration Tool – Elementor to Gutenberg', 'elementor-to-gutenberg' ); ?></h1>
             <p><?php esc_html_e( 'Professional migration tool to convert Elementor layouts into native Gutenberg blocks.', 'elementor-to-gutenberg' ); ?></p>
+            <?php if ( isset( $_GET['etg_settings_saved'] ) && '1' === $_GET['etg_settings_saved'] ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
+                <div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Settings saved.', 'elementor-to-gutenberg' ); ?></p></div>
+            <?php endif; ?>
             <?php self::render_conversion_warning_notice(); ?>
             <p>
                 <a href="<?php echo esc_url( $this->get_wizard_url() ); ?>" class="button button-primary"><?php esc_html_e( 'Open Migration Wizard', 'elementor-to-gutenberg' ); ?></a>
             </p>
 
-            <hr />
-            <h2><?php esc_html_e( 'Claude AI Settings', 'elementor-to-gutenberg' ); ?></h2>
-            <?php if ( isset( $_GET['etg_settings_saved'] ) && '1' === $_GET['etg_settings_saved'] ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
-                <div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Settings saved.', 'elementor-to-gutenberg' ); ?></p></div>
-            <?php endif; ?>
-            <p><?php esc_html_e( 'Configure the Anthropic Claude API key used for automated AI page improvement.', 'elementor-to-gutenberg' ); ?></p>
-            <?php
-            $claude_settings = get_option( 'etg_claude_settings', array() );
-            $claude_settings = is_array( $claude_settings ) ? $claude_settings : array();
-            $claude_api_key  = isset( $claude_settings['api_key'] ) ? (string) $claude_settings['api_key'] : '';
-            ?>
             <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
-                <?php wp_nonce_field( 'etg_save_claude_settings' ); ?>
-                <input type="hidden" name="action" value="etg_save_claude_settings" />
+                <?php wp_nonce_field( 'etg_save_settings' ); ?>
+                <input type="hidden" name="action" value="etg_save_settings" />
+
+                <hr />
+                <h2><?php esc_html_e( 'Claude AI Settings', 'elementor-to-gutenberg' ); ?></h2>
+                <p><?php esc_html_e( 'Configure the Anthropic Claude API key used for automated AI page improvement.', 'elementor-to-gutenberg' ); ?></p>
                 <table class="form-table" role="presentation">
                     <tbody>
                     <tr>
@@ -534,16 +563,28 @@ class Admin_Settings {
                     </tr>
                     </tbody>
                 </table>
-                <?php submit_button( esc_html__( 'Save Claude Settings', 'elementor-to-gutenberg' ) ); ?>
-            </form>
 
-            <hr />
-            <h2><?php esc_html_e( 'Layout Settings', 'elementor-to-gutenberg' ); ?></h2>
-            <p><?php esc_html_e( 'Controls the content width applied to converted top-level Elementor sections. Match this to your Elementor kit\'s container width so converted pages render at the same width as the originals.', 'elementor-to-gutenberg' ); ?></p>
-			<?php $current_width = $this->get_section_content_width_px(); ?>
-            <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
-				<?php wp_nonce_field( 'etg_save_layout_settings' ); ?>
-                <input type="hidden" name="action" value="etg_save_layout_settings" />
+                <hr />
+                <h2><?php esc_html_e( 'Conversion Preferences', 'elementor-to-gutenberg' ); ?></h2>
+                <p><?php esc_html_e( 'Global preferences applied to every conversion run by the Migration Wizard.', 'elementor-to-gutenberg' ); ?></p>
+                <table class="form-table" role="presentation">
+                    <tbody>
+                    <tr>
+                        <th scope="row"><?php esc_html_e( 'Metadata', 'elementor-to-gutenberg' ); ?></th>
+                        <td>
+                            <label>
+                                <input type="checkbox" name="etg_conversion_preferences[copy_meta_and_featured_image]" value="1" <?php checked( $copy_meta_enabled ); ?> />
+                                <?php esc_html_e( 'Copy metadata and featured image', 'elementor-to-gutenberg' ); ?>
+                            </label>
+                            <p class="description"><?php esc_html_e( 'When enabled, every converted page automatically copies post meta fields and the featured image from the source Elementor page. When disabled, the wizard skips this step entirely.', 'elementor-to-gutenberg' ); ?></p>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+
+                <hr />
+                <h2><?php esc_html_e( 'Layout Settings', 'elementor-to-gutenberg' ); ?></h2>
+                <p><?php esc_html_e( 'Controls the content width applied to converted top-level Elementor sections. Match this to your Elementor kit\'s container width so converted pages render at the same width as the originals.', 'elementor-to-gutenberg' ); ?></p>
                 <table class="form-table" role="presentation">
                     <tbody>
                     <tr>
@@ -557,7 +598,8 @@ class Admin_Settings {
                     </tr>
                     </tbody>
                 </table>
-				<?php submit_button( esc_html__( 'Save Layout Settings', 'elementor-to-gutenberg' ) ); ?>
+
+                <?php submit_button( esc_html__( 'Save Settings', 'elementor-to-gutenberg' ) ); ?>
             </form>
         </div>
 		<?php

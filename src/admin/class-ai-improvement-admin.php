@@ -132,8 +132,11 @@ class AI_Improvement_Admin {
 	 * Register hidden submenu page.
 	 */
 	public function register_menu(): void {
+		// Parent = null registers the page so it loads via ?page=... but never
+		// appears in any submenu. The wizard deep-links into it directly, so
+		// listing it in the sidebar would just be noise.
 		add_submenu_page(
-			'tools.php',
+			null,
 			esc_html__( 'Improve Converted Page with AI', 'elementor-to-gutenberg' ),
 			esc_html__( 'Improve Converted Page with AI', 'elementor-to-gutenberg' ),
 			'edit_pages',

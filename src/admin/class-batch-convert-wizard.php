@@ -166,7 +166,7 @@ class Batch_Convert_Wizard {
 	 */
 	public function register_menu(): void {
 		add_submenu_page(
-			'tools.php',
+			'gutenberg-settings',
 			esc_html__( 'Conversion Wizard', 'elementor-to-gutenberg' ),
 			esc_html__( 'Conversion Wizard', 'elementor-to-gutenberg' ),
 			'edit_pages',
@@ -286,7 +286,6 @@ class Batch_Convert_Wizard {
 		$skip_converted   = ! empty( $_POST['skipConverted'] );
 
 		$raw_pages         = isset( $_POST['pages'] ) ? wp_unslash( $_POST['pages'] ) : array();
-		$raw_disabled      = isset( $_POST['disabledMeta'] ) ? wp_unslash( $_POST['disabledMeta'] ) : array();
 		$raw_headers       = isset( $_POST['headerTemplates'] ) ? wp_unslash( $_POST['headerTemplates'] ) : array();
 		$raw_footers       = isset( $_POST['footerTemplates'] ) ? wp_unslash( $_POST['footerTemplates'] ) : array();
 		$default_header    = isset( $_POST['defaultHeader'] ) ? absint( wp_unslash( $_POST['defaultHeader'] ) ) : 0;
@@ -295,7 +294,6 @@ class Batch_Convert_Wizard {
 		$new_theme         = isset( $_POST['newTheme'] ) ? sanitize_text_field( wp_unslash( $_POST['newTheme'] ) ) : '';
 		$copy_custom_css   = ! empty( $_POST['copyCustomCss'] );
 		$selected_page_ids = array_map( 'absint', (array) $raw_pages );
-		$disabled_meta_ids = array_map( 'absint', (array) $raw_disabled );
 		$selected_headers  = $this->normalize_template_selection( $raw_headers );
 		$selected_footers  = $this->normalize_template_selection( $raw_footers );
 
@@ -328,7 +326,7 @@ class Batch_Convert_Wizard {
 			$warnings[] = $this->build_theme_warning_from_error( $theme_result );
 		}
 
-		$pages     = $this->prepare_job_pages( $selected_page_ids, $disabled_meta_ids );
+		$pages     = $this->prepare_job_pages( $selected_page_ids );
 		$templates = $this->prepare_job_templates(
 			$mode,
 			$selected_headers,
@@ -440,20 +438,16 @@ class Batch_Convert_Wizard {
 			);
 			$duration  = 0;
 			$view_url  = '';
-			$keep_meta = false;
+			$keep_meta = ! empty( $job['options']['keep_meta'] );
 
 			if ( 'page' === $item['type'] ) {
 				$page_info = $item['data'];
 
-				$options              = $job['options'];
-				$options['keep_meta'] = ! empty( $page_info['keep_meta'] );
-
 				$start_time = microtime( true );
-				$result     = $this->process_single_post( (int) $page_info['id'], $options );
+				$result     = $this->process_single_post( (int) $page_info['id'], $job['options'] );
 				$duration   = max( 0, microtime( true ) - $start_time );
 				$converted_post_id = ! empty( $result['converted_post_id'] ) ? (int) $result['converted_post_id'] : (int) $result['target'];
 				$view_url          = $converted_post_id ? get_permalink( $converted_post_id ) : '';
-				$keep_meta  = ! empty( $page_info['keep_meta'] );
 
 				$result_entry = array(
 					'id'        => (int) $page_info['id'],
@@ -1142,9 +1136,8 @@ class Batch_Convert_Wizard {
 	 * Prepare job pages configuration.
 	 *
 	 * @param array $page_ids Selected page IDs.
-	 * @param array $disabled_meta Page IDs where meta copy is disabled.
 	 */
-	private function prepare_job_pages( array $page_ids, array $disabled_meta ): array {
+	private function prepare_job_pages( array $page_ids ): array {
 		$pages = array();
 
 		foreach ( $page_ids as $page_id ) {
@@ -1154,9 +1147,8 @@ class Batch_Convert_Wizard {
 			}
 
 			$pages[] = array(
-				'id'        => (int) $page_id,
-				'title'     => get_the_title( $post ),
-				'keep_meta' => ! in_array( (int) $page_id, $disabled_meta, true ),
+				'id'    => (int) $page_id,
+				'title' => get_the_title( $post ),
 			);
 		}
 
@@ -1338,7 +1330,7 @@ class Batch_Convert_Wizard {
 			'mode'            => 'create',
 			'wrap_full_width' => false,
 			'assign_template' => false,
-			'keep_meta'       => true,
+			'keep_meta'       => Admin_Settings::is_copy_meta_enabled(),
 			'skip_converted'  => $skip_converted,
             'conflict_policy' => $conflict_policy,
 		);
@@ -2667,8 +2659,6 @@ class Batch_Convert_Wizard {
 			'selectionSummary'       => __( '%1$d selected / %2$d total', 'elementor-to-gutenberg' ),
 			'noPagesFound'           => __( 'No Elementor pages found for conversion.', 'elementor-to-gutenberg' ),
 			'skipConverted'          => __( 'Skip pages that were already converted', 'elementor-to-gutenberg' ),
-			'disableMeta'            => __( 'Don’t copy meta fields & featured image', 'elementor-to-gutenberg' ),
-			'copyMeta'               => __( 'Copy metadata and featured image', 'elementor-to-gutenberg' ),
 			'selectAllEligible'      => __( 'Select all eligible', 'elementor-to-gutenberg' ),
 			'clearSelection'         => __( 'Clear selection', 'elementor-to-gutenberg' ),
 			'selectionChip'          => __( '%1$d selected', 'elementor-to-gutenberg' ),
@@ -2710,7 +2700,6 @@ class Batch_Convert_Wizard {
 			'themeWarningInline'     => __( 'Theme step failed — conversion continued using current theme. Update WordPress to use this theme.', 'elementor-to-gutenberg' ),
 			'reviewTitle'            => __( 'Review & Confirm', 'elementor-to-gutenberg' ),
 			'reviewSummary'          => __( '%1$d pages selected — %2$d will be converted, %3$d skipped.', 'elementor-to-gutenberg' ),
-			'metaDisabled'           => __( '%1$d pages will be converted without copying meta fields or featured image.', 'elementor-to-gutenberg' ),
 			'startConversion'        => __( 'Start Conversion', 'elementor-to-gutenberg' ),
 			'backgroundInfo'         => __( 'Conversion runs in the background. You can safely close this page.', 'elementor-to-gutenberg' ),
 			'progressTitle'          => __( 'Progress & Results', 'elementor-to-gutenberg' ),
