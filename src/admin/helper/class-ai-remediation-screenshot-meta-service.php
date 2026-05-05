@@ -33,22 +33,34 @@ defined( 'ABSPATH' ) || exit;
  * Screenshot data is keyed to the converted (target) page ID.
  *
  * Meta keys used:
- *   _etg_ai_elementor_screenshot_url  – Elementor source page screenshot URL
- *   _etg_ai_gutenberg_screenshot_url  – Converted Gutenberg page screenshot URL
- *   _etg_ai_screenshot_status         – Generation status constant
- *   _etg_ai_screenshot_generated_at   – Timestamp of last generation attempt
+ *   _etg_ai_elementor_screenshot_url         – Elementor source page screenshot URL (desktop)
+ *   _etg_ai_gutenberg_screenshot_url         – Converted Gutenberg page screenshot URL (desktop)
+ *   _etg_ai_elementor_screenshot_mobile_url  – Elementor source page screenshot URL (mobile)
+ *   _etg_ai_gutenberg_screenshot_mobile_url  – Converted Gutenberg page screenshot URL (mobile)
+ *   _etg_ai_screenshot_status                – Generation status constant
+ *   _etg_ai_screenshot_generated_at          – Timestamp of last generation attempt
  */
 class AI_Remediation_Screenshot_Meta_Service {
 
 	/**
-	 * Meta key for the Elementor source page screenshot URL.
+	 * Meta key for the Elementor source page screenshot URL (desktop).
 	 */
 	const META_ELEMENTOR_URL = '_etg_ai_elementor_screenshot_url';
 
 	/**
-	 * Meta key for the converted Gutenberg page screenshot URL.
+	 * Meta key for the converted Gutenberg page screenshot URL (desktop).
 	 */
 	const META_GUTENBERG_URL = '_etg_ai_gutenberg_screenshot_url';
+
+	/**
+	 * Meta key for the Elementor source page screenshot URL (mobile).
+	 */
+	const META_ELEMENTOR_MOBILE_URL = '_etg_ai_elementor_screenshot_mobile_url';
+
+	/**
+	 * Meta key for the converted Gutenberg page screenshot URL (mobile).
+	 */
+	const META_GUTENBERG_MOBILE_URL = '_etg_ai_gutenberg_screenshot_mobile_url';
 
 	/**
 	 * Meta key for the screenshot generation status.
@@ -81,7 +93,7 @@ class AI_Remediation_Screenshot_Meta_Service {
 	const STATUS_NOT_GENERATED = 'not_generated';
 
 	/**
-	 * Get the stored Elementor screenshot URL for a converted Gutenberg page.
+	 * Get the stored Elementor desktop screenshot URL for a converted Gutenberg page.
 	 *
 	 * @param int $target_id Converted Gutenberg page ID.
 	 * @return string Empty string when not set.
@@ -91,13 +103,33 @@ class AI_Remediation_Screenshot_Meta_Service {
 	}
 
 	/**
-	 * Get the stored Gutenberg screenshot URL for a converted Gutenberg page.
+	 * Get the stored Gutenberg desktop screenshot URL for a converted Gutenberg page.
 	 *
 	 * @param int $target_id Converted Gutenberg page ID.
 	 * @return string Empty string when not set.
 	 */
 	public static function get_gutenberg_url( int $target_id ): string {
 		return (string) get_post_meta( $target_id, self::META_GUTENBERG_URL, true );
+	}
+
+	/**
+	 * Get the stored Elementor mobile screenshot URL for a converted Gutenberg page.
+	 *
+	 * @param int $target_id Converted Gutenberg page ID.
+	 * @return string Empty string when not set.
+	 */
+	public static function get_elementor_mobile_url( int $target_id ): string {
+		return (string) get_post_meta( $target_id, self::META_ELEMENTOR_MOBILE_URL, true );
+	}
+
+	/**
+	 * Get the stored Gutenberg mobile screenshot URL for a converted Gutenberg page.
+	 *
+	 * @param int $target_id Converted Gutenberg page ID.
+	 * @return string Empty string when not set.
+	 */
+	public static function get_gutenberg_mobile_url( int $target_id ): string {
+		return (string) get_post_meta( $target_id, self::META_GUTENBERG_MOBILE_URL, true );
 	}
 
 	/**
@@ -114,31 +146,41 @@ class AI_Remediation_Screenshot_Meta_Service {
 	/**
 	 * Check whether non-empty, successful screenshot URLs are already cached.
 	 *
+	 * Requires all four URLs (desktop + mobile for each page).
+	 *
 	 * @param int $target_id Converted Gutenberg page ID.
 	 * @return bool
 	 */
 	public static function has_valid_screenshots( int $target_id ): bool {
 		return '' !== self::get_elementor_url( $target_id )
 			&& '' !== self::get_gutenberg_url( $target_id )
+			&& '' !== self::get_elementor_mobile_url( $target_id )
+			&& '' !== self::get_gutenberg_mobile_url( $target_id )
 			&& self::STATUS_SUCCESS === self::get_status( $target_id );
 	}
 
 	/**
 	 * Persist screenshot URLs and status for a converted page.
 	 *
-	 * @param int    $target_id     Converted Gutenberg page ID.
-	 * @param string $elementor_url Elementor source page screenshot URL.
-	 * @param string $gutenberg_url Converted Gutenberg page screenshot URL.
-	 * @param string $status        One of the STATUS_* constants.
+	 * @param int    $target_id            Converted Gutenberg page ID.
+	 * @param string $elementor_url        Elementor source page desktop screenshot URL.
+	 * @param string $gutenberg_url        Converted Gutenberg page desktop screenshot URL.
+	 * @param string $elementor_mobile_url Elementor source page mobile screenshot URL.
+	 * @param string $gutenberg_mobile_url Converted Gutenberg page mobile screenshot URL.
+	 * @param string $status               One of the STATUS_* constants.
 	 */
 	public static function save(
 		int $target_id,
 		string $elementor_url,
 		string $gutenberg_url,
+		string $elementor_mobile_url,
+		string $gutenberg_mobile_url,
 		string $status
 	): void {
 		update_post_meta( $target_id, self::META_ELEMENTOR_URL, $elementor_url );
 		update_post_meta( $target_id, self::META_GUTENBERG_URL, $gutenberg_url );
+		update_post_meta( $target_id, self::META_ELEMENTOR_MOBILE_URL, $elementor_mobile_url );
+		update_post_meta( $target_id, self::META_GUTENBERG_MOBILE_URL, $gutenberg_mobile_url );
 		update_post_meta( $target_id, self::META_STATUS, $status );
 		update_post_meta( $target_id, self::META_GENERATED_AT, current_time( 'mysql' ) );
 	}
@@ -203,24 +245,37 @@ class AI_Remediation_Screenshot_Meta_Service {
 		// Mark as pending before the remote calls.
 		self::save_status( $target_id, self::STATUS_PENDING );
 
-		$elementor_result = AI_Remediation_Screenshot_Api_Service::fetch( $source_url );
-		$gutenberg_result = AI_Remediation_Screenshot_Api_Service::fetch( $target_url );
+		$elementor_result        = AI_Remediation_Screenshot_Api_Service::fetch( $source_url, AI_Remediation_Screenshot_Api_Service::DEVICE_DESKTOP );
+		$gutenberg_result        = AI_Remediation_Screenshot_Api_Service::fetch( $target_url, AI_Remediation_Screenshot_Api_Service::DEVICE_DESKTOP );
+		$elementor_mobile_result = AI_Remediation_Screenshot_Api_Service::fetch( $source_url, AI_Remediation_Screenshot_Api_Service::DEVICE_MOBILE );
+		$gutenberg_mobile_result = AI_Remediation_Screenshot_Api_Service::fetch( $target_url, AI_Remediation_Screenshot_Api_Service::DEVICE_MOBILE );
 
-		$elementor_url = $elementor_result['success'] ? $elementor_result['file_url'] : '';
-		$gutenberg_url = $gutenberg_result['success'] ? $gutenberg_result['file_url'] : '';
+		$elementor_url        = $elementor_result['success'] ? $elementor_result['file_url'] : '';
+		$gutenberg_url        = $gutenberg_result['success'] ? $gutenberg_result['file_url'] : '';
+		$elementor_mobile_url = $elementor_mobile_result['success'] ? $elementor_mobile_result['file_url'] : '';
+		$gutenberg_mobile_url = $gutenberg_mobile_result['success'] ? $gutenberg_mobile_result['file_url'] : '';
 
-		$both_ok = $elementor_result['success'] && $gutenberg_result['success'];
-		$status  = $both_ok ? self::STATUS_SUCCESS : self::STATUS_FAILED;
+		$all_ok = $elementor_result['success']
+			&& $gutenberg_result['success']
+			&& $elementor_mobile_result['success']
+			&& $gutenberg_mobile_result['success'];
+		$status = $all_ok ? self::STATUS_SUCCESS : self::STATUS_FAILED;
 
-		self::save( $target_id, $elementor_url, $gutenberg_url, $status );
+		self::save( $target_id, $elementor_url, $gutenberg_url, $elementor_mobile_url, $gutenberg_mobile_url, $status );
 
-		if ( ! $both_ok ) {
+		if ( ! $all_ok ) {
 			$errors = array();
 			if ( ! $elementor_result['success'] ) {
-				$errors[] = 'Elementor: ' . $elementor_result['error'];
+				$errors[] = 'Elementor (desktop): ' . $elementor_result['error'];
 			}
 			if ( ! $gutenberg_result['success'] ) {
-				$errors[] = 'Gutenberg: ' . $gutenberg_result['error'];
+				$errors[] = 'Gutenberg (desktop): ' . $gutenberg_result['error'];
+			}
+			if ( ! $elementor_mobile_result['success'] ) {
+				$errors[] = 'Elementor (mobile): ' . $elementor_mobile_result['error'];
+			}
+			if ( ! $gutenberg_mobile_result['success'] ) {
+				$errors[] = 'Gutenberg (mobile): ' . $gutenberg_mobile_result['error'];
 			}
 			return array(
 				'success' => false,

@@ -45,15 +45,26 @@ class AI_Remediation_Screenshot_Api_Service {
 	const DEFAULT_TIMEOUT = 15;
 
 	/**
+	 * Device value for desktop screenshots.
+	 */
+	const DEVICE_DESKTOP = 'desktop';
+
+	/**
+	 * Device value for mobile screenshots.
+	 */
+	const DEVICE_MOBILE = 'mobile';
+
+	/**
 	 * Fetch a screenshot for the given public page URL.
 	 *
-	 * Sends the page URL to the configured screenshot service endpoint.
+	 * Sends the page URL plus a device flag to the configured screenshot service.
 	 * Validates the JSON response and extracts file_url.
 	 *
 	 * @param string $page_url The public URL to screenshot.
+	 * @param string $device   Either 'desktop' or 'mobile'. Defaults to desktop.
 	 * @return array{success: bool, file_url: string, error: string}
 	 */
-	public static function fetch( string $page_url ): array {
+	public static function fetch( string $page_url, string $device = self::DEVICE_DESKTOP ): array {
 		$failure = array(
 			'success'  => false,
 			'file_url' => '',
@@ -72,13 +83,20 @@ class AI_Remediation_Screenshot_Api_Service {
 			return $failure;
 		}
 
+		$device = ( self::DEVICE_MOBILE === $device ) ? self::DEVICE_MOBILE : self::DEVICE_DESKTOP;
+
 		$response = wp_remote_post(
 			$endpoint,
 			array(
 				'timeout'   => self::get_timeout(),
 				'sslverify' => true,
 				'headers'   => array( 'Content-Type' => 'application/json' ),
-				'body'      => wp_json_encode( array( 'url' => $page_url ) ),
+				'body'      => wp_json_encode(
+					array(
+						'url'    => $page_url,
+						'device' => $device,
+					)
+				),
 			)
 		);
 
