@@ -79,6 +79,7 @@
             this.config = config;
             this.strings = config.strings || {};
             this.pages = Array.isArray(config.pages) ? config.pages.slice() : [];
+            this.postTypes = Array.isArray(config.postTypes) ? config.postTypes.slice() : [];
             this.themes = config.themes || {currentTheme: null, installedBlockThemes: [], suggestedCoreThemes: []};
             this.templates = config.templates || {
                 headers: [],
@@ -115,6 +116,7 @@
                 aiImprove: null,
                 filterStatus: 'all',
                 searchQuery: '',
+                activeTab: this.postTypes.length ? this.postTypes[0].slug : '',
             };
 
             if (config.activeJob && config.activeJob.id) {
@@ -1162,6 +1164,48 @@
             toolbar.appendChild(bulkActions);
             container.appendChild(toolbar);
 
+            if (this.postTypes.length > 1) {
+                const masterRow = createElement('div', 'ele2gb-master-select-row');
+                const masterLabel = document.createElement('label');
+                masterLabel.className = 'ele2gb-master-select-label';
+                const masterCheckbox = document.createElement('input');
+                masterCheckbox.type = 'checkbox';
+                masterCheckbox.className = 'ele2gb-master-select-checkbox';
+                const allPageIds = this.pages.map((p) => p.id);
+                masterCheckbox.checked = allPageIds.length > 0 && allPageIds.every((id) => this.state.selectedPageIds.has(id));
+                masterCheckbox.addEventListener('change', () => {
+                    if (masterCheckbox.checked) {
+                        this.pages.forEach((p) => { this.state.selectedPageIds.add(p.id); });
+                    } else {
+                        this.state.selectedPageIds = new Set();
+                    }
+                    this.render();
+                });
+                masterLabel.appendChild(masterCheckbox);
+                masterLabel.appendChild(createElement('span', null, this.strings.selectAllAcrossTypes || 'Select all across all types'));
+                masterRow.appendChild(masterLabel);
+                container.appendChild(masterRow);
+
+                const tabStrip = createElement('div', 'ele2gb-tab-strip');
+                const tabCountTpl = this.strings.tabCountLabel || '%1$s (%2$d)';
+                this.postTypes.forEach((pt) => {
+                    const tab = document.createElement('button');
+                    tab.type = 'button';
+                    tab.className = 'ele2gb-tab' + (this.state.activeTab === pt.slug ? ' is-active' : '');
+                    tab.textContent = formatString(tabCountTpl, pt.label, pt.count);
+                    tab.addEventListener('click', () => {
+                        if (this.state.activeTab === pt.slug) {
+                            return;
+                        }
+                        this.state.activeTab = pt.slug;
+                        this.state.tablePage = 1;
+                        this.render();
+                    });
+                    tabStrip.appendChild(tab);
+                });
+                container.appendChild(tabStrip);
+            }
+
             const tableWrapper = createElement('div', 'ele2gb-table-wrapper');
             const table = createElement('table', 'ele2gb-wizard-table widefat fixed striped');
             const thead = document.createElement('thead');
@@ -1516,6 +1560,12 @@
 
         getFilteredPages() {
             let pages = this.pages.slice();
+            const activeTab = this.state.activeTab || '';
+            if (activeTab && this.postTypes.length > 1) {
+                pages = pages.filter(function (page) {
+                    return (page.postType || '') === activeTab;
+                });
+            }
             const q = (this.state.searchQuery || '').trim().toLowerCase();
             if (q) {
                 pages = pages.filter(function (page) {
@@ -1970,7 +2020,9 @@
                 const titleWrapper = createElement('div', null, result.title);
                 titleTd.appendChild(titleWrapper);
                 const metaParts = [];
-                const typeLabel = this.formatResultType(result.type);
+                const typeLabel = (result.type === 'page' && result.postTypeLabel)
+                    ? String(result.postTypeLabel)
+                    : this.formatResultType(result.type);
                 if (typeLabel) {
                     metaParts.push(typeLabel);
                 }

@@ -138,6 +138,31 @@ class Batch_Convert_Wizard {
 	private $cached_templates = null;
 
 	/**
+	 * Cached list of post types eligible for conversion.
+	 *
+	 * @var array<int,string>|null
+	 */
+	private $cached_convertible_post_types = null;
+
+	/**
+	 * Post types that have their own dedicated flow and must not appear as regular content.
+	 */
+	private const EXCLUDED_POST_TYPES = array(
+		'elementor_library',
+		'elementor-hf',
+		'wp_template',
+		'wp_template_part',
+		'wp_block',
+		'attachment',
+		'revision',
+		'nav_menu_item',
+		'customize_changeset',
+		'oembed_cache',
+		'user_request',
+		'wp_navigation',
+	);
+
+	/**
 	 * Get singleton instance.
 	 */
 	public static function instance(): self {
@@ -200,6 +225,8 @@ class Batch_Convert_Wizard {
 			true
 		);
 
+		$pages_data = $this->get_elementor_pages_data();
+
 		wp_localize_script(
 			'ele2gb-batch-wizard',
 			'ele2gbBatchWizard',
@@ -208,7 +235,8 @@ class Batch_Convert_Wizard {
 				'aiImproveBaseUrl' => admin_url( 'admin.php?page=' . AI_Improvement_Admin::MENU_SLUG ),
 				'nonce'            => wp_create_nonce( self::NONCE_ACTION ),
 				'aiImproveNonce'   => wp_create_nonce( self::AI_IMPROVE_NONCE_ACTION ),
-				'pages'        => $this->get_elementor_pages_data(),
+				'pages'        => $pages_data,
+				'postTypes'    => $this->get_post_types_descriptor( $pages_data ),
 				'strings'      => $this->get_strings(),
 				'templates'    => $this->get_header_footer_templates_data(),
 				'themes'       => $this->get_theme_compatibility_data(),
@@ -245,9 +273,12 @@ class Batch_Convert_Wizard {
 	public function ajax_get_pages(): void {
 		$this->verify_ajax_request();
 
+		$pages_data = $this->get_elementor_pages_data();
+
 		wp_send_json_success(
 			array(
-				'pages'     => $this->get_elementor_pages_data(),
+				'pages'     => $pages_data,
+				'postTypes' => $this->get_post_types_descriptor( $pages_data ),
 				'templates' => $this->get_header_footer_templates_data(),
 				'preflight' => $this->build_preflight_summary(),
 			)
@@ -455,6 +486,17 @@ class Batch_Convert_Wizard {
 				$view_url          = $converted_post_id ? get_permalink( $converted_post_id ) : '';
 				$keep_meta  = ! empty( $page_info['keep_meta'] );
 
+				$source_pt_slug  = (string) get_post_type( (int) $page_info['id'] );
+				$source_pt_label = $source_pt_slug;
+				$source_pt_obj   = $source_pt_slug ? get_post_type_object( $source_pt_slug ) : null;
+				if ( $source_pt_obj ) {
+					if ( ! empty( $source_pt_obj->labels->singular_name ) ) {
+						$source_pt_label = (string) $source_pt_obj->labels->singular_name;
+					} elseif ( ! empty( $source_pt_obj->label ) ) {
+						$source_pt_label = (string) $source_pt_obj->label;
+					}
+				}
+
 				$result_entry = array(
 					'id'        => (int) $page_info['id'],
 					'title'     => $page_info['title'],
@@ -466,6 +508,8 @@ class Batch_Convert_Wizard {
 					'view_url'  => $view_url,
 					'keep_meta' => $keep_meta,
 					'type'      => 'page',
+					'post_type'       => $source_pt_slug,
+					'post_type_label' => $source_pt_label,
 				);
 
 				$this->store_page_conversion_result( (int) $page_info['id'], $result_entry );
@@ -544,15 +588,24 @@ class Batch_Convert_Wizard {
 
 	/**
 	 * Retrieve Elementor pages data for the wizard.
+	 *
+	 * Returns a flat list of items across every post type that has Elementor data
+	 * and supports the block editor. Each item carries `postType` and `postTypeLabel`
+	 * so the UI can group them into tabs.
 	 */
 	private function get_elementor_pages_data(): array {
-		$paged       = 1;
+		$post_types = $this->get_convertible_post_types();
+		if ( empty( $post_types ) ) {
+			return array();
+		}
+
 		$accumulated = array();
+		$paged       = 1;
 
 		do {
 			$query = new WP_Query(
 				array(
-					'post_type'      => array( 'page' ),
+					'post_type'      => $post_types,
 					'post_status'    => array( 'publish', 'draft', 'pending', 'future', 'private' ),
 					'posts_per_page' => self::ITEMS_PER_QUERY,
 					'paged'          => $paged,
@@ -576,6 +629,114 @@ class Batch_Convert_Wizard {
 		} while ( $paged <= $max_pages );
 
 		return $accumulated;
+	}
+
+	/**
+	 * Discover post types that have at least one post with Elementor data and support the block editor.
+	 *
+	 * @return array<int,string>
+	 */
+	private function get_convertible_post_types(): array {
+		if ( null !== $this->cached_convertible_post_types ) {
+			return $this->cached_convertible_post_types;
+		}
+
+		global $wpdb;
+
+		$slugs = $wpdb->get_col(
+			"SELECT DISTINCT p.post_type
+			 FROM {$wpdb->posts} p
+			 INNER JOIN {$wpdb->postmeta} pm ON pm.post_id = p.ID
+			 WHERE pm.meta_key = '_elementor_data'
+			 AND pm.meta_value <> ''"
+		);
+
+		$result = array();
+		foreach ( (array) $slugs as $slug ) {
+			$slug = (string) $slug;
+			if ( '' === $slug ) {
+				continue;
+			}
+			if ( in_array( $slug, self::EXCLUDED_POST_TYPES, true ) ) {
+				continue;
+			}
+			if ( ! post_type_exists( $slug ) ) {
+				continue;
+			}
+			if ( ! post_type_supports( $slug, 'editor' ) ) {
+				continue;
+			}
+
+			$pt_object = get_post_type_object( $slug );
+			if ( ! $pt_object || empty( $pt_object->show_ui ) ) {
+				continue;
+			}
+
+			$result[] = $slug;
+		}
+
+		$this->cached_convertible_post_types = $result;
+
+		return $result;
+	}
+
+	/**
+	 * Build descriptors for the post-type tabs in the wizard UI.
+	 *
+	 * @return array<int,array{slug:string,label:string,count:int}>
+	 */
+	private function get_post_types_descriptor( array $pages ): array {
+		$post_types = $this->get_convertible_post_types();
+		if ( empty( $post_types ) ) {
+			return array();
+		}
+
+		$counts = array();
+		foreach ( $pages as $page ) {
+			$pt = isset( $page['postType'] ) ? (string) $page['postType'] : '';
+			if ( '' === $pt ) {
+				continue;
+			}
+			$counts[ $pt ] = isset( $counts[ $pt ] ) ? $counts[ $pt ] + 1 : 1;
+		}
+
+		$descriptors = array();
+		foreach ( $post_types as $slug ) {
+			if ( empty( $counts[ $slug ] ) ) {
+				continue;
+			}
+
+			$pt_object = get_post_type_object( $slug );
+			$label     = $slug;
+			if ( $pt_object ) {
+				if ( ! empty( $pt_object->labels->name ) ) {
+					$label = (string) $pt_object->labels->name;
+				} elseif ( ! empty( $pt_object->label ) ) {
+					$label = (string) $pt_object->label;
+				}
+			}
+
+			$descriptors[] = array(
+				'slug'  => $slug,
+				'label' => $label,
+				'count' => (int) $counts[ $slug ],
+			);
+		}
+
+		usort(
+			$descriptors,
+			static function ( array $a, array $b ): int {
+				$priority = array( 'page' => 0, 'post' => 1 );
+				$pa       = isset( $priority[ $a['slug'] ] ) ? $priority[ $a['slug'] ] : 2;
+				$pb       = isset( $priority[ $b['slug'] ] ) ? $priority[ $b['slug'] ] : 2;
+				if ( $pa !== $pb ) {
+					return $pa - $pb;
+				}
+				return strcasecmp( $a['label'], $b['label'] );
+			}
+		);
+
+		return $descriptors;
 	}
 
 	/**
@@ -1122,6 +1283,17 @@ class Batch_Convert_Wizard {
 
 		$view_converted = $target_id ? get_permalink( $target_id ) : '';
 
+		$post_type_slug  = (string) get_post_type( $post );
+		$post_type_label = $post_type_slug;
+		$pt_object       = get_post_type_object( $post_type_slug );
+		if ( $pt_object ) {
+			if ( ! empty( $pt_object->labels->singular_name ) ) {
+				$post_type_label = (string) $pt_object->labels->singular_name;
+			} elseif ( ! empty( $pt_object->label ) ) {
+				$post_type_label = (string) $pt_object->label;
+			}
+		}
+
 		return array(
 			'id'                => (int) $post->ID,
 			'title'             => get_the_title( $post ),
@@ -1135,6 +1307,8 @@ class Batch_Convert_Wizard {
 			'viewConvertedUrl'  => $view_converted,
 			'editUrl'           => get_edit_post_link( $post ),
 			'slug'              => $post->post_name,
+			'postType'          => $post_type_slug,
+			'postTypeLabel'     => $post_type_label,
 		);
 	}
 
@@ -1147,9 +1321,14 @@ class Batch_Convert_Wizard {
 	private function prepare_job_pages( array $page_ids, array $disabled_meta ): array {
 		$pages = array();
 
+		$convertible = $this->get_convertible_post_types();
+
 		foreach ( $page_ids as $page_id ) {
 			$post = get_post( $page_id );
-			if ( ! $post instanceof WP_Post || 'page' !== get_post_type( $post ) ) {
+			if ( ! $post instanceof WP_Post ) {
+				continue;
+			}
+			if ( ! in_array( get_post_type( $post ), $convertible, true ) ) {
 				continue;
 			}
 
@@ -1376,7 +1555,7 @@ class Batch_Convert_Wizard {
             return 0;
         }
 
-        if ( 'page' !== $candidate->post_type ) {
+        if ( ! in_array( $candidate->post_type, $this->get_convertible_post_types(), true ) ) {
             return 0;
         }
 
@@ -1632,8 +1811,8 @@ class Batch_Convert_Wizard {
 			'converted_post_id' => 0,
 		);
 
-		if ( ! $post || 'page' !== $post->post_type ) {
-			$message           = esc_html__( 'Skipped: only pages can be converted.', 'elementor-to-gutenberg' );
+		if ( ! $post || ! in_array( $post->post_type, $this->get_convertible_post_types(), true ) ) {
+			$message           = esc_html__( 'Skipped: only Elementor posts can be converted.', 'elementor-to-gutenberg' );
 			$result['message'] = $message;
 
 			return $result;
@@ -2562,6 +2741,8 @@ class Batch_Convert_Wizard {
 					'type'     => isset( $item['type'] ) ? (string) $item['type'] : 'page',
 					'role'     => isset( $item['role'] ) ? (string) $item['role'] : '',
 					'source'   => isset( $item['source'] ) ? (string) $item['source'] : '',
+					'postType'      => isset( $item['post_type'] ) ? (string) $item['post_type'] : '',
+					'postTypeLabel' => isset( $item['post_type_label'] ) ? (string) $item['post_type_label'] : '',
 				);
 			},
 			$job['results']
@@ -2662,10 +2843,12 @@ class Batch_Convert_Wizard {
 			'modeCustomSubtext'      => __( 'For testing or staged migration', 'elementor-to-gutenberg' ),
 			'continue'               => __( 'Continue', 'elementor-to-gutenberg' ),
 			'back'                   => __( 'Back', 'elementor-to-gutenberg' ),
-			'selectPagesTitle'       => __( 'Select Pages', 'elementor-to-gutenberg' ),
+			'selectPagesTitle'       => __( 'Select Content', 'elementor-to-gutenberg' ),
 			'selectAll'              => __( 'Select all', 'elementor-to-gutenberg' ),
+			'selectAllAcrossTypes'   => __( 'Select all across all types', 'elementor-to-gutenberg' ),
 			'selectionSummary'       => __( '%1$d selected / %2$d total', 'elementor-to-gutenberg' ),
-			'noPagesFound'           => __( 'No Elementor pages found for conversion.', 'elementor-to-gutenberg' ),
+			'noPagesFound'           => __( 'No Elementor content found for conversion.', 'elementor-to-gutenberg' ),
+			'tabCountLabel'          => __( '%1$s (%2$d)', 'elementor-to-gutenberg' ),
 			'skipConverted'          => __( 'Skip pages that were already converted', 'elementor-to-gutenberg' ),
 			'disableMeta'            => __( 'Don’t copy meta fields & featured image', 'elementor-to-gutenberg' ),
 			'copyMeta'               => __( 'Copy metadata and featured image', 'elementor-to-gutenberg' ),
