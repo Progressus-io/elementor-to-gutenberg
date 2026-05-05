@@ -245,6 +245,24 @@ class Claude_Api_Service {
 	}
 
 	/**
+	 * Parse Claude's response text for the mobile-only improvement pass.
+	 *
+	 * The mobile pass should return only a CSS_RESULT block (no GUTENBERG_RESULT).
+	 * If the marker is missing the entire response is returned as the CSS body so
+	 * the caller can still recover something usable.
+	 *
+	 * @param string $text Raw Claude response text.
+	 * @return string CSS body without the CSS_RESULT label.
+	 */
+	public static function parse_css_only_response( string $text ): string {
+		if ( preg_match( '/CSS_RESULT:\s*(.*)/s', $text, $m ) ) {
+			return trim( $m[1] );
+		}
+
+		return trim( $text );
+	}
+
+	/**
 	 * Parse Claude's response text into CSS and Gutenberg content blocks.
 	 *
 	 * Expected format:
@@ -353,6 +371,42 @@ CSS_RESULT:
 
 GUTENBERG_RESULT:
 <full gutenberg post_content here>
+SYSTEM;
+	}
+
+	/**
+	 * Return the system prompt used for the mobile-only improvement pass.
+	 *
+	 * The mobile pass must NOT modify desktop styles or the Gutenberg post_content.
+	 * It returns only mobile-scoped @media query rules that the caller wraps into
+	 * a marker block and merges into the existing CSS file.
+	 *
+	 * @return string
+	 */
+	public static function get_mobile_improvement_system_prompt(): string {
+		return <<<'SYSTEM'
+You are a WordPress developer expert in both Elementor and Gutenberg (Block Editor).
+
+You are running a MOBILE-ONLY improvement pass on a Gutenberg page that was auto-converted from an Elementor page. The user has already improved desktop layout. You must now make the page render correctly on mobile WITHOUT affecting desktop styles.
+
+YOUR JOB:
+Carefully compare the two MOBILE screenshots (Elementor original mobile vs Gutenberg converted mobile). Identify every mobile-only visual difference — spacing, typography sizing, alignment, stacking, image sizing — and fix them by writing CSS rules that only apply on mobile viewports.
+
+STRICT RULES:
+1. Output a SINGLE labeled section: CSS_RESULT — nothing else before or after.
+2. CSS_RESULT must contain plain CSS only (no explanation, no markdown fences, no GUTENBERG_RESULT).
+3. EVERY rule you output MUST be wrapped in an `@media` query that only matches mobile (e.g. `@media (max-width: 781px) { ... }` or `@media (max-width: 600px) { ... }`). NEVER output any rule that applies on desktop.
+4. Do NOT modify or duplicate existing desktop CSS rules. Only ADD mobile-scoped overrides.
+5. Do NOT propose changes to the Gutenberg post_content. The block structure is fixed for this pass.
+6. Use the "CSS Namespace" class from PAGE CONTEXT (e.g. .etg-page-97) as the root selector for ALL CSS rules. Never use the Target Gutenberg page ID in any CSS class name.
+7. If no mobile changes are needed, output an empty CSS_RESULT body.
+8. Do NOT include `<style>` tags, HTML, or markdown — plain CSS only.
+
+REQUIRED OUTPUT FORMAT (exactly this structure, no deviations):
+CSS_RESULT:
+@media (max-width: 781px) {
+  .etg-page-XX .some-block { ... }
+}
 SYSTEM;
 	}
 
