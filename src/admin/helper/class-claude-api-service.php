@@ -42,25 +42,27 @@ class Claude_Api_Service {
 	/**
 	 * Send a prompt to Claude and return the text response.
 	 *
-	 * When screenshot URLs are provided they are included as vision image blocks
-	 * so Claude can visually compare the Elementor and Gutenberg pages on both
-	 * desktop and mobile viewports.
+	 * Screenshot sets are arrays of chunk URLs — one element for single-screen
+	 * pages, multiple for tall pages split by the screenshot service. Each chunk
+	 * is sent as a separate vision image block labelled "part X of Y".
+	 * Only pass the screenshot sets that are relevant to the AI pass being run:
+	 * desktop passes receive desktop chunks; the mobile pass receives mobile chunks.
 	 *
-	 * @param string $prompt                The full prompt text.
-	 * @param string $elementor_shot        Optional public URL of the Elementor desktop screenshot.
-	 * @param string $gutenberg_shot        Optional public URL of the Gutenberg desktop screenshot.
-	 * @param string $system_prompt         Optional system prompt override. Defaults to get_system_prompt().
-	 * @param string $elementor_mobile_shot Optional public URL of the Elementor mobile screenshot.
-	 * @param string $gutenberg_mobile_shot Optional public URL of the Gutenberg mobile screenshot.
+	 * @param string   $prompt                The full prompt text.
+	 * @param string[] $elementor_shots        Elementor desktop screenshot chunk URLs.
+	 * @param string[] $gutenberg_shots        Gutenberg desktop screenshot chunk URLs.
+	 * @param string   $system_prompt         Optional system prompt override.
+	 * @param string[] $elementor_mobile_shots Elementor mobile screenshot chunk URLs.
+	 * @param string[] $gutenberg_mobile_shots Gutenberg mobile screenshot chunk URLs.
 	 * @return array{success: bool, content: string, error: string}
 	 */
 	public static function send(
 		string $prompt,
-		string $elementor_shot = '',
-		string $gutenberg_shot = '',
+		array $elementor_shots = array(),
+		array $gutenberg_shots = array(),
 		string $system_prompt = '',
-		string $elementor_mobile_shot = '',
-		string $gutenberg_mobile_shot = ''
+		array $elementor_mobile_shots = array(),
+		array $gutenberg_mobile_shots = array()
 	): array {
 		$api_key = self::get_api_key();
 
@@ -71,10 +73,10 @@ class Claude_Api_Service {
 		$resolved_system = '' !== $system_prompt ? $system_prompt : self::get_system_prompt();
 		$content         = self::build_message_content(
 			$prompt,
-			$elementor_shot,
-			$gutenberg_shot,
-			$elementor_mobile_shot,
-			$gutenberg_mobile_shot
+			$elementor_shots,
+			$gutenberg_shots,
+			$elementor_mobile_shots,
+			$gutenberg_mobile_shots
 		);
 
 		$body = wp_json_encode(
@@ -94,10 +96,10 @@ class Claude_Api_Service {
 			'event'                           => 'api_request',
 			'system_prompt'                   => $resolved_system,
 			'user_prompt'                     => $prompt,
-			'has_elementor_screenshot'        => '' !== $elementor_shot,
-			'has_gutenberg_screenshot'        => '' !== $gutenberg_shot,
-			'has_elementor_mobile_screenshot' => '' !== $elementor_mobile_shot,
-			'has_gutenberg_mobile_screenshot' => '' !== $gutenberg_mobile_shot,
+			'elementor_desktop_chunks'        => count( $elementor_shots ),
+			'gutenberg_desktop_chunks'        => count( $gutenberg_shots ),
+			'elementor_mobile_chunks'         => count( $elementor_mobile_shots ),
+			'gutenberg_mobile_chunks'         => count( $gutenberg_mobile_shots ),
 			'user_prompt_length'              => strlen( $prompt ),
 		) );
 
@@ -170,69 +172,56 @@ class Claude_Api_Service {
 	/**
 	 * Build the message content array for the API request.
 	 *
-	 * If screenshot URLs are provided, prepends them as vision image blocks so
-	 * Claude can see both pages on desktop and mobile before reading the text
-	 * prompt. Images without a valid URL are silently skipped.
+	 * Each screenshot set is an array of chunk URLs produced by the screenshot
+	 * service when a page exceeds the 7500 px height limit. Every chunk becomes
+	 * its own vision image block. Labels include "part X of Y" when there is
+	 * more than one chunk so Claude understands the vertical ordering.
 	 *
-	 * @param string $prompt                Full text prompt.
-	 * @param string $elementor_shot        Public URL of the Elementor desktop screenshot (optional).
-	 * @param string $gutenberg_shot        Public URL of the Gutenberg desktop screenshot (optional).
-	 * @param string $elementor_mobile_shot Public URL of the Elementor mobile screenshot (optional).
-	 * @param string $gutenberg_mobile_shot Public URL of the Gutenberg mobile screenshot (optional).
-	 * @return string|array A plain string when no images are present, a structured
+	 * @param string   $prompt                Full text prompt.
+	 * @param string[] $elementor_shots        Elementor desktop chunk URLs.
+	 * @param string[] $gutenberg_shots        Gutenberg desktop chunk URLs.
+	 * @param string[] $elementor_mobile_shots Elementor mobile chunk URLs.
+	 * @param string[] $gutenberg_mobile_shots Gutenberg mobile chunk URLs.
+	 * @return string|array Plain string when no valid images are present; structured
 	 *                      content array when at least one image URL is provided.
 	 */
 	private static function build_message_content(
 		string $prompt,
-		string $elementor_shot,
-		string $gutenberg_shot,
-		string $elementor_mobile_shot = '',
-		string $gutenberg_mobile_shot = ''
+		array $elementor_shots,
+		array $gutenberg_shots,
+		array $elementor_mobile_shots,
+		array $gutenberg_mobile_shots
 	) {
 		$image_blocks = array();
 
-		if ( '' !== $elementor_shot ) {
-			$image_blocks[] = array(
-				'type' => 'text',
-				'text' => 'This is a DESKTOP screenshot of the ORIGINAL Elementor page:',
-			);
-			$image_blocks[] = array(
-				'type'   => 'image',
-				'source' => array( 'type' => 'url', 'url' => $elementor_shot ),
-			);
-		}
+		$sets = array(
+			array( 'urls' => $elementor_shots,        'label' => 'DESKTOP screenshot of the ORIGINAL Elementor page' ),
+			array( 'urls' => $gutenberg_shots,        'label' => 'DESKTOP screenshot of the CONVERTED Gutenberg page' ),
+			array( 'urls' => $elementor_mobile_shots, 'label' => 'MOBILE screenshot of the ORIGINAL Elementor page' ),
+			array( 'urls' => $gutenberg_mobile_shots, 'label' => 'MOBILE screenshot of the CONVERTED Gutenberg page' ),
+		);
 
-		if ( '' !== $gutenberg_shot ) {
-			$image_blocks[] = array(
-				'type' => 'text',
-				'text' => 'This is a DESKTOP screenshot of the CONVERTED Gutenberg page:',
-			);
-			$image_blocks[] = array(
-				'type'   => 'image',
-				'source' => array( 'type' => 'url', 'url' => $gutenberg_shot ),
-			);
-		}
+		foreach ( $sets as $set ) {
+			$urls  = array_values( array_filter( $set['urls'], 'is_string' ) );
+			$total = count( $urls );
+			if ( 0 === $total ) {
+				continue;
+			}
 
-		if ( '' !== $elementor_mobile_shot ) {
-			$image_blocks[] = array(
-				'type' => 'text',
-				'text' => 'This is a MOBILE screenshot of the ORIGINAL Elementor page:',
-			);
-			$image_blocks[] = array(
-				'type'   => 'image',
-				'source' => array( 'type' => 'url', 'url' => $elementor_mobile_shot ),
-			);
-		}
-
-		if ( '' !== $gutenberg_mobile_shot ) {
-			$image_blocks[] = array(
-				'type' => 'text',
-				'text' => 'This is a MOBILE screenshot of the CONVERTED Gutenberg page:',
-			);
-			$image_blocks[] = array(
-				'type'   => 'image',
-				'source' => array( 'type' => 'url', 'url' => $gutenberg_mobile_shot ),
-			);
+			foreach ( $urls as $i => $url ) {
+				if ( '' === $url ) {
+					continue;
+				}
+				$part_suffix    = $total > 1 ? sprintf( ' (part %d of %d)', $i + 1, $total ) : '';
+				$image_blocks[] = array(
+					'type' => 'text',
+					'text' => 'This is a ' . $set['label'] . $part_suffix . ':',
+				);
+				$image_blocks[] = array(
+					'type'   => 'image',
+					'source' => array( 'type' => 'url', 'url' => $url ),
+				);
+			}
 		}
 
 		if ( empty( $image_blocks ) ) {

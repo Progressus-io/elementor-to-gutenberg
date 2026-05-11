@@ -30,7 +30,8 @@ defined( 'ABSPATH' ) || exit;
  * Class AI_Remediation_Screenshot_Api_Service
  *
  * Calls the external screenshot API endpoint, validates the JSON response,
- * and returns the file_url or a structured failure result.
+ * and returns an array of file URLs (one per vertical chunk when the page
+ * height exceeds the service's 7500 px chunk limit).
  */
 class AI_Remediation_Screenshot_Api_Service {
 
@@ -45,6 +46,16 @@ class AI_Remediation_Screenshot_Api_Service {
 	const DEFAULT_TIMEOUT = 15;
 
 	/**
+	 * Hardcoded screenshot service endpoint URL.
+	 */
+	const ENDPOINT_URL = 'http://lvendr.xyz/screanshots';
+
+	/**
+	 * Hardcoded request timeout in seconds.
+	 */
+	const HARDCODED_TIMEOUT = 60;
+
+	/**
 	 * Device value for desktop screenshots.
 	 */
 	const DEVICE_DESKTOP = 'desktop';
@@ -55,20 +66,22 @@ class AI_Remediation_Screenshot_Api_Service {
 	const DEVICE_MOBILE = 'mobile';
 
 	/**
-	 * Fetch a screenshot for the given public page URL.
+	 * Fetch screenshot(s) for the given public page URL.
 	 *
 	 * Sends the page URL plus a device flag to the configured screenshot service.
-	 * Validates the JSON response and extracts file_url.
+	 * When the rendered page height exceeds the service chunk limit the response
+	 * contains multiple files; this method returns all of their URLs.
 	 *
 	 * @param string $page_url The public URL to screenshot.
 	 * @param string $device   Either 'desktop' or 'mobile'. Defaults to desktop.
-	 * @return array{success: bool, file_url: string, error: string}
+	 * @return array{success: bool, file_urls: string[], count: int, error: string}
 	 */
 	public static function fetch( string $page_url, string $device = self::DEVICE_DESKTOP ): array {
 		$failure = array(
-			'success'  => false,
-			'file_url' => '',
-			'error'    => '',
+			'success'   => false,
+			'file_urls' => array(),
+			'count'     => 0,
+			'error'     => '',
 		);
 
 		$endpoint = self::get_endpoint_url();
@@ -128,28 +141,29 @@ class AI_Remediation_Screenshot_Api_Service {
 			return $failure;
 		}
 
-		$file_url = isset( $data['file_url'] ) ? (string) $data['file_url'] : '';
-		if ( '' === $file_url || false === filter_var( $file_url, FILTER_VALIDATE_URL ) ) {
-			$failure['error'] = __( 'Screenshot service returned a missing or invalid file_url.', 'elementor-to-gutenberg' );
+		// New chunked response: expects a "files" array.
+		if ( empty( $data['files'] ) || ! is_array( $data['files'] ) ) {
+			$failure['error'] = __( 'Screenshot service returned no files in the response.', 'elementor-to-gutenberg' );
 			return $failure;
 		}
 
+		$file_urls = array();
+		foreach ( $data['files'] as $file ) {
+			$url = isset( $file['file_url'] ) ? (string) $file['file_url'] : '';
+			if ( '' === $url || false === filter_var( $url, FILTER_VALIDATE_URL ) ) {
+				$failure['error'] = __( 'Screenshot service returned a missing or invalid file_url in one of the chunks.', 'elementor-to-gutenberg' );
+				return $failure;
+			}
+			$file_urls[] = esc_url_raw( $url );
+		}
+
 		return array(
-			'success'  => true,
-			'file_url' => esc_url_raw( $file_url ),
-			'error'    => '',
+			'success'   => true,
+			'file_urls' => $file_urls,
+			'count'     => count( $file_urls ),
+			'error'     => '',
 		);
 	}
-
-	/**
-	 * Hardcoded screenshot service endpoint URL.
-	 */
-	const ENDPOINT_URL = 'http://lvendr.xyz/screanshots';
-
-	/**
-	 * Hardcoded request timeout in seconds.
-	 */
-	const HARDCODED_TIMEOUT = 60;
 
 	/**
 	 * Get the screenshot service endpoint URL.
