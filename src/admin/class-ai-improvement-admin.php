@@ -344,19 +344,10 @@ class AI_Improvement_Admin {
 			)
 		);
 
-		$elementor_shot        = AI_Remediation_Screenshot_Meta_Service::get_elementor_url( $target_id );
-		$gutenberg_shot        = AI_Remediation_Screenshot_Meta_Service::get_gutenberg_url( $target_id );
-		$elementor_mobile_shot = AI_Remediation_Screenshot_Meta_Service::get_elementor_mobile_url( $target_id );
-		$gutenberg_mobile_shot = AI_Remediation_Screenshot_Meta_Service::get_gutenberg_mobile_url( $target_id );
+		$elementor_shot = AI_Remediation_Screenshot_Meta_Service::get_elementor_url( $target_id );
+		$gutenberg_shot = AI_Remediation_Screenshot_Meta_Service::get_gutenberg_url( $target_id );
 
-		$api_result = Claude_Api_Service::send(
-			$prompt,
-			$elementor_shot,
-			$gutenberg_shot,
-			'',
-			$elementor_mobile_shot,
-			$gutenberg_mobile_shot
-		);
+		$api_result = Claude_Api_Service::send( $prompt, $elementor_shot, $gutenberg_shot );
 
 		if ( ! $api_result['success'] ) {
 			self::log_improvement( array(
@@ -546,18 +537,14 @@ class AI_Improvement_Admin {
 			)
 		);
 
-		$elementor_shot        = AI_Remediation_Screenshot_Meta_Service::get_elementor_url( $target_id );
-		$gutenberg_shot        = AI_Remediation_Screenshot_Meta_Service::get_gutenberg_url( $target_id );
-		$elementor_mobile_shot = AI_Remediation_Screenshot_Meta_Service::get_elementor_mobile_url( $target_id );
-		$gutenberg_mobile_shot = AI_Remediation_Screenshot_Meta_Service::get_gutenberg_mobile_url( $target_id );
+		$elementor_shot = AI_Remediation_Screenshot_Meta_Service::get_elementor_url( $target_id );
+		$gutenberg_shot = AI_Remediation_Screenshot_Meta_Service::get_gutenberg_url( $target_id );
 
 		$api_result = Claude_Api_Service::send(
 			$prompt,
 			$elementor_shot,
 			$gutenberg_shot,
-			Claude_Api_Service::get_refinement_system_prompt(),
-			$elementor_mobile_shot,
-			$gutenberg_mobile_shot
+			Claude_Api_Service::get_refinement_system_prompt()
 		);
 
 		if ( ! $api_result['success'] ) {
