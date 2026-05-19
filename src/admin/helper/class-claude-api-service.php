@@ -42,16 +42,28 @@ class Claude_Api_Service {
 	/**
 	 * Send a prompt to Claude and return the text response.
 	 *
-	 * When screenshot URLs are provided they are included as vision image blocks
-	 * so Claude can visually compare the Elementor and Gutenberg pages.
+	 * Screenshot sets are arrays of chunk URLs — one element for single-screen
+	 * pages, multiple for tall pages split by the screenshot service. Each chunk
+	 * is sent as a separate vision image block labelled "part X of Y".
+	 * Only pass the screenshot sets that are relevant to the AI pass being run:
+	 * desktop passes receive desktop chunks; the mobile pass receives mobile chunks.
 	 *
-	 * @param string $prompt           The full prompt text.
-	 * @param string $elementor_shot   Optional public URL of the Elementor screenshot.
-	 * @param string $gutenberg_shot   Optional public URL of the Gutenberg screenshot.
-	 * @param string $system_prompt    Optional system prompt override. Defaults to get_system_prompt().
+	 * @param string   $prompt                The full prompt text.
+	 * @param string[] $elementor_shots        Elementor desktop screenshot chunk URLs.
+	 * @param string[] $gutenberg_shots        Gutenberg desktop screenshot chunk URLs.
+	 * @param string   $system_prompt         Optional system prompt override.
+	 * @param string[] $elementor_mobile_shots Elementor mobile screenshot chunk URLs.
+	 * @param string[] $gutenberg_mobile_shots Gutenberg mobile screenshot chunk URLs.
 	 * @return array{success: bool, content: string, error: string}
 	 */
-	public static function send( string $prompt, string $elementor_shot = '', string $gutenberg_shot = '', string $system_prompt = '' ): array {
+	public static function send(
+		string $prompt,
+		array $elementor_shots = array(),
+		array $gutenberg_shots = array(),
+		string $system_prompt = '',
+		array $elementor_mobile_shots = array(),
+		array $gutenberg_mobile_shots = array()
+	): array {
 		$api_key = self::get_api_key();
 
 		if ( '' === $api_key ) {
@@ -59,7 +71,13 @@ class Claude_Api_Service {
 		}
 
 		$resolved_system = '' !== $system_prompt ? $system_prompt : self::get_system_prompt();
-		$content         = self::build_message_content( $prompt, $elementor_shot, $gutenberg_shot );
+		$content         = self::build_message_content(
+			$prompt,
+			$elementor_shots,
+			$gutenberg_shots,
+			$elementor_mobile_shots,
+			$gutenberg_mobile_shots
+		);
 
 		$body = wp_json_encode(
 			array(
@@ -75,12 +93,14 @@ class Claude_Api_Service {
 
 		// Log the full request before sending.
 		self::log_entry( array(
-			'event'                  => 'api_request',
-			'system_prompt'          => $resolved_system,
-			'user_prompt'            => $prompt,
-			'has_elementor_screenshot' => '' !== $elementor_shot,
-			'has_gutenberg_screenshot' => '' !== $gutenberg_shot,
-			'user_prompt_length'     => strlen( $prompt ),
+			'event'                           => 'api_request',
+			'system_prompt'                   => $resolved_system,
+			'user_prompt'                     => $prompt,
+			'elementor_desktop_chunks'        => count( $elementor_shots ),
+			'gutenberg_desktop_chunks'        => count( $gutenberg_shots ),
+			'elementor_mobile_chunks'         => count( $elementor_mobile_shots ),
+			'gutenberg_mobile_chunks'         => count( $gutenberg_mobile_shots ),
+			'user_prompt_length'              => strlen( $prompt ),
 		) );
 
 		$response = wp_remote_post(
@@ -152,39 +172,56 @@ class Claude_Api_Service {
 	/**
 	 * Build the message content array for the API request.
 	 *
-	 * If screenshot URLs are provided, prepends them as vision image blocks so
-	 * Claude can see both pages before reading the text prompt. Images without a
-	 * valid URL are silently skipped.
+	 * Each screenshot set is an array of chunk URLs produced by the screenshot
+	 * service when a page exceeds the 7500 px height limit. Every chunk becomes
+	 * its own vision image block. Labels include "part X of Y" when there is
+	 * more than one chunk so Claude understands the vertical ordering.
 	 *
-	 * @param string $prompt         Full text prompt.
-	 * @param string $elementor_shot Public URL of the Elementor screenshot (optional).
-	 * @param string $gutenberg_shot Public URL of the Gutenberg screenshot (optional).
-	 * @return string|array A plain string when no images are present, a structured
+	 * @param string   $prompt                Full text prompt.
+	 * @param string[] $elementor_shots        Elementor desktop chunk URLs.
+	 * @param string[] $gutenberg_shots        Gutenberg desktop chunk URLs.
+	 * @param string[] $elementor_mobile_shots Elementor mobile chunk URLs.
+	 * @param string[] $gutenberg_mobile_shots Gutenberg mobile chunk URLs.
+	 * @return string|array Plain string when no valid images are present; structured
 	 *                      content array when at least one image URL is provided.
 	 */
-	private static function build_message_content( string $prompt, string $elementor_shot, string $gutenberg_shot ) {
+	private static function build_message_content(
+		string $prompt,
+		array $elementor_shots,
+		array $gutenberg_shots,
+		array $elementor_mobile_shots,
+		array $gutenberg_mobile_shots
+	) {
 		$image_blocks = array();
 
-		if ( '' !== $elementor_shot ) {
-			$image_blocks[] = array(
-				'type'   => 'text',
-				'text'   => 'This is a screenshot of the ORIGINAL Elementor page:',
-			);
-			$image_blocks[] = array(
-				'type'   => 'image',
-				'source' => array( 'type' => 'url', 'url' => $elementor_shot ),
-			);
-		}
+		$sets = array(
+			array( 'urls' => $elementor_shots,        'label' => 'DESKTOP screenshot of the ORIGINAL Elementor page' ),
+			array( 'urls' => $gutenberg_shots,        'label' => 'DESKTOP screenshot of the CONVERTED Gutenberg page' ),
+			array( 'urls' => $elementor_mobile_shots, 'label' => 'MOBILE screenshot of the ORIGINAL Elementor page' ),
+			array( 'urls' => $gutenberg_mobile_shots, 'label' => 'MOBILE screenshot of the CONVERTED Gutenberg page' ),
+		);
 
-		if ( '' !== $gutenberg_shot ) {
-			$image_blocks[] = array(
-				'type'   => 'text',
-				'text'   => 'This is a screenshot of the CONVERTED Gutenberg page:',
-			);
-			$image_blocks[] = array(
-				'type'   => 'image',
-				'source' => array( 'type' => 'url', 'url' => $gutenberg_shot ),
-			);
+		foreach ( $sets as $set ) {
+			$urls  = array_values( array_filter( $set['urls'], 'is_string' ) );
+			$total = count( $urls );
+			if ( 0 === $total ) {
+				continue;
+			}
+
+			foreach ( $urls as $i => $url ) {
+				if ( '' === $url ) {
+					continue;
+				}
+				$part_suffix    = $total > 1 ? sprintf( ' (part %d of %d)', $i + 1, $total ) : '';
+				$image_blocks[] = array(
+					'type' => 'text',
+					'text' => 'This is a ' . $set['label'] . $part_suffix . ':',
+				);
+				$image_blocks[] = array(
+					'type'   => 'image',
+					'source' => array( 'type' => 'url', 'url' => $url ),
+				);
+			}
 		}
 
 		if ( empty( $image_blocks ) ) {
@@ -194,6 +231,24 @@ class Claude_Api_Service {
 		$image_blocks[] = array( 'type' => 'text', 'text' => $prompt );
 
 		return $image_blocks;
+	}
+
+	/**
+	 * Parse Claude's response text for the mobile-only improvement pass.
+	 *
+	 * The mobile pass should return only a CSS_RESULT block (no GUTENBERG_RESULT).
+	 * If the marker is missing the entire response is returned as the CSS body so
+	 * the caller can still recover something usable.
+	 *
+	 * @param string $text Raw Claude response text.
+	 * @return string CSS body without the CSS_RESULT label.
+	 */
+	public static function parse_css_only_response( string $text ): string {
+		if ( preg_match( '/CSS_RESULT:\s*(.*)/s', $text, $m ) ) {
+			return trim( $m[1] );
+		}
+
+		return trim( $text );
 	}
 
 	/**
@@ -305,6 +360,42 @@ CSS_RESULT:
 
 GUTENBERG_RESULT:
 <full gutenberg post_content here>
+SYSTEM;
+	}
+
+	/**
+	 * Return the system prompt used for the mobile-only improvement pass.
+	 *
+	 * The mobile pass must NOT modify desktop styles or the Gutenberg post_content.
+	 * It returns only mobile-scoped @media query rules that the caller wraps into
+	 * a marker block and merges into the existing CSS file.
+	 *
+	 * @return string
+	 */
+	public static function get_mobile_improvement_system_prompt(): string {
+		return <<<'SYSTEM'
+You are a WordPress developer expert in both Elementor and Gutenberg (Block Editor).
+
+You are running a MOBILE-ONLY improvement pass on a Gutenberg page that was auto-converted from an Elementor page. The user has already improved desktop layout. You must now make the page render correctly on mobile WITHOUT affecting desktop styles.
+
+YOUR JOB:
+Carefully compare the two MOBILE screenshots (Elementor original mobile vs Gutenberg converted mobile). Identify every mobile-only visual difference — spacing, typography sizing, alignment, stacking, image sizing — and fix them by writing CSS rules that only apply on mobile viewports.
+
+STRICT RULES:
+1. Output a SINGLE labeled section: CSS_RESULT — nothing else before or after.
+2. CSS_RESULT must contain plain CSS only (no explanation, no markdown fences, no GUTENBERG_RESULT).
+3. EVERY rule you output MUST be wrapped in an `@media` query that only matches mobile (e.g. `@media (max-width: 781px) { ... }` or `@media (max-width: 600px) { ... }`). NEVER output any rule that applies on desktop.
+4. Do NOT modify or duplicate existing desktop CSS rules. Only ADD mobile-scoped overrides.
+5. Do NOT propose changes to the Gutenberg post_content. The block structure is fixed for this pass.
+6. Use the "CSS Namespace" class from PAGE CONTEXT (e.g. .etg-page-97) as the root selector for ALL CSS rules. Never use the Target Gutenberg page ID in any CSS class name.
+7. If no mobile changes are needed, output an empty CSS_RESULT body.
+8. Do NOT include `<style>` tags, HTML, or markdown — plain CSS only.
+
+REQUIRED OUTPUT FORMAT (exactly this structure, no deviations):
+CSS_RESULT:
+@media (max-width: 781px) {
+  .etg-page-XX .some-block { ... }
+}
 SYSTEM;
 	}
 

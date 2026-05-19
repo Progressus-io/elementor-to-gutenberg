@@ -41,6 +41,21 @@
 		} );
 	}
 
+	// ── Mobile improvement: separate AI pass on mobile screenshots ───────────
+	var mobileForm = document.getElementById( 'ele2gb-ai-mobile-improve-form' );
+	var mobileBtn  = document.getElementById( 'ele2gb_mobile_improve_submit' );
+
+	if ( mobileForm && mobileBtn && loader ) {
+		mobileForm.addEventListener( 'submit', function () {
+			mobileBtn.disabled = true;
+			mobileBtn.value    = config.processingLabel;
+			if ( loaderTitle ) {
+				loaderTitle.textContent = config.mobileLabel || config.improvingLabel || loaderTitle.textContent;
+			}
+			loader.removeAttribute( 'hidden' );
+		} );
+	}
+
 	// ── Suggestion chips ──────────────────────────────────────────────────────
 	var chips = document.querySelectorAll( '.ele2gb-suggestion-chip' );
 

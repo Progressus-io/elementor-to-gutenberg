@@ -58,8 +58,18 @@ class AI_Improvement_Admin {
 
 	public const MENU_SLUG = 'ele2gb-ai-improvement';
 
-	private const NONCE_AUTO_IMPROVE = 'ele2gb_ai_auto_improve';
-	private const NONCE_REFINE       = 'ele2gb_ai_refine';
+	private const NONCE_AUTO_IMPROVE   = 'ele2gb_ai_auto_improve';
+	private const NONCE_REFINE         = 'ele2gb_ai_refine';
+	private const NONCE_MOBILE_IMPROVE = 'ele2gb_ai_mobile_improve';
+
+	/**
+	 * Markers that wrap the AI mobile CSS block inside the external CSS file.
+	 *
+	 * Re-running mobile improvement replaces only the content between these
+	 * markers; everything else (desktop CSS) is preserved untouched.
+	 */
+	private const MOBILE_CSS_START_MARKER = '/* === AI MOBILE START === */';
+	private const MOBILE_CSS_END_MARKER   = '/* === AI MOBILE END === */';
 
 	/**
 	 * Singleton instance.
@@ -87,6 +97,7 @@ class AI_Improvement_Admin {
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 		add_action( 'admin_post_ele2gb_ai_auto_improve', array( $this, 'handle_auto_improve' ) );
 		add_action( 'admin_post_ele2gb_ai_refine', array( $this, 'handle_refine' ) );
+		add_action( 'admin_post_ele2gb_ai_mobile_improve', array( $this, 'handle_mobile_improve' ) );
 		add_action( 'admin_post_ele2gb_ai_regenerate_screenshots', array( $this, 'handle_regenerate_screenshots' ) );
 	}
 
@@ -124,6 +135,7 @@ class AI_Improvement_Admin {
 				'processingLabel' => __( 'Processing…', 'elementor-to-gutenberg' ),
 				'improvingLabel'  => __( 'Improving with AI…', 'elementor-to-gutenberg' ),
 				'refiningLabel'   => __( 'Refining with AI…', 'elementor-to-gutenberg' ),
+				'mobileLabel'     => __( 'Improving mobile with AI…', 'elementor-to-gutenberg' ),
 			)
 		);
 	}
@@ -210,14 +222,16 @@ class AI_Improvement_Admin {
 
 		$existing_workspace = AI_Workspace_Repository::get( $target_id );
 
-		// Load screenshot URLs from dedicated meta; fall back to workspace for backward compatibility.
-		$elementor_shot = AI_Remediation_Screenshot_Meta_Service::get_elementor_url( $target_id );
-		$gutenberg_shot = AI_Remediation_Screenshot_Meta_Service::get_gutenberg_url( $target_id );
-		if ( '' === $elementor_shot && isset( $existing_workspace['elementor_screenshot'] ) ) {
-			$elementor_shot = (string) $existing_workspace['elementor_screenshot'];
+		// Load screenshot URL arrays from dedicated meta; fall back to workspace (backward compat).
+		$elementor_shots        = AI_Remediation_Screenshot_Meta_Service::get_elementor_urls( $target_id );
+		$gutenberg_shots        = AI_Remediation_Screenshot_Meta_Service::get_gutenberg_urls( $target_id );
+		$elementor_mobile_shots = AI_Remediation_Screenshot_Meta_Service::get_elementor_mobile_urls( $target_id );
+		$gutenberg_mobile_shots = AI_Remediation_Screenshot_Meta_Service::get_gutenberg_mobile_urls( $target_id );
+		if ( empty( $elementor_shots ) && ! empty( $existing_workspace['elementor_screenshot'] ) ) {
+			$elementor_shots = (array) $existing_workspace['elementor_screenshot'];
 		}
-		if ( '' === $gutenberg_shot && isset( $existing_workspace['gutenberg_screenshot'] ) ) {
-			$gutenberg_shot = (string) $existing_workspace['gutenberg_screenshot'];
+		if ( empty( $gutenberg_shots ) && ! empty( $existing_workspace['gutenberg_screenshot'] ) ) {
+			$gutenberg_shots = (array) $existing_workspace['gutenberg_screenshot'];
 		}
 
 		$prompt = AI_Prompt_Builder::build(
@@ -232,15 +246,17 @@ class AI_Improvement_Admin {
 		);
 
 		$workspace_to_save = array(
-			'target_post_id'          => $target_id,
-			'source_post_id'          => $source_id,
-			'prepared_prompt'         => $prompt,
-			'elementor_json_snapshot' => $elementor_json,
-			'gutenberg_snapshot'      => $gutenberg_content,
-			'elementor_screenshot'    => $elementor_shot,
-			'gutenberg_screenshot'    => $gutenberg_shot,
-			'css_result_draft'        => isset( $existing_workspace['css_result_draft'] ) ? (string) $existing_workspace['css_result_draft'] : '',
-			'gutenberg_result_draft'  => isset( $existing_workspace['gutenberg_result_draft'] ) ? (string) $existing_workspace['gutenberg_result_draft'] : '',
+			'target_post_id'                 => $target_id,
+			'source_post_id'                 => $source_id,
+			'prepared_prompt'                => $prompt,
+			'elementor_json_snapshot'        => $elementor_json,
+			'gutenberg_snapshot'             => $gutenberg_content,
+			'elementor_screenshot'           => $elementor_shots,
+			'gutenberg_screenshot'           => $gutenberg_shots,
+			'elementor_mobile_screenshot'    => $elementor_mobile_shots,
+			'gutenberg_mobile_screenshot'    => $gutenberg_mobile_shots,
+			'css_result_draft'               => isset( $existing_workspace['css_result_draft'] ) ? (string) $existing_workspace['css_result_draft'] : '',
+			'gutenberg_result_draft'         => isset( $existing_workspace['gutenberg_result_draft'] ) ? (string) $existing_workspace['gutenberg_result_draft'] : '',
 		);
 		AI_Workspace_Repository::save( $target_id, $workspace_to_save );
 
@@ -328,10 +344,10 @@ class AI_Improvement_Admin {
 			)
 		);
 
-		$elementor_shot = AI_Remediation_Screenshot_Meta_Service::get_elementor_url( $target_id );
-		$gutenberg_shot = AI_Remediation_Screenshot_Meta_Service::get_gutenberg_url( $target_id );
+		$elementor_shots = AI_Remediation_Screenshot_Meta_Service::get_elementor_urls( $target_id );
+		$gutenberg_shots = AI_Remediation_Screenshot_Meta_Service::get_gutenberg_urls( $target_id );
 
-		$api_result = Claude_Api_Service::send( $prompt, $elementor_shot, $gutenberg_shot );
+		$api_result = Claude_Api_Service::send( $prompt, $elementor_shots, $gutenberg_shots );
 
 		if ( ! $api_result['success'] ) {
 			self::log_improvement( array(
@@ -521,13 +537,13 @@ class AI_Improvement_Admin {
 			)
 		);
 
-		$elementor_shot = AI_Remediation_Screenshot_Meta_Service::get_elementor_url( $target_id );
-		$gutenberg_shot = AI_Remediation_Screenshot_Meta_Service::get_gutenberg_url( $target_id );
+		$elementor_shots = AI_Remediation_Screenshot_Meta_Service::get_elementor_urls( $target_id );
+		$gutenberg_shots = AI_Remediation_Screenshot_Meta_Service::get_gutenberg_urls( $target_id );
 
 		$api_result = Claude_Api_Service::send(
 			$prompt,
-			$elementor_shot,
-			$gutenberg_shot,
+			$elementor_shots,
+			$gutenberg_shots,
 			Claude_Api_Service::get_refinement_system_prompt()
 		);
 
@@ -600,6 +616,178 @@ class AI_Improvement_Admin {
 		update_post_meta( $target_id, '_ele2gb_last_ai_improved', current_time( 'mysql' ) );
 
 		return array( 'success' => true, 'error' => '', 'notice' => 'refined' );
+	}
+
+	/**
+	 * Handle the "Improve Mobile with AI" action.
+	 *
+	 * A separate AI pass that uses ONLY the mobile screenshots and instructs Claude
+	 * to output mobile-only @media query CSS. The result is merged into the existing
+	 * CSS file inside marker comments so desktop styles and Gutenberg post_content
+	 * are never touched.
+	 */
+	public function handle_mobile_improve(): void {
+		if ( ! current_user_can( 'edit_pages' ) ) {
+			wp_die( esc_html__( 'You do not have permission to perform this action.', 'elementor-to-gutenberg' ) );
+		}
+
+		check_admin_referer( self::NONCE_MOBILE_IMPROVE );
+
+		$target_id = isset( $_POST['target_id'] ) ? absint( wp_unslash( $_POST['target_id'] ) ) : 0;
+		$source_id = isset( $_POST['source_id'] ) ? absint( wp_unslash( $_POST['source_id'] ) ) : 0;
+
+		if ( $target_id <= 0 || $source_id <= 0 ) {
+			wp_die( esc_html__( 'Source or target page is missing.', 'elementor-to-gutenberg' ) );
+		}
+
+		if ( ! current_user_can( 'edit_post', $target_id ) ) {
+			wp_die( esc_html__( 'You do not have permission to edit this page.', 'elementor-to-gutenberg' ) );
+		}
+
+		$stored_source_id = (int) get_post_meta( $target_id, '_ele2gb_source_id', true );
+		if ( $stored_source_id > 0 && $stored_source_id !== $source_id ) {
+			$this->redirect_with_notice( $source_id, $target_id, 'invalid_mapping' );
+		}
+
+		// Take fresh screenshots so the mobile pass works against the current rendering.
+		AI_Remediation_Screenshot_Meta_Service::generate_and_store( $source_id, $target_id, true );
+
+		$result = self::run_mobile_improvement( $source_id, $target_id );
+
+		if ( ! $result['success'] ) {
+			$notice = $result['notice'] ?? 'mobile_failed';
+			if ( 'mobile_failed' === $notice ) {
+				set_transient( 'ele2gb_ai_error_' . $target_id, $result['error'], 60 );
+			}
+			$this->redirect_with_notice( $source_id, $target_id, $notice );
+		}
+
+		$this->redirect_with_notice( $source_id, $target_id, 'mobile_improved' );
+	}
+
+	/**
+	 * Core mobile improvement logic.
+	 *
+	 * Sends only the mobile screenshots to Claude with the mobile system prompt,
+	 * extracts CSS_RESULT, wraps it in mobile markers, and merges it into the
+	 * existing CSS file. Does not modify Gutenberg post_content.
+	 *
+	 * @param int $source_id Elementor source post ID.
+	 * @param int $target_id Converted Gutenberg post ID.
+	 * @return array{success: bool, error: string, notice: string}
+	 */
+	public static function run_mobile_improvement( int $source_id, int $target_id ): array {
+		$failure = static function ( string $error, string $notice = 'mobile_failed' ): array {
+			return array( 'success' => false, 'error' => $error, 'notice' => $notice );
+		};
+
+		$gutenberg_content = (string) get_post_field( 'post_content', $target_id );
+		$elementor_json    = get_post_meta( $source_id, '_elementor_data', true );
+		if ( is_array( $elementor_json ) ) {
+			$elementor_json = wp_json_encode( $elementor_json, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
+		}
+		$elementor_json = (string) $elementor_json;
+
+		$current_css = self::fix_css_namespace( self::read_post_css( $target_id ), $source_id, $target_id );
+
+		$template_type = '';
+		if ( 'elementor_library' === get_post_type( $source_id ) ) {
+			$template_type = (string) get_post_meta( $source_id, '_elementor_template_type', true );
+		}
+
+		$prompt = AI_Prompt_Builder::build_mobile(
+			array(
+				'source_id'         => $source_id,
+				'target_id'         => $target_id,
+				'source_title'      => get_the_title( $source_id ),
+				'target_title'      => get_the_title( $target_id ),
+				'elementor_json'    => $elementor_json,
+				'gutenberg_content' => $gutenberg_content,
+				'current_css'       => $current_css,
+				'template_type'     => $template_type,
+			)
+		);
+
+		// Mobile pass: send only mobile screenshot chunks, no desktop screenshots.
+		$elementor_mobile_shots = AI_Remediation_Screenshot_Meta_Service::get_elementor_mobile_urls( $target_id );
+		$gutenberg_mobile_shots = AI_Remediation_Screenshot_Meta_Service::get_gutenberg_mobile_urls( $target_id );
+
+		$api_result = Claude_Api_Service::send(
+			$prompt,
+			array(),
+			array(),
+			Claude_Api_Service::get_mobile_improvement_system_prompt(),
+			$elementor_mobile_shots,
+			$gutenberg_mobile_shots
+		);
+
+		if ( ! $api_result['success'] ) {
+			self::log_improvement( array(
+				'step'      => 'mobile_api_failed',
+				'target_id' => $target_id,
+				'error'     => $api_result['error'],
+			) );
+			return $failure( $api_result['error'], 'mobile_failed' );
+		}
+
+		$mobile_css = self::fix_css_namespace(
+			Claude_Api_Service::parse_css_only_response( $api_result['content'] ),
+			$source_id,
+			$target_id
+		);
+
+		self::log_improvement( array(
+			'step'        => 'mobile_parse_complete',
+			'target_id'   => $target_id,
+			'css_length'  => strlen( $mobile_css ),
+			'css_preview' => substr( $mobile_css, 0, 200 ),
+		) );
+
+		$merged_css = self::merge_mobile_css( $current_css, $mobile_css );
+
+		if ( '' !== trim( $merged_css ) ) {
+			External_CSS_Service::save_post_css( $target_id, $merged_css );
+		}
+
+		if ( 'elementor_library' === get_post_type( $source_id ) ) {
+			External_CSS_Service::register_global_css_post( $target_id );
+		}
+
+		update_post_meta( $target_id, '_ele2gb_last_ai_mobile_improved', current_time( 'mysql' ) );
+
+		return array( 'success' => true, 'error' => '', 'notice' => 'mobile_improved' );
+	}
+
+	/**
+	 * Merge mobile-only CSS into the existing CSS file content.
+	 *
+	 * Wraps the mobile CSS between MOBILE_CSS_START_MARKER and MOBILE_CSS_END_MARKER.
+	 * If a previous mobile block already exists between those markers it is
+	 * replaced; otherwise the wrapped block is appended. Desktop CSS outside the
+	 * markers is preserved verbatim.
+	 *
+	 * @param string $existing_css Current full CSS file content.
+	 * @param string $mobile_css   New mobile-only CSS body (no markers).
+	 * @return string Updated CSS string ready to write back to the file.
+	 */
+	private static function merge_mobile_css( string $existing_css, string $mobile_css ): string {
+		$mobile_css = trim( $mobile_css );
+
+		$wrapped = self::MOBILE_CSS_START_MARKER . "\n" . $mobile_css . "\n" . self::MOBILE_CSS_END_MARKER;
+
+		// Match an existing mobile block (with possible surrounding whitespace).
+		$pattern = '/\s*' . preg_quote( self::MOBILE_CSS_START_MARKER, '/' ) . '.*?' . preg_quote( self::MOBILE_CSS_END_MARKER, '/' ) . '/s';
+
+		if ( preg_match( $pattern, $existing_css ) ) {
+			$replaced = preg_replace( $pattern, "\n\n" . $wrapped, $existing_css );
+			return is_string( $replaced ) ? trim( $replaced ) . "\n" : $existing_css;
+		}
+
+		if ( '' === trim( $existing_css ) ) {
+			return $wrapped . "\n";
+		}
+
+		return trim( $existing_css ) . "\n\n" . $wrapped . "\n";
 	}
 
 	/**
@@ -703,16 +891,19 @@ class AI_Improvement_Admin {
 			return;
 		}
 
-		if ( 'ai_failed' === $notice_code ) {
+		if ( 'ai_failed' === $notice_code || 'mobile_failed' === $notice_code ) {
 			$ai_error = '';
 			if ( $target_id > 0 ) {
 				$ai_error = (string) get_transient( 'ele2gb_ai_error_' . $target_id );
 				delete_transient( 'ele2gb_ai_error_' . $target_id );
 			}
+			$prefix = 'mobile_failed' === $notice_code
+				? esc_html__( 'Mobile improvement failed', 'elementor-to-gutenberg' )
+				: esc_html__( 'Claude API call failed', 'elementor-to-gutenberg' );
 			$msg = '' !== $ai_error
-				/* translators: %s: error message returned by Claude API */
-				? sprintf( esc_html__( 'Claude API call failed: %s', 'elementor-to-gutenberg' ), esc_html( $ai_error ) )
-				: esc_html__( 'Claude API call failed.', 'elementor-to-gutenberg' );
+				/* translators: 1: failure prefix, 2: error message returned by Claude API */
+				? sprintf( esc_html__( '%1$s: %2$s', 'elementor-to-gutenberg' ), $prefix, esc_html( $ai_error ) )
+				: $prefix . '.';
 			?>
 			<div class="notice notice-error is-dismissible"><p><?php echo $msg; // Already escaped above. ?></p></div>
 			<?php
@@ -729,6 +920,8 @@ class AI_Improvement_Admin {
 			'screenshots_failed'      => array( 'error', esc_html__( 'Screenshot regeneration failed. Check the screenshot service settings and connectivity.', 'elementor-to-gutenberg' ) ),
 			'ai_parse_failed'         => array( 'error', esc_html__( 'Claude returned a response but no valid Gutenberg content could be parsed.', 'elementor-to-gutenberg' ) ),
 			'refined'                 => array( 'success', esc_html__( 'Page refined successfully. Fresh screenshots were captured before this run.', 'elementor-to-gutenberg' ) ),
+			'mobile_improved'         => array( 'success', esc_html__( 'Mobile CSS improved successfully. Desktop styles were not modified.', 'elementor-to-gutenberg' ) ),
+			'mobile_failed'           => array( 'error', esc_html__( 'Mobile improvement failed. Check the screenshot service and Claude API settings.', 'elementor-to-gutenberg' ) ),
 		);
 
 		if ( ! isset( $messages[ $notice_code ] ) ) {
@@ -755,8 +948,10 @@ class AI_Improvement_Admin {
 		$target_title = get_the_title( $target_id );
 		$source_title = get_the_title( $source_id );
 
-		$elementor_shot = isset( $workspace['elementor_screenshot'] ) ? (string) $workspace['elementor_screenshot'] : '';
-		$gutenberg_shot = isset( $workspace['gutenberg_screenshot'] ) ? (string) $workspace['gutenberg_screenshot'] : '';
+		$elementor_shots        = isset( $workspace['elementor_screenshot'] ) ? (array) $workspace['elementor_screenshot'] : array();
+		$gutenberg_shots        = isset( $workspace['gutenberg_screenshot'] ) ? (array) $workspace['gutenberg_screenshot'] : array();
+		$elementor_mobile_shots = isset( $workspace['elementor_mobile_screenshot'] ) ? (array) $workspace['elementor_mobile_screenshot'] : array();
+		$gutenberg_mobile_shots = isset( $workspace['gutenberg_mobile_screenshot'] ) ? (array) $workspace['gutenberg_mobile_screenshot'] : array();
 
 		$screenshot_status       = AI_Remediation_Screenshot_Meta_Service::get_status( $target_id );
 		$screenshot_generated_at = (string) get_post_meta( $target_id, AI_Remediation_Screenshot_Meta_Service::META_GENERATED_AT, true );
@@ -798,26 +993,52 @@ class AI_Improvement_Admin {
 			<h2><?php echo esc_html__( 'Screenshots', 'elementor-to-gutenberg' ); ?></h2>
 			<table class="form-table" role="presentation">
 				<tbody>
+				<?php
+				$screenshot_rows = array(
+					array(
+						'label' => esc_html__( 'Elementor (Desktop)', 'elementor-to-gutenberg' ),
+						'urls'  => $elementor_shots,
+						'none'  => esc_html__( 'No Elementor desktop screenshot yet.', 'elementor-to-gutenberg' ),
+					),
+					array(
+						'label' => esc_html__( 'Gutenberg (Desktop)', 'elementor-to-gutenberg' ),
+						'urls'  => $gutenberg_shots,
+						'none'  => esc_html__( 'No Gutenberg desktop screenshot yet.', 'elementor-to-gutenberg' ),
+					),
+					array(
+						'label' => esc_html__( 'Elementor (Mobile)', 'elementor-to-gutenberg' ),
+						'urls'  => $elementor_mobile_shots,
+						'none'  => esc_html__( 'No Elementor mobile screenshot yet.', 'elementor-to-gutenberg' ),
+					),
+					array(
+						'label' => esc_html__( 'Gutenberg (Mobile)', 'elementor-to-gutenberg' ),
+						'urls'  => $gutenberg_mobile_shots,
+						'none'  => esc_html__( 'No Gutenberg mobile screenshot yet.', 'elementor-to-gutenberg' ),
+					),
+				);
+				foreach ( $screenshot_rows as $row ) :
+					$urls  = array_values( array_filter( $row['urls'], 'is_string' ) );
+					$total = count( $urls );
+				?>
 				<tr>
-					<th scope="row"><?php echo esc_html__( 'Elementor Screenshot', 'elementor-to-gutenberg' ); ?></th>
+					<th scope="row"><?php echo $row['label']; // Already escaped via esc_html__. ?></th>
 					<td>
-						<?php if ( '' !== $elementor_shot ) : ?>
-							<p><img src="<?php echo esc_url( $elementor_shot ); ?>" alt="" style="max-width:480px;height:auto;border:1px solid #ccd0d4;padding:4px;background:#fff;" /></p>
+						<?php if ( 0 === $total ) : ?>
+							<p class="description"><?php echo $row['none']; // Already escaped. ?></p>
 						<?php else : ?>
-							<p class="description"><?php echo esc_html__( 'No Elementor screenshot available yet.', 'elementor-to-gutenberg' ); ?></p>
+							<?php foreach ( $urls as $idx => $url ) : ?>
+								<?php
+								$link_label = $total > 1
+									/* translators: 1: current chunk number 2: total chunks */
+									? sprintf( esc_html__( 'Download part %1$d of %2$d', 'elementor-to-gutenberg' ), $idx + 1, $total )
+									: esc_html__( 'Download screenshot', 'elementor-to-gutenberg' );
+								?>
+								<a href="<?php echo esc_url( $url ); ?>" target="_blank" rel="noopener" class="button button-secondary" style="margin-right:6px;margin-bottom:4px;"><?php echo $link_label; // Already escaped. ?></a>
+							<?php endforeach; ?>
 						<?php endif; ?>
 					</td>
 				</tr>
-				<tr>
-					<th scope="row"><?php echo esc_html__( 'Gutenberg Screenshot', 'elementor-to-gutenberg' ); ?></th>
-					<td>
-						<?php if ( '' !== $gutenberg_shot ) : ?>
-							<p><img src="<?php echo esc_url( $gutenberg_shot ); ?>" alt="" style="max-width:480px;height:auto;border:1px solid #ccd0d4;padding:4px;background:#fff;" /></p>
-						<?php else : ?>
-							<p class="description"><?php echo esc_html__( 'No Gutenberg screenshot available yet.', 'elementor-to-gutenberg' ); ?></p>
-						<?php endif; ?>
-					</td>
-				</tr>
+				<?php endforeach; ?>
 				<tr>
 					<th scope="row"><?php echo esc_html__( 'Screenshot Status', 'elementor-to-gutenberg' ); ?></th>
 					<td>
@@ -897,6 +1118,36 @@ class AI_Improvement_Admin {
 					<?php submit_button( esc_html__( 'Refine with AI', 'elementor-to-gutenberg' ), 'primary', 'ele2gb_refine_submit', false ); ?>
 				</form>
 			<?php endif; ?>
+
+			<?php
+			$last_mobile_improved = (string) get_post_meta( $target_id, '_ele2gb_last_ai_mobile_improved', true );
+			$has_mobile_shots     = ! empty( $elementor_mobile_shots ) && ! empty( $gutenberg_mobile_shots );
+			?>
+			<hr style="margin:2em 0;" />
+			<h2><?php echo esc_html__( 'Improve Mobile with AI', 'elementor-to-gutenberg' ); ?></h2>
+			<p>
+				<?php echo esc_html__( 'Run a separate AI pass that compares the MOBILE screenshots and produces mobile-only @media query CSS. Desktop styles and Gutenberg block content are NOT changed.', 'elementor-to-gutenberg' ); ?>
+			</p>
+			<?php if ( '' !== $last_mobile_improved ) : ?>
+				<p class="description">
+					<?php
+					/* translators: %s: MySQL datetime of last mobile improvement run */
+					printf( esc_html__( 'Last mobile improvement: %s', 'elementor-to-gutenberg' ), esc_html( $last_mobile_improved ) );
+					?>
+				</p>
+			<?php endif; ?>
+			<?php if ( ! $has_mobile_shots ) : ?>
+				<p class="description" style="color:#b32d2e;">
+					<?php echo esc_html__( 'Mobile screenshots are missing. Click "Regenerate Screenshots" above before running this pass.', 'elementor-to-gutenberg' ); ?>
+				</p>
+			<?php endif; ?>
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="ele2gb-ai-mobile-improve-form">
+				<?php wp_nonce_field( self::NONCE_MOBILE_IMPROVE ); ?>
+				<input type="hidden" name="action" value="ele2gb_ai_mobile_improve" />
+				<input type="hidden" name="target_id" value="<?php echo esc_attr( (string) $target_id ); ?>" />
+				<input type="hidden" name="source_id" value="<?php echo esc_attr( (string) $source_id ); ?>" />
+				<?php submit_button( esc_html__( 'Improve Mobile with AI', 'elementor-to-gutenberg' ), 'secondary', 'ele2gb_mobile_improve_submit', false ); ?>
+			</form>
 
 			<div id="ele2gb-ai-loader" hidden>
 				<div class="ele2gb-ai-loader-card">
