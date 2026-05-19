@@ -340,8 +340,8 @@ class Admin_Settings {
 	 */
 	public function add_admin_menu(): void {
 		add_menu_page(
-			esc_html__( 'Migration Tool – Elementor to Gutenberg', 'elementor-to-gutenberg' ),
-			esc_html__( 'Migration Tool', 'elementor-to-gutenberg' ),
+			esc_html__( 'Elementor to Gutenberg Migrator', 'elementor-to-gutenberg' ),
+			esc_html__( 'Elementor to Gutenberg Migrator', 'elementor-to-gutenberg' ),
 			'manage_options',
 			'gutenberg-settings',
 			array( $this, 'settings_page_content' ),
@@ -357,6 +357,35 @@ class Admin_Settings {
 			'gutenberg-settings',
 			array( $this, 'settings_page_content' )
 		);
+
+		add_action( 'admin_menu', array( $this, 'reorder_submenu' ), 999 );
+	}
+
+	/**
+	 * Move Conversion Wizard above Settings in the submenu.
+	 */
+	public function reorder_submenu(): void {
+		global $submenu;
+		if ( ! isset( $submenu['gutenberg-settings'] ) || ! is_array( $submenu['gutenberg-settings'] ) ) {
+			return;
+		}
+		$wizard_key   = null;
+		$settings_key = null;
+		foreach ( $submenu['gutenberg-settings'] as $key => $item ) {
+			if ( isset( $item[2] ) && Batch_Convert_Wizard::MENU_SLUG === $item[2] ) {
+				$wizard_key = $key;
+			}
+			if ( isset( $item[2] ) && 'gutenberg-settings' === $item[2] ) {
+				$settings_key = $key;
+			}
+		}
+		if ( null === $wizard_key || null === $settings_key || $wizard_key < $settings_key ) {
+			return;
+		}
+		$wizard_item   = $submenu['gutenberg-settings'][ $wizard_key ];
+		$settings_item = $submenu['gutenberg-settings'][ $settings_key ];
+		$submenu['gutenberg-settings'][ $wizard_key ]   = $settings_item;
+		$submenu['gutenberg-settings'][ $settings_key ] = $wizard_item;
 	}
 
 	/**
@@ -367,14 +396,6 @@ class Admin_Settings {
 	 * @return array<string, string>
 	 */
 	public function add_plugin_action_links( array $links ): array {
-		$wizard_link = sprintf(
-			'<a href="%s">%s</a>',
-			esc_url( $this->get_wizard_url() ),
-			esc_html__( 'Open Migration Wizard', 'elementor-to-gutenberg' )
-		);
-
-		array_unshift( $links, $wizard_link );
-
 		return $links;
 	}
 
@@ -528,37 +549,29 @@ class Admin_Settings {
 		$current_width    = $this->get_section_content_width_px();
 		?>
         <div class="wrap">
-            <h1><?php esc_html_e( 'Migration Tool – Elementor to Gutenberg', 'elementor-to-gutenberg' ); ?></h1>
+            <h1><?php esc_html_e( 'Elementor to Gutenberg Migrator', 'elementor-to-gutenberg' ); ?></h1>
             <p><?php esc_html_e( 'Professional migration tool to convert Elementor layouts into native Gutenberg blocks.', 'elementor-to-gutenberg' ); ?></p>
             <?php if ( isset( $_GET['etg_settings_saved'] ) && '1' === $_GET['etg_settings_saved'] ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
                 <div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Settings saved.', 'elementor-to-gutenberg' ); ?></p></div>
             <?php endif; ?>
             <?php self::render_conversion_warning_notice(); ?>
-            <p>
-                <a href="<?php echo esc_url( $this->get_wizard_url() ); ?>" class="button button-primary"><?php esc_html_e( 'Open Migration Wizard', 'elementor-to-gutenberg' ); ?></a>
-            </p>
 
             <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
                 <?php wp_nonce_field( 'etg_save_settings' ); ?>
                 <input type="hidden" name="action" value="etg_save_settings" />
 
                 <hr />
-                <h2><?php esc_html_e( 'Claude AI Settings', 'elementor-to-gutenberg' ); ?></h2>
-                <p><?php esc_html_e( 'Configure the Anthropic Claude API key used for automated AI page improvement.', 'elementor-to-gutenberg' ); ?></p>
+                <h2><?php esc_html_e( 'Layout Settings', 'elementor-to-gutenberg' ); ?></h2>
+                <p><?php esc_html_e( 'Controls the content width applied to converted top-level Elementor sections. Match this to your Elementor kit\'s container width so converted pages render at the same width as the originals.', 'elementor-to-gutenberg' ); ?></p>
                 <table class="form-table" role="presentation">
                     <tbody>
                     <tr>
                         <th scope="row">
-                            <label for="etg_claude_api_key"><?php esc_html_e( 'Claude API Key', 'elementor-to-gutenberg' ); ?></label>
+                            <label for="etg_section_content_width"><?php esc_html_e( 'Section content width (px)', 'elementor-to-gutenberg' ); ?></label>
                         </th>
                         <td>
-                            <input type="password" id="etg_claude_api_key" name="etg_claude_settings[api_key]" value="<?php echo esc_attr( $claude_api_key ); ?>" class="regular-text" />
-                            <?php if ( '' !== $claude_api_key ) : ?>
-                                <span style="color:#46b450;font-weight:600;"><?php esc_html_e( 'Configured', 'elementor-to-gutenberg' ); ?></span>
-                            <?php else : ?>
-                                <span style="color:#b32d2e;"><?php esc_html_e( 'Not configured', 'elementor-to-gutenberg' ); ?></span>
-                            <?php endif; ?>
-                            <p class="description"><?php esc_html_e( 'Your Anthropic API key. Required for the "Improve with AI" automated workflow.', 'elementor-to-gutenberg' ); ?></p>
+                            <input type="number" id="etg_section_content_width" name="etg_layout_settings[section_content_width]" value="<?php echo esc_attr( (string) $current_width ); ?>" min="320" max="2560" step="10" class="small-text" />
+                            <p class="description"><?php esc_html_e( 'Typical values: 1140 (Elementor Hello theme default, SaaSland), 1200 (wider marketing kits), 1024 (narrow/documentation kits). Clamped to 320–2560.', 'elementor-to-gutenberg' ); ?></p>
                         </td>
                     </tr>
                     </tbody>
@@ -583,17 +596,25 @@ class Admin_Settings {
                 </table>
 
                 <hr />
-                <h2><?php esc_html_e( 'Layout Settings', 'elementor-to-gutenberg' ); ?></h2>
-                <p><?php esc_html_e( 'Controls the content width applied to converted top-level Elementor sections. Match this to your Elementor kit\'s container width so converted pages render at the same width as the originals.', 'elementor-to-gutenberg' ); ?></p>
+                <h2><?php esc_html_e( 'Claude AI', 'elementor-to-gutenberg' ); ?></h2>
+                <p>
+                    <?php esc_html_e( 'Configure the Anthropic Claude API key used for automated AI page improvement.', 'elementor-to-gutenberg' ); ?>
+                    <a href="https://console.anthropic.com/" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Purchase Claude API key', 'elementor-to-gutenberg' ); ?></a>
+                </p>
                 <table class="form-table" role="presentation">
                     <tbody>
                     <tr>
                         <th scope="row">
-                            <label for="etg_section_content_width"><?php esc_html_e( 'Section content width (px)', 'elementor-to-gutenberg' ); ?></label>
+                            <label for="etg_claude_api_key"><?php esc_html_e( 'Claude API Key', 'elementor-to-gutenberg' ); ?></label>
                         </th>
                         <td>
-                            <input type="number" id="etg_section_content_width" name="etg_layout_settings[section_content_width]" value="<?php echo esc_attr( (string) $current_width ); ?>" min="320" max="2560" step="10" class="small-text" />
-                            <p class="description"><?php esc_html_e( 'Typical values: 1140 (Elementor Hello theme default, SaaSland), 1200 (wider marketing kits), 1024 (narrow/documentation kits). Clamped to 320–2560.', 'elementor-to-gutenberg' ); ?></p>
+                            <input type="password" id="etg_claude_api_key" name="etg_claude_settings[api_key]" value="<?php echo esc_attr( $claude_api_key ); ?>" class="regular-text" />
+                            <?php if ( '' !== $claude_api_key ) : ?>
+                                <span style="color:#46b450;font-weight:600;"><?php esc_html_e( 'Configured', 'elementor-to-gutenberg' ); ?></span>
+                            <?php else : ?>
+                                <span style="color:#b32d2e;"><?php esc_html_e( 'Not configured', 'elementor-to-gutenberg' ); ?></span>
+                            <?php endif; ?>
+                            <p class="description"><?php esc_html_e( 'Your Anthropic API key. Required for the "Improve with AI" automated workflow.', 'elementor-to-gutenberg' ); ?></p>
                         </td>
                     </tr>
                     </tbody>
