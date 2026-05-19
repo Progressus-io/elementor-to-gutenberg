@@ -1838,7 +1838,7 @@
             }
             if (job.status === 'completed') {
                 const aiPages = this.getAiImprovePages();
-                if (aiPages.length > 0 && this.config.aiImproveNonce) {
+                if (aiPages.length > 0 && this.config.aiImproveNonce && this.config.aiConfigured) {
                     const count = aiPages.length;
                     const improveAllBtn = this.buildActionPill({
                         variant: 'ai-primary',
@@ -2009,7 +2009,8 @@
                     (result.type === 'page' || result.type === 'header' || result.type === 'footer') &&
                     result.status === 'success' &&
                     Number(result.convertedPostId || 0) > 0 &&
-                    this.config.aiImproveBaseUrl
+                    this.config.aiImproveBaseUrl &&
+                    this.config.aiConfigured
                 ) {
                     const improveUrl = new URL(this.config.aiImproveBaseUrl, window.location.origin);
                     improveUrl.searchParams.set('target_id', String(result.convertedPostId));

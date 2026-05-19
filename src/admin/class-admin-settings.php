@@ -369,23 +369,27 @@ class Admin_Settings {
 		if ( ! isset( $submenu['gutenberg-settings'] ) || ! is_array( $submenu['gutenberg-settings'] ) ) {
 			return;
 		}
-		$wizard_key   = null;
-		$settings_key = null;
-		foreach ( $submenu['gutenberg-settings'] as $key => $item ) {
-			if ( isset( $item[2] ) && Batch_Convert_Wizard::MENU_SLUG === $item[2] ) {
-				$wizard_key = $key;
-			}
-			if ( isset( $item[2] ) && 'gutenberg-settings' === $item[2] ) {
-				$settings_key = $key;
+
+		$desired = array(
+			Batch_Convert_Wizard::MENU_SLUG,
+			AI_Enhancement_Admin::MENU_SLUG,
+			'gutenberg-settings',
+		);
+
+		$indexed   = array();
+		$remaining = array();
+		foreach ( $submenu['gutenberg-settings'] as $item ) {
+			$slug = isset( $item[2] ) ? (string) $item[2] : '';
+			$pos  = array_search( $slug, $desired, true );
+			if ( false !== $pos ) {
+				$indexed[ (int) $pos ] = $item;
+			} else {
+				$remaining[] = $item;
 			}
 		}
-		if ( null === $wizard_key || null === $settings_key || $wizard_key < $settings_key ) {
-			return;
-		}
-		$wizard_item   = $submenu['gutenberg-settings'][ $wizard_key ];
-		$settings_item = $submenu['gutenberg-settings'][ $settings_key ];
-		$submenu['gutenberg-settings'][ $wizard_key ]   = $settings_item;
-		$submenu['gutenberg-settings'][ $settings_key ] = $wizard_item;
+
+		ksort( $indexed );
+		$submenu['gutenberg-settings'] = array_values( array_merge( $indexed, $remaining ) );
 	}
 
 	/**
