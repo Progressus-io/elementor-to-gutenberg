@@ -1,3 +1,506 @@
+/* ── Page wrapper ─────────────────────────────────────────────────────────── */
+
+.etg-ai-page {
+	max-width: 1200px;
+}
+
+/* ── Header ───────────────────────────────────────────────────────────────── */
+
+.etg-ai-header {
+	margin-bottom: 20px;
+}
+
+.etg-ai-header-nav {
+	margin-bottom: 12px;
+}
+
+.etg-ai-back-link {
+	font-size: 13px;
+	color: #646970;
+	text-decoration: none;
+}
+
+.etg-ai-back-link:hover {
+	color: #2271b1;
+}
+
+.etg-ai-header-main {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 16px;
+	flex-wrap: wrap;
+}
+
+.etg-ai-header-title h1 {
+	margin: 0 0 4px;
+	padding: 0;
+	font-size: 23px;
+	font-weight: 600;
+	color: #1d2327;
+}
+
+.etg-ai-header-path {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 13px;
+	color: #646970;
+	flex-wrap: wrap;
+}
+
+.etg-ai-arrow {
+	color: #c3c4c7;
+}
+
+.etg-ai-header-actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-shrink: 0;
+	flex-wrap: wrap;
+	padding-top: 4px;
+}
+
+/* ── Two-column layout ────────────────────────────────────────────────────── */
+
+.etg-ai-layout {
+	display: grid;
+	grid-template-columns: 1fr 280px;
+	grid-template-areas: "main sidebar";
+	gap: 20px;
+	align-items: start;
+}
+
+.etg-ai-main {
+	grid-area: main;
+	min-width: 0;
+}
+
+.etg-ai-sidebar {
+	grid-area: sidebar;
+	min-width: 0;
+}
+
+@media ( max-width: 900px ) {
+	.etg-ai-layout {
+		grid-template-columns: 1fr;
+		grid-template-areas: "main" "sidebar";
+	}
+}
+
+/* ── Cards ────────────────────────────────────────────────────────────────── */
+
+.etg-ai-card {
+	background: #fff;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+	margin-bottom: 20px;
+}
+
+.etg-ai-card-header {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 14px 18px;
+	border-bottom: 1px solid #f0f0f1;
+}
+
+.etg-ai-card-header h2 {
+	margin: 0;
+	padding: 0;
+	font-size: 13px;
+	font-weight: 600;
+	color: #1d2327;
+	flex: 1;
+	border: none;
+}
+
+.etg-ai-card-body {
+	padding: 18px;
+}
+
+.etg-ai-card-footer {
+	padding: 10px 18px;
+	border-top: 1px solid #f0f0f1;
+	background: #f9f9f9;
+	font-size: 12px;
+	color: #646970;
+	border-radius: 0 0 4px 4px;
+}
+
+.etg-card-desc {
+	margin: 0 0 16px;
+	color: #646970;
+	font-size: 13px;
+	line-height: 1.5;
+}
+
+/* ── Inline form (card header Regenerate button) ──────────────────────────── */
+
+.etg-inline-form {
+	display: inline;
+	margin: 0;
+	padding: 0;
+}
+
+.etg-inline-form .button {
+	font-size: 12px;
+	height: 28px;
+	line-height: 26px;
+	padding: 0 10px;
+}
+
+/* ── Status pills ─────────────────────────────────────────────────────────── */
+
+.etg-status-pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	padding: 3px 9px;
+	border-radius: 20px;
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.3px;
+	white-space: nowrap;
+	flex-shrink: 0;
+}
+
+.etg-status-pill::before {
+	content: '';
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	flex-shrink: 0;
+}
+
+.etg-status-pill--success {
+	background: #edfaef;
+	color: #0a7227;
+}
+
+.etg-status-pill--success::before {
+	background: #0a7227;
+}
+
+.etg-status-pill--error {
+	background: #fce8e8;
+	color: #b32d2e;
+}
+
+.etg-status-pill--error::before {
+	background: #b32d2e;
+}
+
+.etg-status-pill--pending {
+	background: #fff8e1;
+	color: #9a6700;
+}
+
+.etg-status-pill--pending::before {
+	background: #f0a500;
+}
+
+.etg-status-pill--neutral {
+	background: #f0f0f1;
+	color: #50575e;
+}
+
+.etg-status-pill--neutral::before {
+	background: #8c8f94;
+}
+
+/* ── Screenshot tabs ──────────────────────────────────────────────────────── */
+
+.etg-ai-tabs {
+	display: flex;
+	padding: 0 18px;
+	border-bottom: 1px solid #dcdcde;
+}
+
+.etg-ai-tab {
+	padding: 10px 14px;
+	font-size: 13px;
+	border: none;
+	background: none;
+	cursor: pointer;
+	color: #646970;
+	border-bottom: 2px solid transparent;
+	margin-bottom: -1px;
+	transition: color 0.1s;
+}
+
+.etg-ai-tab--active {
+	color: #2271b1;
+	border-bottom-color: #2271b1;
+	font-weight: 600;
+}
+
+.etg-ai-tab:hover:not(.etg-ai-tab--active) {
+	color: #1d2327;
+}
+
+/* ── Tab panels ───────────────────────────────────────────────────────────── */
+
+.etg-ai-tab-panel {
+	padding: 18px;
+}
+
+.etg-ai-tab-panel[hidden] {
+	display: none;
+}
+
+/* ── Side-by-side screenshot comparison ──────────────────────────────────── */
+
+.etg-ai-compare-grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 14px;
+}
+
+.etg-compare-label {
+	font-size: 11px;
+	color: #8c8f94;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.3px;
+	margin-bottom: 8px;
+}
+
+/* ── Screenshot thumbnails ────────────────────────────────────────────────── */
+
+.etg-screenshot-thumb-wrap {
+	position: relative;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+	overflow: hidden;
+	background: #f6f7f7;
+	cursor: pointer;
+}
+
+.etg-screenshot-thumb-wrap:hover .etg-screenshot-zoom-btn {
+	opacity: 1;
+}
+
+.etg-screenshot-thumb {
+	display: block;
+	width: 100%;
+	height: 180px;
+	object-fit: cover;
+	object-position: top center;
+}
+
+.etg-screenshot-empty {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 180px;
+	color: #8c8f94;
+	font-size: 13px;
+	border: 1px dashed #dcdcde;
+	border-radius: 4px;
+}
+
+.etg-screenshot-zoom-btn {
+	position: absolute;
+	top: 8px;
+	right: 8px;
+	background: rgba( 0, 0, 0, 0.6 );
+	color: #fff;
+	border: none;
+	border-radius: 4px;
+	padding: 4px 8px;
+	font-size: 14px;
+	cursor: pointer;
+	opacity: 0;
+	transition: opacity 0.15s, background 0.15s;
+	line-height: 1;
+}
+
+.etg-screenshot-zoom-btn:hover {
+	background: rgba( 0, 0, 0, 0.85 );
+}
+
+/* ── Warning inline / notice ──────────────────────────────────────────────── */
+
+.etg-warning-inline {
+	color: #b32d2e;
+}
+
+.etg-notice {
+	padding: 10px 14px;
+	border-radius: 4px;
+	font-size: 13px;
+	margin-bottom: 14px;
+}
+
+.etg-notice--warning {
+	background: #fff8e1;
+	border-left: 3px solid #f0a500;
+	color: #7a5200;
+}
+
+/* ── Refine textarea ──────────────────────────────────────────────────────── */
+
+.etg-refine-textarea {
+	width: 100%;
+	max-width: 100%;
+	margin-bottom: 12px;
+	font-size: 13px;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+	padding: 10px 12px;
+	resize: vertical;
+}
+
+/* ── Page details DL ──────────────────────────────────────────────────────── */
+
+.etg-ai-dl {
+	margin: 0;
+}
+
+.etg-ai-dl dt {
+	font-size: 11px;
+	color: #8c8f94;
+	text-transform: uppercase;
+	letter-spacing: 0.3px;
+	font-weight: 600;
+	margin-bottom: 2px;
+	margin-top: 0;
+}
+
+.etg-ai-dl dd {
+	margin: 0 0 14px;
+	font-size: 13px;
+	color: #1d2327;
+	display: flex;
+	align-items: baseline;
+	gap: 6px;
+	flex-wrap: wrap;
+}
+
+.etg-ai-dl dd:last-child {
+	margin-bottom: 0;
+}
+
+.etg-ai-dl a {
+	text-decoration: none;
+	color: #2271b1;
+}
+
+.etg-ai-dl a:hover {
+	text-decoration: underline;
+}
+
+.etg-ext-link {
+	font-size: 11px;
+	color: #8c8f94 !important;
+	flex-shrink: 0;
+}
+
+.etg-ext-link:hover {
+	color: #2271b1 !important;
+}
+
+.etg-muted {
+	color: #8c8f94;
+	font-style: italic;
+}
+
+/* ── Lightbox ─────────────────────────────────────────────────────────────── */
+
+.etg-lightbox {
+	position: fixed;
+	inset: 0;
+	z-index: 100010;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	animation: etg-lb-in 0.15s ease-out both;
+}
+
+.etg-lightbox[hidden] {
+	display: none;
+}
+
+@keyframes etg-lb-in {
+	from { opacity: 0; }
+	to   { opacity: 1; }
+}
+
+.etg-lightbox-overlay {
+	position: absolute;
+	inset: 0;
+	background: rgba( 0, 0, 0, 0.85 );
+	cursor: pointer;
+}
+
+.etg-lightbox-panel {
+	position: relative;
+	z-index: 1;
+	background: #fff;
+	border-radius: 6px;
+	max-width: min( 90vw, 900px );
+	max-height: 90vh;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+	box-shadow: 0 24px 80px rgba( 0, 0, 0, 0.5 );
+}
+
+.etg-lightbox-toolbar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 10px 16px;
+	border-bottom: 1px solid #dcdcde;
+	background: #f9f9f9;
+	flex-shrink: 0;
+}
+
+.etg-lightbox-open-link {
+	font-size: 13px;
+	color: #2271b1;
+	text-decoration: none;
+}
+
+.etg-lightbox-open-link:hover {
+	text-decoration: underline;
+}
+
+.etg-lightbox-close {
+	border: none;
+	background: none;
+	font-size: 18px;
+	cursor: pointer;
+	color: #646970;
+	padding: 2px 8px;
+	border-radius: 4px;
+	line-height: 1;
+}
+
+.etg-lightbox-close:hover {
+	background: #f0f0f1;
+	color: #1d2327;
+}
+
+.etg-lightbox-images {
+	overflow-y: auto;
+	padding: 16px;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.etg-lightbox-images img {
+	display: block;
+	max-width: 100%;
+	border-radius: 2px;
+}
+
+/* ── AI processing overlay ────────────────────────────────────────────────── */
+
 #ele2gb-ai-loader {
 	position: fixed;
 	top: 0;
@@ -41,7 +544,6 @@
 	from { transform: translateY(12px) scale(0.97); opacity: 0; }
 	to   { transform: translateY(0)    scale(1);    opacity: 1; }
 }
-
 
 .ele2gb-ai-loader-spinner {
 	width: 64px;
@@ -90,7 +592,7 @@
 	line-height: 1.5;
 }
 
-/* ── Refinement section ───────────────────────────────────────────────────── */
+/* ── Refinement suggestion chips ──────────────────────────────────────────── */
 
 .ele2gb-refine-suggestions {
 	display: flex;
@@ -98,7 +600,6 @@
 	align-items: center;
 	gap: 8px;
 	margin-bottom: 16px;
-	max-width: 800px;
 }
 
 .ele2gb-refine-suggestions-label {

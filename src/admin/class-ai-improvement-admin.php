@@ -936,11 +936,10 @@ class AI_Improvement_Admin {
 	}
 
 	/**
-	 * Render workflow page.
+	 * Render redesigned improvement workflow page.
 	 *
-	 * The Screenshots section is rendered as a separate, self-contained form so
-	 * it can contain its own submit button without nesting HTML forms. The
-	 * "Improve with AI" form follows immediately after as a separate form.
+	 * Two-column layout: screenshot thumbnails with lightbox, desktop/mobile tabs,
+	 * AI improvement forms, and a sidebar with page details and AI status.
 	 */
 	private function render_form( WP_Post $target_post, WP_Post $source_post, array $workspace ): void {
 		$target_id    = (int) $target_post->ID;
@@ -956,198 +955,315 @@ class AI_Improvement_Admin {
 		$screenshot_status       = AI_Remediation_Screenshot_Meta_Service::get_status( $target_id );
 		$screenshot_generated_at = (string) get_post_meta( $target_id, AI_Remediation_Screenshot_Meta_Service::META_GENERATED_AT, true );
 		$service_configured      = '' !== AI_Remediation_Screenshot_Api_Service::get_endpoint_url();
+		$last_improved           = (string) get_post_meta( $target_id, '_ele2gb_last_ai_improved', true );
+		$last_mobile_improved    = (string) get_post_meta( $target_id, '_ele2gb_last_ai_mobile_improved', true );
+		$has_mobile_shots        = ! empty( $elementor_mobile_shots ) && ! empty( $gutenberg_mobile_shots );
 
-		$status_labels = array(
-			AI_Remediation_Screenshot_Meta_Service::STATUS_SUCCESS       => esc_html__( 'Generated', 'elementor-to-gutenberg' ),
-			AI_Remediation_Screenshot_Meta_Service::STATUS_FAILED        => esc_html__( 'Generation failed', 'elementor-to-gutenberg' ),
-			AI_Remediation_Screenshot_Meta_Service::STATUS_PENDING       => esc_html__( 'Pending', 'elementor-to-gutenberg' ),
-			AI_Remediation_Screenshot_Meta_Service::STATUS_NOT_GENERATED => esc_html__( 'Not yet generated', 'elementor-to-gutenberg' ),
+		$pill_map = array(
+			AI_Remediation_Screenshot_Meta_Service::STATUS_SUCCESS       => array( 'success', esc_html__( 'Generated', 'elementor-to-gutenberg' ) ),
+			AI_Remediation_Screenshot_Meta_Service::STATUS_FAILED        => array( 'error',   esc_html__( 'Failed', 'elementor-to-gutenberg' ) ),
+			AI_Remediation_Screenshot_Meta_Service::STATUS_PENDING       => array( 'pending', esc_html__( 'Pending', 'elementor-to-gutenberg' ) ),
+			AI_Remediation_Screenshot_Meta_Service::STATUS_NOT_GENERATED => array( 'neutral', esc_html__( 'Not generated', 'elementor-to-gutenberg' ) ),
 		);
-		$status_label = isset( $status_labels[ $screenshot_status ] ) ? $status_labels[ $screenshot_status ] : esc_html( $screenshot_status );
+		$pill = isset( $pill_map[ $screenshot_status ] ) ? $pill_map[ $screenshot_status ] : array( 'neutral', esc_html( $screenshot_status ) );
+
+		$enhancement_url = admin_url( 'admin.php?page=' . AI_Enhancement_Admin::MENU_SLUG );
+		$target_edit_url = admin_url( 'post.php?post=' . $target_id . '&action=edit' );
+		$source_edit_url = admin_url( 'post.php?post=' . $source_id . '&action=edit' );
+		$source_prev_url = \get_permalink( $source_id );
+		$target_prev_url = \get_permalink( $target_id );
+
+		$suggestions = array(
+			__( 'Fix hero section spacing and alignment', 'elementor-to-gutenberg' ),
+			__( 'Match typography — font sizes and weights', 'elementor-to-gutenberg' ),
+			__( 'Improve button styles and colors', 'elementor-to-gutenberg' ),
+			__( 'Fix colors and contrast', 'elementor-to-gutenberg' ),
+			__( 'Fix image sizing and alignment', 'elementor-to-gutenberg' ),
+			__( 'Fix section padding and spacing', 'elementor-to-gutenberg' ),
+			__( 'Improve heading styles', 'elementor-to-gutenberg' ),
+			__( 'Fix navigation menu styling', 'elementor-to-gutenberg' ),
+		);
 
 		?>
-		<div class="wrap">
-			<h1><?php echo esc_html__( 'Improve Page with AI', 'elementor-to-gutenberg' ); ?></h1>
+		<div class="etg-ai-page">
 
-			<table class="form-table" role="presentation">
-				<tbody>
-				<tr>
-					<th scope="row"><?php echo esc_html__( 'Target Gutenberg Page ID', 'elementor-to-gutenberg' ); ?></th>
-					<td><?php echo esc_html( (string) $target_id ); ?></td>
-				</tr>
-				<tr>
-					<th scope="row"><?php echo esc_html__( 'Source Elementor Page ID', 'elementor-to-gutenberg' ); ?></th>
-					<td><?php echo esc_html( (string) $source_id ); ?></td>
-				</tr>
-				<tr>
-					<th scope="row"><?php echo esc_html__( 'Target Gutenberg Title', 'elementor-to-gutenberg' ); ?></th>
-					<td><?php echo esc_html( $target_title ); ?></td>
-				</tr>
-				<tr>
-					<th scope="row"><?php echo esc_html__( 'Source Elementor Title', 'elementor-to-gutenberg' ); ?></th>
-					<td><?php echo esc_html( $source_title ); ?></td>
-				</tr>
-				</tbody>
-			</table>
-
-			<h2><?php echo esc_html__( 'Screenshots', 'elementor-to-gutenberg' ); ?></h2>
-			<table class="form-table" role="presentation">
-				<tbody>
-				<?php
-				$screenshot_rows = array(
-					array(
-						'label' => esc_html__( 'Elementor (Desktop)', 'elementor-to-gutenberg' ),
-						'urls'  => $elementor_shots,
-						'none'  => esc_html__( 'No Elementor desktop screenshot yet.', 'elementor-to-gutenberg' ),
-					),
-					array(
-						'label' => esc_html__( 'Gutenberg (Desktop)', 'elementor-to-gutenberg' ),
-						'urls'  => $gutenberg_shots,
-						'none'  => esc_html__( 'No Gutenberg desktop screenshot yet.', 'elementor-to-gutenberg' ),
-					),
-					array(
-						'label' => esc_html__( 'Elementor (Mobile)', 'elementor-to-gutenberg' ),
-						'urls'  => $elementor_mobile_shots,
-						'none'  => esc_html__( 'No Elementor mobile screenshot yet.', 'elementor-to-gutenberg' ),
-					),
-					array(
-						'label' => esc_html__( 'Gutenberg (Mobile)', 'elementor-to-gutenberg' ),
-						'urls'  => $gutenberg_mobile_shots,
-						'none'  => esc_html__( 'No Gutenberg mobile screenshot yet.', 'elementor-to-gutenberg' ),
-					),
-				);
-				foreach ( $screenshot_rows as $row ) :
-					$urls  = array_values( array_filter( $row['urls'], 'is_string' ) );
-					$total = count( $urls );
-				?>
-				<tr>
-					<th scope="row"><?php echo $row['label']; // Already escaped via esc_html__. ?></th>
-					<td>
-						<?php if ( 0 === $total ) : ?>
-							<p class="description"><?php echo $row['none']; // Already escaped. ?></p>
-						<?php else : ?>
-							<?php foreach ( $urls as $idx => $url ) : ?>
-								<?php
-								$link_label = $total > 1
-									/* translators: 1: current chunk number 2: total chunks */
-									? sprintf( esc_html__( 'Download part %1$d of %2$d', 'elementor-to-gutenberg' ), $idx + 1, $total )
-									: esc_html__( 'Download screenshot', 'elementor-to-gutenberg' );
-								?>
-								<a href="<?php echo esc_url( $url ); ?>" target="_blank" rel="noopener" class="button button-secondary" style="margin-right:6px;margin-bottom:4px;"><?php echo $link_label; // Already escaped. ?></a>
-							<?php endforeach; ?>
+			<div class="etg-ai-header">
+				<div class="etg-ai-header-nav">
+					<a href="<?php echo esc_url( $enhancement_url ); ?>" class="etg-ai-back-link">&#8592; <?php esc_html_e( 'Back to AI Enhancement', 'elementor-to-gutenberg' ); ?></a>
+				</div>
+				<div class="etg-ai-header-main">
+					<div class="etg-ai-header-title">
+						<h1><?php esc_html_e( 'AI Enhancement', 'elementor-to-gutenberg' ); ?></h1>
+						<div class="etg-ai-header-path">
+							<span><?php echo esc_html( $source_title ); ?></span>
+							<span class="etg-ai-arrow">&#8594;</span>
+							<span><?php echo esc_html( $target_title ); ?></span>
+						</div>
+					</div>
+					<div class="etg-ai-header-actions">
+						<?php if ( $source_prev_url ) : ?>
+							<a href="<?php echo esc_url( $source_prev_url ); ?>" target="_blank" rel="noopener" class="button"><?php esc_html_e( 'View Source &#8599;', 'elementor-to-gutenberg' ); ?></a>
 						<?php endif; ?>
-					</td>
-				</tr>
-				<?php endforeach; ?>
-				<tr>
-					<th scope="row"><?php echo esc_html__( 'Screenshot Status', 'elementor-to-gutenberg' ); ?></th>
-					<td>
-						<?php
-						echo $status_label; // Already escaped via esc_html__ or esc_html above.
-						if ( '' !== $screenshot_generated_at ) {
-							echo ' &mdash; ' . esc_html( $screenshot_generated_at );
-						}
-						if ( ! $service_configured ) {
-							echo ' <span style="color:#b32d2e;">(' . esc_html__( 'Screenshot service not configured. See plugin settings.', 'elementor-to-gutenberg' ) . ')</span>';
-						}
-						?>
-					</td>
-				</tr>
-				</tbody>
-			</table>
+						<?php if ( $target_prev_url ) : ?>
+							<a href="<?php echo esc_url( $target_prev_url ); ?>" target="_blank" rel="noopener" class="button"><?php esc_html_e( 'Preview &#8599;', 'elementor-to-gutenberg' ); ?></a>
+						<?php endif; ?>
+						<a href="<?php echo esc_url( $target_edit_url ); ?>" class="button button-primary"><?php esc_html_e( 'Edit in Gutenberg', 'elementor-to-gutenberg' ); ?></a>
+					</div>
+				</div>
+			</div>
 
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="margin-bottom:1.5em;">
-				<?php wp_nonce_field( 'ele2gb_ai_regenerate_screenshots_' . $target_id ); ?>
-				<input type="hidden" name="action" value="ele2gb_ai_regenerate_screenshots" />
-				<input type="hidden" name="target_id" value="<?php echo esc_attr( (string) $target_id ); ?>" />
-				<input type="hidden" name="source_id" value="<?php echo esc_attr( (string) $source_id ); ?>" />
-				<?php submit_button( esc_html__( 'Regenerate Screenshots', 'elementor-to-gutenberg' ), 'secondary', 'ele2gb_regenerate_screenshots_submit', false ); ?>
-			</form>
+			<div class="etg-ai-layout">
 
-			<?php
-			$last_improved = (string) get_post_meta( $target_id, '_ele2gb_last_ai_improved', true );
-			if ( '' === $last_improved ) :
-				?>
-				<h2><?php echo esc_html__( 'AI Improvement', 'elementor-to-gutenberg' ); ?></h2>
-				<p><?php echo esc_html__( 'Analyse and improve the converted page using AI. The page content and CSS will be updated automatically.', 'elementor-to-gutenberg' ); ?></p>
-				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="ele2gb-ai-improve-form">
-					<?php wp_nonce_field( self::NONCE_AUTO_IMPROVE ); ?>
-					<input type="hidden" name="action" value="ele2gb_ai_auto_improve" />
-					<input type="hidden" name="target_id" value="<?php echo esc_attr( (string) $target_id ); ?>" />
-					<input type="hidden" name="source_id" value="<?php echo esc_attr( (string) $source_id ); ?>" />
-					<?php submit_button( esc_html__( 'Improve with AI', 'elementor-to-gutenberg' ), 'primary', 'ele2gb_auto_improve_submit', false ); ?>
-				</form>
-			<?php else :
-				// ── Round 2+: page has been improved at least once ────────────
-				$suggestions = array(
-					__( 'Fix hero section spacing and alignment', 'elementor-to-gutenberg' ),
-					__( 'Match typography — font sizes and weights', 'elementor-to-gutenberg' ),
-					__( 'Improve button styles and colors', 'elementor-to-gutenberg' ),
-					__( 'Fix colors and contrast', 'elementor-to-gutenberg' ),
-					__( 'Fix image sizing and alignment', 'elementor-to-gutenberg' ),
-					__( 'Fix section padding and spacing', 'elementor-to-gutenberg' ),
-					__( 'Improve heading styles', 'elementor-to-gutenberg' ),
-					__( 'Fix navigation menu styling', 'elementor-to-gutenberg' ),
-				);
-				?>
-				<h2><?php echo esc_html__( 'Refine with AI', 'elementor-to-gutenberg' ); ?></h2>
-				<p><?php echo esc_html__( 'The page has been improved. Tell the AI exactly what to focus on next. Fresh screenshots will be captured automatically before this run.', 'elementor-to-gutenberg' ); ?></p>
+				<div class="etg-ai-main">
 
-				<div class="ele2gb-refine-suggestions">
-					<span class="ele2gb-refine-suggestions-label"><?php echo esc_html__( 'Quick suggestions:', 'elementor-to-gutenberg' ); ?></span>
-					<?php foreach ( $suggestions as $suggestion ) : ?>
-						<button type="button" class="ele2gb-suggestion-chip" data-suggestion="<?php echo esc_attr( $suggestion ); ?>">
-							<?php echo esc_html( $suggestion ); ?>
-						</button>
-					<?php endforeach; ?>
+					<div class="etg-ai-card">
+						<div class="etg-ai-card-header">
+							<h2><?php esc_html_e( 'Screenshots', 'elementor-to-gutenberg' ); ?></h2>
+							<span class="etg-status-pill etg-status-pill--<?php echo esc_attr( $pill[0] ); ?>"><?php echo $pill[1]; // Already escaped. ?></span>
+							<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="etg-inline-form">
+								<?php wp_nonce_field( 'ele2gb_ai_regenerate_screenshots_' . $target_id ); ?>
+								<input type="hidden" name="action" value="ele2gb_ai_regenerate_screenshots" />
+								<input type="hidden" name="target_id" value="<?php echo esc_attr( (string) $target_id ); ?>" />
+								<input type="hidden" name="source_id" value="<?php echo esc_attr( (string) $source_id ); ?>" />
+								<button type="submit" class="button button-small"><?php esc_html_e( 'Regenerate', 'elementor-to-gutenberg' ); ?></button>
+							</form>
+						</div>
+
+						<div class="etg-ai-tabs" role="tablist">
+							<button type="button" class="etg-ai-tab etg-ai-tab--active" role="tab" data-tab="desktop" aria-selected="true"><?php esc_html_e( 'Desktop', 'elementor-to-gutenberg' ); ?></button>
+							<button type="button" class="etg-ai-tab" role="tab" data-tab="mobile" aria-selected="false"><?php esc_html_e( 'Mobile', 'elementor-to-gutenberg' ); ?></button>
+						</div>
+
+						<div class="etg-ai-tab-panel" data-panel="desktop">
+							<div class="etg-ai-compare-grid">
+								<div class="etg-compare-side">
+									<div class="etg-compare-label"><?php esc_html_e( 'Elementor (Original)', 'elementor-to-gutenberg' ); ?></div>
+									<?php
+									$d_ele_urls  = array_values( array_filter( $elementor_shots, 'is_string' ) );
+									$d_ele_first = ! empty( $d_ele_urls ) ? $d_ele_urls[0] : '';
+									if ( $d_ele_first ) :
+										?>
+										<div class="etg-screenshot-thumb-wrap" data-urls="<?php echo esc_attr( wp_json_encode( $d_ele_urls ) ); ?>">
+											<img class="etg-screenshot-thumb" src="<?php echo esc_url( $d_ele_first ); ?>" alt="" loading="lazy" />
+											<button type="button" class="etg-screenshot-zoom-btn" aria-label="<?php esc_attr_e( 'View full screenshot', 'elementor-to-gutenberg' ); ?>">&#x2922;</button>
+										</div>
+									<?php else : ?>
+										<div class="etg-screenshot-empty"><?php esc_html_e( 'No desktop screenshot yet', 'elementor-to-gutenberg' ); ?></div>
+									<?php endif; ?>
+								</div>
+								<div class="etg-compare-side">
+									<div class="etg-compare-label"><?php esc_html_e( 'Gutenberg (Converted)', 'elementor-to-gutenberg' ); ?></div>
+									<?php
+									$d_gb_urls  = array_values( array_filter( $gutenberg_shots, 'is_string' ) );
+									$d_gb_first = ! empty( $d_gb_urls ) ? $d_gb_urls[0] : '';
+									if ( $d_gb_first ) :
+										?>
+										<div class="etg-screenshot-thumb-wrap" data-urls="<?php echo esc_attr( wp_json_encode( $d_gb_urls ) ); ?>">
+											<img class="etg-screenshot-thumb" src="<?php echo esc_url( $d_gb_first ); ?>" alt="" loading="lazy" />
+											<button type="button" class="etg-screenshot-zoom-btn" aria-label="<?php esc_attr_e( 'View full screenshot', 'elementor-to-gutenberg' ); ?>">&#x2922;</button>
+										</div>
+									<?php else : ?>
+										<div class="etg-screenshot-empty"><?php esc_html_e( 'No desktop screenshot yet', 'elementor-to-gutenberg' ); ?></div>
+									<?php endif; ?>
+								</div>
+							</div>
+						</div>
+
+						<div class="etg-ai-tab-panel" data-panel="mobile" hidden>
+							<div class="etg-ai-compare-grid">
+								<div class="etg-compare-side">
+									<div class="etg-compare-label"><?php esc_html_e( 'Elementor Mobile', 'elementor-to-gutenberg' ); ?></div>
+									<?php
+									$m_ele_urls  = array_values( array_filter( $elementor_mobile_shots, 'is_string' ) );
+									$m_ele_first = ! empty( $m_ele_urls ) ? $m_ele_urls[0] : '';
+									if ( $m_ele_first ) :
+										?>
+										<div class="etg-screenshot-thumb-wrap" data-urls="<?php echo esc_attr( wp_json_encode( $m_ele_urls ) ); ?>">
+											<img class="etg-screenshot-thumb" src="<?php echo esc_url( $m_ele_first ); ?>" alt="" loading="lazy" />
+											<button type="button" class="etg-screenshot-zoom-btn" aria-label="<?php esc_attr_e( 'View full screenshot', 'elementor-to-gutenberg' ); ?>">&#x2922;</button>
+										</div>
+									<?php else : ?>
+										<div class="etg-screenshot-empty"><?php esc_html_e( 'No mobile screenshot yet', 'elementor-to-gutenberg' ); ?></div>
+									<?php endif; ?>
+								</div>
+								<div class="etg-compare-side">
+									<div class="etg-compare-label"><?php esc_html_e( 'Gutenberg Mobile', 'elementor-to-gutenberg' ); ?></div>
+									<?php
+									$m_gb_urls  = array_values( array_filter( $gutenberg_mobile_shots, 'is_string' ) );
+									$m_gb_first = ! empty( $m_gb_urls ) ? $m_gb_urls[0] : '';
+									if ( $m_gb_first ) :
+										?>
+										<div class="etg-screenshot-thumb-wrap" data-urls="<?php echo esc_attr( wp_json_encode( $m_gb_urls ) ); ?>">
+											<img class="etg-screenshot-thumb" src="<?php echo esc_url( $m_gb_first ); ?>" alt="" loading="lazy" />
+											<button type="button" class="etg-screenshot-zoom-btn" aria-label="<?php esc_attr_e( 'View full screenshot', 'elementor-to-gutenberg' ); ?>">&#x2922;</button>
+										</div>
+									<?php else : ?>
+										<div class="etg-screenshot-empty"><?php esc_html_e( 'No mobile screenshot yet', 'elementor-to-gutenberg' ); ?></div>
+									<?php endif; ?>
+								</div>
+							</div>
+						</div>
+
+						<?php if ( '' !== $screenshot_generated_at || ! $service_configured ) : ?>
+						<div class="etg-ai-card-footer">
+							<?php if ( '' !== $screenshot_generated_at ) : ?>
+								<?php
+								/* translators: %s: date/time screenshots were captured */
+								printf( esc_html__( 'Last captured: %s', 'elementor-to-gutenberg' ), esc_html( $screenshot_generated_at ) );
+								?>
+							<?php endif; ?>
+							<?php if ( ! $service_configured ) : ?>
+								<span class="etg-warning-inline"><?php esc_html_e( 'Screenshot service not configured — see Settings.', 'elementor-to-gutenberg' ); ?></span>
+							<?php endif; ?>
+						</div>
+						<?php endif; ?>
+					</div>
+
+					<div class="etg-ai-card">
+						<?php if ( '' === $last_improved ) : ?>
+							<div class="etg-ai-card-header">
+								<h2><?php esc_html_e( 'AI Improvement', 'elementor-to-gutenberg' ); ?></h2>
+								<span class="etg-status-pill etg-status-pill--neutral"><?php esc_html_e( 'Not yet run', 'elementor-to-gutenberg' ); ?></span>
+							</div>
+							<div class="etg-ai-card-body">
+								<p class="etg-card-desc"><?php esc_html_e( 'Analyse and improve the converted page using AI. The page content and CSS will be updated automatically.', 'elementor-to-gutenberg' ); ?></p>
+								<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="ele2gb-ai-improve-form">
+									<?php wp_nonce_field( self::NONCE_AUTO_IMPROVE ); ?>
+									<input type="hidden" name="action" value="ele2gb_ai_auto_improve" />
+									<input type="hidden" name="target_id" value="<?php echo esc_attr( (string) $target_id ); ?>" />
+									<input type="hidden" name="source_id" value="<?php echo esc_attr( (string) $source_id ); ?>" />
+									<?php submit_button( esc_html__( 'Improve with AI', 'elementor-to-gutenberg' ), 'primary', 'ele2gb_auto_improve_submit', false ); ?>
+								</form>
+							</div>
+						<?php else : ?>
+							<div class="etg-ai-card-header">
+								<h2><?php esc_html_e( 'Refine with AI', 'elementor-to-gutenberg' ); ?></h2>
+								<span class="etg-status-pill etg-status-pill--success"><?php esc_html_e( 'Improved', 'elementor-to-gutenberg' ); ?></span>
+							</div>
+							<div class="etg-ai-card-body">
+								<p class="etg-card-desc"><?php esc_html_e( 'Tell AI exactly what to focus on. Fresh screenshots are captured automatically before each run.', 'elementor-to-gutenberg' ); ?></p>
+								<div class="ele2gb-refine-suggestions">
+									<span class="ele2gb-refine-suggestions-label"><?php esc_html_e( 'Quick suggestions:', 'elementor-to-gutenberg' ); ?></span>
+									<?php foreach ( $suggestions as $suggestion ) : ?>
+										<button type="button" class="ele2gb-suggestion-chip" data-suggestion="<?php echo esc_attr( $suggestion ); ?>"><?php echo esc_html( $suggestion ); ?></button>
+									<?php endforeach; ?>
+								</div>
+								<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="ele2gb-ai-refine-form">
+									<?php wp_nonce_field( self::NONCE_REFINE ); ?>
+									<input type="hidden" name="action" value="ele2gb_ai_refine" />
+									<input type="hidden" name="target_id" value="<?php echo esc_attr( (string) $target_id ); ?>" />
+									<input type="hidden" name="source_id" value="<?php echo esc_attr( (string) $source_id ); ?>" />
+									<textarea
+										name="focus_instruction"
+										id="ele2gb-focus-instruction"
+										rows="4"
+										placeholder="<?php echo esc_attr__( 'Describe what needs fixing, e.g. "The hero section spacing is too tight and the heading font is too small"', 'elementor-to-gutenberg' ); ?>"
+										class="etg-refine-textarea"
+									></textarea>
+									<?php submit_button( esc_html__( 'Refine with AI', 'elementor-to-gutenberg' ), 'primary', 'ele2gb_refine_submit', false ); ?>
+								</form>
+							</div>
+						<?php endif; ?>
+					</div>
+
+					<div class="etg-ai-card">
+						<div class="etg-ai-card-header">
+							<h2><?php esc_html_e( 'Mobile Optimisation', 'elementor-to-gutenberg' ); ?></h2>
+							<?php if ( '' !== $last_mobile_improved ) : ?>
+								<span class="etg-status-pill etg-status-pill--success"><?php esc_html_e( 'Improved', 'elementor-to-gutenberg' ); ?></span>
+							<?php else : ?>
+								<span class="etg-status-pill etg-status-pill--neutral"><?php esc_html_e( 'Not yet run', 'elementor-to-gutenberg' ); ?></span>
+							<?php endif; ?>
+						</div>
+						<div class="etg-ai-card-body">
+							<p class="etg-card-desc"><?php esc_html_e( 'Compares mobile screenshots and generates @media query CSS. Desktop styles and block content are not modified.', 'elementor-to-gutenberg' ); ?></p>
+							<?php if ( ! $has_mobile_shots ) : ?>
+								<div class="etg-notice etg-notice--warning">
+									<?php esc_html_e( 'Mobile screenshots are missing — click Regenerate in the Screenshots card above before running this pass.', 'elementor-to-gutenberg' ); ?>
+								</div>
+							<?php endif; ?>
+							<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="ele2gb-ai-mobile-improve-form">
+								<?php wp_nonce_field( self::NONCE_MOBILE_IMPROVE ); ?>
+								<input type="hidden" name="action" value="ele2gb_ai_mobile_improve" />
+								<input type="hidden" name="target_id" value="<?php echo esc_attr( (string) $target_id ); ?>" />
+								<input type="hidden" name="source_id" value="<?php echo esc_attr( (string) $source_id ); ?>" />
+								<?php submit_button( esc_html__( 'Improve Mobile with AI', 'elementor-to-gutenberg' ), 'secondary', 'ele2gb_mobile_improve_submit', false ); ?>
+							</form>
+						</div>
+					</div>
+
 				</div>
 
-				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="ele2gb-ai-refine-form">
-					<?php wp_nonce_field( self::NONCE_REFINE ); ?>
-					<input type="hidden" name="action" value="ele2gb_ai_refine" />
-					<input type="hidden" name="target_id" value="<?php echo esc_attr( (string) $target_id ); ?>" />
-					<input type="hidden" name="source_id" value="<?php echo esc_attr( (string) $source_id ); ?>" />
-					<textarea
-						name="focus_instruction"
-						id="ele2gb-focus-instruction"
-						rows="4"
-						placeholder="<?php echo esc_attr__( 'Describe what needs fixing, e.g. "The hero section spacing is too tight and the heading font is too small"', 'elementor-to-gutenberg' ); ?>"
-						style="width:100%;max-width:800px;margin-bottom:1em;font-size:14px;"
-					></textarea>
-					<br />
-					<?php submit_button( esc_html__( 'Refine with AI', 'elementor-to-gutenberg' ), 'primary', 'ele2gb_refine_submit', false ); ?>
-				</form>
-			<?php endif; ?>
+				<aside class="etg-ai-sidebar">
 
-			<?php
-			$last_mobile_improved = (string) get_post_meta( $target_id, '_ele2gb_last_ai_mobile_improved', true );
-			$has_mobile_shots     = ! empty( $elementor_mobile_shots ) && ! empty( $gutenberg_mobile_shots );
-			?>
-			<hr style="margin:2em 0;" />
-			<h2><?php echo esc_html__( 'Improve Mobile with AI', 'elementor-to-gutenberg' ); ?></h2>
-			<p>
-				<?php echo esc_html__( 'Run a separate AI pass that compares the MOBILE screenshots and produces mobile-only @media query CSS. Desktop styles and Gutenberg block content are NOT changed.', 'elementor-to-gutenberg' ); ?>
-			</p>
-			<?php if ( '' !== $last_mobile_improved ) : ?>
-				<p class="description">
-					<?php
-					/* translators: %s: MySQL datetime of last mobile improvement run */
-					printf( esc_html__( 'Last mobile improvement: %s', 'elementor-to-gutenberg' ), esc_html( $last_mobile_improved ) );
-					?>
-				</p>
-			<?php endif; ?>
-			<?php if ( ! $has_mobile_shots ) : ?>
-				<p class="description" style="color:#b32d2e;">
-					<?php echo esc_html__( 'Mobile screenshots are missing. Click "Regenerate Screenshots" above before running this pass.', 'elementor-to-gutenberg' ); ?>
-				</p>
-			<?php endif; ?>
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="ele2gb-ai-mobile-improve-form">
-				<?php wp_nonce_field( self::NONCE_MOBILE_IMPROVE ); ?>
-				<input type="hidden" name="action" value="ele2gb_ai_mobile_improve" />
-				<input type="hidden" name="target_id" value="<?php echo esc_attr( (string) $target_id ); ?>" />
-				<input type="hidden" name="source_id" value="<?php echo esc_attr( (string) $source_id ); ?>" />
-				<?php submit_button( esc_html__( 'Improve Mobile with AI', 'elementor-to-gutenberg' ), 'secondary', 'ele2gb_mobile_improve_submit', false ); ?>
-			</form>
+					<div class="etg-ai-card">
+						<div class="etg-ai-card-header">
+							<h2><?php esc_html_e( 'Page Details', 'elementor-to-gutenberg' ); ?></h2>
+						</div>
+						<div class="etg-ai-card-body">
+							<dl class="etg-ai-dl">
+								<dt><?php esc_html_e( 'Source (Elementor)', 'elementor-to-gutenberg' ); ?></dt>
+								<dd>
+									<a href="<?php echo esc_url( $source_edit_url ); ?>"><?php echo esc_html( $source_title ); ?></a>
+									<?php if ( $source_prev_url ) : ?>
+										<a href="<?php echo esc_url( $source_prev_url ); ?>" target="_blank" rel="noopener" class="etg-ext-link" title="<?php esc_attr_e( 'Preview', 'elementor-to-gutenberg' ); ?>">&#8599;</a>
+									<?php endif; ?>
+								</dd>
+								<dt><?php esc_html_e( 'Target (Gutenberg)', 'elementor-to-gutenberg' ); ?></dt>
+								<dd>
+									<a href="<?php echo esc_url( $target_edit_url ); ?>"><?php echo esc_html( $target_title ); ?></a>
+									<?php if ( $target_prev_url ) : ?>
+										<a href="<?php echo esc_url( $target_prev_url ); ?>" target="_blank" rel="noopener" class="etg-ext-link" title="<?php esc_attr_e( 'Preview', 'elementor-to-gutenberg' ); ?>">&#8599;</a>
+									<?php endif; ?>
+								</dd>
+								<dt><?php esc_html_e( 'Source ID', 'elementor-to-gutenberg' ); ?></dt>
+								<dd><?php echo esc_html( (string) $source_id ); ?></dd>
+								<dt><?php esc_html_e( 'Target ID', 'elementor-to-gutenberg' ); ?></dt>
+								<dd><?php echo esc_html( (string) $target_id ); ?></dd>
+							</dl>
+						</div>
+					</div>
+
+					<div class="etg-ai-card">
+						<div class="etg-ai-card-header">
+							<h2><?php esc_html_e( 'AI Status', 'elementor-to-gutenberg' ); ?></h2>
+						</div>
+						<div class="etg-ai-card-body">
+							<dl class="etg-ai-dl">
+								<dt><?php esc_html_e( 'Desktop', 'elementor-to-gutenberg' ); ?></dt>
+								<dd>
+									<?php if ( '' !== $last_improved ) : ?>
+										<?php echo esc_html( $last_improved ); ?>
+									<?php else : ?>
+										<span class="etg-muted"><?php esc_html_e( 'Not yet run', 'elementor-to-gutenberg' ); ?></span>
+									<?php endif; ?>
+								</dd>
+								<dt><?php esc_html_e( 'Mobile', 'elementor-to-gutenberg' ); ?></dt>
+								<dd>
+									<?php if ( '' !== $last_mobile_improved ) : ?>
+										<?php echo esc_html( $last_mobile_improved ); ?>
+									<?php else : ?>
+										<span class="etg-muted"><?php esc_html_e( 'Not yet run', 'elementor-to-gutenberg' ); ?></span>
+									<?php endif; ?>
+								</dd>
+							</dl>
+						</div>
+					</div>
+
+				</aside>
+
+			</div>
+
+			<div id="etg-lightbox" class="etg-lightbox" hidden role="dialog" aria-modal="true" aria-label="<?php esc_attr_e( 'Screenshot viewer', 'elementor-to-gutenberg' ); ?>">
+				<div class="etg-lightbox-overlay" id="etg-lightbox-overlay"></div>
+				<div class="etg-lightbox-panel">
+					<div class="etg-lightbox-toolbar">
+						<a id="etg-lightbox-open" href="#" target="_blank" rel="noopener" class="etg-lightbox-open-link"><?php esc_html_e( 'Open full image &#8599;', 'elementor-to-gutenberg' ); ?></a>
+						<button type="button" id="etg-lightbox-close" class="etg-lightbox-close" aria-label="<?php esc_attr_e( 'Close', 'elementor-to-gutenberg' ); ?>">&#x2715;</button>
+					</div>
+					<div id="etg-lightbox-images" class="etg-lightbox-images"></div>
+				</div>
+			</div>
 
 			<div id="ele2gb-ai-loader" hidden>
 				<div class="ele2gb-ai-loader-card">
@@ -1156,11 +1272,12 @@ class AI_Improvement_Admin {
 						<circle class="arc"   cx="22" cy="22" r="20" fill="none" stroke="#2271b1" stroke-width="3" />
 					</svg>
 					<div>
-						<strong class="ele2gb-ai-loader-title"><?php echo esc_html__( 'Improving with AI…', 'elementor-to-gutenberg' ); ?></strong>
-						<span class="ele2gb-ai-loader-message"><?php echo esc_html__( 'Analysing page structure and generating improvements. This may take up to 2 minutes.', 'elementor-to-gutenberg' ); ?></span>
+						<strong class="ele2gb-ai-loader-title"><?php esc_html_e( 'Improving with AI&#8230;', 'elementor-to-gutenberg' ); ?></strong>
+						<span class="ele2gb-ai-loader-message"><?php esc_html_e( 'Analysing page structure and generating improvements. This may take up to 2 minutes.', 'elementor-to-gutenberg' ); ?></span>
 					</div>
 				</div>
 			</div>
+
 		</div>
 		<?php
 	}
