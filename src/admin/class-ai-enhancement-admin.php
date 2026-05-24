@@ -8,12 +8,14 @@
 namespace Progressus\Gutenberg\Admin;
 
 use Progressus\Gutenberg\Admin\Helper\Claude_Api_Service;
+use Progressus\Gutenberg\Admin\Helper\AI_Remediation_Screenshot_Meta_Service;
 
 use function add_action;
 use function add_submenu_page;
 use function admin_url;
 use function current_user_can;
 use function esc_html__;
+use function get_permalink;
 use function get_post_meta;
 use function get_the_title;
 use function sanitize_key;
@@ -49,6 +51,7 @@ class AI_Enhancement_Admin {
 	private function __construct() {
 		add_action( 'admin_menu', array( $this, 'register_menu' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
+		add_action( 'wp_ajax_ele2gb_generate_screenshots_single', array( $this, 'handle_ajax_generate_screenshots' ) );
 	}
 
 	public function register_menu(): void {
@@ -86,14 +89,16 @@ class AI_Enhancement_Admin {
 			'etg-ai-enhancement',
 			'etgAiEnhancement',
 			array(
-				'ajaxUrl'          => admin_url( 'admin-ajax.php' ),
-				'aiImproveNonce'   => wp_create_nonce( 'ele2gb_ai_improve' ),
-				'aiConfigured'     => '' !== Claude_Api_Service::get_api_key(),
-				'settingsUrl'      => admin_url( 'admin.php?page=gutenberg-settings' ),
-				'editBaseUrl'      => admin_url( 'post.php?post=' ),
-				'aiImproveBaseUrl' => admin_url( 'admin.php?page=' . AI_Improvement_Admin::MENU_SLUG ),
-				'pages'            => $this->get_converted_pages_data(),
-				'strings'          => $this->get_strings(),
+				'ajaxUrl'            => admin_url( 'admin-ajax.php' ),
+				'aiImproveNonce'     => wp_create_nonce( 'ele2gb_ai_improve' ),
+				'screenshotNonce'    => wp_create_nonce( 'ele2gb_generate_screenshots' ),
+				'aiConfigured'       => '' !== Claude_Api_Service::get_api_key(),
+				'screenshotEnabled'  => true,
+				'settingsUrl'        => admin_url( 'admin.php?page=gutenberg-settings' ),
+				'editBaseUrl'        => admin_url( 'post.php?post=' ),
+				'aiImproveBaseUrl'   => admin_url( 'admin.php?page=' . AI_Improvement_Admin::MENU_SLUG ),
+				'pages'              => $this->get_converted_pages_data(),
+				'strings'            => $this->get_strings(),
 			)
 		);
 	}
@@ -105,7 +110,7 @@ class AI_Enhancement_Admin {
 
 		$has_pages = ! empty( $this->get_converted_pages() );
 		?>
-        <div class="wrap">
+        <div class="wrap ele2gb-wizard-wrap">
             <h1><?php esc_html_e( 'AI Enhancement', 'elementor-to-gutenberg' ); ?></h1>
             <?php if ( ! $has_pages ) : ?>
                 <p><?php esc_html_e( 'No converted pages found. Use the Conversion Wizard to convert Elementor pages first.', 'elementor-to-gutenberg' ); ?></p>
@@ -116,16 +121,60 @@ class AI_Enhancement_Admin {
 		<?php
 	}
 
+	/**
+	 * AJAX handler: generate screenshots for a single converted page.
+	 */
+	public function handle_ajax_generate_screenshots(): void {
+		check_ajax_referer( 'ele2gb_generate_screenshots', 'nonce' );
+
+		if ( ! current_user_can( 'edit_pages' ) ) {
+			wp_send_json_error( array( 'message' => esc_html__( 'Unauthorized.', 'elementor-to-gutenberg' ) ) );
+			return;
+		}
+
+		$source_id = isset( $_POST['source_id'] ) ? absint( $_POST['source_id'] ) : 0;
+		$target_id = isset( $_POST['target_id'] ) ? absint( $_POST['target_id'] ) : 0;
+
+		if ( ! $source_id || ! $target_id ) {
+			wp_send_json_error( array( 'message' => esc_html__( 'Missing source or target ID.', 'elementor-to-gutenberg' ) ) );
+			return;
+		}
+
+		$result = AI_Remediation_Screenshot_Meta_Service::generate_and_store( $source_id, $target_id, true );
+
+		if ( $result['success'] ) {
+			$urls = AI_Remediation_Screenshot_Meta_Service::get_gutenberg_urls( $target_id );
+			wp_send_json_success( array(
+				'status' => AI_Remediation_Screenshot_Meta_Service::get_status( $target_id ),
+				'thumb'  => ! empty( $urls ) ? (string) $urls[0] : '',
+			) );
+		} else {
+			wp_send_json_error( array(
+				'message' => isset( $result['error'] ) && '' !== $result['error']
+					? $result['error']
+					: esc_html__( 'Screenshot generation failed.', 'elementor-to-gutenberg' ),
+			) );
+		}
+	}
+
 	private function get_converted_pages_data(): array {
 		$data = array();
 		foreach ( $this->get_converted_pages() as $page ) {
-			$source_id = (int) get_post_meta( $page->ID, '_ele2gb_source_id', true );
-			$data[]    = array(
-				'id'          => $page->ID,
-				'title'       => $page->post_title,
-				'sourceId'    => $source_id,
-				'sourceTitle' => $source_id > 0 ? (string) get_the_title( $source_id ) : '',
-				'type'        => 'page',
+			$source_id      = (int) get_post_meta( $page->ID, '_ele2gb_source_id', true );
+			$gutenberg_urls = AI_Remediation_Screenshot_Meta_Service::get_gutenberg_urls( $page->ID );
+			$first_shot     = ! empty( $gutenberg_urls ) ? (string) $gutenberg_urls[0] : '';
+
+			$data[] = array(
+				'id'               => $page->ID,
+				'title'            => $page->post_title,
+				'sourceId'         => $source_id,
+				'sourceTitle'      => $source_id > 0 ? (string) get_the_title( $source_id ) : '',
+				'type'             => 'page',
+				'screenshotStatus' => AI_Remediation_Screenshot_Meta_Service::get_status( $page->ID ),
+				'screenshotThumb'  => $first_shot,
+				'previewUrl'       => (string) get_permalink( $page->ID ),
+				'sourcePreviewUrl' => $source_id > 0 ? (string) get_permalink( $source_id ) : '',
+				'lastImproved'     => (string) get_post_meta( $page->ID, '_ele2gb_last_ai_improved', true ),
 			);
 		}
 
@@ -157,7 +206,7 @@ class AI_Enhancement_Admin {
 			'colActions'            => __( 'Actions', 'elementor-to-gutenberg' ),
 			'enhanceSingle'         => __( 'Enhance with AI', 'elementor-to-gutenberg' ),
 			'enhanceSelected'       => __( 'Bulk Enhance with AI', 'elementor-to-gutenberg' ),
-			'enhanceSelectedCount'  => __( 'Bulk Enhance %1$d Pages with AI', 'elementor-to-gutenberg' ),
+			'enhanceSelectedCount'  => __( 'Enhance %1$d Pages with AI', 'elementor-to-gutenberg' ),
 			'noApiMessage'          => __( 'To enhance pages with AI, you need to enter your Claude API key.', 'elementor-to-gutenberg' ),
 			'addApiLink'            => __( 'Add your API key in Settings', 'elementor-to-gutenberg' ),
 			'back'                  => __( 'Back', 'elementor-to-gutenberg' ),
@@ -185,6 +234,19 @@ class AI_Enhancement_Admin {
 			'aiStageAnalyzing'      => __( 'Analyzing…', 'elementor-to-gutenberg' ),
 			'aiStageGenerating'     => __( 'Generating…', 'elementor-to-gutenberg' ),
 			'aiStageSaving'         => __( 'Saving…', 'elementor-to-gutenberg' ),
+			'shotGenerated'         => __( 'Screenshots ready', 'elementor-to-gutenberg' ),
+			'shotFailed'            => __( 'Screenshot failed', 'elementor-to-gutenberg' ),
+			'shotPending'           => __( 'Pending', 'elementor-to-gutenberg' ),
+			'shotNone'              => __( 'No screenshots', 'elementor-to-gutenberg' ),
+			'genScreenshots'        => __( 'Generate', 'elementor-to-gutenberg' ),
+			'shotRegenerate'        => __( 'Regenerate', 'elementor-to-gutenberg' ),
+			'genScreenshotsBulk'    => __( 'Bulk Screenshots', 'elementor-to-gutenberg' ),
+			'genScreenshotsCount'   => __( 'Screenshot %1$d Pages', 'elementor-to-gutenberg' ),
+			'shotGenerating'        => __( 'Generating…', 'elementor-to-gutenberg' ),
+			'bulkShotTitle'         => __( 'Generating Screenshots…', 'elementor-to-gutenberg' ),
+			'statTotalPages'        => __( 'Converted Pages', 'elementor-to-gutenberg' ),
+			'statScreenshots'       => __( 'Screenshots Ready', 'elementor-to-gutenberg' ),
+			'statAiEnhanced'        => __( 'AI-Enhanced', 'elementor-to-gutenberg' ),
 		);
 	}
 }
