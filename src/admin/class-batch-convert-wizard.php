@@ -2844,7 +2844,7 @@ class Batch_Convert_Wizard {
 			'stepLabelMode'          => __( 'Mode', 'elementor-to-gutenberg' ),
 			'stepLabelTheme'         => __( 'Theme', 'elementor-to-gutenberg' ),
 			'stepLabelSelect'        => __( 'Pages', 'elementor-to-gutenberg' ),
-			'stepLabelTemplates'     => __( 'Templates', 'elementor-to-gutenberg' ),
+			'stepLabelTemplates'     => __( 'Header & Footer', 'elementor-to-gutenberg' ),
 			'stepLabelConflicts'     => __( 'Conflicts', 'elementor-to-gutenberg' ),
 			'stepLabelReview'        => __( 'Review', 'elementor-to-gutenberg' ),
 			'stepLabelProgress'      => __( 'Convert', 'elementor-to-gutenberg' ),

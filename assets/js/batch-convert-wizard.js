@@ -325,8 +325,8 @@
 
             const steps = ['mode', 'theme'];
             if (this.state.mode === 'custom') {
-                steps.push('select');
                 steps.push('templates');
+                steps.push('select');
             }
             if (this.shouldShowConflictStep()) {
                 steps.push('conflicts');
