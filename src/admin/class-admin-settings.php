@@ -450,25 +450,6 @@ class Admin_Settings {
 	}
 
 	/**
-	 * Render migration support warning notice.
-	 */
-	public static function render_conversion_warning_notice(): void {
-		?>
-        <div class="notice notice-warning">
-            <p><strong><?php echo esc_html__( 'Before you migrate: important compatibility limits', 'elementor-to-gutenberg' ); ?></strong></p>
-            <ul>
-                <li><?php echo esc_html__( 'Elementor Pro widgets and advanced Pro features are only partially supported, and output is not guaranteed to match exactly.', 'elementor-to-gutenberg' ); ?></li>
-                <li><?php echo esc_html__( 'Only Elementor-compatible themes are supported. ThemeForest themes, custom themes, and unknown themes are not supported.', 'elementor-to-gutenberg' ); ?></li>
-                <li><?php echo esc_html__( 'Animations and motion effects are not converted.', 'elementor-to-gutenberg' ); ?></li>
-                <li><?php echo esc_html__( 'Responsive tablet/mobile values are not first-class Gutenberg attributes, so responsive results may differ.', 'elementor-to-gutenberg' ); ?></li>
-                <li><?php echo esc_html__( 'Dynamic content, and third-party widgets may need manual cleanup after migration.', 'elementor-to-gutenberg' ); ?></li>
-            </ul>
-        </div>
-		<?php
-	}
-
-
-	/**
 	 * Handle JSON file upload and conversion.
 	 *
 	 * @param mixed $option The option value.
@@ -597,7 +578,6 @@ class Admin_Settings {
             <?php if ( isset( $_GET['etg_settings_saved'] ) && '1' === $_GET['etg_settings_saved'] ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
                 <div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Settings saved.', 'elementor-to-gutenberg' ); ?></p></div>
             <?php endif; ?>
-            <?php self::render_conversion_warning_notice(); ?>
 
             <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
                 <?php wp_nonce_field( 'etg_save_settings' ); ?>

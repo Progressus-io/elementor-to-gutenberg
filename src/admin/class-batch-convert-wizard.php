@@ -262,7 +262,6 @@ class Batch_Convert_Wizard {
         <div class="wrap ele2gb-wizard-wrap">
             <h1 class="wp-heading-inline"><?php esc_html_e( 'Gutenberg Conversion Wizard', 'elementor-to-gutenberg' ); ?></h1>
             <p class="description"><?php esc_html_e( 'Convert Elementor pages to Gutenberg blocks.', 'elementor-to-gutenberg' ); ?></p>
-            <?php Admin_Settings::render_conversion_warning_notice(); ?>
             <div id="ele2gb-batch-convert-root" class="ele2gb-wizard-root" aria-live="polite"></div>
         </div>
 		<?php
@@ -625,7 +624,85 @@ class Batch_Convert_Wizard {
 			wp_reset_postdata();
 		} while ( $paged <= $max_pages );
 
+		if ( ! empty( $accumulated ) ) {
+			$page_ids     = array_column( $accumulated, 'id' );
+			$warnings_map = $this->scan_page_warnings( $page_ids );
+			foreach ( $accumulated as &$page ) {
+				$page['warnings'] = $warnings_map[ $page['id'] ] ?? null;
+			}
+			unset( $page );
+		}
+
 		return $accumulated;
+	}
+
+	/**
+	 * Scan a set of posts for per-page compatibility warnings.
+	 *
+	 * Runs one batched DB query and uses regex over raw JSON strings rather
+	 * than decoding every document, keeping overhead minimal for large sites.
+	 *
+	 * @param array<int,int> $page_ids
+	 * @return array<int,array{unsupportedWidgets:array<string,int>,hasDynamic:bool,hasAnimation:bool}>
+	 */
+	private function scan_page_warnings( array $page_ids ): array {
+		if ( empty( $page_ids ) ) {
+			return array();
+		}
+
+		global $wpdb;
+
+		$safe_ids = array_map( 'absint', $page_ids );
+		$ids_str  = implode( ',', $safe_ids );
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results(
+			"SELECT post_id, meta_value FROM {$wpdb->postmeta}
+			 WHERE meta_key = '_elementor_data'
+			 AND post_id IN ({$ids_str})",
+			ARRAY_A
+		);
+
+		if ( empty( $rows ) ) {
+			return array();
+		}
+
+		$supported = array_flip( Widget_Handler_Factory::get_supported_types() );
+		$result    = array();
+
+		foreach ( $rows as $row ) {
+			$post_id  = (int) $row['post_id'];
+			$raw_json = (string) $row['meta_value'];
+
+			if ( '' === $raw_json || '[]' === $raw_json ) {
+				continue;
+			}
+
+			$unsupported = array();
+			if ( preg_match_all( '/"widgetType"\s*:\s*"([^"]+)"/', $raw_json, $matches ) ) {
+				foreach ( array_count_values( $matches[1] ) as $widget_type => $count ) {
+					if ( 0 === strpos( $widget_type, 'wp-widget-' ) ) {
+						continue;
+					}
+					if ( ! isset( $supported[ $widget_type ] ) ) {
+						$unsupported[ (string) $widget_type ] = (int) $count;
+					}
+				}
+			}
+
+			$has_dynamic   = false !== strpos( $raw_json, '"__dynamic__"' );
+			$has_animation = (bool) preg_match( '/"entrance_animation"\s*:\s*"(?!none")(?!")[a-zA-Z]/', $raw_json );
+
+			if ( ! empty( $unsupported ) || $has_dynamic || $has_animation ) {
+				$result[ $post_id ] = array(
+					'unsupportedWidgets' => $unsupported,
+					'hasDynamic'         => $has_dynamic,
+					'hasAnimation'       => $has_animation,
+				);
+			}
+		}
+
+		return $result;
 	}
 
 	/**
@@ -2976,6 +3053,18 @@ class Batch_Convert_Wizard {
 			'tableStatus'            => __( 'Status', 'elementor-to-gutenberg' ),
 			'tableConversionStatus'  => __( 'Conversion status', 'elementor-to-gutenberg' ),
 			'tableLastConverted'     => __( 'Last converted', 'elementor-to-gutenberg' ),
+			'tableCompatibility'     => __( 'Compatibility', 'elementor-to-gutenberg' ),
+			'compatShowDetails'      => __( 'Show compatibility details', 'elementor-to-gutenberg' ),
+			'compatPopoverTitle'     => __( 'Compatibility Notes', 'elementor-to-gutenberg' ),
+			'warnTitleUnsupported'   => __( 'Unsupported Widgets', 'elementor-to-gutenberg' ),
+			'warnDescUnsupported'    => __( 'These widgets will become placeholder blocks after conversion.', 'elementor-to-gutenberg' ),
+			'warnTitleDynamic'       => __( 'Dynamic Content', 'elementor-to-gutenberg' ),
+			'warnDescDynamic'        => __( 'This page uses Elementor dynamic tags. Connections to external data will be lost — manual reconnection in Gutenberg is needed.', 'elementor-to-gutenberg' ),
+			'warnTitleAnimation'     => __( 'Animations', 'elementor-to-gutenberg' ),
+			'warnDescAnimation'      => __( 'Entrance animations will not carry over to Gutenberg and must be re-applied manually.', 'elementor-to-gutenberg' ),
+			'warnUnsupportedWidgets' => __( '%1$d unsupported widget(s): %2$s', 'elementor-to-gutenberg' ),
+			'warnDynamicContent'     => __( 'Has dynamic content — links to data may be lost', 'elementor-to-gutenberg' ),
+			'warnAnimations'         => __( 'Has animations — will not be converted', 'elementor-to-gutenberg' ),
 			'tableActions'           => __( 'Actions', 'elementor-to-gutenberg' ),
 			'jobCompleted'           => __( 'Conversion completed successfully in %s.', 'elementor-to-gutenberg' ),
 			'jobCompletedWithErrors' => __( 'Conversion finished with issues in %s.', 'elementor-to-gutenberg' ),

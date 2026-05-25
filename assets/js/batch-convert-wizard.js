@@ -1199,6 +1199,7 @@
                 this.strings.tableStatus || 'Status',
                 this.strings.tableConversionStatus || 'Conversion status',
                 this.strings.tableLastConverted || 'Last converted',
+                this.strings.tableCompatibility || 'Compatibility',
             ];
             columns.forEach((col) => {
                 const th = document.createElement('th');
@@ -1241,6 +1242,45 @@
                 const lastTd = document.createElement('td');
                 lastTd.textContent = page.lastConverted || '—';
                 tr.appendChild(lastTd);
+
+                const compatTd = document.createElement('td');
+                compatTd.className = 'ele2gb-compat-cell';
+                const warnings = page.warnings || {};
+                const unsupported = warnings.unsupportedWidgets || {};
+                const unsupTypes = Object.keys(unsupported);
+                const hasAnyWarning = unsupTypes.length > 0 || warnings.hasDynamic || warnings.hasAnimation;
+                if (hasAnyWarning) {
+                    const trigger = document.createElement('button');
+                    trigger.type = 'button';
+                    trigger.className = 'ele2gb-compat-trigger';
+                    trigger.setAttribute('aria-label', this.strings.compatShowDetails || 'Show compatibility details');
+                    if (unsupTypes.length > 0) {
+                        const totalCount = Object.values(unsupported).reduce((s, n) => s + n, 0);
+                        const badge = createElement('span', 'ele2gb-warn-badge ele2gb-warn-badge--unsupported');
+                        badge.textContent = '⚠ ' + totalCount;
+                        trigger.appendChild(badge);
+                    }
+                    if (warnings.hasDynamic) {
+                        const badge = createElement('span', 'ele2gb-warn-badge ele2gb-warn-badge--dynamic');
+                        badge.textContent = '◎';
+                        trigger.appendChild(badge);
+                    }
+                    if (warnings.hasAnimation) {
+                        const badge = createElement('span', 'ele2gb-warn-badge ele2gb-warn-badge--animation');
+                        badge.textContent = '✶';
+                        trigger.appendChild(badge);
+                    }
+                    trigger.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        if (this._activePopover && this._popoverTrigger === trigger) {
+                            this.closeWarningPopover();
+                        } else {
+                            this.openWarningPopover(trigger, page);
+                        }
+                    });
+                    compatTd.appendChild(trigger);
+                }
+                tr.appendChild(compatTd);
 
                 tbody.appendChild(tr);
             });
@@ -2617,7 +2657,144 @@
 
         // ── End AI Improve step ──────────────────────────────────────────────
 
+        // ── Compatibility warning popover ─────────────────────────────────────
+
+        openWarningPopover(triggerEl, page) {
+            this.closeWarningPopover();
+            const pop = this.buildWarningPopover(page);
+            pop.style.position = 'fixed';
+            pop.style.width = '300px';
+            document.body.appendChild(pop);
+
+            const rect = triggerEl.getBoundingClientRect();
+            const popW = 300;
+            let left = rect.left;
+            if (left + popW > window.innerWidth - 10) {
+                left = window.innerWidth - popW - 10;
+            }
+            pop.style.left = left + 'px';
+
+            const spaceBelow = window.innerHeight - rect.bottom;
+            if (spaceBelow >= 180) {
+                pop.style.top = (rect.bottom + 6) + 'px';
+            } else {
+                pop.style.bottom = (window.innerHeight - rect.top + 6) + 'px';
+            }
+
+            this._activePopover = pop;
+            this._popoverTrigger = triggerEl;
+
+            const outside = (e) => {
+                if (!pop.contains(e.target) && !triggerEl.contains(e.target)) {
+                    this.closeWarningPopover();
+                }
+            };
+            const escape = (e) => {
+                if (e.key === 'Escape') this.closeWarningPopover();
+            };
+            setTimeout(() => document.addEventListener('click', outside), 0);
+            document.addEventListener('keydown', escape);
+            this._popoverOutside = outside;
+            this._popoverEscape = escape;
+        }
+
+        closeWarningPopover() {
+            if (this._activePopover) {
+                this._activePopover.remove();
+                this._activePopover = null;
+                this._popoverTrigger = null;
+            }
+            if (this._popoverOutside) {
+                document.removeEventListener('click', this._popoverOutside);
+                this._popoverOutside = null;
+            }
+            if (this._popoverEscape) {
+                document.removeEventListener('keydown', this._popoverEscape);
+                this._popoverEscape = null;
+            }
+        }
+
+        buildWarningPopover(page) {
+            const warnings = page.warnings || {};
+            const pop = createElement('div', 'ele2gb-warn-popover');
+
+            // Header
+            const hdr = createElement('div', 'ele2gb-warn-popover-header');
+            const hTitle = createElement('span', 'ele2gb-warn-popover-title', this.strings.compatPopoverTitle || 'Compatibility Notes');
+            const closeBtn = document.createElement('button');
+            closeBtn.type = 'button';
+            closeBtn.className = 'ele2gb-warn-popover-close';
+            closeBtn.setAttribute('aria-label', 'Close');
+            closeBtn.textContent = '×';
+            closeBtn.addEventListener('click', () => this.closeWarningPopover());
+            hdr.appendChild(hTitle);
+            hdr.appendChild(closeBtn);
+            pop.appendChild(hdr);
+
+            // Page name
+            const pageName = createElement('div', 'ele2gb-warn-popover-page', page.title);
+            pop.appendChild(pageName);
+
+            const body = createElement('div', 'ele2gb-warn-popover-body');
+            let first = true;
+
+            // Unsupported widgets section
+            const unsupported = warnings.unsupportedWidgets || {};
+            const unsupTypes = Object.keys(unsupported);
+            if (unsupTypes.length > 0) {
+                if (!first) body.appendChild(createElement('hr', 'ele2gb-warn-popover-divider'));
+                first = false;
+                const sec = createElement('div', 'ele2gb-warn-popover-section');
+                const sTitle = createElement('div', 'ele2gb-warn-popover-section-title ele2gb-warn-popover-section-title--error');
+                sTitle.textContent = '⚠ ' + (this.strings.warnTitleUnsupported || 'Unsupported Widgets');
+                sec.appendChild(sTitle);
+                const desc = createElement('p', 'ele2gb-warn-popover-desc', this.strings.warnDescUnsupported || 'These widgets will become placeholder blocks after conversion.');
+                sec.appendChild(desc);
+                const list = createElement('ul', 'ele2gb-warn-popover-list');
+                unsupTypes.forEach((type) => {
+                    const li = document.createElement('li');
+                    li.className = 'ele2gb-warn-popover-list-item';
+                    const code = document.createElement('code');
+                    code.textContent = type;
+                    li.appendChild(code);
+                    li.appendChild(createElement('span', 'ele2gb-warn-popover-count', '×' + unsupported[type]));
+                    list.appendChild(li);
+                });
+                sec.appendChild(list);
+                body.appendChild(sec);
+            }
+
+            // Dynamic content section
+            if (warnings.hasDynamic) {
+                if (!first) body.appendChild(createElement('hr', 'ele2gb-warn-popover-divider'));
+                first = false;
+                const sec = createElement('div', 'ele2gb-warn-popover-section');
+                const sTitle = createElement('div', 'ele2gb-warn-popover-section-title ele2gb-warn-popover-section-title--info');
+                sTitle.textContent = '◎ ' + (this.strings.warnTitleDynamic || 'Dynamic Content');
+                sec.appendChild(sTitle);
+                sec.appendChild(createElement('p', 'ele2gb-warn-popover-desc', this.strings.warnDescDynamic || 'This page uses Elementor dynamic tags. Connections to external data will be lost — manual reconnection in Gutenberg is needed.'));
+                body.appendChild(sec);
+            }
+
+            // Animations section
+            if (warnings.hasAnimation) {
+                if (!first) body.appendChild(createElement('hr', 'ele2gb-warn-popover-divider'));
+                const sec = createElement('div', 'ele2gb-warn-popover-section');
+                const sTitle = createElement('div', 'ele2gb-warn-popover-section-title ele2gb-warn-popover-section-title--warning');
+                sTitle.textContent = '✶ ' + (this.strings.warnTitleAnimation || 'Animations');
+                sec.appendChild(sTitle);
+                sec.appendChild(createElement('p', 'ele2gb-warn-popover-desc', this.strings.warnDescAnimation || 'Entrance animations will not carry over to Gutenberg and must be re-applied manually.'));
+                body.appendChild(sec);
+            }
+
+            pop.appendChild(body);
+            return pop;
+        }
+
+        // ── End compatibility warning popover ─────────────────────────────────
+
         render() {
+            this.closeWarningPopover();
             this.root.innerHTML = '';
             this.root.appendChild(this.renderHeader());
             const notice = this.renderNotice();
