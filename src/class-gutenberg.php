@@ -13,6 +13,7 @@ use Progressus\Gutenberg\Admin\Admin_Settings;
 use Progressus\Gutenberg\Admin\AI_Enhancement_Admin;
 use Progressus\Gutenberg\Admin\AI_Improvement_Admin;
 use Progressus\Gutenberg\Admin\Batch_Convert_Wizard;
+use Progressus\Gutenberg\Admin\Conversion_Log_Admin;
 use Progressus\Gutenberg\Admin\Helper\External_CSS_Service;
 use Progressus\Gutenberg\Admin\Helper\Elementor_Fonts_Service;
 use Progressus\Gutenberg\Admin\Helper\Style_Parser;
@@ -449,6 +450,7 @@ class Gutenberg {
 		Batch_Convert_Wizard::instance();
 		AI_Enhancement_Admin::instance();
 		AI_Improvement_Admin::instance();
+		Conversion_Log_Admin::instance();
 	}
 
 	/**

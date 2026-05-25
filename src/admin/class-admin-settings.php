@@ -17,6 +17,8 @@ use Progressus\Gutenberg\Admin\Helper\Alignment_Helper;
 use Progressus\Gutenberg\Admin\Helper\External_CSS_Service;
 use Progressus\Gutenberg\Admin\Helper\External_Style_Collector;
 use Progressus\Gutenberg\Admin\Helper\AI_Remediation_Screenshot_Api_Service;
+use Progressus\Gutenberg\Admin\Conversion_Log;
+use Progressus\Gutenberg\Admin\Conversion_Log_Admin;
 
 use function esc_html;
 use function esc_html__;
@@ -78,6 +80,18 @@ class Admin_Settings {
 	private const OPTION_CONVERSION_PREFERENCES = 'etg_conversion_preferences';
 
 	/**
+	 * Option key for the conversion logging toggle.
+	 */
+	private const OPTION_CONVERSION_LOGGING = 'etg_conversion_logging';
+
+	/**
+	 * Active per-conversion log collector (reset before each conversion run).
+	 *
+	 * @var Conversion_Log|null
+	 */
+	private ?Conversion_Log $conversion_log = null;
+
+	/**
 	 * Get global conversion preferences with defaults applied.
 	 *
 	 * @return array{copy_meta_and_featured_image: bool}
@@ -98,6 +112,26 @@ class Admin_Settings {
 		$prefs = self::get_conversion_preferences();
 
 		return ! empty( $prefs['copy_meta_and_featured_image'] );
+	}
+
+	/**
+	 * Whether conversion logging is enabled (defaults to true on first install).
+	 */
+	public static function is_logging_enabled(): bool {
+		$val = get_option( self::OPTION_CONVERSION_LOGGING, null );
+		// Default to enabled when option has never been saved.
+		if ( null === $val ) {
+			return true;
+		}
+		return (bool) $val;
+	}
+
+	/**
+	 * Return the Conversion_Log instance from the most recent conversion run.
+	 * Returns null if logging is disabled or no conversion has run yet.
+	 */
+	public function get_conversion_log(): ?Conversion_Log {
+		return $this->conversion_log;
 	}
 
 	/**
@@ -151,6 +185,10 @@ class Admin_Settings {
 			),
 			false
 		);
+
+		$logging_raw = isset( $_POST['etg_logging_settings'] ) ? wp_unslash( $_POST['etg_logging_settings'] ) : array();
+		$logging_raw = is_array( $logging_raw ) ? $logging_raw : array();
+		update_option( self::OPTION_CONVERSION_LOGGING, ! empty( $logging_raw['enabled'] ), false );
 
 		$layout_raw = isset( $_POST['etg_layout_settings'] ) ? wp_unslash( $_POST['etg_layout_settings'] ) : array();
 		$layout_raw = is_array( $layout_raw ) ? $layout_raw : array();
@@ -373,6 +411,7 @@ class Admin_Settings {
 		$desired = array(
 			Batch_Convert_Wizard::MENU_SLUG,
 			AI_Enhancement_Admin::MENU_SLUG,
+			Conversion_Log_Admin::MENU_SLUG,
 			'gutenberg-settings',
 		);
 
@@ -599,6 +638,35 @@ class Admin_Settings {
                     </tbody>
                 </table>
 
+                        <hr />
+                <h2><?php esc_html_e( 'Logging', 'elementor-to-gutenberg' ); ?></h2>
+                <p><?php esc_html_e( 'Track which widgets were converted, skipped, or produced no output during each migration. Results are visible in the Conversion Log page.', 'elementor-to-gutenberg' ); ?></p>
+                <table class="form-table" role="presentation">
+                    <tbody>
+                    <tr>
+                        <th scope="row"><?php esc_html_e( 'Conversion Logging', 'elementor-to-gutenberg' ); ?></th>
+                        <td>
+                            <label>
+                                <input type="checkbox" name="etg_logging_settings[enabled]" value="1" <?php checked( self::is_logging_enabled() ); ?> />
+                                <?php esc_html_e( 'Enable conversion logging', 'elementor-to-gutenberg' ); ?>
+                            </label>
+                            <p class="description">
+                                <?php
+                                printf(
+                                    wp_kses(
+                                        /* translators: %s: URL to Conversion Log page */
+                                        __( 'When enabled, each conversion records which widgets were converted, unsupported, or produced empty output. View the results in the <a href="%s">Conversion Log</a>. The log keeps the last 300 entries and does not affect conversion speed.', 'elementor-to-gutenberg' ),
+                                        array( 'a' => array( 'href' => array() ) )
+                                    ),
+                                    esc_url( admin_url( 'admin.php?page=etg-conversion-log' ) )
+                                );
+                                ?>
+                            </p>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+
                 <hr />
                 <h2><?php esc_html_e( 'Claude AI', 'elementor-to-gutenberg' ); ?></h2>
                 <p>
@@ -640,6 +708,8 @@ class Admin_Settings {
 	public function convert_json_to_gutenberg_content( array $json_data ): string {
 		$this->external_css_collector = new External_Style_Collector();
 		Block_Builder::bootstrap( $this->external_css_collector );
+
+		$this->conversion_log = self::is_logging_enabled() ? new Conversion_Log() : null;
 
 		if ( empty( $json_data['content'] ) || ! is_array( $json_data['content'] ) ) {
 			return '';
@@ -979,12 +1049,26 @@ class Admin_Settings {
 			$widget_type = $element['widgetType'] ?? '';
 			$handler     = Widget_Handler_Factory::get_handler( $widget_type );
 			if ( null !== $handler ) {
-				return $handler->handle( $element );
+				$output = $handler->handle( $element );
+				if ( null !== $this->conversion_log ) {
+					if ( '' === $output ) {
+						$this->conversion_log->record_empty_output( $widget_type );
+					} else {
+						$this->conversion_log->record_converted( $widget_type );
+					}
+				}
+				return $output;
 			}
 
+			if ( null !== $this->conversion_log ) {
+				$this->conversion_log->record_unsupported( $widget_type );
+			}
 			return $this->render_placeholder_block( $element );
 		}
 
+		if ( null !== $this->conversion_log ) {
+			$this->conversion_log->record_unsupported( $element['elType'] ?? 'unknown' );
+		}
 		return $this->render_placeholder_block( $element );
 	}
 

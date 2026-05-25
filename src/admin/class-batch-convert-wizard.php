@@ -9,6 +9,7 @@ namespace Progressus\Gutenberg\Admin;
 
 use Progressus\Gutenberg\Admin\Admin_Settings;
 use Progressus\Gutenberg\Admin\AI_Improvement_Admin;
+use Progressus\Gutenberg\Admin\Conversion_Log_Admin;
 use Progressus\Gutenberg\Gutenberg;
 use WP_Error;
 use WP_Post;
@@ -504,6 +505,7 @@ class Batch_Convert_Wizard {
 					'type'      => 'page',
 					'post_type'       => $source_pt_slug,
 					'post_type_label' => $source_pt_label,
+					'widget_log'      => $result['widget_log'] ?? null,
 				);
 
 				$this->store_page_conversion_result( (int) $page_info['id'], $result_entry );
@@ -535,6 +537,7 @@ class Batch_Convert_Wizard {
 					'type'      => $template_info['type'],
 					'role'      => $template_info['role'],
 					'source'    => $template_info['source'],
+					'widget_log'=> $template_result['widget_log'] ?? null,
 				);
 
 				$this->store_template_conversion_result( (int) $template_info['id'], $result_entry );
@@ -1846,6 +1849,16 @@ class Batch_Convert_Wizard {
 		}
 
 		$content = Admin_Settings::instance()->convert_json_to_gutenberg_content( array( 'content' => $decoded ) );
+
+		// Capture widget-level log immediately after conversion (before any early returns).
+		$result['widget_log'] = null;
+		if ( Admin_Settings::is_logging_enabled() ) {
+			$_conv_log = Admin_Settings::instance()->get_conversion_log();
+			if ( null !== $_conv_log ) {
+				$result['widget_log'] = $_conv_log->to_array();
+			}
+		}
+
 		if ( '' === trim( $content ) ) {
 			$message           = esc_html__( 'Failed: conversion produced no Gutenberg content.', 'elementor-to-gutenberg' );
 			$result['status']  = 'error';
@@ -2145,6 +2158,16 @@ class Batch_Convert_Wizard {
 		}
 
 		$content = Admin_Settings::instance()->convert_json_to_gutenberg_content( array( 'content' => $decoded ) );
+
+		// Capture widget-level log immediately after conversion.
+		$result['widget_log'] = null;
+		if ( Admin_Settings::is_logging_enabled() ) {
+			$_conv_log = Admin_Settings::instance()->get_conversion_log();
+			if ( null !== $_conv_log ) {
+				$result['widget_log'] = $_conv_log->to_array();
+			}
+		}
+
 		if ( '' === trim( $content ) ) {
 			$message   = esc_html__( 'Failed: conversion produced no Gutenberg content.', 'elementor-to-gutenberg' );
 			$edit_link = $existing_target ? get_edit_post_link( $existing_target, '' ) : '';
@@ -3092,21 +3115,24 @@ class Batch_Convert_Wizard {
 	 * @param array $result_entry Result entry from the job.
 	 */
 	private function store_page_conversion_result( int $source_id, array $result_entry ): void {
-		$time = gmdate( 'Y-m-d H:i:s' );
+		$time              = gmdate( 'Y-m-d H:i:s' );
+		$converted_post_id = isset( $result_entry['converted_post_id'] ) ? (int) $result_entry['converted_post_id'] : (int) $result_entry['target'];
+		$widget_log        = is_array( $result_entry['widget_log'] ?? null ) ? $result_entry['widget_log'] : null;
 
 		$data = array(
-			'status'  => $result_entry['status'],
-			'message' => $result_entry['message'],
-			'target'  => $result_entry['target'],
-			'converted_post_id' => isset( $result_entry['converted_post_id'] ) ? (int) $result_entry['converted_post_id'] : (int) $result_entry['target'],
-			'time'    => $time,
+			'status'              => $result_entry['status'],
+			'message'             => $result_entry['message'],
+			'target'              => $result_entry['target'],
+			'converted_post_id'   => $converted_post_id,
+			'time'                => $time,
+			'stats'               => $widget_log['stats'] ?? null,
+			'unsupported_by_type' => $widget_log['unsupported_by_type'] ?? array(),
 		);
 
 		// Store on the original Elementor page.
 		update_post_meta( $source_id, '_ele2gb_last_result', $data );
 
 		// Store also on the converted page (if any).
-		$converted_post_id = isset( $result_entry['converted_post_id'] ) ? (int) $result_entry['converted_post_id'] : (int) $result_entry['target'];
 		if ( $converted_post_id > 0 ) {
 			update_post_meta( $converted_post_id, '_ele2gb_last_result', $data );
 		}
@@ -3119,6 +3145,20 @@ class Batch_Convert_Wizard {
 				update_post_meta( $converted_post_id, '_ele2gb_last_converted', $time );
 			}
 		}
+
+		// Append to the global conversion log for the UI.
+		Conversion_Log_Admin::append_entry( array(
+			'time'                => $time,
+			'post_id'             => $source_id,
+			'post_title'          => $result_entry['title'] ?? get_the_title( $source_id ),
+			'item_type'           => $result_entry['type'] ?? 'page',
+			'status'              => $result_entry['status'],
+			'message'             => $result_entry['message'],
+			'target_id'           => (int) $result_entry['target'],
+			'duration'            => (float) ( $result_entry['duration'] ?? 0 ),
+			'stats'               => $widget_log['stats'] ?? null,
+			'unsupported_by_type' => $widget_log['unsupported_by_type'] ?? array(),
+		) );
 	}
 
 	/**
@@ -3270,13 +3310,16 @@ class Batch_Convert_Wizard {
 	 * @param array $result_entry Result entry from the job.
 	 */
 	private function store_template_conversion_result( int $template_id, array $result_entry ): void {
-		$time = gmdate( 'Y-m-d H:i:s' );
+		$time       = gmdate( 'Y-m-d H:i:s' );
+		$widget_log = is_array( $result_entry['widget_log'] ?? null ) ? $result_entry['widget_log'] : null;
 
 		$data = array(
-			'status'  => $result_entry['status'],
-			'message' => $result_entry['message'],
-			'target'  => $result_entry['target'],
-			'time'    => $time,
+			'status'              => $result_entry['status'],
+			'message'             => $result_entry['message'],
+			'target'              => $result_entry['target'],
+			'time'                => $time,
+			'stats'               => $widget_log['stats'] ?? null,
+			'unsupported_by_type' => $widget_log['unsupported_by_type'] ?? array(),
 		);
 
 		update_post_meta( $template_id, '_ele2gb_last_result', $data );
@@ -3284,6 +3327,20 @@ class Batch_Convert_Wizard {
 		if ( 'success' === $result_entry['status'] ) {
 			update_post_meta( $template_id, '_ele2gb_last_converted', $time );
 		}
+
+		// Append to the global conversion log for the UI.
+		Conversion_Log_Admin::append_entry( array(
+			'time'                => $time,
+			'post_id'             => $template_id,
+			'post_title'          => $result_entry['title'] ?? get_the_title( $template_id ),
+			'item_type'           => $result_entry['type'] ?? 'template',
+			'status'              => $result_entry['status'],
+			'message'             => $result_entry['message'],
+			'target_id'           => (int) $result_entry['target'],
+			'duration'            => (float) ( $result_entry['duration'] ?? 0 ),
+			'stats'               => $widget_log['stats'] ?? null,
+			'unsupported_by_type' => $widget_log['unsupported_by_type'] ?? array(),
+		) );
 	}
 
 	/**
