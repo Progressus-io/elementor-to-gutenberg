@@ -42,11 +42,8 @@ class Conversion_Log_Admin {
 	const OPTION_LOG   = 'etg_conversion_log';
 	const MAX_ENTRIES  = 300;
 
-	/** Max lines shown in the text log viewer on the page. */
-	const TEXT_LOG_TAIL = 200;
-
-	/** Max file size before the log rolls over (2 MB). */
-	const TEXT_LOG_MAX_BYTES = 2097152;
+	/** Max JSONL lines shown in the log viewer on the page. */
+	const JSONL_LOG_TAIL = 50;
 
 	private static ?self $instance = null;
 
@@ -81,7 +78,18 @@ class Conversion_Log_Admin {
 		check_admin_referer( 'etg_clear_conversion_log' );
 
 		delete_option( self::OPTION_LOG );
-		self::truncate_text_log();
+
+		$_jsonl = Diagnostic_Logger::log_path();
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_exists
+		if ( file_exists( $_jsonl ) ) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
+			unlink( $_jsonl );
+		}
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_exists
+		if ( file_exists( $_jsonl . '.1' ) ) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
+			unlink( $_jsonl . '.1' );
+		}
 
 		wp_safe_redirect(
 			add_query_arg(
@@ -93,140 +101,6 @@ class Conversion_Log_Admin {
 			)
 		);
 		exit;
-	}
-
-	// ─────────────────────────────────────────────────────────────────────────
-	// TEXT LOG — file on disk
-	// ─────────────────────────────────────────────────────────────────────────
-
-	/** Full path to the on-disk text log. */
-	public static function text_log_path(): string {
-		return WP_CONTENT_DIR . '/ele2gb-conversion.log';
-	}
-
-	/**
-	 * Write one line to the text log.
-	 * Format (pipe-delimited, fixed-width columns, easy to grep/copy):
-	 *
-	 *   TIMESTAMP           | STATUS  | TITLE (IDs)                             | TYPE    | W.STAT | DUR   | ISSUES
-	 *   2026-05-25 10:00:01 | SUCCESS | About Us (42→87)                        | page    |  14/18 | 1.23s | —
-	 *   2026-05-25 10:00:03 | PARTIAL | Contact Form (55→91)                    | page    |   8/10 | 0.87s | form-pro×1, cta×1
-	 *   2026-05-25 10:00:05 | ERROR   | Services Page (61)                      | page    |      — |     — | Failed: invalid JSON
-	 */
-	private static function write_text_log( array $entry ): void {
-		$file = self::text_log_path();
-
-		// Rotate if over size limit — rename to .1 and start fresh.
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_exists
-		if ( file_exists( $file ) && filesize( $file ) > self::TEXT_LOG_MAX_BYTES ) {
-			// phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename
-			rename( $file, $file . '.1' );
-		}
-
-		// Write header once when file is new.
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_exists
-		$is_new = ! file_exists( $file );
-
-		// ── Build each column ──────────────────────────────────────────────
-
-		$time = $entry['time'] ?? gmdate( 'Y-m-d H:i:s' );
-
-		// Determine display status.
-		$status      = strtoupper( $entry['status'] ?? 'unknown' );
-		$unsp_total  = 0;
-		$unsp_types  = is_array( $entry['unsupported_by_type'] ?? null ) ? $entry['unsupported_by_type'] : array();
-		foreach ( $unsp_types as $c ) {
-			$unsp_total += (int) $c;
-		}
-		if ( 'SUCCESS' === $status && $unsp_total > 0 ) {
-			$status = 'PARTIAL';
-		}
-
-		// Title + IDs, capped at 40 chars.
-		$post_id   = (int) ( $entry['post_id'] ?? 0 );
-		$target_id = (int) ( $entry['target_id'] ?? 0 );
-		$title_raw = (string) ( $entry['post_title'] ?? '' );
-		if ( '' === $title_raw && $post_id > 0 ) {
-			$title_raw = get_the_title( $post_id );
-		}
-		$ids = $post_id > 0
-			? ( $target_id > 0 ? "({$post_id}\xe2\x86\x92{$target_id})" : "({$post_id})" )
-			: '';
-		$name_full = $ids !== '' ? "{$title_raw} {$ids}" : $title_raw;
-		if ( mb_strlen( $name_full ) > 40 ) {
-			$name_full = mb_substr( $name_full, 0, 37 ) . '...';
-		}
-
-		$type = strtolower( (string) ( $entry['item_type'] ?? 'page' ) );
-
-		// Widget stat.
-		$stats    = is_array( $entry['stats'] ?? null ) ? $entry['stats'] : null;
-		$w_stat   = $stats
-			? sprintf( '%d/%d', $stats['converted'] ?? 0, $stats['total'] ?? 0 )
-			: '—';
-
-		// Duration.
-		$dur     = (float) ( $entry['duration'] ?? 0 );
-		$dur_str = $dur > 0.0 ? round( $dur, 2 ) . 's' : '—';
-
-		// Issues column: unsupported list, or fall back to the message.
-		if ( ! empty( $unsp_types ) ) {
-			$parts = array();
-			foreach ( $unsp_types as $wtype => $cnt ) {
-				$parts[] = $wtype . "\xc3\x97" . $cnt;   // ×
-			}
-			$empty_w = (int) ( $stats['empty_output'] ?? 0 );
-			if ( $empty_w > 0 ) {
-				$parts[] = "empty\xc3\x97{$empty_w}";
-			}
-			$issues = implode( ', ', $parts );
-		} else {
-			$msg    = trim( (string) ( $entry['message'] ?? '' ) );
-			$issues = $msg !== '' ? $msg : '—';
-		}
-
-		// ── Compose the line ───────────────────────────────────────────────
-		$line = sprintf(
-			"%-19s | %-7s | %-40s | %-8s | %6s | %5s | %s\n",
-			$time,
-			$status,
-			$name_full,
-			$type,
-			$w_stat,
-			$dur_str,
-			$issues
-		);
-
-		if ( $is_new ) {
-			$header  = "# Elementor to Gutenberg — Conversion Log\n";
-			$header .= "# " . str_repeat( '-', 110 ) . "\n";
-			$header .= sprintf(
-				"# %-19s | %-7s | %-40s | %-8s | %6s | %5s | %s\n",
-				'TIMESTAMP', 'STATUS', 'TITLE (IDs)', 'TYPE', 'W.STAT', 'DUR', 'ISSUES'
-			);
-			$header .= "# " . str_repeat( '-', 110 ) . "\n";
-			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
-			file_put_contents( $file, $header, LOCK_EX );
-		}
-
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
-		file_put_contents( $file, $line, FILE_APPEND | LOCK_EX );
-	}
-
-	/** Truncate the on-disk text log (leave the header intact). */
-	private static function truncate_text_log(): void {
-		$file = self::text_log_path();
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_exists
-		if ( file_exists( $file ) ) {
-			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
-			file_put_contents( $file, '' );
-		}
-		// Also remove the rolled-over backup.
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_exists
-		if ( file_exists( $file . '.1' ) ) {
-			// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
-			unlink( $file . '.1' );
-		}
 	}
 
 	// ─────────────────────────────────────────────────────────────────────────
@@ -252,9 +126,6 @@ class Conversion_Log_Admin {
 			$log = array_slice( $log, -self::MAX_ENTRIES );
 		}
 		update_option( self::OPTION_LOG, $log, false );
-
-		// ── Text log ───────────────────────────────────────────────────────
-		self::write_text_log( $entry );
 	}
 
 	// ─────────────────────────────────────────────────────────────────────────
@@ -321,17 +192,17 @@ class Conversion_Log_Admin {
 			);
 		}
 
-		// Text log state.
-		$text_log_path   = self::text_log_path();
+		// JSONL diagnostic log state.
+		$jsonl_log_path  = Diagnostic_Logger::log_path();
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_exists
-		$text_log_exists = file_exists( $text_log_path );
-		$text_log_size   = $text_log_exists ? (int) filesize( $text_log_path ) : 0;
-		$text_log_lines  = array();
-		if ( $text_log_exists && $text_log_size > 0 ) {
+		$jsonl_log_exists = file_exists( $jsonl_log_path );
+		$jsonl_log_size   = $jsonl_log_exists ? (int) filesize( $jsonl_log_path ) : 0;
+		$jsonl_log_lines  = array();
+		if ( $jsonl_log_exists && $jsonl_log_size > 0 ) {
 			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
-			$all_lines      = file( $text_log_path, FILE_IGNORE_NEW_LINES );
-			$all_lines      = is_array( $all_lines ) ? $all_lines : array();
-			$text_log_lines = array_slice( $all_lines, -self::TEXT_LOG_TAIL );
+			$_all_lines      = file( $jsonl_log_path, FILE_IGNORE_NEW_LINES );
+			$_all_lines      = is_array( $_all_lines ) ? $_all_lines : array();
+			$jsonl_log_lines = array_slice( $_all_lines, -self::JSONL_LOG_TAIL );
 		}
 		?>
 		<div class="wrap">
@@ -389,7 +260,7 @@ class Conversion_Log_Admin {
 					</a>
 				<?php endforeach; ?>
 
-				<?php if ( $total_count > 0 || $text_log_exists ) : ?>
+				<?php if ( $total_count > 0 || $jsonl_log_exists ) : ?>
 					<div style="margin-left:auto;">
 						<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>"
 							  onsubmit="return confirm('<?php echo esc_js( __( 'Clear all log entries? This cannot be undone.', 'elementor-to-gutenberg' ) ); ?>');">
@@ -547,64 +418,86 @@ class Conversion_Log_Admin {
 				</p>
 			<?php endif; ?>
 
-			<?php /* ── Text log viewer ──────────────────────────────────────────── */ ?>
+			<?php /* ── JSONL diagnostic log viewer ─────────────────────────────── */ ?>
 			<hr style="margin:32px 0 24px;">
-			<h2 style="margin-bottom:6px;"><?php esc_html_e( 'Text Log File', 'elementor-to-gutenberg' ); ?></h2>
+			<h2 style="margin-bottom:6px;"><?php esc_html_e( 'Diagnostic Log (JSONL)', 'elementor-to-gutenberg' ); ?></h2>
 			<p style="color:#555;margin-top:0;">
-				<?php esc_html_e( 'Plain-text log written to disk on every conversion. One line per event — copy it all, grep it, or attach it to a support request.', 'elementor-to-gutenberg' ); ?>
+				<?php esc_html_e( 'Structured machine-readable log. Every conversion run appends JSON events — one per line. Attach this file to a feedback report or import it into the Feedback Hub for AI analysis.', 'elementor-to-gutenberg' ); ?>
 			</p>
 
 			<table class="form-table" role="presentation" style="margin-bottom:0;">
 				<tr>
 					<th style="width:160px;padding-bottom:4px;"><?php esc_html_e( 'File path', 'elementor-to-gutenberg' ); ?></th>
 					<td style="padding-bottom:4px;">
-						<code style="background:#f6f7f7;padding:3px 6px;border-radius:3px;font-size:13px;user-select:all;cursor:text;"><?php echo esc_html( $text_log_path ); ?></code>
+						<code style="background:#f6f7f7;padding:3px 6px;border-radius:3px;font-size:13px;user-select:all;cursor:text;"><?php echo esc_html( $jsonl_log_path ); ?></code>
 					</td>
 				</tr>
 				<tr>
 					<th style="padding-top:0;"><?php esc_html_e( 'File size', 'elementor-to-gutenberg' ); ?></th>
 					<td style="padding-top:0;">
 						<?php
-						if ( $text_log_exists && $text_log_size > 0 ) {
-							echo esc_html( size_format( $text_log_size ) );
+						if ( $jsonl_log_exists && $jsonl_log_size > 0 ) {
+							echo esc_html( size_format( $jsonl_log_size ) );
 							echo ' &nbsp;';
 							// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_exists
-							if ( file_exists( $text_log_path . '.1' ) ) {
-								esc_html_e( '(rotated backup: .log.1 also present)', 'elementor-to-gutenberg' );
+							if ( file_exists( $jsonl_log_path . '.1' ) ) {
+								esc_html_e( '(rotated backup: .jsonl.1 also present)', 'elementor-to-gutenberg' );
 							}
 						} else {
-							echo '<span style="color:#aaa;">' . esc_html__( 'File not yet created', 'elementor-to-gutenberg' ) . '</span>';
+							echo '<span style="color:#aaa;">' . esc_html__( 'File not yet created — run a conversion first.', 'elementor-to-gutenberg' ) . '</span>';
 						}
 						?>
 					</td>
 				</tr>
 			</table>
 
-			<?php if ( $text_log_exists && ! empty( $text_log_lines ) ) : ?>
+			<?php if ( $jsonl_log_exists && ! empty( $jsonl_log_lines ) ) : ?>
 				<p style="font-size:12px;color:#888;margin:10px 0 4px;">
 					<?php
 					printf(
-						esc_html__( 'Showing last %1$d lines. Click inside to select all, then copy.', 'elementor-to-gutenberg' ),
-						count( $text_log_lines )
+						esc_html__( 'Showing last %1$d events. Click inside to select all, then copy.', 'elementor-to-gutenberg' ),
+						count( $jsonl_log_lines )
 					);
 					?>
 				</p>
-				<textarea
-					id="etg-text-log"
-					readonly
-					onclick="this.select();"
-					spellcheck="false"
-					style="width:100%;height:340px;font-family:monospace;font-size:12px;line-height:1.6;background:#1e1e2e;color:#cdd6f4;border:1px solid #333;border-radius:6px;padding:12px 14px;resize:vertical;white-space:pre;overflow-x:auto;tab-size:4;box-sizing:border-box;"
-				><?php
-					// Output lines already HTML-escaped, joined with newlines.
-					echo esc_textarea( implode( "\n", $text_log_lines ) );
-				?></textarea>
+				<div style="position:relative;">
+					<span id="etg-jsonl-copied" style="display:none;position:absolute;top:10px;right:14px;background:#00a32a;color:#fff;font-size:11px;font-weight:600;padding:3px 10px;border-radius:3px;pointer-events:none;">
+						<?php esc_html_e( 'Copied!', 'elementor-to-gutenberg' ); ?>
+					</span>
+					<textarea
+						id="etg-jsonl-log"
+						readonly
+						spellcheck="false"
+						style="width:100%;height:340px;font-family:monospace;font-size:11px;line-height:1.7;background:#1e1e2e;color:#cdd6f4;border:1px solid #333;border-radius:6px;padding:12px 14px;resize:vertical;white-space:pre;overflow-x:auto;tab-size:4;box-sizing:border-box;cursor:pointer;"
+					><?php echo esc_textarea( implode( "\n", $jsonl_log_lines ) ); ?></textarea>
+				</div>
+				<script>
+				(function(){
+					var ta = document.getElementById('etg-jsonl-log');
+					var badge = document.getElementById('etg-jsonl-copied');
+					if (!ta) return;
+					ta.addEventListener('click', function(){
+						var text = ta.value;
+						if (navigator.clipboard && navigator.clipboard.writeText) {
+							navigator.clipboard.writeText(text).then(function(){
+								badge.style.display = 'block';
+								setTimeout(function(){ badge.style.display = 'none'; }, 1500);
+							}).catch(function(){ ta.select(); });
+						} else {
+							ta.select();
+							try { document.execCommand('copy'); } catch(e){}
+							badge.style.display = 'block';
+							setTimeout(function(){ badge.style.display = 'none'; }, 1500);
+						}
+					});
+				})();
+				</script>
 				<p style="font-size:12px;color:#888;margin-top:6px;">
-					<?php esc_html_e( 'Tip: the file rolls over automatically once it exceeds 2 MB. The previous file is kept as .log.1.', 'elementor-to-gutenberg' ); ?>
+					<?php esc_html_e( 'Click anywhere in the log to copy all events to clipboard. The file rotates automatically at 5 MB — the previous file is kept as .jsonl.1.', 'elementor-to-gutenberg' ); ?>
 				</p>
 			<?php elseif ( $logging_on ) : ?>
 				<p style="color:#aaa;font-style:italic;">
-					<?php esc_html_e( 'No text log entries yet. Run a conversion and refresh this page.', 'elementor-to-gutenberg' ); ?>
+					<?php esc_html_e( 'No diagnostic log events yet. Run a conversion and refresh this page.', 'elementor-to-gutenberg' ); ?>
 				</p>
 			<?php endif; ?>
 
