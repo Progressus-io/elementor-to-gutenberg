@@ -79,4 +79,97 @@
 		} );
 	} );
 
+	// ── Screenshot tabs ────────────────────────────────────────────────────────
+	var tabBtns   = document.querySelectorAll( '.etg-ai-tab' );
+	var tabPanels = document.querySelectorAll( '.etg-ai-tab-panel' );
+
+	tabBtns.forEach( function ( btn ) {
+		btn.addEventListener( 'click', function () {
+			var target = btn.getAttribute( 'data-tab' );
+
+			tabBtns.forEach( function ( b ) {
+				b.classList.toggle( 'etg-ai-tab--active', b === btn );
+				b.setAttribute( 'aria-selected', b === btn ? 'true' : 'false' );
+			} );
+
+			tabPanels.forEach( function ( panel ) {
+				if ( panel.getAttribute( 'data-panel' ) === target ) {
+					panel.removeAttribute( 'hidden' );
+				} else {
+					panel.setAttribute( 'hidden', '' );
+				}
+			} );
+		} );
+	} );
+
+	// ── Lightbox ───────────────────────────────────────────────────────────────
+	var lightbox      = document.getElementById( 'etg-lightbox' );
+	var lbOverlay     = document.getElementById( 'etg-lightbox-overlay' );
+	var lbClose       = document.getElementById( 'etg-lightbox-close' );
+	var lbOpenLink    = document.getElementById( 'etg-lightbox-open' );
+	var lbImages      = document.getElementById( 'etg-lightbox-images' );
+
+	function openLightbox( urls ) {
+		if ( ! lightbox || ! lbImages ) {
+			return;
+		}
+
+		lbImages.innerHTML = '';
+
+		urls.forEach( function ( url ) {
+			var img = document.createElement( 'img' );
+			img.src = url;
+			img.alt = '';
+			lbImages.appendChild( img );
+		} );
+
+		if ( lbOpenLink ) {
+			lbOpenLink.href = urls[0] || '#';
+		}
+
+		lightbox.removeAttribute( 'hidden' );
+		document.body.style.overflow = 'hidden';
+
+		if ( lbClose ) {
+			lbClose.focus();
+		}
+	}
+
+	function closeLightbox() {
+		if ( ! lightbox ) {
+			return;
+		}
+		lightbox.setAttribute( 'hidden', '' );
+		document.body.style.overflow = '';
+		lbImages.innerHTML = '';
+	}
+
+	document.querySelectorAll( '.etg-screenshot-thumb-wrap' ).forEach( function ( wrap ) {
+		wrap.addEventListener( 'click', function ( e ) {
+			if ( e.target.tagName === 'A' ) {
+				return;
+			}
+			var raw  = wrap.getAttribute( 'data-urls' ) || '[]';
+			var urls = [];
+			try { urls = JSON.parse( raw ); } catch ( _ ) {}
+			if ( urls.length ) {
+				openLightbox( urls );
+			}
+		} );
+	} );
+
+	if ( lbOverlay ) {
+		lbOverlay.addEventListener( 'click', closeLightbox );
+	}
+
+	if ( lbClose ) {
+		lbClose.addEventListener( 'click', closeLightbox );
+	}
+
+	document.addEventListener( 'keydown', function ( e ) {
+		if ( e.key === 'Escape' && lightbox && ! lightbox.hasAttribute( 'hidden' ) ) {
+			closeLightbox();
+		}
+	} );
+
 } )( window, document );

@@ -9,6 +9,8 @@ namespace Progressus\Gutenberg\Admin;
 
 use Progressus\Gutenberg\Admin\Admin_Settings;
 use Progressus\Gutenberg\Admin\AI_Improvement_Admin;
+use Progressus\Gutenberg\Admin\Conversion_Log_Admin;
+use Progressus\Gutenberg\Admin\Diagnostic_Logger;
 use Progressus\Gutenberg\Gutenberg;
 use WP_Error;
 use WP_Post;
@@ -261,7 +263,6 @@ class Batch_Convert_Wizard {
         <div class="wrap ele2gb-wizard-wrap">
             <h1 class="wp-heading-inline"><?php esc_html_e( 'Gutenberg Conversion Wizard', 'elementor-to-gutenberg' ); ?></h1>
             <p class="description"><?php esc_html_e( 'Convert Elementor pages to Gutenberg blocks.', 'elementor-to-gutenberg' ); ?></p>
-            <?php Admin_Settings::render_conversion_warning_notice(); ?>
             <div id="ele2gb-batch-convert-root" class="ele2gb-wizard-root" aria-live="polite"></div>
         </div>
 		<?php
@@ -399,6 +400,21 @@ class Batch_Convert_Wizard {
 			),
 			'warnings'        => $warnings,
 			'results'         => array(),
+			'run_id'          => Diagnostic_Logger::generate_run_id(),
+			'jsonl_stats'     => array(
+				'success_count'               => 0,
+				'success_with_warnings_count' => 0,
+				'partial_count'               => 0,
+				'failed_count'                => 0,
+				'skipped_count'               => 0,
+				'widgets_total'               => 0,
+				'widgets_converted'           => 0,
+				'widgets_failed'              => 0,
+				'blocks_generated'            => 0,
+				'validation_warnings_count'   => 0,
+				'unsupported_widgets_summary' => array(),
+				'fallback_widgets_summary'    => array(),
+			),
 		);
 
 		$this->store_job( $job );
@@ -450,10 +466,59 @@ class Batch_Convert_Wizard {
 
 		$job['status'] = 'running';
 
+		// Ensure run_id and jsonl_stats exist (backward-compat for in-flight jobs).
+		if ( empty( $job['run_id'] ) ) {
+			$job['run_id'] = Diagnostic_Logger::generate_run_id();
+		}
+		$run_id = (string) $job['run_id'];
+
+		if ( ! isset( $job['jsonl_stats'] ) || ! is_array( $job['jsonl_stats'] ) ) {
+			$job['jsonl_stats'] = array(
+				'success_count'               => 0,
+				'success_with_warnings_count' => 0,
+				'partial_count'               => 0,
+				'failed_count'                => 0,
+				'skipped_count'               => 0,
+				'widgets_total'               => 0,
+				'widgets_converted'           => 0,
+				'widgets_failed'              => 0,
+				'blocks_generated'            => 0,
+				'validation_warnings_count'   => 0,
+				'unsupported_widgets_summary' => array(),
+				'fallback_widgets_summary'    => array(),
+			);
+		}
+
 		$batch_size = 1;
 
 		$items       = $this->get_job_queue( $job );
 		$total_items = count( $items );
+
+		// JSONL: log run_start once, on the first poll that actually processes items.
+		if ( 0 === (int) $job['processed'] && '' !== $run_id && Admin_Settings::is_logging_enabled() ) {
+			try {
+				$_theme = wp_get_theme();
+				Diagnostic_Logger::log_run_start(
+					$run_id,
+					array(
+						'plugin_version'    => GUTENBERG_PLUGIN_VERSION,
+						'wordpress_version' => get_bloginfo( 'version' ),
+						'php_version'       => PHP_VERSION,
+						'active_theme'      => $_theme->get( 'Name' ),
+						'conversion_mode'   => $job['mode'] ?? '',
+						'ai_assist_enabled' => false,
+						'ai_provider'       => 'claude',
+						'ai_model'          => Claude_Api_Service::MODEL,
+						'sanitized'         => true,
+						'site_url_hash'     => hash( 'sha256', (string) get_site_url() ),
+						'started_at'        => gmdate( 'c', $job['started_at'] ?: time() ),
+					)
+				);
+			} catch ( \Throwable $e ) {
+				// Never interrupt conversion
+			}
+		}
+
 		for ( $i = 0; $i < $batch_size; $i ++ ) {
 			if ( $job['processed'] >= $total_items ) {
 				break;
@@ -470,6 +535,27 @@ class Batch_Convert_Wizard {
 			$duration  = 0;
 			$view_url  = '';
 			$keep_meta = ! empty( $job['options']['keep_meta'] );
+
+			// JSONL: item_start — logged before the item is processed.
+			if ( '' !== $run_id && Admin_Settings::is_logging_enabled() ) {
+				try {
+					$_is_template = 'page' !== $item['type'];
+					Diagnostic_Logger::log_item_start(
+						$run_id,
+						array(
+							'item_id'         => $index,
+							'source_id'       => (int) ( $item['data']['id'] ?? 0 ),
+							'target_id'       => null,
+							'title'           => $item['data']['title'] ?? '',
+							'post_type'       => get_post_type( (int) ( $item['data']['id'] ?? 0 ) ) ?: '',
+							'template_type'   => $_is_template ? ( $item['data']['type'] ?? null ) : null,
+							'conversion_type' => $item['type'],
+						)
+					);
+				} catch ( \Throwable $e ) {
+					// Never interrupt conversion
+				}
+			}
 
 			if ( 'page' === $item['type'] ) {
 				$page_info = $item['data'];
@@ -504,6 +590,7 @@ class Batch_Convert_Wizard {
 					'type'      => 'page',
 					'post_type'       => $source_pt_slug,
 					'post_type_label' => $source_pt_label,
+					'widget_log'      => $result['widget_log'] ?? null,
 				);
 
 				$this->store_page_conversion_result( (int) $page_info['id'], $result_entry );
@@ -535,9 +622,162 @@ class Batch_Convert_Wizard {
 					'type'      => $template_info['type'],
 					'role'      => $template_info['role'],
 					'source'    => $template_info['source'],
+					'widget_log'=> $template_result['widget_log'] ?? null,
 				);
 
 				$this->store_template_conversion_result( (int) $template_info['id'], $result_entry );
+			}
+
+			// JSONL: issue events + item_result + accumulate run-level stats.
+			if ( '' !== $run_id && Admin_Settings::is_logging_enabled() ) {
+				try {
+					$_wl       = is_array( $result_entry['widget_log'] ?? null ) ? $result_entry['widget_log'] : null;
+					$_wl_stats = is_array( $_wl['stats'] ?? null ) ? $_wl['stats'] : array();
+					$_entries  = is_array( $_wl['entries'] ?? null ) ? $_wl['entries'] : array();
+					$_unsp     = is_array( $_wl['unsupported_by_type'] ?? null ) ? $_wl['unsupported_by_type'] : array();
+
+					$_jstatus   = Diagnostic_Logger::derive_status( $result_entry['status'], $_wl );
+					$_src_id    = (int) ( $result_entry['id'] ?? 0 );
+					$_tgt_id    = (int) ( $result_entry['target'] ?? 0 );
+					$_icodes    = array();
+
+					// One issue event per widget-level log entry.
+					foreach ( $_entries as $_entry ) {
+						$_ci        = Diagnostic_Logger::issue_code_for_entry( $_entry );
+						$_icodes[]  = $_ci['code'];
+						Diagnostic_Logger::log_issue(
+							$run_id,
+							array(
+								'item_id'       => $index,
+								'status'        => $_jstatus,
+								'severity'      => $_ci['severity'],
+								'issue_code'    => $_ci['code'],
+								'issue_message' => ( $_entry['type'] ?? '' ) . ': ' . ( $_entry['widget'] ?? '' ),
+								'widget_type'   => $_entry['widget'] ?? null,
+								'widget_id'     => null,
+								'source_id'     => $_src_id,
+								'target_id'     => $_tgt_id > 0 ? $_tgt_id : null,
+								'action_taken'  => 'unsupported' === ( $_entry['type'] ?? '' ) ? 'placeholder_rendered' : 'empty_output',
+								'context'       => array(),
+							)
+						);
+					}
+
+					// Critical issue event when the whole item failed.
+					if ( 'FAILED' === $_jstatus ) {
+						$_msg   = strtolower( $result_entry['message'] ?? '' );
+						$_ecode = Diagnostic_Logger::CONVERSION_EXCEPTION;
+						if ( false !== strpos( $_msg, 'invalid' ) && false !== strpos( $_msg, 'json' ) ) {
+							$_ecode = Diagnostic_Logger::INVALID_ELEMENTOR_JSON;
+						} elseif ( false !== strpos( $_msg, 'data not found' ) ) {
+							$_ecode = Diagnostic_Logger::EMPTY_ELEMENTOR_DATA;
+						} elseif ( false !== strpos( $_msg, 'produced no' ) || false !== strpos( $_msg, 'no gutenberg' ) ) {
+							$_ecode = Diagnostic_Logger::GENERATED_MARKUP_EMPTY;
+						}
+						$_icodes[] = $_ecode;
+						Diagnostic_Logger::log_issue(
+							$run_id,
+							array(
+								'item_id'       => $index,
+								'status'        => 'FAILED',
+								'severity'      => 'critical',
+								'issue_code'    => $_ecode,
+								'issue_message' => $result_entry['message'] ?? '',
+								'widget_type'   => null,
+								'widget_id'     => null,
+								'source_id'     => $_src_id,
+								'target_id'     => $_tgt_id > 0 ? $_tgt_id : null,
+								'action_taken'  => 'conversion_aborted',
+								'context'       => array(),
+							)
+						);
+					}
+
+					$_w_total     = (int) ( $_wl_stats['total'] ?? 0 );
+					$_w_converted = (int) ( $_wl_stats['converted'] ?? 0 );
+					$_w_failed    = (int) ( $_wl_stats['unsupported'] ?? 0 );
+
+					$_fallback_ws = array_values( array_unique( array_map(
+						static function ( array $e ): string { return (string) ( $e['widget'] ?? '' ); },
+						array_values( array_filter(
+							$_entries,
+							static function ( array $e ): bool { return 'empty_output' === ( $e['type'] ?? '' ); }
+						) )
+					) ) );
+
+					$_sev_map = array(
+						'SUCCESS'               => 'info',
+						'SUCCESS_WITH_WARNINGS' => 'low',
+						'PARTIAL'               => 'medium',
+						'FAILED'                => 'critical',
+						'SKIPPED'               => 'info',
+					);
+
+					Diagnostic_Logger::log_item_result(
+						$run_id,
+						array(
+							'item_id'                   => $index,
+							'status'                    => $_jstatus,
+							'severity'                  => $_sev_map[ $_jstatus ] ?? 'medium',
+							'source_id'                 => $_src_id,
+							'target_id'                 => $_tgt_id > 0 ? $_tgt_id : null,
+							'title'                     => $result_entry['title'] ?? '',
+							'post_type'                 => $result_entry['post_type'] ?? ( $result_entry['type'] ?? '' ),
+							'template_type'             => $result_entry['role'] ?? null,
+							'widgets_total'             => $_w_total,
+							'widgets_converted'         => $_w_converted,
+							'widgets_failed'            => $_w_failed,
+							'blocks_generated'          => null,
+							'validation_warnings_count' => 0,
+							'generated_css_status'      => 'unknown',
+							'duration'                  => round( (float) ( $result_entry['duration'] ?? 0 ), 4 ),
+							'issue_codes'               => array_values( array_unique( $_icodes ) ),
+							'unsupported_widgets'       => array_keys( $_unsp ),
+							'fallback_widgets'          => $_fallback_ws,
+							'action_taken'              => 'SKIPPED' === $_jstatus ? 'skipped' : ( 'FAILED' === $_jstatus ? 'failed' : 'converted' ),
+						)
+					);
+
+					// Accumulate run-level stats.
+					$job['jsonl_stats']['widgets_total']     += $_w_total;
+					$job['jsonl_stats']['widgets_converted'] += $_w_converted;
+					$job['jsonl_stats']['widgets_failed']    += $_w_failed;
+
+					switch ( $_jstatus ) {
+						case 'SUCCESS':
+							$job['jsonl_stats']['success_count']++;
+							break;
+						case 'SUCCESS_WITH_WARNINGS':
+							$job['jsonl_stats']['success_with_warnings_count']++;
+							break;
+						case 'PARTIAL':
+							$job['jsonl_stats']['partial_count']++;
+							break;
+						case 'FAILED':
+							$job['jsonl_stats']['failed_count']++;
+							break;
+						case 'SKIPPED':
+							$job['jsonl_stats']['skipped_count']++;
+							break;
+					}
+
+					foreach ( $_unsp as $_wt => $_wc ) {
+						$_wt = (string) $_wt;
+						$job['jsonl_stats']['unsupported_widgets_summary'][ $_wt ] =
+							( (int) ( $job['jsonl_stats']['unsupported_widgets_summary'][ $_wt ] ?? 0 ) ) + (int) $_wc;
+					}
+
+					foreach ( $_fallback_ws as $_fw ) {
+						if ( '' === $_fw ) {
+							continue;
+						}
+						$job['jsonl_stats']['fallback_widgets_summary'][ $_fw ] =
+							( (int) ( $job['jsonl_stats']['fallback_widgets_summary'][ $_fw ] ?? 0 ) ) + 1;
+					}
+
+				} catch ( \Throwable $e ) {
+					// Never interrupt conversion
+				}
 			}
 
 			$job['results'][] = $result_entry;
@@ -553,6 +793,47 @@ class Batch_Convert_Wizard {
 			$job['status']       = 'completed';
 			$job['completed_at'] = time();
 			delete_user_meta( get_current_user_id(), '_ele2gb_job' );
+
+			// JSONL: run_summary + run_end.
+			if ( '' !== $run_id && Admin_Settings::is_logging_enabled() ) {
+				try {
+					$_js      = is_array( $job['jsonl_stats'] ?? null ) ? $job['jsonl_stats'] : array();
+					$_run_dur = max( 0, $job['completed_at'] - ( $job['started_at'] ?: $job['completed_at'] ) );
+					$_s_ok    = ( (int) ( $_js['success_count'] ?? 0 ) ) + ( (int) ( $_js['success_with_warnings_count'] ?? 0 ) );
+					$_final   = $_s_ok > 0 ? 'SUCCESS' : ( ( (int) ( $_js['failed_count'] ?? 0 ) ) > 0 ? 'FAILED' : 'SKIPPED' );
+
+					Diagnostic_Logger::log_run_summary(
+						$run_id,
+						array(
+							'total_items'                 => $total_items,
+							'success_count'               => (int) ( $_js['success_count'] ?? 0 ),
+							'success_with_warnings_count' => (int) ( $_js['success_with_warnings_count'] ?? 0 ),
+							'partial_count'               => (int) ( $_js['partial_count'] ?? 0 ),
+							'failed_count'                => (int) ( $_js['failed_count'] ?? 0 ),
+							'skipped_count'               => (int) ( $_js['skipped_count'] ?? 0 ),
+							'widgets_total'               => (int) ( $_js['widgets_total'] ?? 0 ),
+							'widgets_converted'           => (int) ( $_js['widgets_converted'] ?? 0 ),
+							'widgets_failed'              => (int) ( $_js['widgets_failed'] ?? 0 ),
+							'blocks_generated'            => 0,
+							'validation_warnings_count'   => 0,
+							'unsupported_widgets_summary' => $_js['unsupported_widgets_summary'] ?? array(),
+							'fallback_widgets_summary'    => $_js['fallback_widgets_summary'] ?? array(),
+							'duration'                    => $_run_dur,
+						)
+					);
+
+					Diagnostic_Logger::log_run_end(
+						$run_id,
+						array(
+							'final_status' => $_final,
+							'duration'     => $_run_dur,
+							'ended_at'     => gmdate( 'c', $job['completed_at'] ),
+						)
+					);
+				} catch ( \Throwable $e ) {
+					// Never interrupt conversion
+				}
+			}
 		}
 
 		$this->store_job( $job );
@@ -622,7 +903,85 @@ class Batch_Convert_Wizard {
 			wp_reset_postdata();
 		} while ( $paged <= $max_pages );
 
+		if ( ! empty( $accumulated ) ) {
+			$page_ids     = array_column( $accumulated, 'id' );
+			$warnings_map = $this->scan_page_warnings( $page_ids );
+			foreach ( $accumulated as &$page ) {
+				$page['warnings'] = $warnings_map[ $page['id'] ] ?? null;
+			}
+			unset( $page );
+		}
+
 		return $accumulated;
+	}
+
+	/**
+	 * Scan a set of posts for per-page compatibility warnings.
+	 *
+	 * Runs one batched DB query and uses regex over raw JSON strings rather
+	 * than decoding every document, keeping overhead minimal for large sites.
+	 *
+	 * @param array<int,int> $page_ids
+	 * @return array<int,array{unsupportedWidgets:array<string,int>,hasDynamic:bool,hasAnimation:bool}>
+	 */
+	private function scan_page_warnings( array $page_ids ): array {
+		if ( empty( $page_ids ) ) {
+			return array();
+		}
+
+		global $wpdb;
+
+		$safe_ids = array_map( 'absint', $page_ids );
+		$ids_str  = implode( ',', $safe_ids );
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results(
+			"SELECT post_id, meta_value FROM {$wpdb->postmeta}
+			 WHERE meta_key = '_elementor_data'
+			 AND post_id IN ({$ids_str})",
+			ARRAY_A
+		);
+
+		if ( empty( $rows ) ) {
+			return array();
+		}
+
+		$supported = array_flip( Widget_Handler_Factory::get_supported_types() );
+		$result    = array();
+
+		foreach ( $rows as $row ) {
+			$post_id  = (int) $row['post_id'];
+			$raw_json = (string) $row['meta_value'];
+
+			if ( '' === $raw_json || '[]' === $raw_json ) {
+				continue;
+			}
+
+			$unsupported = array();
+			if ( preg_match_all( '/"widgetType"\s*:\s*"([^"]+)"/', $raw_json, $matches ) ) {
+				foreach ( array_count_values( $matches[1] ) as $widget_type => $count ) {
+					if ( 0 === strpos( $widget_type, 'wp-widget-' ) ) {
+						continue;
+					}
+					if ( ! isset( $supported[ $widget_type ] ) ) {
+						$unsupported[ (string) $widget_type ] = (int) $count;
+					}
+				}
+			}
+
+			$has_dynamic   = false !== strpos( $raw_json, '"__dynamic__"' );
+			$has_animation = (bool) preg_match( '/"entrance_animation"\s*:\s*"(?!none")(?!")[a-zA-Z]/', $raw_json );
+
+			if ( ! empty( $unsupported ) || $has_dynamic || $has_animation ) {
+				$result[ $post_id ] = array(
+					'unsupportedWidgets' => $unsupported,
+					'hasDynamic'         => $has_dynamic,
+					'hasAnimation'       => $has_animation,
+				);
+			}
+		}
+
+		return $result;
 	}
 
 	/**
@@ -1846,6 +2205,16 @@ class Batch_Convert_Wizard {
 		}
 
 		$content = Admin_Settings::instance()->convert_json_to_gutenberg_content( array( 'content' => $decoded ) );
+
+		// Capture widget-level log immediately after conversion (before any early returns).
+		$result['widget_log'] = null;
+		if ( Admin_Settings::is_logging_enabled() ) {
+			$_conv_log = Admin_Settings::instance()->get_conversion_log();
+			if ( null !== $_conv_log ) {
+				$result['widget_log'] = $_conv_log->to_array();
+			}
+		}
+
 		if ( '' === trim( $content ) ) {
 			$message           = esc_html__( 'Failed: conversion produced no Gutenberg content.', 'elementor-to-gutenberg' );
 			$result['status']  = 'error';
@@ -2145,6 +2514,16 @@ class Batch_Convert_Wizard {
 		}
 
 		$content = Admin_Settings::instance()->convert_json_to_gutenberg_content( array( 'content' => $decoded ) );
+
+		// Capture widget-level log immediately after conversion.
+		$result['widget_log'] = null;
+		if ( Admin_Settings::is_logging_enabled() ) {
+			$_conv_log = Admin_Settings::instance()->get_conversion_log();
+			if ( null !== $_conv_log ) {
+				$result['widget_log'] = $_conv_log->to_array();
+			}
+		}
+
 		if ( '' === trim( $content ) ) {
 			$message   = esc_html__( 'Failed: conversion produced no Gutenberg content.', 'elementor-to-gutenberg' );
 			$edit_link = $existing_target ? get_edit_post_link( $existing_target, '' ) : '';
@@ -2821,7 +3200,7 @@ class Batch_Convert_Wizard {
 			'stepLabelMode'          => __( 'Mode', 'elementor-to-gutenberg' ),
 			'stepLabelTheme'         => __( 'Theme', 'elementor-to-gutenberg' ),
 			'stepLabelSelect'        => __( 'Pages', 'elementor-to-gutenberg' ),
-			'stepLabelTemplates'     => __( 'Templates', 'elementor-to-gutenberg' ),
+			'stepLabelTemplates'     => __( 'Header & Footer', 'elementor-to-gutenberg' ),
 			'stepLabelConflicts'     => __( 'Conflicts', 'elementor-to-gutenberg' ),
 			'stepLabelReview'        => __( 'Review', 'elementor-to-gutenberg' ),
 			'stepLabelProgress'      => __( 'Convert', 'elementor-to-gutenberg' ),
@@ -2953,6 +3332,18 @@ class Batch_Convert_Wizard {
 			'tableStatus'            => __( 'Status', 'elementor-to-gutenberg' ),
 			'tableConversionStatus'  => __( 'Conversion status', 'elementor-to-gutenberg' ),
 			'tableLastConverted'     => __( 'Last converted', 'elementor-to-gutenberg' ),
+			'tableCompatibility'     => __( 'Compatibility', 'elementor-to-gutenberg' ),
+			'compatShowDetails'      => __( 'Show compatibility details', 'elementor-to-gutenberg' ),
+			'compatPopoverTitle'     => __( 'Compatibility Notes', 'elementor-to-gutenberg' ),
+			'warnTitleUnsupported'   => __( 'Unsupported Widgets', 'elementor-to-gutenberg' ),
+			'warnDescUnsupported'    => __( 'These widgets will become placeholder blocks after conversion.', 'elementor-to-gutenberg' ),
+			'warnTitleDynamic'       => __( 'Dynamic Content', 'elementor-to-gutenberg' ),
+			'warnDescDynamic'        => __( 'This page uses Elementor dynamic tags. Connections to external data will be lost — manual reconnection in Gutenberg is needed.', 'elementor-to-gutenberg' ),
+			'warnTitleAnimation'     => __( 'Animations', 'elementor-to-gutenberg' ),
+			'warnDescAnimation'      => __( 'Entrance animations will not carry over to Gutenberg and must be re-applied manually.', 'elementor-to-gutenberg' ),
+			'warnUnsupportedWidgets' => __( '%1$d unsupported widget(s): %2$s', 'elementor-to-gutenberg' ),
+			'warnDynamicContent'     => __( 'Has dynamic content — links to data may be lost', 'elementor-to-gutenberg' ),
+			'warnAnimations'         => __( 'Has animations — will not be converted', 'elementor-to-gutenberg' ),
 			'tableActions'           => __( 'Actions', 'elementor-to-gutenberg' ),
 			'jobCompleted'           => __( 'Conversion completed successfully in %s.', 'elementor-to-gutenberg' ),
 			'jobCompletedWithErrors' => __( 'Conversion finished with issues in %s.', 'elementor-to-gutenberg' ),
@@ -3092,21 +3483,24 @@ class Batch_Convert_Wizard {
 	 * @param array $result_entry Result entry from the job.
 	 */
 	private function store_page_conversion_result( int $source_id, array $result_entry ): void {
-		$time = gmdate( 'Y-m-d H:i:s' );
+		$time              = gmdate( 'Y-m-d H:i:s' );
+		$converted_post_id = isset( $result_entry['converted_post_id'] ) ? (int) $result_entry['converted_post_id'] : (int) $result_entry['target'];
+		$widget_log        = is_array( $result_entry['widget_log'] ?? null ) ? $result_entry['widget_log'] : null;
 
 		$data = array(
-			'status'  => $result_entry['status'],
-			'message' => $result_entry['message'],
-			'target'  => $result_entry['target'],
-			'converted_post_id' => isset( $result_entry['converted_post_id'] ) ? (int) $result_entry['converted_post_id'] : (int) $result_entry['target'],
-			'time'    => $time,
+			'status'              => $result_entry['status'],
+			'message'             => $result_entry['message'],
+			'target'              => $result_entry['target'],
+			'converted_post_id'   => $converted_post_id,
+			'time'                => $time,
+			'stats'               => $widget_log['stats'] ?? null,
+			'unsupported_by_type' => $widget_log['unsupported_by_type'] ?? array(),
 		);
 
 		// Store on the original Elementor page.
 		update_post_meta( $source_id, '_ele2gb_last_result', $data );
 
 		// Store also on the converted page (if any).
-		$converted_post_id = isset( $result_entry['converted_post_id'] ) ? (int) $result_entry['converted_post_id'] : (int) $result_entry['target'];
 		if ( $converted_post_id > 0 ) {
 			update_post_meta( $converted_post_id, '_ele2gb_last_result', $data );
 		}
@@ -3119,6 +3513,20 @@ class Batch_Convert_Wizard {
 				update_post_meta( $converted_post_id, '_ele2gb_last_converted', $time );
 			}
 		}
+
+		// Append to the global conversion log for the UI.
+		Conversion_Log_Admin::append_entry( array(
+			'time'                => $time,
+			'post_id'             => $source_id,
+			'post_title'          => $result_entry['title'] ?? get_the_title( $source_id ),
+			'item_type'           => $result_entry['type'] ?? 'page',
+			'status'              => $result_entry['status'],
+			'message'             => $result_entry['message'],
+			'target_id'           => (int) $result_entry['target'],
+			'duration'            => (float) ( $result_entry['duration'] ?? 0 ),
+			'stats'               => $widget_log['stats'] ?? null,
+			'unsupported_by_type' => $widget_log['unsupported_by_type'] ?? array(),
+		) );
 	}
 
 	/**
@@ -3270,13 +3678,16 @@ class Batch_Convert_Wizard {
 	 * @param array $result_entry Result entry from the job.
 	 */
 	private function store_template_conversion_result( int $template_id, array $result_entry ): void {
-		$time = gmdate( 'Y-m-d H:i:s' );
+		$time       = gmdate( 'Y-m-d H:i:s' );
+		$widget_log = is_array( $result_entry['widget_log'] ?? null ) ? $result_entry['widget_log'] : null;
 
 		$data = array(
-			'status'  => $result_entry['status'],
-			'message' => $result_entry['message'],
-			'target'  => $result_entry['target'],
-			'time'    => $time,
+			'status'              => $result_entry['status'],
+			'message'             => $result_entry['message'],
+			'target'              => $result_entry['target'],
+			'time'                => $time,
+			'stats'               => $widget_log['stats'] ?? null,
+			'unsupported_by_type' => $widget_log['unsupported_by_type'] ?? array(),
 		);
 
 		update_post_meta( $template_id, '_ele2gb_last_result', $data );
@@ -3284,6 +3695,20 @@ class Batch_Convert_Wizard {
 		if ( 'success' === $result_entry['status'] ) {
 			update_post_meta( $template_id, '_ele2gb_last_converted', $time );
 		}
+
+		// Append to the global conversion log for the UI.
+		Conversion_Log_Admin::append_entry( array(
+			'time'                => $time,
+			'post_id'             => $template_id,
+			'post_title'          => $result_entry['title'] ?? get_the_title( $template_id ),
+			'item_type'           => $result_entry['type'] ?? 'template',
+			'status'              => $result_entry['status'],
+			'message'             => $result_entry['message'],
+			'target_id'           => (int) $result_entry['target'],
+			'duration'            => (float) ( $result_entry['duration'] ?? 0 ),
+			'stats'               => $widget_log['stats'] ?? null,
+			'unsupported_by_type' => $widget_log['unsupported_by_type'] ?? array(),
+		) );
 	}
 
 	/**

@@ -99,4 +99,13 @@ class Widget_Handler_Factory {
 	public static function register_handler( string $widget_type, string $handler_class ): void {
 		self::$handlers[ $widget_type ] = $handler_class;
 	}
+
+	/**
+	 * Return all registered widget type slugs.
+	 *
+	 * @return array<int,string>
+	 */
+	public static function get_supported_types(): array {
+		return array_keys( self::$handlers );
+	}
 }
