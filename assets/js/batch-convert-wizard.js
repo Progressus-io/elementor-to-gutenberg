@@ -112,6 +112,7 @@
                 copyCustomCss: true,
                 aiImprove: null,
                 filterStatus: 'all',
+                feedbackCheckedIds: new Set(),
                 searchQuery: '',
                 activeTab: this.postTypes.length ? this.postTypes[0].slug : '',
             };
@@ -1850,6 +1851,21 @@
             summary.appendChild(makeTile(formatDuration(job.duration), this.strings.duration || 'Duration', 'muted'));
             container.appendChild(summary);
 
+            if (job.status === 'completed' && this.config.feedbackEnabled) {
+                const fbRunRow = createElement('div', 'ele2gb-feedback-run-row');
+                const fbRunBtn = this.buildActionPill({
+                    variant: 'feedback',
+                    label: this.strings.feedbackButtonRun || 'Send Feedback',
+                    iconPath: ['M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z'],
+                    onClick: () => {
+                        const allIds = (this.state.job.results || []).map(function (r) { return Number(r.id); }).filter(Boolean);
+                        this.openFeedbackModal(allIds);
+                    }
+                });
+                fbRunRow.appendChild(fbRunBtn);
+                container.appendChild(fbRunRow);
+            }
+
             let message = '';
             if (job.status === 'completed') {
                 message = errorCount > 0 ? formatString(this.strings.jobCompletedWithErrors || 'Conversion finished with issues in %s.', formatDuration(job.duration)) : formatString(this.strings.jobCompleted || 'Conversion completed successfully in %s.', formatDuration(job.duration));
@@ -1966,6 +1982,12 @@
             const table = createElement('table', 'ele2gb-wizard-table');
             const thead = document.createElement('thead');
             const headRow = document.createElement('tr');
+            // Checkbox column for multi-item feedback selection
+            if (this.config.feedbackEnabled && this.state.job && this.state.job.status === 'completed') {
+                const cbTh = document.createElement('th');
+                cbTh.style.cssText = 'width:28px;padding-right:0;';
+                headRow.appendChild(cbTh);
+            }
             [
                 this.strings.tableTitle || 'Title',
                 this.strings.tableStatus || 'Status',
@@ -1982,6 +2004,26 @@
             const tbody = document.createElement('tbody');
             results.forEach((result) => {
                 const tr = document.createElement('tr');
+
+                // Per-row checkbox for multi-item feedback selection
+                if (this.config.feedbackEnabled && this.state.job && this.state.job.status === 'completed') {
+                    const cbTd = document.createElement('td');
+                    cbTd.style.cssText = 'width:28px;padding-right:0;';
+                    const cb = document.createElement('input');
+                    cb.type = 'checkbox';
+                    cb.checked = this.state.feedbackCheckedIds.has(Number(result.id));
+                    cb.addEventListener('change', () => {
+                        const sid = Number(result.id);
+                        if (cb.checked) {
+                            this.state.feedbackCheckedIds.add(sid);
+                        } else {
+                            this.state.feedbackCheckedIds.delete(sid);
+                        }
+                        this.render();
+                    });
+                    cbTd.appendChild(cb);
+                    tr.appendChild(cbTd);
+                }
 
                 const titleTd = document.createElement('td');
                 const titleWrapper = createElement('div', null, result.title);
@@ -2081,6 +2123,18 @@
                         }
                     }));
                 }
+                // Per-item feedback button
+                if (this.config.feedbackEnabled && this.config.feedbackNonce && this.state.job && this.state.job.id) {
+                    actionGroup.appendChild(this.buildActionPill({
+                        variant: 'feedback',
+                        label: this.strings.feedbackButtonItem || 'Feedback',
+                        title: this.strings.feedbackButtonItem || 'Send feedback for this item',
+                        iconPath: ['M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z'],
+                        onClick: () => {
+                            this.openItemFeedbackModal(Number(result.id), result.title || '', String(this.state.job.id));
+                        }
+                    }));
+                }
                 actionsTd.appendChild(actionGroup);
                 tr.appendChild(actionsTd);
 
@@ -2099,6 +2153,30 @@
             const errors    = results.filter(function (r) { return r.status === 'error' || r.status === 'partial'; });
             const successes = results.filter(function (r) { return r.status === 'success' || r.status === 'skipped'; });
             const container = createElement('div', 'ele2gb-results-sections');
+
+            // Multi-item feedback selection bar — shown when any checkboxes are checked
+            const checkedCount = this.state.feedbackCheckedIds.size;
+            if (checkedCount > 0 && this.config.feedbackEnabled && this.state.job.status === 'completed') {
+                const bar = createElement('div', 'ele2gb-feedback-selection-bar');
+                const selLabel = formatString(this.strings.feedbackButtonSelected || 'Send Feedback for Selected (%d)', checkedCount);
+                const selBtn = createButton(selLabel, 'button button-primary ele2gb-feedback-sel-btn');
+                selBtn.addEventListener('click', () => {
+                    const ids = Array.from(this.state.feedbackCheckedIds);
+                    this.openFeedbackModal(ids);
+                });
+                bar.appendChild(selBtn);
+                const clearBtn = document.createElement('button');
+                clearBtn.type = 'button';
+                clearBtn.className = 'button-link ele2gb-feedback-clear-btn';
+                clearBtn.textContent = this.strings.clearSelection || 'Clear selection';
+                clearBtn.addEventListener('click', () => {
+                    this.state.feedbackCheckedIds.clear();
+                    this.render();
+                });
+                bar.appendChild(clearBtn);
+                container.appendChild(bar);
+            }
+
             if (errors.length) {
                 container.appendChild(createElement('h3', 'ele2gb-results-section-title ele2gb-results-section-title--error', this.strings.resultsNeedsAttention || 'Needs attention'));
                 container.appendChild(this.buildResultsTable(errors));
@@ -2109,6 +2187,382 @@
             }
             return container;
         }
+
+        // ── Feedback feature ─────────────────────────────────────────────────
+
+        /**
+         * Open the full or multi-item feedback modal.
+         * sourceIds: array of source post IDs to include.
+         */
+        openFeedbackModal(sourceIds) {
+            this.closeFeedbackModal();
+            const job = this.state.job;
+            if (!job || !this.config.feedbackNonce) { return; }
+            const jobId = String(job.id || '');
+
+            const overlay = document.createElement('div');
+            overlay.id = 'ele2gb-feedback-overlay';
+            overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:100000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.55);padding:20px;box-sizing:border-box;';
+
+            const modal = document.createElement('div');
+            modal.setAttribute('role', 'dialog');
+            modal.setAttribute('aria-modal', 'true');
+            modal.style.cssText = 'background:#fff;border-radius:8px;padding:28px 32px;max-width:520px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 12px 48px rgba(0,0,0,0.22);';
+
+            const h2 = document.createElement('h2');
+            h2.style.cssText = 'margin:0 0 20px;font-size:17px;font-weight:600;color:#1d2327;';
+            h2.textContent = this.strings.feedbackModalTitle || 'How did the conversion go?';
+            modal.appendChild(h2);
+
+            // Star rating (run-level)
+            let selectedRating = 0;
+            const starsWrap = createElement('div', null);
+            starsWrap.style.cssText = 'margin-bottom:16px;';
+            const starsLbl = createElement('div', null, this.strings.feedbackRatingLabel || 'Overall rating');
+            starsLbl.style.cssText = 'font-size:13px;font-weight:500;margin-bottom:6px;color:#1d2327;';
+            starsWrap.appendChild(starsLbl);
+            const stars = [];
+            const starRow = createElement('div', null);
+            starRow.style.cssText = 'display:flex;gap:4px;';
+            for (let i = 1; i <= 5; i++) {
+                const s = document.createElement('button');
+                s.type = 'button';
+                s.textContent = '★';
+                s.setAttribute('aria-label', String(i) + ' star' + (i > 1 ? 's' : ''));
+                s.style.cssText = 'font-size:26px;background:none;border:none;cursor:pointer;color:#ddd;padding:0;line-height:1;';
+                (function (idx) {
+                    s.addEventListener('mouseover', function () { stars.forEach(function (x, j) { x.style.color = j < idx ? '#f5a623' : '#ddd'; }); });
+                    s.addEventListener('mouseout', function () { stars.forEach(function (x, j) { x.style.color = j < selectedRating ? '#f5a623' : '#ddd'; }); });
+                    s.addEventListener('click', function () {
+                        selectedRating = idx;
+                        stars.forEach(function (x, j) { x.style.color = j < idx ? '#f5a623' : '#ddd'; });
+                    });
+                }(i));
+                stars.push(s);
+                starRow.appendChild(s);
+            }
+            starsWrap.appendChild(starRow);
+            modal.appendChild(starsWrap);
+
+            // Issue type dropdown
+            const issueWrap = createElement('div', null);
+            issueWrap.style.cssText = 'margin-bottom:16px;';
+            const issueLbl = createElement('label', null, this.strings.feedbackIssueLabel || 'Issue type');
+            issueLbl.style.cssText = 'display:block;font-size:13px;font-weight:500;margin-bottom:6px;color:#1d2327;';
+            issueWrap.appendChild(issueLbl);
+            const issueSelect = document.createElement('select');
+            issueSelect.style.cssText = 'width:100%;padding:6px 8px;border:1px solid #c3c4c7;border-radius:4px;font-size:13px;';
+            [
+                ['', this.strings.feedbackNoIssue || 'No issue'],
+                ['layout', this.strings.feedbackIssueLayout || 'Layout issue'],
+                ['missing_content', this.strings.feedbackIssueMissing || 'Missing content'],
+                ['unsupported_widget', this.strings.feedbackIssueWidget || 'Unsupported widget'],
+                ['css_styling', this.strings.feedbackIssueCss || 'CSS/styling'],
+                ['ai_quality', this.strings.feedbackIssueAi || 'AI output quality'],
+                ['other', this.strings.feedbackIssueOther || 'Other'],
+            ].forEach(function (pair) {
+                const opt = document.createElement('option');
+                opt.value = pair[0];
+                opt.textContent = pair[1];
+                issueSelect.appendChild(opt);
+            });
+            issueWrap.appendChild(issueSelect);
+            modal.appendChild(issueWrap);
+
+            // Issue detail field (shown only when an issue type is selected)
+            const detailWrap = createElement('div', null);
+            detailWrap.style.cssText = 'margin-bottom:16px;display:none;';
+            const detailLbl = createElement('label', null, this.strings.feedbackIssueDetailLabel || 'Describe the issue');
+            detailLbl.style.cssText = 'display:block;font-size:13px;font-weight:500;margin-bottom:6px;color:#1d2327;';
+            detailWrap.appendChild(detailLbl);
+            const detailInput = document.createElement('input');
+            detailInput.type = 'text';
+            detailInput.maxLength = 500;
+            detailInput.style.cssText = 'width:100%;padding:6px 8px;border:1px solid #c3c4c7;border-radius:4px;font-size:13px;box-sizing:border-box;';
+            detailWrap.appendChild(detailInput);
+            modal.appendChild(detailWrap);
+            issueSelect.addEventListener('change', function () {
+                detailWrap.style.display = issueSelect.value ? 'block' : 'none';
+            });
+
+            // Notes textarea
+            const noteWrap = createElement('div', null);
+            noteWrap.style.cssText = 'margin-bottom:16px;';
+            const noteLbl = createElement('label', null, this.strings.feedbackNoteLabel || 'Any additional notes?');
+            noteLbl.style.cssText = 'display:block;font-size:13px;font-weight:500;margin-bottom:6px;color:#1d2327;';
+            noteWrap.appendChild(noteLbl);
+            const noteTA = document.createElement('textarea');
+            noteTA.rows = 3;
+            noteTA.maxLength = 2000;
+            noteTA.style.cssText = 'width:100%;padding:6px 8px;border:1px solid #c3c4c7;border-radius:4px;font-size:13px;box-sizing:border-box;resize:vertical;';
+            noteWrap.appendChild(noteTA);
+            modal.appendChild(noteWrap);
+
+            // Consent — unchecked by default, mandatory
+            const consentLbl = document.createElement('label');
+            consentLbl.style.cssText = 'display:flex;gap:8px;align-items:flex-start;margin-bottom:20px;cursor:pointer;';
+            const consentCb = document.createElement('input');
+            consentCb.type = 'checkbox';
+            consentCb.checked = false;
+            consentCb.style.cssText = 'margin-top:3px;flex-shrink:0;';
+            const consentSpan = document.createElement('span');
+            consentSpan.style.cssText = 'font-size:12px;color:#50575e;line-height:1.5;';
+            consentSpan.textContent = this.strings.feedbackConsentLabel || 'I consent to sending this anonymised conversion report to the plugin developer for quality improvement. No passwords, API keys, or user data are included.';
+            consentLbl.appendChild(consentCb);
+            consentLbl.appendChild(consentSpan);
+            modal.appendChild(consentLbl);
+
+            // Action buttons row
+            const actRow = createElement('div', null);
+            actRow.style.cssText = 'display:flex;gap:8px;align-items:center;flex-wrap:wrap;';
+            const errSpan = createElement('span', null);
+            errSpan.style.cssText = 'flex:1;font-size:12px;color:#d63638;min-width:0;';
+            actRow.appendChild(errSpan);
+            const cancelBtn = document.createElement('button');
+            cancelBtn.type = 'button';
+            cancelBtn.className = 'button';
+            cancelBtn.textContent = this.strings.feedbackCancel || 'Cancel';
+            cancelBtn.addEventListener('click', () => this.closeFeedbackModal());
+            actRow.appendChild(cancelBtn);
+            const submitBtn = document.createElement('button');
+            submitBtn.type = 'button';
+            submitBtn.className = 'button button-primary';
+            submitBtn.textContent = this.strings.feedbackSubmit || 'Send Feedback';
+            submitBtn.disabled = true; // disabled until consent checked
+            actRow.appendChild(submitBtn);
+            modal.appendChild(actRow);
+
+            // Enable submit when consent is checked
+            consentCb.addEventListener('change', function () { submitBtn.disabled = !consentCb.checked; });
+
+            overlay.appendChild(modal);
+            document.body.appendChild(overlay);
+            this._feedbackOverlay = overlay;
+
+            // Close on backdrop click
+            overlay.addEventListener('click', (e) => { if (e.target === overlay) { this.closeFeedbackModal(); } });
+
+            const self = this;
+            submitBtn.addEventListener('click', function () {
+                if (!consentCb.checked) { return; }
+                submitBtn.disabled = true;
+                cancelBtn.disabled = true;
+                submitBtn.textContent = self.strings.feedbackSending || 'Sending…';
+                errSpan.textContent = '';
+
+                const fd = new FormData();
+                fd.append('action', 'etg_submit_feedback');
+                fd.append('nonce', self.config.feedbackNonce);
+                fd.append('job_id', jobId);
+                fd.append('consent_given', 'true');
+                fd.append('rating', selectedRating > 0 ? String(selectedRating) : '');
+                fd.append('issue_type', issueSelect.value || '');
+                fd.append('issue_detail', detailInput.value || '');
+                fd.append('user_note', noteTA.value || '');
+                sourceIds.forEach(function (id) { fd.append('selected_source_ids[]', String(id)); });
+                fd.append('user_agent', navigator.userAgent);
+                fd.append('screen_width', String(window.screen.width));
+                fd.append('screen_height', String(window.screen.height));
+                fd.append('viewport_width', String(window.innerWidth));
+                fd.append('viewport_height', String(window.innerHeight));
+                fd.append('device_pixel_ratio', String(window.devicePixelRatio || 1));
+
+                fetch(self.config.ajaxUrl, {method: 'POST', credentials: 'same-origin', body: fd})
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        if (data.success) {
+                            const fbId = (data.data && data.data.feedback_id) ? String(data.data.feedback_id) : '';
+                            self.closeFeedbackModal();
+                            self.showFeedbackConfirm(formatString(self.strings.feedbackSuccess || 'Thank you! Feedback submitted (ID: %s).', fbId));
+                        } else {
+                            const msg = (data.data && data.data.error) ? String(data.data.error) : (self.strings.aiImproveError || 'An unexpected error occurred.');
+                            errSpan.textContent = msg;
+                            submitBtn.disabled = false;
+                            cancelBtn.disabled = false;
+                            submitBtn.textContent = self.strings.feedbackSubmit || 'Send Feedback';
+                        }
+                    })
+                    .catch(function (err) {
+                        errSpan.textContent = err.message || (self.strings.aiImproveError || 'An unexpected error occurred.');
+                        submitBtn.disabled = false;
+                        cancelBtn.disabled = false;
+                        submitBtn.textContent = self.strings.feedbackSubmit || 'Send Feedback';
+                    });
+            });
+        }
+
+        /**
+         * Open the compact per-item feedback modal (stars + note only).
+         */
+        openItemFeedbackModal(sourceId, title, jobId) {
+            this.closeFeedbackModal();
+            if (!this.config.feedbackNonce) { return; }
+
+            const overlay = document.createElement('div');
+            overlay.id = 'ele2gb-feedback-overlay';
+            overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:100000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.55);padding:20px;box-sizing:border-box;';
+
+            const modal = document.createElement('div');
+            modal.setAttribute('role', 'dialog');
+            modal.setAttribute('aria-modal', 'true');
+            modal.style.cssText = 'background:#fff;border-radius:8px;padding:28px 32px;max-width:400px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 12px 48px rgba(0,0,0,0.22);';
+
+            const h2 = document.createElement('h2');
+            h2.style.cssText = 'margin:0 0 4px;font-size:17px;font-weight:600;color:#1d2327;';
+            h2.textContent = this.strings.feedbackItemTitle || 'How did this page convert?';
+            modal.appendChild(h2);
+
+            if (title) {
+                const sub = createElement('p', null, title);
+                sub.style.cssText = 'margin:0 0 16px;font-size:12px;color:#787c82;';
+                modal.appendChild(sub);
+            } else {
+                modal.style.marginBottom = '16px';
+            }
+
+            // Item-level star rating
+            let selectedRating = 0;
+            const starRow = createElement('div', null);
+            starRow.style.cssText = 'display:flex;gap:4px;margin-bottom:16px;';
+            const stars = [];
+            for (let i = 1; i <= 5; i++) {
+                const s = document.createElement('button');
+                s.type = 'button';
+                s.textContent = '★';
+                s.setAttribute('aria-label', String(i) + ' star' + (i > 1 ? 's' : ''));
+                s.style.cssText = 'font-size:26px;background:none;border:none;cursor:pointer;color:#ddd;padding:0;line-height:1;';
+                (function (idx) {
+                    s.addEventListener('mouseover', function () { stars.forEach(function (x, j) { x.style.color = j < idx ? '#f5a623' : '#ddd'; }); });
+                    s.addEventListener('mouseout', function () { stars.forEach(function (x, j) { x.style.color = j < selectedRating ? '#f5a623' : '#ddd'; }); });
+                    s.addEventListener('click', function () {
+                        selectedRating = idx;
+                        stars.forEach(function (x, j) { x.style.color = j < idx ? '#f5a623' : '#ddd'; });
+                    });
+                }(i));
+                stars.push(s);
+                starRow.appendChild(s);
+            }
+            modal.appendChild(starRow);
+
+            // Item note
+            const noteLbl = createElement('label', null, this.strings.feedbackNoteLabel || 'Any additional notes?');
+            noteLbl.style.cssText = 'display:block;font-size:13px;font-weight:500;margin-bottom:6px;color:#1d2327;';
+            modal.appendChild(noteLbl);
+            const noteTA = document.createElement('textarea');
+            noteTA.rows = 3;
+            noteTA.maxLength = 1000;
+            noteTA.style.cssText = 'width:100%;padding:6px 8px;border:1px solid #c3c4c7;border-radius:4px;font-size:13px;box-sizing:border-box;resize:vertical;margin-bottom:16px;';
+            modal.appendChild(noteTA);
+
+            // Consent — unchecked by default
+            const consentLbl = document.createElement('label');
+            consentLbl.style.cssText = 'display:flex;gap:8px;align-items:flex-start;margin-bottom:20px;cursor:pointer;';
+            const consentCb = document.createElement('input');
+            consentCb.type = 'checkbox';
+            consentCb.checked = false;
+            consentCb.style.cssText = 'margin-top:3px;flex-shrink:0;';
+            const consentSpan = document.createElement('span');
+            consentSpan.style.cssText = 'font-size:12px;color:#50575e;line-height:1.5;';
+            consentSpan.textContent = this.strings.feedbackConsentLabel || 'I consent to sending this anonymised conversion report to the plugin developer for quality improvement. No passwords, API keys, or user data are included.';
+            consentLbl.appendChild(consentCb);
+            consentLbl.appendChild(consentSpan);
+            modal.appendChild(consentLbl);
+
+            // Actions
+            const actRow = createElement('div', null);
+            actRow.style.cssText = 'display:flex;gap:8px;align-items:center;flex-wrap:wrap;';
+            const errSpan = createElement('span', null);
+            errSpan.style.cssText = 'flex:1;font-size:12px;color:#d63638;min-width:0;';
+            actRow.appendChild(errSpan);
+            const cancelBtn = document.createElement('button');
+            cancelBtn.type = 'button';
+            cancelBtn.className = 'button';
+            cancelBtn.textContent = this.strings.feedbackCancel || 'Cancel';
+            cancelBtn.addEventListener('click', () => this.closeFeedbackModal());
+            actRow.appendChild(cancelBtn);
+            const submitBtn = document.createElement('button');
+            submitBtn.type = 'button';
+            submitBtn.className = 'button button-primary';
+            submitBtn.textContent = this.strings.feedbackSubmit || 'Send Feedback';
+            submitBtn.disabled = true;
+            actRow.appendChild(submitBtn);
+            modal.appendChild(actRow);
+
+            consentCb.addEventListener('change', function () { submitBtn.disabled = !consentCb.checked; });
+
+            overlay.appendChild(modal);
+            document.body.appendChild(overlay);
+            this._feedbackOverlay = overlay;
+
+            overlay.addEventListener('click', (e) => { if (e.target === overlay) { this.closeFeedbackModal(); } });
+
+            const self = this;
+            submitBtn.addEventListener('click', function () {
+                if (!consentCb.checked) { return; }
+                submitBtn.disabled = true;
+                cancelBtn.disabled = true;
+                submitBtn.textContent = self.strings.feedbackSending || 'Sending…';
+                errSpan.textContent = '';
+
+                const fd = new FormData();
+                fd.append('action', 'etg_submit_feedback');
+                fd.append('nonce', self.config.feedbackNonce);
+                fd.append('job_id', jobId || '');
+                fd.append('consent_given', 'true');
+                fd.append('selected_source_ids[]', String(sourceId));
+                if (selectedRating > 0) { fd.append('item_ratings[' + sourceId + ']', String(selectedRating)); }
+                if (noteTA.value) { fd.append('item_notes[' + sourceId + ']', noteTA.value); }
+                fd.append('user_agent', navigator.userAgent);
+                fd.append('screen_width', String(window.screen.width));
+                fd.append('screen_height', String(window.screen.height));
+                fd.append('viewport_width', String(window.innerWidth));
+                fd.append('viewport_height', String(window.innerHeight));
+                fd.append('device_pixel_ratio', String(window.devicePixelRatio || 1));
+
+                fetch(self.config.ajaxUrl, {method: 'POST', credentials: 'same-origin', body: fd})
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        if (data.success) {
+                            const fbId = (data.data && data.data.feedback_id) ? String(data.data.feedback_id) : '';
+                            self.closeFeedbackModal();
+                            self.showFeedbackConfirm(formatString(self.strings.feedbackSuccess || 'Thank you! Feedback submitted (ID: %s).', fbId));
+                        } else {
+                            const msg = (data.data && data.data.error) ? String(data.data.error) : (self.strings.aiImproveError || 'An unexpected error occurred.');
+                            errSpan.textContent = msg;
+                            submitBtn.disabled = false;
+                            cancelBtn.disabled = false;
+                            submitBtn.textContent = self.strings.feedbackSubmit || 'Send Feedback';
+                        }
+                    })
+                    .catch(function (err) {
+                        errSpan.textContent = err.message || (self.strings.aiImproveError || 'An unexpected error occurred.');
+                        submitBtn.disabled = false;
+                        cancelBtn.disabled = false;
+                        submitBtn.textContent = self.strings.feedbackSubmit || 'Send Feedback';
+                    });
+            });
+        }
+
+        closeFeedbackModal() {
+            if (this._feedbackOverlay) {
+                this._feedbackOverlay.remove();
+                this._feedbackOverlay = null;
+            }
+        }
+
+        showFeedbackConfirm(message) {
+            this.state.notice = {type: 'success', message: message};
+            this.render();
+            const capturedMsg = message;
+            setTimeout(() => {
+                if (this.state.notice && this.state.notice.message === capturedMsg) {
+                    this.state.notice = null;
+                    this.render();
+                }
+            }, 8000);
+        }
+
+        // ── End Feedback feature ──────────────────────────────────────────────
 
         // ── AI Improve step ──────────────────────────────────────────────────
 

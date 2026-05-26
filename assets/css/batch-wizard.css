@@ -2431,6 +2431,61 @@
    RESPONSIVE ADDITIONS
    ============================================================ */
 
+/* ============================================================
+   FEEDBACK FEATURE
+   ============================================================ */
+
+/* Feedback action pill — soft teal accent */
+.ele2gb-action-pill--feedback {
+    background: #f0fafa;
+    border-color: #2ec4b6;
+    color: #1a8a82;
+}
+
+.ele2gb-action-pill--feedback:hover {
+    background: #e0f5f3;
+    border-color: #1a8a82;
+    color: #135f5a;
+}
+
+.ele2gb-action-pill--feedback .ele2gb-action-pill-icon {
+    width: 14px;
+    height: 14px;
+}
+
+/* "Send Feedback" row below the progress summary tiles */
+.ele2gb-feedback-run-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 10px;
+}
+
+/* Multi-item selection bar (shown above results tables when checkboxes are checked) */
+.ele2gb-feedback-selection-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: #f0fafa;
+    border: 1px solid #2ec4b6;
+    border-radius: 6px;
+    margin-bottom: 14px;
+}
+
+.ele2gb-feedback-clear-btn {
+    background: none;
+    border: none;
+    color: #787c82;
+    font-size: 13px;
+    cursor: pointer;
+    text-decoration: underline;
+    padding: 0;
+}
+
+.ele2gb-feedback-clear-btn:hover {
+    color: #1d2327;
+}
+
 @media (max-width: 782px) {
     .ele2gb-enhancement-stats {
         grid-template-columns: 1fr 1fr;
