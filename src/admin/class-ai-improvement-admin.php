@@ -128,14 +128,36 @@ class AI_Improvement_Admin {
 			true
 		);
 
+		$target_id_asset = isset( $_GET['target_id'] ) ? absint( wp_unslash( $_GET['target_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$source_id_asset = isset( $_GET['source_id'] ) ? absint( wp_unslash( $_GET['source_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
 		wp_localize_script(
 			'ele2gb-ai-improve',
 			'ele2gbAiImprove',
 			array(
-				'processingLabel' => __( 'Processing…', 'elementor-to-gutenberg' ),
-				'improvingLabel'  => __( 'Improving with AI…', 'elementor-to-gutenberg' ),
-				'refiningLabel'   => __( 'Refining with AI…', 'elementor-to-gutenberg' ),
-				'mobileLabel'     => __( 'Improving mobile with AI…', 'elementor-to-gutenberg' ),
+				'processingLabel'   => __( 'Processing…', 'elementor-to-gutenberg' ),
+				'improvingLabel'    => __( 'Improving with AI…', 'elementor-to-gutenberg' ),
+				'refiningLabel'     => __( 'Refining with AI…', 'elementor-to-gutenberg' ),
+				'mobileLabel'       => __( 'Improving mobile with AI…', 'elementor-to-gutenberg' ),
+				'ajaxUrl'           => admin_url( 'admin-ajax.php' ),
+				'feedbackNonce'     => wp_create_nonce( AI_Enhancement_Admin::FEEDBACK_NONCE ),
+				'targetId'          => $target_id_asset,
+				'sourceId'          => $source_id_asset,
+				'feedbackTitle'     => __( 'How did AI Enhancement go?', 'elementor-to-gutenberg' ),
+				'feedbackIssue'     => __( 'Issue type', 'elementor-to-gutenberg' ),
+				'feedbackIssueDetail' => __( 'Describe the issue', 'elementor-to-gutenberg' ),
+				'feedbackNote'      => __( 'Additional notes', 'elementor-to-gutenberg' ),
+				'feedbackConsent'   => __( 'I consent to sending this anonymised AI enhancement report to the plugin developer for quality improvement. No passwords, API keys, or user data are included.', 'elementor-to-gutenberg' ),
+				'feedbackSubmit'    => __( 'Send Feedback', 'elementor-to-gutenberg' ),
+				'feedbackCancel'    => __( 'Cancel', 'elementor-to-gutenberg' ),
+				'feedbackSending'   => __( 'Sending…', 'elementor-to-gutenberg' ),
+				'feedbackSuccess'   => __( 'Thank you! Feedback submitted.', 'elementor-to-gutenberg' ),
+				'feedbackNoIssue'   => __( 'No issue', 'elementor-to-gutenberg' ),
+				'feedbackLayout'    => __( 'Layout issues after AI', 'elementor-to-gutenberg' ),
+				'feedbackMissing'   => __( 'Wrong or missing content', 'elementor-to-gutenberg' ),
+				'feedbackCss'       => __( 'CSS / styling problems', 'elementor-to-gutenberg' ),
+				'feedbackQuality'   => __( 'AI output quality', 'elementor-to-gutenberg' ),
+				'feedbackOther'     => __( 'Other', 'elementor-to-gutenberg' ),
 			)
 		);
 	}
@@ -1006,6 +1028,9 @@ class AI_Improvement_Admin {
 						<?php endif; ?>
 						<?php if ( $target_prev_url ) : ?>
 							<a href="<?php echo esc_url( $target_prev_url ); ?>" target="_blank" rel="noopener" class="button"><?php esc_html_e( 'Preview &#8599;', 'elementor-to-gutenberg' ); ?></a>
+						<?php endif; ?>
+						<?php if ( '' !== $last_improved ) : ?>
+							<button type="button" id="etg-ai-feedback-btn" class="button"><?php esc_html_e( 'Send Feedback', 'elementor-to-gutenberg' ); ?></button>
 						<?php endif; ?>
 						<a href="<?php echo esc_url( $target_edit_url ); ?>" class="button button-primary"><?php esc_html_e( 'Edit in Gutenberg', 'elementor-to-gutenberg' ); ?></a>
 					</div>

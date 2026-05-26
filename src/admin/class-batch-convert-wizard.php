@@ -3373,7 +3373,6 @@ class Batch_Convert_Wizard {
 			'feedbackButtonSelected' => __( 'Send Feedback for Selected (%d)', 'elementor-to-gutenberg' ),
 			'feedbackModalTitle'     => __( 'How did the conversion go?', 'elementor-to-gutenberg' ),
 			'feedbackItemTitle'      => __( 'How did this page convert?', 'elementor-to-gutenberg' ),
-			'feedbackRatingLabel'    => __( 'Overall rating', 'elementor-to-gutenberg' ),
 			'feedbackIssueLabel'     => __( 'Issue type', 'elementor-to-gutenberg' ),
 			'feedbackIssueDetailLabel' => __( 'Describe the issue', 'elementor-to-gutenberg' ),
 			'feedbackNoteLabel'      => __( 'Any additional notes?', 'elementor-to-gutenberg' ),

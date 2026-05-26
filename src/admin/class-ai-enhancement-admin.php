@@ -48,10 +48,13 @@ class AI_Enhancement_Admin {
 		return self::$instance;
 	}
 
+	public const FEEDBACK_NONCE = 'etg_ai_enhancement_feedback_nonce';
+
 	private function __construct() {
 		add_action( 'admin_menu', array( $this, 'register_menu' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 		add_action( 'wp_ajax_ele2gb_generate_screenshots_single', array( $this, 'handle_ajax_generate_screenshots' ) );
+		add_action( 'wp_ajax_etg_submit_ai_enhancement_feedback', array( $this, 'ajax_submit_ai_enhancement_feedback' ) );
 	}
 
 	public function register_menu(): void {
@@ -92,6 +95,8 @@ class AI_Enhancement_Admin {
 				'ajaxUrl'            => admin_url( 'admin-ajax.php' ),
 				'aiImproveNonce'     => wp_create_nonce( 'ele2gb_ai_improve' ),
 				'screenshotNonce'    => wp_create_nonce( 'ele2gb_generate_screenshots' ),
+				'feedbackNonce'      => wp_create_nonce( self::FEEDBACK_NONCE ),
+				'feedbackEnabled'    => true,
 				'aiConfigured'       => '' !== Claude_Api_Service::get_api_key(),
 				'screenshotEnabled'  => true,
 				'settingsUrl'        => admin_url( 'admin.php?page=gutenberg-settings' ),
@@ -247,6 +252,120 @@ class AI_Enhancement_Admin {
 			'statTotalPages'        => __( 'Converted Pages', 'elementor-to-gutenberg' ),
 			'statScreenshots'       => __( 'Screenshots Ready', 'elementor-to-gutenberg' ),
 			'statAiEnhanced'        => __( 'AI-Enhanced', 'elementor-to-gutenberg' ),
+
+			// Feedback strings
+			'feedbackBtn'           => __( 'Send Feedback', 'elementor-to-gutenberg' ),
+			'feedbackModalTitle'    => __( 'How did AI Enhancement go?', 'elementor-to-gutenberg' ),
+			'feedbackIssueLabel'    => __( 'Issue type', 'elementor-to-gutenberg' ),
+			'feedbackIssueDetailLabel' => __( 'Describe the issue', 'elementor-to-gutenberg' ),
+			'feedbackNoteLabel'     => __( 'Additional notes', 'elementor-to-gutenberg' ),
+			'feedbackConsentLabel'  => __( 'I consent to sending this anonymised AI enhancement report to the plugin developer for quality improvement. No passwords, API keys, or user data are included.', 'elementor-to-gutenberg' ),
+			'feedbackSubmit'        => __( 'Send Feedback', 'elementor-to-gutenberg' ),
+			'feedbackCancel'        => __( 'Cancel', 'elementor-to-gutenberg' ),
+			'feedbackSending'       => __( 'Sending…', 'elementor-to-gutenberg' ),
+			'feedbackSuccess'       => __( 'Thank you! Feedback submitted (ID: %1$s).', 'elementor-to-gutenberg' ),
+			'feedbackError'         => __( 'Could not send feedback: %s', 'elementor-to-gutenberg' ),
+			'feedbackNoIssue'       => __( 'No issue', 'elementor-to-gutenberg' ),
+			'feedbackIssueLayout'   => __( 'Layout issues after AI', 'elementor-to-gutenberg' ),
+			'feedbackIssueMissing'  => __( 'Wrong or missing content', 'elementor-to-gutenberg' ),
+			'feedbackIssueCss'      => __( 'CSS / styling problems', 'elementor-to-gutenberg' ),
+			'feedbackIssueQuality'  => __( 'AI output quality', 'elementor-to-gutenberg' ),
+			'feedbackIssueOther'    => __( 'Other', 'elementor-to-gutenberg' ),
 		);
+	}
+
+	/**
+	 * AJAX handler: submit AI enhancement feedback for a single page.
+	 */
+	public function ajax_submit_ai_enhancement_feedback(): void {
+		check_ajax_referer( self::FEEDBACK_NONCE, 'nonce' );
+
+		if ( ! current_user_can( 'edit_pages' ) ) {
+			wp_send_json_error( array( 'error' => esc_html__( 'Unauthorized.', 'elementor-to-gutenberg' ) ) );
+			return;
+		}
+
+		$consent_raw = isset( $_POST['consent_given'] ) ? (string) wp_unslash( $_POST['consent_given'] ) : '';
+		if ( 'true' !== $consent_raw ) {
+			wp_send_json_error( array( 'error' => esc_html__( 'Consent is required to submit feedback.', 'elementor-to-gutenberg' ) ) );
+			return;
+		}
+
+		$target_id    = isset( $_POST['target_id'] ) ? absint( $_POST['target_id'] ) : 0;
+		$source_id    = isset( $_POST['source_id'] ) ? absint( $_POST['source_id'] ) : 0;
+		$issue_type   = isset( $_POST['issue_type'] ) ? sanitize_key( wp_unslash( $_POST['issue_type'] ) ) : '';
+		$issue_detail = isset( $_POST['issue_detail'] ) ? wp_strip_all_tags( substr( (string) wp_unslash( $_POST['issue_detail'] ), 0, 500 ) ) : '';
+		$user_note    = isset( $_POST['user_note'] ) ? wp_strip_all_tags( substr( (string) wp_unslash( $_POST['user_note'] ), 0, 2000 ) ) : '';
+
+		if ( $target_id <= 0 ) {
+			wp_send_json_error( array( 'error' => esc_html__( 'Invalid page ID.', 'elementor-to-gutenberg' ) ) );
+			return;
+		}
+
+		$target_post = get_post( $target_id );
+		if ( ! $target_post instanceof \WP_Post ) {
+			wp_send_json_error( array( 'error' => esc_html__( 'Page not found.', 'elementor-to-gutenberg' ) ) );
+			return;
+		}
+
+		$theme = wp_get_theme();
+
+		$manifest = array(
+			'schema_version' => '1.0.0',
+			'feedback_type'  => 'ai_enhancement',
+			'feedback_id'    => 'aefbk_' . gmdate( 'YmdHis' ) . '_' . substr( md5( uniqid( '', true ) ), 0, 8 ),
+			'submitted_at'   => gmdate( 'Y-m-d\TH:i:s\Z' ),
+
+			'site'           => array(
+				'site_url_hash'               => hash( 'sha256', (string) home_url() ),
+				'site_domain'                 => (string) parse_url( home_url(), PHP_URL_HOST ),
+				'plugin_version'              => GUTENBERG_PLUGIN_VERSION,
+				'wordpress_version'           => get_bloginfo( 'version' ),
+				'php_version'                 => PHP_VERSION,
+				'active_theme'                => (string) $theme->get( 'Name' ),
+				'active_theme_is_block_theme' => wp_is_block_theme(),
+				'locale'                      => get_locale(),
+			),
+
+			'page'           => array(
+				'target_id'    => $target_id,
+				'source_id'    => $source_id > 0 ? $source_id : null,
+				'title'        => $target_post->post_title,
+				'last_improved' => (string) get_post_meta( $target_id, '_ele2gb_last_ai_improved', true ),
+				'screenshots'  => array(
+					'elementor_desktop' => $this->get_first_screenshot( $target_id, '_etg_ai_elementor_screenshot_url' ),
+					'gutenberg_desktop' => $this->get_first_screenshot( $target_id, '_etg_ai_gutenberg_screenshot_url' ),
+					'elementor_mobile'  => $this->get_first_screenshot( $target_id, '_etg_ai_elementor_screenshot_mobile_url' ),
+					'gutenberg_mobile'  => $this->get_first_screenshot( $target_id, '_etg_ai_gutenberg_screenshot_mobile_url' ),
+				),
+			),
+
+			'user_feedback'  => array(
+				'issue_type'      => $issue_type,
+				'issue_detail'    => $issue_detail,
+				'user_note'       => $user_note,
+				'consent_given'   => true,
+				'consent_version' => Feedback_Builder::CONSENT_VERSION,
+				'consent_text'    => Feedback_Builder::CONSENT_TEXT,
+			),
+		);
+
+		$result = Feedback_Sender::send( $manifest );
+
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( array( 'error' => $result->get_error_message() ) );
+			return;
+		}
+
+		wp_send_json_success( array( 'feedback_id' => $manifest['feedback_id'] ) );
+	}
+
+	private function get_first_screenshot( int $post_id, string $meta_key ): ?string {
+		$raw     = get_post_meta( $post_id, $meta_key, true );
+		$decoded = json_decode( (string) $raw, true );
+		if ( is_array( $decoded ) && ! empty( $decoded[0] ) ) {
+			return (string) $decoded[0];
+		}
+		return is_string( $raw ) && '' !== $raw ? $raw : null;
 	}
 }

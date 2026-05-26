@@ -2214,36 +2214,6 @@
             h2.textContent = this.strings.feedbackModalTitle || 'How did the conversion go?';
             modal.appendChild(h2);
 
-            // Star rating (run-level)
-            let selectedRating = 0;
-            const starsWrap = createElement('div', null);
-            starsWrap.style.cssText = 'margin-bottom:16px;';
-            const starsLbl = createElement('div', null, this.strings.feedbackRatingLabel || 'Overall rating');
-            starsLbl.style.cssText = 'font-size:13px;font-weight:500;margin-bottom:6px;color:#1d2327;';
-            starsWrap.appendChild(starsLbl);
-            const stars = [];
-            const starRow = createElement('div', null);
-            starRow.style.cssText = 'display:flex;gap:4px;';
-            for (let i = 1; i <= 5; i++) {
-                const s = document.createElement('button');
-                s.type = 'button';
-                s.textContent = '★';
-                s.setAttribute('aria-label', String(i) + ' star' + (i > 1 ? 's' : ''));
-                s.style.cssText = 'font-size:26px;background:none;border:none;cursor:pointer;color:#ddd;padding:0;line-height:1;';
-                (function (idx) {
-                    s.addEventListener('mouseover', function () { stars.forEach(function (x, j) { x.style.color = j < idx ? '#f5a623' : '#ddd'; }); });
-                    s.addEventListener('mouseout', function () { stars.forEach(function (x, j) { x.style.color = j < selectedRating ? '#f5a623' : '#ddd'; }); });
-                    s.addEventListener('click', function () {
-                        selectedRating = idx;
-                        stars.forEach(function (x, j) { x.style.color = j < idx ? '#f5a623' : '#ddd'; });
-                    });
-                }(i));
-                stars.push(s);
-                starRow.appendChild(s);
-            }
-            starsWrap.appendChild(starRow);
-            modal.appendChild(starsWrap);
-
             // Issue type dropdown
             const issueWrap = createElement('div', null);
             issueWrap.style.cssText = 'margin-bottom:16px;';
@@ -2355,7 +2325,7 @@
                 fd.append('nonce', self.config.feedbackNonce);
                 fd.append('job_id', jobId);
                 fd.append('consent_given', 'true');
-                fd.append('rating', selectedRating > 0 ? String(selectedRating) : '');
+
                 fd.append('issue_type', issueSelect.value || '');
                 fd.append('issue_detail', detailInput.value || '');
                 fd.append('user_note', noteTA.value || '');
@@ -2419,30 +2389,6 @@
             } else {
                 modal.style.marginBottom = '16px';
             }
-
-            // Item-level star rating
-            let selectedRating = 0;
-            const starRow = createElement('div', null);
-            starRow.style.cssText = 'display:flex;gap:4px;margin-bottom:16px;';
-            const stars = [];
-            for (let i = 1; i <= 5; i++) {
-                const s = document.createElement('button');
-                s.type = 'button';
-                s.textContent = '★';
-                s.setAttribute('aria-label', String(i) + ' star' + (i > 1 ? 's' : ''));
-                s.style.cssText = 'font-size:26px;background:none;border:none;cursor:pointer;color:#ddd;padding:0;line-height:1;';
-                (function (idx) {
-                    s.addEventListener('mouseover', function () { stars.forEach(function (x, j) { x.style.color = j < idx ? '#f5a623' : '#ddd'; }); });
-                    s.addEventListener('mouseout', function () { stars.forEach(function (x, j) { x.style.color = j < selectedRating ? '#f5a623' : '#ddd'; }); });
-                    s.addEventListener('click', function () {
-                        selectedRating = idx;
-                        stars.forEach(function (x, j) { x.style.color = j < idx ? '#f5a623' : '#ddd'; });
-                    });
-                }(i));
-                stars.push(s);
-                starRow.appendChild(s);
-            }
-            modal.appendChild(starRow);
 
             // Item note
             const noteLbl = createElement('label', null, this.strings.feedbackNoteLabel || 'Any additional notes?');
@@ -2510,7 +2456,7 @@
                 fd.append('job_id', jobId || '');
                 fd.append('consent_given', 'true');
                 fd.append('selected_source_ids[]', String(sourceId));
-                if (selectedRating > 0) { fd.append('item_ratings[' + sourceId + ']', String(selectedRating)); }
+
                 if (noteTA.value) { fd.append('item_notes[' + sourceId + ']', noteTA.value); }
                 fd.append('user_agent', navigator.userAgent);
                 fd.append('screen_width', String(window.screen.width));

@@ -221,9 +221,9 @@ class Feedback_Builder {
 
 			$jsonl_status = Diagnostic_Logger::derive_status( $raw_status, $widget_log );
 
-			// Screenshots from post meta.
-			$src_urls        = self::get_screenshot_urls( $source_id, '_etg_ai_elementor_screenshot_url' );
-			$src_mob_urls    = self::get_screenshot_urls( $source_id, '_etg_ai_elementor_screenshot_mobile_url' );
+			// Screenshots from post meta — all four types are stored on the target post.
+			$src_urls        = $target_id > 0 ? self::get_screenshot_urls( $target_id, '_etg_ai_elementor_screenshot_url' ) : array();
+			$src_mob_urls    = $target_id > 0 ? self::get_screenshot_urls( $target_id, '_etg_ai_elementor_screenshot_mobile_url' ) : array();
 			$gb_urls         = $target_id > 0 ? self::get_screenshot_urls( $target_id, '_etg_ai_gutenberg_screenshot_url' ) : array();
 			$gb_mob_urls     = $target_id > 0 ? self::get_screenshot_urls( $target_id, '_etg_ai_gutenberg_screenshot_mobile_url' ) : array();
 
