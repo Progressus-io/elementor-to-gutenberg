@@ -1486,12 +1486,7 @@
             buttons.appendChild(backBtn);
 
             const continueBtn = createButton(this.strings.continue || 'Continue', 'button button-primary');
-            continueBtn.disabled = !this.hasAnySelection();
             continueBtn.addEventListener('click', () => {
-                if (!this.hasAnySelection()) {
-                    this.setNotice('error', this.strings.noSelectionError || 'Select at least one page or template before continuing.');
-                    return;
-                }
                 this.clearNotice();
                 this.goToNext();
             });
@@ -2084,27 +2079,6 @@
                         iconPath: [
                             'M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z',
                             'M12 15a3 3 0 100-6 3 3 0 000 6z'
-                        ]
-                    }));
-                }
-                if (
-                    (result.type === 'page' || result.type === 'header' || result.type === 'footer') &&
-                    result.status === 'success' &&
-                    Number(result.convertedPostId || 0) > 0 &&
-                    this.config.aiImproveBaseUrl &&
-                    this.config.aiConfigured
-                ) {
-                    const improveUrl = new URL(this.config.aiImproveBaseUrl, window.location.origin);
-                    improveUrl.searchParams.set('target_id', String(result.convertedPostId));
-                    improveUrl.searchParams.set('source_id', String(result.id));
-                    actionGroup.appendChild(this.buildActionPill({
-                        variant: 'ai',
-                        href: improveUrl.toString(),
-                        label: this.strings.improveWithAi || 'Improve with AI',
-                        title: this.strings.improveWithAiTooltip || 'Improve this page with AI',
-                        iconPath: [
-                            'M12 2v4', 'M12 18v4', 'M4.93 4.93l2.83 2.83', 'M16.24 16.24l2.83 2.83',
-                            'M2 12h4', 'M18 12h4', 'M4.93 19.07l2.83-2.83', 'M16.24 7.76l2.83-2.83'
                         ]
                     }));
                 }
