@@ -98,6 +98,8 @@ class Batch_Convert_Wizard {
 
 	private const AI_IMPROVE_NONCE_ACTION = 'ele2gb_ai_improve';
 
+	private const FEEDBACK_NONCE_ACTION = 'etg_feedback_nonce';
+
 	private const JOB_TRANSIENT_PREFIX = 'ele2gb_job_';
 
 	private const JOB_TRANSIENT_TTL = 6 * HOUR_IN_SECONDS;
@@ -186,6 +188,7 @@ class Batch_Convert_Wizard {
 		add_action( 'wp_ajax_ele2gb_poll_job', array( $this, 'ajax_poll_job' ) );
 		add_action( 'wp_ajax_ele2gb_cancel_job', array( $this, 'ajax_cancel_job' ) );
 		add_action( 'wp_ajax_ele2gb_ai_improve_single', array( $this, 'ajax_ai_improve_single' ) );
+		add_action( 'wp_ajax_etg_submit_feedback', array( $this, 'ajax_submit_feedback' ) );
 	}
 
 	/**
@@ -245,8 +248,10 @@ class Batch_Convert_Wizard {
 				'activeJob'    => $this->get_active_job_for_user(),
 				'userCanEdit'  => current_user_can( 'edit_pages' ),
 				'maxBatchSize' => 1,
-				'aiConfigured' => '' !== Claude_Api_Service::get_api_key(),
-				'preflight'    => $this->build_preflight_summary(),
+				'aiConfigured'   => '' !== Claude_Api_Service::get_api_key(),
+				'preflight'      => $this->build_preflight_summary(),
+				'feedbackNonce'  => wp_create_nonce( self::FEEDBACK_NONCE_ACTION ),
+				'feedbackEnabled' => true,
 			)
 		);
 	}
@@ -3361,6 +3366,29 @@ class Batch_Convert_Wizard {
 			'headerFooterDefaults'   => __( 'Default header: %1$s — Default footer: %2$s', 'elementor-to-gutenberg' ),
 			'cancel'                 => __( 'Cancel', 'elementor-to-gutenberg' ),
 			'jobCancelled'           => __( 'Conversion was cancelled.', 'elementor-to-gutenberg' ),
+
+			// Feedback feature strings
+			'feedbackButtonRun'      => __( 'Send Feedback', 'elementor-to-gutenberg' ),
+			'feedbackButtonItem'     => __( 'Feedback', 'elementor-to-gutenberg' ),
+			'feedbackButtonSelected' => __( 'Send Feedback for Selected (%d)', 'elementor-to-gutenberg' ),
+			'feedbackModalTitle'     => __( 'How did the conversion go?', 'elementor-to-gutenberg' ),
+			'feedbackItemTitle'      => __( 'How did this page convert?', 'elementor-to-gutenberg' ),
+			'feedbackIssueLabel'     => __( 'Issue type', 'elementor-to-gutenberg' ),
+			'feedbackIssueDetailLabel' => __( 'Describe the issue', 'elementor-to-gutenberg' ),
+			'feedbackNoteLabel'      => __( 'Any additional notes?', 'elementor-to-gutenberg' ),
+			'feedbackConsentLabel'   => __( 'I consent to sending this anonymised conversion report to the plugin developer for quality improvement. No passwords, API keys, or user data are included.', 'elementor-to-gutenberg' ),
+			'feedbackSubmit'         => __( 'Send Feedback', 'elementor-to-gutenberg' ),
+			'feedbackCancel'         => __( 'Cancel', 'elementor-to-gutenberg' ),
+			'feedbackSending'        => __( 'Sending…', 'elementor-to-gutenberg' ),
+			'feedbackSuccess'        => __( 'Thank you! Feedback submitted (ID: %s).', 'elementor-to-gutenberg' ),
+			'feedbackError'          => __( 'Could not send feedback: %s', 'elementor-to-gutenberg' ),
+			'feedbackNoIssue'        => __( 'No issue', 'elementor-to-gutenberg' ),
+			'feedbackIssueLayout'    => __( 'Layout issue', 'elementor-to-gutenberg' ),
+			'feedbackIssueMissing'   => __( 'Missing content', 'elementor-to-gutenberg' ),
+			'feedbackIssueWidget'    => __( 'Unsupported widget', 'elementor-to-gutenberg' ),
+			'feedbackIssueCss'       => __( 'CSS/styling', 'elementor-to-gutenberg' ),
+			'feedbackIssueAi'        => __( 'AI output quality', 'elementor-to-gutenberg' ),
+			'feedbackIssueOther'     => __( 'Other', 'elementor-to-gutenberg' ),
 		);
 	}
 
@@ -3726,6 +3754,93 @@ class Batch_Convert_Wizard {
 		}
 
 		AI_Remediation_Screenshot_Meta_Service::generate_and_store( $source_id, $target_id, false );
+	}
+
+	/**
+	 * Handle AJAX feedback submission from the wizard results step.
+	 * Action: etg_submit_feedback (logged-in users only).
+	 */
+	public function ajax_submit_feedback(): void {
+		check_ajax_referer( self::FEEDBACK_NONCE_ACTION, 'nonce' );
+
+		if ( ! current_user_can( 'edit_pages' ) ) {
+			wp_send_json_error( array( 'error' => esc_html__( 'Insufficient permissions.', 'elementor-to-gutenberg' ) ) );
+		}
+
+		// Consent is mandatory — re-verified server-side.
+		$consent_raw = isset( $_POST['consent_given'] ) ? (string) wp_unslash( $_POST['consent_given'] ) : '';
+		if ( 'true' !== $consent_raw ) {
+			wp_send_json_error( array( 'error' => esc_html__( 'Consent is required to submit feedback.', 'elementor-to-gutenberg' ) ) );
+		}
+
+		$job_id = isset( $_POST['job_id'] ) ? sanitize_text_field( wp_unslash( $_POST['job_id'] ) ) : '';
+		if ( '' === $job_id ) {
+			wp_send_json_error( array( 'error' => esc_html__( 'Job ID is required.', 'elementor-to-gutenberg' ) ) );
+		}
+
+		$raw_ids             = isset( $_POST['selected_source_ids'] ) && is_array( $_POST['selected_source_ids'] )
+			? array_map( 'intval', (array) wp_unslash( $_POST['selected_source_ids'] ) )
+			: array();
+		$selected_source_ids = array_values( array_unique( array_filter( $raw_ids ) ) );
+
+		if ( empty( $selected_source_ids ) ) {
+			wp_send_json_error( array( 'error' => esc_html__( 'No pages selected for feedback.', 'elementor-to-gutenberg' ) ) );
+		}
+
+		// Per-item ratings/notes keyed by source_id.
+		$raw_item_ratings = isset( $_POST['item_ratings'] ) && is_array( $_POST['item_ratings'] )
+			? (array) wp_unslash( $_POST['item_ratings'] )
+			: array();
+		$raw_item_notes   = isset( $_POST['item_notes'] ) && is_array( $_POST['item_notes'] )
+			? (array) wp_unslash( $_POST['item_notes'] )
+			: array();
+
+		$item_ratings = array();
+		foreach ( $raw_item_ratings as $sid => $rating ) {
+			$item_ratings[ (int) $sid ] = (int) $rating;
+		}
+		$item_notes = array();
+		foreach ( $raw_item_notes as $sid => $note ) {
+			$item_notes[ (int) $sid ] = wp_strip_all_tags( substr( (string) $note, 0, 1000 ) );
+		}
+
+		$user_feedback = array(
+			'rating'        => isset( $_POST['rating'] ) && '' !== (string) wp_unslash( $_POST['rating'] )
+				? (int) wp_unslash( $_POST['rating'] )
+				: null,
+			'issue_type'    => isset( $_POST['issue_type'] ) ? sanitize_key( wp_unslash( $_POST['issue_type'] ) ) : '',
+			'issue_detail'  => isset( $_POST['issue_detail'] )
+				? wp_strip_all_tags( substr( (string) wp_unslash( $_POST['issue_detail'] ), 0, 500 ) )
+				: '',
+			'user_note'     => isset( $_POST['user_note'] )
+				? wp_strip_all_tags( substr( (string) wp_unslash( $_POST['user_note'] ), 0, 2000 ) )
+				: '',
+			'consent_given' => true,
+			'item_ratings'  => $item_ratings,
+			'item_notes'    => $item_notes,
+		);
+
+		$client_info = array(
+			'user_agent'         => isset( $_POST['user_agent'] ) ? sanitize_text_field( wp_unslash( $_POST['user_agent'] ) ) : '',
+			'screen_width'       => isset( $_POST['screen_width'] ) ? (int) wp_unslash( $_POST['screen_width'] ) : 0,
+			'screen_height'      => isset( $_POST['screen_height'] ) ? (int) wp_unslash( $_POST['screen_height'] ) : 0,
+			'viewport_width'     => isset( $_POST['viewport_width'] ) ? (int) wp_unslash( $_POST['viewport_width'] ) : 0,
+			'viewport_height'    => isset( $_POST['viewport_height'] ) ? (int) wp_unslash( $_POST['viewport_height'] ) : 0,
+			'device_pixel_ratio' => isset( $_POST['device_pixel_ratio'] ) ? (float) wp_unslash( $_POST['device_pixel_ratio'] ) : 1.0,
+		);
+
+		$manifest = Feedback_Builder::build( $job_id, $selected_source_ids, $user_feedback, $client_info );
+		if ( null === $manifest ) {
+			wp_send_json_error( array( 'error' => esc_html__( 'Conversion job not found or no items matched.', 'elementor-to-gutenberg' ) ) );
+		}
+
+		$result = Feedback_Sender::send( $manifest );
+
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( array( 'error' => $result->get_error_message() ) );
+		}
+
+		wp_send_json_success( array( 'feedback_id' => $manifest['feedback_id'] ?? '' ) );
 	}
 
 }

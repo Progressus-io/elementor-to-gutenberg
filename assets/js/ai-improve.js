@@ -172,4 +172,164 @@
 		}
 	} );
 
+	// ── Feedback modal ────────────────────────────────────────────────────────
+
+	var feedbackBtn = document.getElementById( 'etg-ai-feedback-btn' );
+
+	function openFeedbackModal() {
+		var existing = document.getElementById( 'etg-ai-improve-feedback-overlay' );
+		if ( existing ) { existing.remove(); }
+
+		var overlay = document.createElement( 'div' );
+		overlay.id = 'etg-ai-improve-feedback-overlay';
+		overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:100000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.55);padding:20px;box-sizing:border-box;';
+
+		var modal = document.createElement( 'div' );
+		modal.style.cssText = 'background:#fff;border-radius:8px;padding:28px 32px;max-width:500px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 4px 32px rgba(0,0,0,0.18);box-sizing:border-box;';
+
+		var h2 = document.createElement( 'h2' );
+		h2.style.cssText = 'margin:0 0 20px;font-size:17px;font-weight:600;color:#1d2327;';
+		h2.textContent = config.feedbackTitle || 'How did AI Enhancement go?';
+		modal.appendChild( h2 );
+
+		// Issue type
+		var issueLbl = document.createElement( 'label' );
+		issueLbl.style.cssText = 'display:block;font-size:13px;font-weight:500;margin-bottom:6px;color:#1d2327;';
+		issueLbl.textContent = config.feedbackIssue || 'Issue type';
+		modal.appendChild( issueLbl );
+
+		var issueSelect = document.createElement( 'select' );
+		issueSelect.style.cssText = 'width:100%;padding:6px 8px;border:1px solid #c3c4c7;border-radius:4px;font-size:13px;margin-bottom:16px;';
+		[
+			[ '',        config.feedbackNoIssue || 'No issue'                  ],
+			[ 'layout',  config.feedbackLayout  || 'Layout issues after AI'    ],
+			[ 'missing', config.feedbackMissing || 'Wrong or missing content'  ],
+			[ 'css',     config.feedbackCss     || 'CSS / styling problems'    ],
+			[ 'quality', config.feedbackQuality || 'AI output quality'         ],
+			[ 'other',   config.feedbackOther   || 'Other'                     ],
+		].forEach( function ( pair ) {
+			var opt = document.createElement( 'option' );
+			opt.value = pair[0];
+			opt.textContent = pair[1];
+			issueSelect.appendChild( opt );
+		} );
+		modal.appendChild( issueSelect );
+
+		// Issue detail (shown when issue selected)
+		var detailWrap = document.createElement( 'div' );
+		detailWrap.style.cssText = 'margin-bottom:16px;display:none;';
+		var detailLbl = document.createElement( 'label' );
+		detailLbl.style.cssText = 'display:block;font-size:13px;font-weight:500;margin-bottom:6px;color:#1d2327;';
+		detailLbl.textContent = config.feedbackIssueDetail || 'Describe the issue';
+		detailWrap.appendChild( detailLbl );
+		var detailTA = document.createElement( 'textarea' );
+		detailTA.rows = 2;
+		detailTA.maxLength = 500;
+		detailTA.style.cssText = 'width:100%;padding:6px 8px;border:1px solid #c3c4c7;border-radius:4px;font-size:13px;box-sizing:border-box;resize:vertical;';
+		detailWrap.appendChild( detailTA );
+		modal.appendChild( detailWrap );
+
+		issueSelect.addEventListener( 'change', function () {
+			detailWrap.style.display = issueSelect.value ? 'block' : 'none';
+		} );
+
+		// Notes
+		var noteLbl = document.createElement( 'label' );
+		noteLbl.style.cssText = 'display:block;font-size:13px;font-weight:500;margin-bottom:6px;color:#1d2327;';
+		noteLbl.textContent = config.feedbackNote || 'Additional notes';
+		modal.appendChild( noteLbl );
+		var noteTA = document.createElement( 'textarea' );
+		noteTA.rows = 3;
+		noteTA.maxLength = 2000;
+		noteTA.style.cssText = 'width:100%;padding:6px 8px;border:1px solid #c3c4c7;border-radius:4px;font-size:13px;box-sizing:border-box;resize:vertical;margin-bottom:16px;';
+		modal.appendChild( noteTA );
+
+		// Consent
+		var consentLbl = document.createElement( 'label' );
+		consentLbl.style.cssText = 'display:flex;gap:8px;align-items:flex-start;margin-bottom:20px;cursor:pointer;';
+		var consentCb = document.createElement( 'input' );
+		consentCb.type = 'checkbox';
+		consentCb.style.cssText = 'margin-top:3px;flex-shrink:0;';
+		var consentSpan = document.createElement( 'span' );
+		consentSpan.style.cssText = 'font-size:12px;color:#50575e;line-height:1.5;';
+		consentSpan.textContent = config.feedbackConsent || 'I consent to sending this anonymised AI enhancement report to the plugin developer for quality improvement.';
+		consentLbl.appendChild( consentCb );
+		consentLbl.appendChild( consentSpan );
+		modal.appendChild( consentLbl );
+
+		// Actions row
+		var actRow = document.createElement( 'div' );
+		actRow.style.cssText = 'display:flex;gap:8px;align-items:center;flex-wrap:wrap;';
+		var errSpan = document.createElement( 'span' );
+		errSpan.style.cssText = 'flex:1;font-size:12px;color:#d63638;min-width:0;';
+		actRow.appendChild( errSpan );
+
+		var cancelBtn = document.createElement( 'button' );
+		cancelBtn.type = 'button';
+		cancelBtn.className = 'button';
+		cancelBtn.textContent = config.feedbackCancel || 'Cancel';
+		cancelBtn.addEventListener( 'click', function () { overlay.remove(); } );
+		actRow.appendChild( cancelBtn );
+
+		var submitBtn = document.createElement( 'button' );
+		submitBtn.type = 'button';
+		submitBtn.className = 'button button-primary';
+		submitBtn.textContent = config.feedbackSubmit || 'Send Feedback';
+		submitBtn.disabled = true;
+		actRow.appendChild( submitBtn );
+		modal.appendChild( actRow );
+
+		consentCb.addEventListener( 'change', function () { submitBtn.disabled = ! consentCb.checked; } );
+
+		submitBtn.addEventListener( 'click', function () {
+			if ( ! consentCb.checked ) { return; }
+			submitBtn.disabled = true;
+			cancelBtn.disabled = true;
+			submitBtn.textContent = config.feedbackSending || 'Sending…';
+			errSpan.textContent = '';
+
+			var fd = new FormData();
+			fd.append( 'action',        'etg_submit_ai_enhancement_feedback' );
+			fd.append( 'nonce',         config.feedbackNonce || '' );
+			fd.append( 'target_id',     String( config.targetId || 0 ) );
+			fd.append( 'source_id',     String( config.sourceId || 0 ) );
+			fd.append( 'consent_given', 'true' );
+			fd.append( 'issue_type',    issueSelect.value || '' );
+			fd.append( 'issue_detail',  detailTA.value || '' );
+			fd.append( 'user_note',     noteTA.value || '' );
+
+			fetch( config.ajaxUrl, { method: 'POST', credentials: 'same-origin', body: fd } )
+				.then( function ( r ) { return r.json(); } )
+				.then( function ( data ) {
+					overlay.remove();
+					if ( data.success ) {
+						showFeedbackConfirm( config.feedbackSuccess || 'Thank you! Feedback submitted.' );
+					} else {
+						var msg = ( data.data && data.data.error ) ? data.data.error : 'An unexpected error occurred.';
+						showFeedbackConfirm( msg );
+					}
+				} )
+				.catch( function () {
+					overlay.remove();
+					showFeedbackConfirm( config.feedbackSuccess || 'Thank you! Feedback submitted.' );
+				} );
+		} );
+
+		overlay.appendChild( modal );
+		document.body.appendChild( overlay );
+		overlay.addEventListener( 'click', function ( e ) { if ( e.target === overlay ) { overlay.remove(); } } );
+	}
+
+	function showFeedbackConfirm( message ) {
+		var notice = document.createElement( 'div' );
+		notice.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:99999;padding:12px 20px;background:#00a32a;color:#fff;border-radius:6px;font-size:13px;box-shadow:0 2px 12px rgba(0,0,0,0.18);max-width:360px;';
+		notice.textContent = message;
+		document.body.appendChild( notice );
+		setTimeout( function () { if ( notice.parentNode ) { notice.parentNode.removeChild( notice ); } }, 7000 );
+	}
+
+	if ( feedbackBtn ) {
+		feedbackBtn.addEventListener( 'click', openFeedbackModal );
+	}
+
 } )( window, document );
