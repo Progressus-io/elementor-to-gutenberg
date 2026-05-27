@@ -30,6 +30,7 @@ use function esc_url;
 use function get_post;
 use function get_post_field;
 use function get_post_meta;
+use function get_post_status;
 use function get_post_type;
 use function get_the_title;
 use function get_transient;
@@ -338,6 +339,41 @@ class AI_Improvement_Admin {
 		$failure = static function ( string $error, string $notice = 'ai_failed' ): array {
 			return array( 'success' => false, 'error' => $error, 'notice' => $notice );
 		};
+
+		// Maintenance-mode check: screenshots require a publicly reachable site.
+		if ( file_exists( (string) ABSPATH . '.maintenance' ) || ( defined( 'WP_MAINTENANCE_MODE' ) && WP_MAINTENANCE_MODE ) ) {
+			return $failure(
+				__( 'The website is in maintenance mode. AI enhancement requires a publicly accessible site.', 'elementor-to-gutenberg' )
+			);
+		}
+
+		// For regular pages (not FSE template parts / Elementor library templates):
+		// verify the target page is published and not password-protected.
+		if ( 'elementor_library' !== get_post_type( $source_id ) ) {
+			if ( 'publish' !== (string) get_post_status( $target_id ) ) {
+				return $failure(
+					__( 'The converted page must be published before AI enhancement.', 'elementor-to-gutenberg' )
+				);
+			}
+			if ( '' !== (string) get_post_field( 'post_password', $target_id ) ) {
+				return $failure(
+					__( 'The converted page is password-protected. AI enhancement requires a publicly accessible page.', 'elementor-to-gutenberg' )
+				);
+			}
+		}
+
+		// Generate fresh screenshots. Fail fast if they cannot be captured —
+		// sending the AI call without screenshots produces lower-quality results.
+		$screenshot_result = AI_Remediation_Screenshot_Meta_Service::generate_and_store( $source_id, $target_id, true );
+		if ( ! $screenshot_result['success'] ) {
+			return $failure(
+				sprintf(
+					/* translators: %s: screenshot error details */
+					__( 'Screenshot generation failed: %s', 'elementor-to-gutenberg' ),
+					$screenshot_result['error']
+				)
+			);
+		}
 
 		$gutenberg_content = (string) get_post_field( 'post_content', $target_id );
 		$elementor_json    = get_post_meta( $source_id, '_elementor_data', true );
