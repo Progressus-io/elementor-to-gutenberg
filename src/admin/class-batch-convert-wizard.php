@@ -1751,36 +1751,40 @@ class Batch_Convert_Wizard {
 		$header_default_id = 0;
 		$footer_default_id = 0;
 
-		if ( 'auto' === $mode ) {
-			$header_default_id = $this->pick_default_template_id( $detected['headers'] );
-			$footer_default_id = $this->pick_default_template_id( $detected['footers'] );
+		// For auto mode with no explicit selection sent, fall back to all detected templates.
+		if ( 'auto' === $mode && empty( $selected_headers ) ) {
+			$selected_headers = array_keys( $header_index );
+		}
+		if ( 'auto' === $mode && empty( $selected_footers ) ) {
+			$selected_footers = array_keys( $footer_index );
+		}
 
-			if ( $header_default_id && isset( $header_index[ $header_default_id ] ) ) {
-				$headers[] = $this->build_job_template_entry( $header_index[ $header_default_id ], true );
+		// Resolve the default for each type. For auto mode with no explicit preferred ID,
+		// use pick_default_template_id to choose the best candidate.
+		if ( 'auto' === $mode && 0 === $default_header && ! empty( $selected_headers ) ) {
+			$default_header = $this->pick_default_template_id( array_values( array_intersect_key( $header_index, array_flip( $selected_headers ) ) ) );
+		}
+		if ( 'auto' === $mode && 0 === $default_footer && ! empty( $selected_footers ) ) {
+			$default_footer = $this->pick_default_template_id( array_values( array_intersect_key( $footer_index, array_flip( $selected_footers ) ) ) );
+		}
+
+		$header_default_id = $this->determine_custom_default( $selected_headers, $header_index, $default_header );
+		$footer_default_id = $this->determine_custom_default( $selected_footers, $footer_index, $default_footer );
+
+		foreach ( $selected_headers as $header_id ) {
+			if ( ! isset( $header_index[ $header_id ] ) ) {
+				continue;
 			}
 
-			if ( $footer_default_id && isset( $footer_index[ $footer_default_id ] ) ) {
-				$footers[] = $this->build_job_template_entry( $footer_index[ $footer_default_id ], true );
-			}
-		} else {
-			$header_default_id = $this->determine_custom_default( $selected_headers, $header_index, $default_header );
-			$footer_default_id = $this->determine_custom_default( $selected_footers, $footer_index, $default_footer );
+			$headers[] = $this->build_job_template_entry( $header_index[ $header_id ], $header_default_id === $header_id );
+		}
 
-			foreach ( $selected_headers as $header_id ) {
-				if ( ! isset( $header_index[ $header_id ] ) ) {
-					continue;
-				}
-
-				$headers[] = $this->build_job_template_entry( $header_index[ $header_id ], $header_default_id === $header_id );
+		foreach ( $selected_footers as $footer_id ) {
+			if ( ! isset( $footer_index[ $footer_id ] ) ) {
+				continue;
 			}
 
-			foreach ( $selected_footers as $footer_id ) {
-				if ( ! isset( $footer_index[ $footer_id ] ) ) {
-					continue;
-				}
-
-				$footers[] = $this->build_job_template_entry( $footer_index[ $footer_id ], $footer_default_id === $footer_id );
-			}
+			$footers[] = $this->build_job_template_entry( $footer_index[ $footer_id ], $footer_default_id === $footer_id );
 		}
 
 		return array(

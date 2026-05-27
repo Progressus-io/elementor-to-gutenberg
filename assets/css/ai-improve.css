@@ -62,6 +62,44 @@
 	padding-top: 4px;
 }
 
+/* Align header buttons to the shared pill design system */
+.etg-ai-header-actions .button {
+	display: inline-flex;
+	align-items: center;
+	height: 36px;
+	padding: 0 14px;
+	border-radius: 6px;
+	font-size: 13px;
+	font-weight: 500;
+	border: 1px solid #c3c4c7;
+	background: #fff;
+	color: #50575e;
+	text-decoration: none;
+	transition: border-color 150ms ease, color 150ms ease, background 150ms ease;
+	box-shadow: none;
+}
+
+.etg-ai-header-actions .button:hover {
+	border-color: #2271b1;
+	color: #2271b1;
+	background: #f0f6fc;
+}
+
+.etg-ai-header-actions .button.button-primary,
+.etg-ai-header-actions a.button-primary {
+	background: #2271b1;
+	border-color: #2271b1;
+	color: #fff;
+	font-weight: 600;
+}
+
+.etg-ai-header-actions .button.button-primary:hover,
+.etg-ai-header-actions a.button-primary:hover {
+	background: #135e96;
+	border-color: #135e96;
+	color: #fff;
+}
+
 /* ── Two-column layout ────────────────────────────────────────────────────── */
 
 .etg-ai-layout {
@@ -145,10 +183,62 @@
 }
 
 .etg-inline-form .button {
-	font-size: 12px;
+	display: inline-flex;
+	align-items: center;
 	height: 28px;
-	line-height: 26px;
 	padding: 0 10px;
+	font-size: 12px;
+	font-weight: 500;
+	border-radius: 4px;
+	border: 1px solid #c3c4c7;
+	background: #fff;
+	color: #50575e;
+	line-height: 1;
+	transition: border-color 150ms ease, color 150ms ease, background 150ms ease;
+	box-shadow: none;
+}
+
+.etg-inline-form .button:hover {
+	border-color: #2271b1;
+	color: #2271b1;
+	background: #f0f6fc;
+}
+
+/* Primary form buttons (Improve with AI, Refine with AI, Improve Mobile) */
+#ele2gb-ai-improve-form .button-primary,
+#ele2gb-ai-refine-form .button-primary,
+#ele2gb-ai-mobile-improve-form .button-secondary {
+	display: inline-flex;
+	align-items: center;
+	height: 36px;
+	padding: 0 16px;
+	font-size: 13px;
+	font-weight: 600;
+	border-radius: 6px;
+	border: 1px solid #2271b1;
+	background: #2271b1;
+	color: #fff;
+	cursor: pointer;
+	transition: background 150ms ease, border-color 150ms ease;
+	box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+}
+
+#ele2gb-ai-improve-form .button-primary:hover,
+#ele2gb-ai-refine-form .button-primary:hover {
+	background: #135e96;
+	border-color: #135e96;
+}
+
+#ele2gb-ai-mobile-improve-form .button-secondary {
+	background: #fff;
+	border-color: #c3c4c7;
+	color: #50575e;
+}
+
+#ele2gb-ai-mobile-improve-form .button-secondary:hover {
+	border-color: #2271b1;
+	color: #2271b1;
+	background: #f0f6fc;
 }
 
 /* ── Status pills ─────────────────────────────────────────────────────────── */
@@ -157,12 +247,12 @@
 	display: inline-flex;
 	align-items: center;
 	gap: 5px;
-	padding: 3px 9px;
-	border-radius: 20px;
+	padding: 3px 10px;
+	border-radius: 999px;
 	font-size: 11px;
 	font-weight: 600;
 	text-transform: uppercase;
-	letter-spacing: 0.3px;
+	letter-spacing: 0.04em;
 	white-space: nowrap;
 	flex-shrink: 0;
 }
@@ -177,38 +267,38 @@
 
 .etg-status-pill--success {
 	background: #edfaef;
-	color: #0a7227;
+	color: #006b3f;
 }
 
 .etg-status-pill--success::before {
-	background: #0a7227;
+	background: #00a32a;
 }
 
 .etg-status-pill--error {
-	background: #fce8e8;
-	color: #b32d2e;
+	background: #fcebea;
+	color: #8a0015;
 }
 
 .etg-status-pill--error::before {
-	background: #b32d2e;
+	background: #d63638;
 }
 
 .etg-status-pill--pending {
-	background: #fff8e1;
-	color: #9a6700;
+	background: #fcf9e8;
+	color: #8a4b00;
 }
 
 .etg-status-pill--pending::before {
-	background: #f0a500;
+	background: #dba617;
 }
 
 .etg-status-pill--neutral {
-	background: #f0f0f1;
+	background: #f3f4f6;
 	color: #50575e;
 }
 
 .etg-status-pill--neutral::before {
-	background: #8c8f94;
+	background: #787c82;
 }
 
 /* ── Screenshot tabs ──────────────────────────────────────────────────────── */

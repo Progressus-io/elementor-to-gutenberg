@@ -144,10 +144,10 @@
                 this.state.mode = 'auto';
                 this.state.modeSelection = 'auto';
                 this.state.selectedPageIds = new Set(this.pages.map((page) => page.id));
-                this.state.selectedHeaderIds = new Set();
-                this.state.selectedFooterIds = new Set();
-                this.state.defaultHeaderId = defaultHeader;
-                this.state.defaultFooterId = defaultFooter;
+                this.state.selectedHeaderIds = new Set(this.getTemplatesFor('header').map((template) => Number(template.id)));
+                this.state.selectedFooterIds = new Set(this.getTemplatesFor('footer').map((template) => Number(template.id)));
+                this.state.defaultHeaderId = this.pickDefaultTemplate('header', this.state.selectedHeaderIds, defaultHeader);
+                this.state.defaultFooterId = this.pickDefaultTemplate('footer', this.state.selectedFooterIds, defaultFooter);
                 this.state.skipConverted = true;
                 this.state.tablePage = 1;
             } else {
@@ -575,12 +575,10 @@
             const themePayload = this.getThemePayload();
             Object.assign(payload, themePayload);
 
-            if (this.state.mode === 'custom') {
-                payload.headerTemplates = selectedHeaders;
-                payload.footerTemplates = selectedFooters;
-                payload.defaultHeader = this.state.defaultHeaderId || 0;
-                payload.defaultFooter = this.state.defaultFooterId || 0;
-            }
+            payload.headerTemplates = selectedHeaders;
+            payload.footerTemplates = selectedFooters;
+            payload.defaultHeader = this.state.defaultHeaderId || 0;
+            payload.defaultFooter = this.state.defaultFooterId || 0;
 
             this.request('ele2gb_start_job', payload)
                 .then((response) => {
@@ -1686,7 +1684,7 @@
             // Stat tiles row
             const stats = createElement('div', 'ele2gb-review-stats');
             stats.appendChild(this.buildReviewStatTile(convertCount, this.strings.reviewStatPages || 'Pages to convert'));
-            if (this.state.mode === 'custom') {
+            if (headerCount || footerCount) {
                 stats.appendChild(this.buildReviewStatTile(headerCount, this.strings.reviewStatHeaders || 'Headers'));
                 stats.appendChild(this.buildReviewStatTile(footerCount, this.strings.reviewStatFooters || 'Footers'));
             }
@@ -1730,8 +1728,8 @@
                 }
             ));
 
-            // Templates section (custom mode)
-            if (this.state.mode === 'custom' && (headerCount || footerCount)) {
+            // Templates section
+            if (headerCount || footerCount) {
                 dashboard.appendChild(this.buildReviewSection(
                     this.strings.reviewSectionTemplates || 'Templates',
                     'templates',
@@ -1888,20 +1886,6 @@
                 actions.appendChild(cancelBtn);
             }
             if (job.status === 'completed') {
-                const aiPages = this.getAiImprovePages();
-                if (aiPages.length > 0 && this.config.aiImproveNonce && this.config.aiConfigured) {
-                    const count = aiPages.length;
-                    const improveAllBtn = this.buildActionPill({
-                        variant: 'ai-primary',
-                        label: formatString(this.strings.improveSuccessful || 'Improve %1$d items with AI', count),
-                        iconPath: [
-                            'M12 2v4', 'M12 18v4', 'M4.93 4.93l2.83 2.83', 'M16.24 16.24l2.83 2.83',
-                            'M2 12h4', 'M18 12h4', 'M4.93 19.07l2.83-2.83', 'M16.24 7.76l2.83-2.83'
-                        ],
-                        onClick: () => this.initAiImprove()
-                    });
-                    actions.appendChild(improveAllBtn);
-                }
                 actions.appendChild(this.buildActionPill({
                     variant: 'view-secondary',
                     href: 'edit.php?post_type=page',
