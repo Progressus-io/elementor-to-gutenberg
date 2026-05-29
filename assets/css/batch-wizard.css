@@ -1317,18 +1317,16 @@
     background: var(--ele2gb-primary-soft);
 }
 
-/* AI: purple accent — premium action */
+/* AI: primary-tinted secondary */
 .ele2gb-action-pill--ai {
-    background: linear-gradient(135deg, #ede9fe 0%, #f5f3ff 100%);
-    border-color: #c4b5fd;
-    color: #6d28d9;
+    background: var(--ele2gb-primary-soft);
+    border-color: var(--ele2gb-primary-soft-border);
+    color: var(--ele2gb-primary);
 }
 .ele2gb-action-pill--ai:hover {
-    background: linear-gradient(135deg, #6d28d9 0%, #8b5cf6 100%);
-    border-color: #6d28d9;
+    background: var(--ele2gb-primary);
+    border-color: var(--ele2gb-primary);
     color: #fff;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(109, 40, 217, 0.25);
 }
 .ele2gb-action-pill--ai .ele2gb-action-pill-icon {
     color: currentColor;
@@ -1339,34 +1337,47 @@
     height: 38px;
     padding: 0 18px;
     font-size: 13px;
-    background: linear-gradient(135deg, #6d28d9 0%, #8b5cf6 100%);
-    border-color: #6d28d9;
+    background: var(--ele2gb-primary);
+    border-color: var(--ele2gb-primary);
     color: #fff;
-    box-shadow: 0 2px 6px rgba(109, 40, 217, 0.25);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 }
 .ele2gb-action-pill--ai-primary:hover {
-    background: linear-gradient(135deg, #5b21b6 0%, #7c3aed 100%);
-    transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(109, 40, 217, 0.35);
+    background: var(--ele2gb-primary-hover);
+    border-color: var(--ele2gb-primary-hover);
     color: #fff;
+}
+.ele2gb-action-pill--ai-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 .ele2gb-action-pill--ai-primary .ele2gb-action-pill-icon {
     width: 16px;
     height: 16px;
 }
 
-/* Retry: amber warning */
+/* Retry: neutral secondary */
 .ele2gb-action-pill--retry {
-    background: var(--ele2gb-warning-soft);
-    border-color: var(--ele2gb-warning-soft-border);
-    color: #92400e;
+    background: var(--ele2gb-surface);
+    border-color: var(--ele2gb-border-strong);
+    color: var(--ele2gb-text-secondary);
 }
 .ele2gb-action-pill--retry:hover {
-    background: var(--ele2gb-warning);
-    border-color: var(--ele2gb-warning);
-    color: #fff;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 10px rgba(219, 166, 23, 0.3);
+    background: var(--ele2gb-surface-alt);
+    border-color: var(--ele2gb-text-tertiary);
+    color: var(--ele2gb-text);
+}
+
+/* Feedback: neutral secondary — same weight as View */
+.ele2gb-action-pill--feedback {
+    background: var(--ele2gb-surface);
+    border-color: var(--ele2gb-border-strong);
+    color: var(--ele2gb-text-secondary);
+}
+.ele2gb-action-pill--feedback:hover {
+    border-color: var(--ele2gb-primary);
+    color: var(--ele2gb-primary);
+    background: var(--ele2gb-primary-soft);
 }
 
 /* View secondary: footer bar ghost button */
@@ -2005,47 +2016,40 @@
    SCREENSHOT ACTION PILLS
    ============================================================ */
 
-/* Inline row button — teal/sky */
+/* Screenshot inline button — WP secondary style */
 .ele2gb-action-pill--screenshot {
-    background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%);
-    border-color: #7dd3fc;
-    color: #0369a1;
+    background: var(--ele2gb-surface);
+    border-color: var(--ele2gb-border-strong);
+    color: var(--ele2gb-text-secondary);
 }
 .ele2gb-action-pill--screenshot:hover {
-    background: linear-gradient(135deg, #0369a1 0%, #0ea5e9 100%);
-    border-color: #0369a1;
-    color: #fff;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(3, 105, 161, 0.25);
+    background: var(--ele2gb-surface-alt);
+    border-color: var(--ele2gb-primary);
+    color: var(--ele2gb-primary);
 }
 .ele2gb-action-pill--screenshot:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
 }
 
-/* Toolbar bulk button — solid sky */
+/* Screenshot toolbar button — WP primary style */
 .ele2gb-action-pill--screenshot-primary {
     height: 38px;
     padding: 0 18px;
     font-size: 13px;
-    background: linear-gradient(135deg, #0369a1 0%, #0ea5e9 100%);
-    border-color: #0369a1;
+    background: var(--ele2gb-primary);
+    border-color: var(--ele2gb-primary);
     color: #fff;
-    box-shadow: 0 2px 6px rgba(3, 105, 161, 0.25);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 }
 .ele2gb-action-pill--screenshot-primary:hover {
-    background: linear-gradient(135deg, #075985 0%, #0284c7 100%);
-    transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(3, 105, 161, 0.35);
+    background: var(--ele2gb-primary-hover);
+    border-color: var(--ele2gb-primary-hover);
     color: #fff;
 }
 .ele2gb-action-pill--screenshot-primary:disabled {
     opacity: 0.45;
     cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
 }
 .ele2gb-action-pill--screenshot-primary .ele2gb-action-pill-icon {
     width: 16px;
@@ -2109,7 +2113,7 @@
     bottom: 0;
     height: 100%;
     border-radius: inherit;
-    background: linear-gradient(90deg, var(--ele2gb-primary) 0%, #4a90c2 100%);
+    background: var(--ele2gb-primary);
     transition: width 0.4s ease;
 }
 
@@ -2435,19 +2439,6 @@
    FEEDBACK FEATURE
    ============================================================ */
 
-/* Feedback action pill — soft teal accent */
-.ele2gb-action-pill--feedback {
-    background: #f0fafa;
-    border-color: #2ec4b6;
-    color: #1a8a82;
-}
-
-.ele2gb-action-pill--feedback:hover {
-    background: #e0f5f3;
-    border-color: #1a8a82;
-    color: #135f5a;
-}
-
 .ele2gb-action-pill--feedback .ele2gb-action-pill-icon {
     width: 14px;
     height: 14px;
@@ -2466,8 +2457,8 @@
     align-items: center;
     gap: 12px;
     padding: 10px 14px;
-    background: #f0fafa;
-    border: 1px solid #2ec4b6;
+    background: var(--ele2gb-primary-soft);
+    border: 1px solid var(--ele2gb-primary-soft-border);
     border-radius: 6px;
     margin-bottom: 14px;
 }

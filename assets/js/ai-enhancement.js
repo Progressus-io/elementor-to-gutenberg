@@ -18,24 +18,8 @@
         });
     }
 
-    var CAMERA_SVG   = '<svg width="14" height="14" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M2 7a2 2 0 012-2h1l1.5-2h7L15 5h1a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V7z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="10" cy="11" r="2.5" stroke="currentColor" stroke-width="1.5"/></svg>';
     var AI_SVG       = '<svg width="15" height="15" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M10 2l1.8 5.4H17l-4.4 3.2 1.7 5.1L10 13l-4.3 2.7 1.7-5.1L3 7.4h5.2z" fill="currentColor"/></svg>';
     var FEEDBACK_SVG = '<svg width="13" height="13" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M18 13a2 2 0 01-2 2H6l-4 4V4a2 2 0 012-2h12a2 2 0 012 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>';
-
-    function shotStatusClass(status) {
-        var map = { success: 'generated', failed: 'failed', pending: 'pending' };
-        return map[status] || 'none';
-    }
-
-    function shotStatusLabel(status, strings) {
-        var map = {
-            success:       strings.shotGenerated || 'Screenshots ready',
-            failed:        strings.shotFailed    || 'Screenshot failed',
-            pending:       strings.shotPending   || 'Pending',
-            not_generated: strings.shotNone      || 'No screenshots',
-        };
-        return map[status] || (strings.shotNone || 'No screenshots');
-    }
 
     function makeActionPill(href, label, mod, targetBlank) {
         var a = cel('a', 'ele2gb-action-pill ele2gb-action-pill--' + mod);
@@ -58,6 +42,11 @@
         return btn;
     }
 
+    function typeLabel(type) {
+        if (!type || type === 'page') { return ''; }
+        return type.charAt(0).toUpperCase() + type.slice(1);
+    }
+
     // ── app ───────────────────────────────────────────────────────────────────
 
     function EtgAiEnhancement(config) {
@@ -66,9 +55,7 @@
         this.pages   = config.pages   || [];
         this.state   = {
             selected:  new Set(),
-            rowShots:  {},
             aiImprove: null,
-            bulkShot:  null,
         };
         this.root = null;
     }
@@ -82,9 +69,7 @@
     EtgAiEnhancement.prototype.render = function () {
         if (!this.root) { return; }
         this.root.innerHTML = '';
-        if (this.state.bulkShot) {
-            this.root.appendChild(this.renderBulkShotStep());
-        } else if (this.state.aiImprove) {
+        if (this.state.aiImprove) {
             this.root.appendChild(this.renderAiImproveStep());
         } else {
             this.root.appendChild(this.renderSelectionStep());
@@ -96,7 +81,6 @@
     EtgAiEnhancement.prototype.renderStatsBar = function () {
         var pages    = this.pages;
         var total    = pages.length;
-        var withShot = pages.filter(function (p) { return p.screenshotStatus === 'success'; }).length;
         var enhanced = pages.filter(function (p) { return !!p.lastImproved; }).length;
         var s        = this.strings;
 
@@ -109,9 +93,8 @@
             return t;
         }
 
-        bar.appendChild(tile(total,    s.statTotalPages   || 'Converted Pages',  ''));
-        bar.appendChild(tile(withShot, s.statScreenshots  || 'Screenshots Ready', withShot > 0 && withShot === total ? 'success' : ''));
-        bar.appendChild(tile(enhanced, s.statAiEnhanced   || 'AI-Enhanced',       enhanced > 0 && enhanced === total ? 'success' : ''));
+        bar.appendChild(tile(total,    s.statTotalPages || 'Converted Items',  ''));
+        bar.appendChild(tile(enhanced, s.statAiEnhanced || 'AI-Enhanced', enhanced > 0 && enhanced === total ? 'success' : ''));
 
         return bar;
     };
@@ -153,14 +136,6 @@
 
         var toolbarRight = cel('div', 'ele2gb-toolbar-right');
 
-        // Bulk Screenshots button
-        var bulkShotBtn = makeIconBtn(CAMERA_SVG, this.strings.genScreenshotsBulk || 'Bulk Screenshots', 'screenshot-primary');
-        bulkShotBtn.id       = 'etg-bulk-shot-btn';
-        bulkShotBtn.disabled = true;
-        bulkShotBtn.addEventListener('click', function () { self.onBulkShotClick(); });
-        toolbarRight.appendChild(bulkShotBtn);
-
-        // Bulk AI Enhance button
         var bulkAiBtn = makeIconBtn(AI_SVG, this.strings.enhanceSelected || 'Bulk Enhance with AI', 'ai-primary');
         bulkAiBtn.id       = 'etg-bulk-enhance-btn';
         bulkAiBtn.disabled = true;
@@ -187,12 +162,8 @@
         thSrc.style.width = '180px';
         hr.appendChild(thSrc);
 
-        var thShot = cel('th', '', 'Screenshots');
-        thShot.style.width = '200px';
-        hr.appendChild(thShot);
-
         var thAct = cel('th', '', this.strings.colActions || 'Actions');
-        thAct.style.width = '280px';
+        thAct.style.width = '160px';
         hr.appendChild(thAct);
 
         thead.appendChild(hr);
@@ -212,7 +183,7 @@
             tdCb.appendChild(cb);
             tr.appendChild(tdCb);
 
-            // Converted page title
+            // Converted page title + type badge
             var tdTitle  = document.createElement('td');
             var strong   = cel('strong');
             var titleLink = cel('a', '', page.title || String(page.id));
@@ -220,6 +191,14 @@
             titleLink.target = '_blank';
             strong.appendChild(titleLink);
             tdTitle.appendChild(strong);
+
+            var tl = typeLabel(page.type);
+            if (tl) {
+                var typeBadge = cel('span', 'ele2gb-result-meta');
+                typeBadge.style.marginLeft = '6px';
+                typeBadge.textContent = tl;
+                tdTitle.appendChild(typeBadge);
+            }
             if (page.lastImproved) {
                 tdTitle.appendChild(cel('div', 'ele2gb-result-meta ele2gb-result-meta--enhanced', '✓ AI-enhanced'));
             }
@@ -237,61 +216,22 @@
             }
             tr.appendChild(tdSource);
 
-            // Screenshot cell (in-place updatable)
-            var tdShot = document.createElement('td');
-            tdShot.className = 'ele2gb-shot-cell';
-            tdShot.dataset.shotPageId = String(page.id);
-            self.fillShotCell(tdShot, page);
-            tr.appendChild(tdShot);
-
-            // Actions
+            // Actions: Enhance with AI only
             var tdAct    = document.createElement('td');
             var actGroup = cel('div', 'ele2gb-action-group');
-
-            if (page.sourcePreviewUrl) {
-                actGroup.appendChild(makeActionPill(page.sourcePreviewUrl, 'Source ↗', 'view', true));
-            }
-            if (page.previewUrl) {
-                actGroup.appendChild(makeActionPill(page.previewUrl, 'Preview ↗', 'view', true));
-            }
-
-            // Screenshot generate / regenerate button
-            (function (p) {
-                var rState     = self.state.rowShots[p.id] || {};
-                var rStatus    = rState.status !== undefined ? rState.status : p.screenshotStatus;
-                var rGen       = !!rState.generating;
-                var isRegen    = rStatus === 'success';
-                var shotBtn    = makeIconBtn(CAMERA_SVG, isRegen ? (self.strings.shotRegenerate || 'Regenerate') : (self.strings.genScreenshots || 'Generate'), 'screenshot');
-                shotBtn.dataset.shotBtnPageId = String(p.id);
-                shotBtn.disabled = rGen || !p.sourceId;
-                if (!p.sourceId) { shotBtn.title = 'Source page ID missing'; }
-                shotBtn.addEventListener('click', function () { self.generateScreenshotSingle(p.id, p.sourceId); });
-                actGroup.appendChild(shotBtn);
-            }(page));
 
             if (self.config.aiConfigured && self.config.aiImproveBaseUrl && page.sourceId) {
                 var improveUrl = self.config.aiImproveBaseUrl +
                     '&source_id=' + String(page.sourceId) +
                     '&target_id=' + String(page.id);
-                actGroup.appendChild(makeActionPill(improveUrl, 'Enhance', 'ai', false));
+                actGroup.appendChild(makeActionPill(improveUrl, self.strings.enhanceSingle || 'Enhance with AI', 'ai', false));
             } else {
-                var noKeyBtn = makeIconBtn('', 'Enhance', 'ai');
+                var noKeyBtn = makeIconBtn('', self.strings.enhanceSingle || 'Enhance with AI', 'ai');
                 noKeyBtn.addEventListener('click', function () {
                     var n = document.getElementById('etg-no-api-notice');
                     if (n) { n.style.display = 'block'; n.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
                 });
                 actGroup.appendChild(noKeyBtn);
-            }
-
-            if (page.lastImproved && self.config.feedbackEnabled && self.config.feedbackNonce) {
-                (function (p) {
-                    var fbBtn = makeIconBtn(FEEDBACK_SVG, self.strings.feedbackBtn || 'Send Feedback', 'feedback');
-                    fbBtn.title = self.strings.feedbackBtn || 'Send Feedback';
-                    fbBtn.addEventListener('click', function () {
-                        self.openAiFeedbackModal(p.id, p.sourceId, p.title);
-                    });
-                    actGroup.appendChild(fbBtn);
-                }(page));
             }
 
             tdAct.appendChild(actGroup);
@@ -304,106 +244,6 @@
         wrap.appendChild(tableWrap);
 
         return wrap;
-    };
-
-    // ── screenshot cell fill / refresh ────────────────────────────────────────
-
-    EtgAiEnhancement.prototype.fillShotCell = function (td, page) {
-        var self       = this;
-        var rowState   = this.state.rowShots[page.id] || {};
-        var generating = !!rowState.generating;
-        var status     = rowState.status !== undefined ? rowState.status : page.screenshotStatus;
-        var thumb      = rowState.thumb  !== undefined ? rowState.thumb  : page.screenshotThumb;
-        var errorMsg   = rowState.error  || '';
-
-        td.innerHTML = '';
-        var inner = cel('div', 'ele2gb-shot-cell-inner');
-
-        if (generating) {
-            var genWrap = cel('div', 'ele2gb-shot-generating');
-            genWrap.appendChild(this.makeRowSpinner());
-            genWrap.appendChild(cel('span', 'ele2gb-shot-generating-label', this.strings.shotGenerating || 'Generating…'));
-            inner.appendChild(genWrap);
-        } else {
-            if (thumb) {
-                var thumbWrap = cel('div', 'ele2gb-row-thumb-wrap');
-                var img = document.createElement('img');
-                img.src = thumb;
-                img.alt = '';
-                img.className = 'ele2gb-row-thumb';
-                thumbWrap.appendChild(img);
-                inner.appendChild(thumbWrap);
-            }
-
-            var shotClass = shotStatusClass(status);
-            inner.appendChild(cel('span', 'ele2gb-shot-status ele2gb-shot-status--' + shotClass,
-                shotStatusLabel(status, this.strings)));
-
-            if (errorMsg && status === 'failed') {
-                inner.appendChild(cel('div', 'ele2gb-shot-error-msg', errorMsg));
-            }
-        }
-
-        td.appendChild(inner);
-    };
-
-    EtgAiEnhancement.prototype.updateRowShotCell = function (pageId) {
-        // Refresh the status/thumb cell
-        var td = document.querySelector('.ele2gb-shot-cell[data-shot-page-id="' + String(pageId) + '"]');
-        if (td) {
-            var page = null;
-            for (var i = 0; i < this.pages.length; i++) {
-                if (this.pages[i].id === pageId) { page = this.pages[i]; break; }
-            }
-            if (page) { this.fillShotCell(td, page); }
-        }
-
-        // Refresh the Generate / Regenerate button in the Actions column
-        var btn = document.querySelector('[data-shot-btn-page-id="' + String(pageId) + '"]');
-        if (btn) {
-            var rs         = this.state.rowShots[pageId] || {};
-            var generating = !!rs.generating;
-            var status     = rs.status !== undefined ? rs.status : '';
-            var lbl        = btn.querySelector('.ele2gb-action-pill-label');
-            if (lbl) {
-                lbl.textContent = status === 'success'
-                    ? (this.strings.shotRegenerate || 'Regenerate')
-                    : (this.strings.genScreenshots || 'Generate');
-            }
-            btn.disabled = generating;
-        }
-    };
-
-    // ── single screenshot AJAX ────────────────────────────────────────────────
-
-    EtgAiEnhancement.prototype.generateScreenshotSingle = function (pageId, sourceId) {
-        var self = this;
-        this.state.rowShots[pageId] = { generating: true };
-        this.updateRowShotCell(pageId);
-
-        var fd = new FormData();
-        fd.append('action',    'ele2gb_generate_screenshots_single');
-        fd.append('nonce',     this.config.screenshotNonce || '');
-        fd.append('source_id', String(sourceId));
-        fd.append('target_id', String(pageId));
-
-        fetch(this.config.ajaxUrl, { method: 'POST', credentials: 'same-origin', body: fd })
-            .then(function (r) { return r.json(); })
-            .then(function (data) {
-                if (data.success) {
-                    self.state.rowShots[pageId] = { status: data.data.status, thumb: data.data.thumb };
-                } else {
-                    self.state.rowShots[pageId] = {
-                        status: 'failed',
-                        error:  (data.data && data.data.message) ? data.data.message : 'Screenshot generation failed.',
-                    };
-                }
-                self.updateRowShotCell(pageId);
-            })
-            .catch(function (err) {
-                self.state.rowShots[pageId] = { status: 'failed', error: err.message || 'Screenshot generation failed.' };
-                self.updateRowShotCell(pageId);
-            });
     };
 
     // ── select all / row check ────────────────────────────────────────────────
@@ -438,252 +278,10 @@
             var aiLbl = aiBtn.querySelector('.ele2gb-action-pill-label');
             if (aiLbl) {
                 aiLbl.textContent = count > 0
-                    ? fmt(this.strings.enhanceSelectedCount || 'Enhance %1$d Pages with AI', count)
+                    ? fmt(this.strings.enhanceSelectedCount || 'Enhance %1$d items with AI', count)
                     : (this.strings.enhanceSelected || 'Bulk Enhance with AI');
             }
         }
-
-        var shotBtn = document.getElementById('etg-bulk-shot-btn');
-        if (shotBtn) {
-            shotBtn.disabled = count === 0;
-            var shotLbl = shotBtn.querySelector('.ele2gb-action-pill-label');
-            if (shotLbl) {
-                shotLbl.textContent = count > 0
-                    ? fmt(this.strings.genScreenshotsCount || 'Screenshot %1$d Pages', count)
-                    : (this.strings.genScreenshotsBulk || 'Bulk Screenshots');
-            }
-        }
-    };
-
-    // ── bulk screenshot flow ──────────────────────────────────────────────────
-
-    EtgAiEnhancement.prototype.onBulkShotClick = function () {
-        if (this.state.selected.size === 0) { return; }
-        this.initBulkShot();
-    };
-
-    EtgAiEnhancement.prototype.initBulkShot = function () {
-        var selectedIds = this.state.selected;
-        var pages = this.pages
-            .filter(function (p) { return selectedIds.has(p.id); })
-            .map(function (p) {
-                return { sourceId: p.sourceId, targetId: p.id, title: p.title || String(p.id), status: 'pending', error: '' };
-            });
-        this.state.bulkShot = { pages: pages, currentIndex: 0, started: false, finished: false };
-        this.render();
-    };
-
-    EtgAiEnhancement.prototype.startBulkShot = function () {
-        var bs = this.state.bulkShot;
-        if (!bs || bs.started) { return; }
-        bs.started = true;
-        this.processBulkShotPage(0);
-    };
-
-    EtgAiEnhancement.prototype.processBulkShotPage = function (index) {
-        var self = this;
-        var bs   = this.state.bulkShot;
-        if (!bs || index >= bs.pages.length) {
-            if (bs) { bs.finished = true; }
-            this.render();
-            return;
-        }
-
-        bs.currentIndex        = index;
-        bs.pages[index].status = 'processing';
-        bs.pages[index].error  = '';
-        this.render();
-
-        var page = bs.pages[index];
-        this.showOverlay(
-            this.strings.bulkShotTitle || 'Generating Screenshots…',
-            page.title, index + 1, bs.pages.length, null
-        );
-
-        var fd = new FormData();
-        fd.append('action',    'ele2gb_generate_screenshots_single');
-        fd.append('nonce',     this.config.screenshotNonce || '');
-        fd.append('source_id', String(page.sourceId));
-        fd.append('target_id', String(page.targetId));
-
-        fetch(this.config.ajaxUrl, { method: 'POST', credentials: 'same-origin', body: fd })
-            .then(function (r) { return r.json(); })
-            .then(function (data) {
-                self.hideOverlay();
-                if (data.success) {
-                    bs.pages[index].status = 'done';
-                    self.state.rowShots[page.targetId] = { status: data.data.status, thumb: data.data.thumb };
-                    self.render();
-                    self.advanceBulkShot(index);
-                } else {
-                    bs.pages[index].status = 'failed';
-                    bs.pages[index].error  = (data.data && data.data.message) ? String(data.data.message) : 'Screenshot generation failed.';
-                    self.render();
-                }
-            })
-            .catch(function (err) {
-                self.hideOverlay();
-                bs.pages[index].status = 'failed';
-                bs.pages[index].error  = err.message || 'Screenshot generation failed.';
-                self.render();
-            });
-    };
-
-    EtgAiEnhancement.prototype.advanceBulkShot = function (index) {
-        var bs   = this.state.bulkShot;
-        var next = index + 1;
-        if (!bs || next >= bs.pages.length) {
-            if (bs) { bs.finished = true; this.render(); }
-            return;
-        }
-        this.processBulkShotPage(next);
-    };
-
-    EtgAiEnhancement.prototype.skipBulkShotPage = function (index) {
-        var bs = this.state.bulkShot;
-        if (!bs) { return; }
-        bs.pages[index].status = 'skipped';
-        this.render();
-        this.advanceBulkShot(index);
-    };
-
-    EtgAiEnhancement.prototype.retryBulkShotPage = function (index) {
-        this.processBulkShotPage(index);
-    };
-
-    // ── render bulk screenshot step ───────────────────────────────────────────
-
-    EtgAiEnhancement.prototype.renderBulkShotStep = function () {
-        var self = this;
-        var bs   = this.state.bulkShot;
-        var wrap = cel('div', 'ele2gb-ai-improve-step');
-
-        if (!bs.started) {
-            var header     = cel('div', 'ele2gb-ai-readiness-panel');
-            var headerRow  = cel('div', 'ele2gb-ai-readiness-header');
-            headerRow.appendChild(cel('h3', 'ele2gb-ai-readiness-title', 'Screenshot Generation'));
-            header.appendChild(headerRow);
-
-            var cntRow  = cel('div', 'ele2gb-ai-readiness-row');
-            var cntIcon = cel('div', 'ele2gb-ai-readiness-icon ele2gb-ai-readiness-icon--info', String(bs.pages.length));
-            var cntLbl  = cel('span', 'ele2gb-ai-readiness-status', bs.pages.length + ' page(s) selected for screenshot generation');
-            cntRow.appendChild(cntIcon);
-            cntRow.appendChild(cntLbl);
-            header.appendChild(cntRow);
-            wrap.appendChild(header);
-
-            var pagesSection = cel('div', 'ele2gb-preflight-pages-section');
-            pagesSection.appendChild(cel('p', 'ele2gb-preflight-section-label', 'Pages to screenshot (' + bs.pages.length + ')'));
-            var pagesList = cel('div', 'ele2gb-preflight-pages');
-
-            bs.pages.forEach(function (page) {
-                var fullData  = self.config.pages ? self.config.pages.filter(function (p) { return p.id === page.targetId; })[0] : null;
-                var rowState  = self.state.rowShots[page.targetId] || {};
-                var thumb     = rowState.thumb !== undefined ? rowState.thumb : (fullData ? fullData.screenshotThumb : '');
-                var card      = cel('div', 'ele2gb-preflight-page-card');
-                var thumbWrap = cel('div', 'ele2gb-preflight-thumb');
-
-                if (thumb) {
-                    var img = document.createElement('img');
-                    img.src = thumb; img.alt = ''; img.className = 'ele2gb-preflight-thumb-img';
-                    thumbWrap.appendChild(img);
-                } else {
-                    thumbWrap.classList.add('ele2gb-preflight-thumb--empty');
-                    thumbWrap.appendChild(cel('span', 'ele2gb-preflight-thumb-icon', ''));
-                }
-                card.appendChild(thumbWrap);
-
-                var body = cel('div', 'ele2gb-preflight-page-body');
-                var titleRow = cel('div', 'ele2gb-preflight-page-title');
-                var tLink = cel('a', '', page.title || String(page.targetId));
-                tLink.href = self.config.editBaseUrl + String(page.targetId) + '&action=edit';
-                tLink.target = '_blank';
-                titleRow.appendChild(tLink);
-                body.appendChild(titleRow);
-
-                if (fullData && fullData.sourceTitle) {
-                    body.appendChild(cel('div', 'ele2gb-preflight-page-source', 'Source: ' + fullData.sourceTitle));
-                }
-                card.appendChild(body);
-                pagesList.appendChild(card);
-            });
-
-            pagesSection.appendChild(pagesList);
-            wrap.appendChild(pagesSection);
-
-            var warnBox  = cel('div', 'ele2gb-ai-warning-notice');
-            var warnIcon = cel('div', 'ele2gb-ai-warning-icon ele2gb-ai-warning-icon--shot', '');
-            var warnText = cel('div', 'ele2gb-ai-warning-text');
-            warnText.appendChild(cel('strong', '', 'Screenshots will be captured'));
-            warnText.appendChild(cel('p', '', 'This calls the screenshot service for each page — both Elementor original and Gutenberg version. Allow 30–60 seconds per page.'));
-            warnBox.appendChild(warnIcon);
-            warnBox.appendChild(warnText);
-            wrap.appendChild(warnBox);
-
-            var actions = cel('div', 'ele2gb-results-actions');
-            var backBtn = makeIconBtn('', '← ' + (this.strings.back || 'Back'), 'view-secondary');
-            backBtn.addEventListener('click', function () { self.state.bulkShot = null; self.render(); });
-            actions.appendChild(backBtn);
-
-            var startBtn = makeIconBtn(CAMERA_SVG, 'Start Screenshot Generation', 'screenshot-primary');
-            startBtn.addEventListener('click', function () { self.startBulkShot(); });
-            actions.appendChild(startBtn);
-
-            wrap.appendChild(actions);
-            return wrap;
-        }
-
-        // Progress view
-        var done    = bs.pages.filter(function (p) { return p.status === 'done';    }).length;
-        var failed  = bs.pages.filter(function (p) { return p.status === 'failed';  }).length;
-        var skipped = bs.pages.filter(function (p) { return p.status === 'skipped'; }).length;
-        var pending = bs.pages.filter(function (p) { return p.status === 'pending'; }).length;
-        var total   = bs.pages.length;
-        var pct     = total > 0 ? Math.round(((done + failed + skipped) / total) * 100) : 0;
-
-        wrap.appendChild(this.renderProgressSection(done, failed, skipped, pending, pct, bs.finished));
-
-        var table  = cel('table', 'ele2gb-wizard-table ele2gb-ai-results-table');
-        var thead2 = document.createElement('thead');
-        var hr2    = document.createElement('tr');
-        hr2.appendChild(cel('th', '', 'Page'));
-        hr2.appendChild(cel('th', '', 'Status'));
-        hr2.appendChild(cel('th', '', 'Actions'));
-        thead2.appendChild(hr2);
-        table.appendChild(thead2);
-
-        var tbody2 = document.createElement('tbody');
-        bs.pages.forEach(function (page, i) {
-            var tr = document.createElement('tr');
-            tr.className = 'ele2gb-ai-row--' + page.status;
-            tr.appendChild(cel('td', 'ele2gb-ai-title-cell', page.title));
-            var tdSt = document.createElement('td');
-            tdSt.appendChild(self.makeAiStatusBadge(page.status, page.error));
-            tr.appendChild(tdSt);
-            tr.appendChild(self.makeProgressRowActions(page.status, i, 'shot'));
-            tbody2.appendChild(tr);
-        });
-        table.appendChild(tbody2);
-        wrap.appendChild(table);
-
-        if (bs.finished) {
-            var msg  = failed === 0 && skipped === 0 ? 'All screenshots generated successfully.' : 'Finished — ' + done + ' done, ' + failed + ' failed, ' + skipped + ' skipped.';
-            var comp = cel('div', 'ele2gb-ai-completion ' + (failed === 0 && skipped === 0 ? 'ele2gb-ai-completion--success' : 'ele2gb-ai-completion--partial'));
-            comp.appendChild(cel('p', '', msg));
-            wrap.appendChild(comp);
-
-            var doneAct = cel('div', 'ele2gb-results-actions');
-            var backBtn2 = makeIconBtn('', '← ' + (this.strings.backToList || 'Back to list'), 'view-secondary');
-            backBtn2.addEventListener('click', function () {
-                self.state.bulkShot = null;
-                self.state.selected.clear();
-                self.render();
-            });
-            doneAct.appendChild(backBtn2);
-            wrap.appendChild(doneAct);
-        }
-
-        return wrap;
     };
 
     // ── bulk AI improve flow ──────────────────────────────────────────────────
@@ -821,65 +419,31 @@
             wrap.appendChild(readinessPanel);
 
             var pagesSection = cel('div', 'ele2gb-preflight-pages-section');
-            pagesSection.appendChild(cel('p', 'ele2gb-preflight-section-label', 'Pages to enhance (' + ai.pages.length + ')'));
+            pagesSection.appendChild(cel('p', 'ele2gb-preflight-section-label', 'Items to enhance (' + ai.pages.length + ')'));
             var pagesList = cel('div', 'ele2gb-preflight-pages');
 
             ai.pages.forEach(function (page) {
-                var fullData  = cfg.pages ? cfg.pages.filter(function (p) { return p.id === page.targetId; })[0] : null;
-                var rowState  = self.state.rowShots[page.targetId] || {};
-                var thumb     = rowState.thumb !== undefined ? rowState.thumb : (fullData ? fullData.screenshotThumb : '');
-                var card      = cel('div', 'ele2gb-preflight-page-card');
-                var thumbWrap = cel('div', 'ele2gb-preflight-thumb');
-
-                if (thumb) {
-                    var img = document.createElement('img');
-                    img.src = thumb; img.alt = ''; img.className = 'ele2gb-preflight-thumb-img';
-                    thumbWrap.appendChild(img);
-                } else {
-                    thumbWrap.classList.add('ele2gb-preflight-thumb--empty');
-                    thumbWrap.appendChild(cel('span', '', '🖼'));
-                }
-                card.appendChild(thumbWrap);
-
+                var fullData = cfg.pages ? cfg.pages.filter(function (p) { return p.id === page.targetId; })[0] : null;
+                var card     = cel('div', 'ele2gb-preflight-page-card');
                 var body     = cel('div', 'ele2gb-preflight-page-body');
+
                 var titleRow = cel('div', 'ele2gb-preflight-page-title');
                 var tLink    = cel('a', '', page.title || String(page.targetId));
-                tLink.href = cfg.editBaseUrl + String(page.targetId) + '&action=edit';
+                tLink.href   = cfg.editBaseUrl + String(page.targetId) + '&action=edit';
                 tLink.target = '_blank';
                 titleRow.appendChild(tLink);
                 if (fullData && fullData.lastImproved) { titleRow.appendChild(cel('span', 'ele2gb-preflight-improved-badge', '✓ Enhanced')); }
                 body.appendChild(titleRow);
 
+                var tl = typeLabel(page.type);
+                if (tl) {
+                    body.appendChild(cel('div', 'ele2gb-preflight-page-source', tl));
+                }
+
                 if (fullData && fullData.sourceTitle) {
-                    var srcRow = cel('div', 'ele2gb-preflight-page-source');
-                    srcRow.textContent = 'Source: ';
-                    if (fullData.sourcePreviewUrl) {
-                        var srcLink = cel('a', '', fullData.sourceTitle);
-                        srcLink.href = cfg.editBaseUrl + String(page.sourceId) + '&action=edit';
-                        srcLink.target = '_blank';
-                        srcRow.appendChild(srcLink);
-                    } else {
-                        srcRow.textContent += fullData.sourceTitle;
-                    }
-                    body.appendChild(srcRow);
+                    body.appendChild(cel('div', 'ele2gb-preflight-page-source', 'Source: ' + fullData.sourceTitle));
                 }
 
-                var metaRow = cel('div', 'ele2gb-preflight-page-meta');
-                if (fullData) {
-                    var sc = shotStatusClass(fullData.screenshotStatus);
-                    metaRow.appendChild(cel('span', 'ele2gb-shot-status ele2gb-shot-status--' + sc, shotStatusLabel(fullData.screenshotStatus, str)));
-                }
-
-                var linksWrap = cel('div', 'ele2gb-preflight-page-links');
-                if (fullData && fullData.sourcePreviewUrl) { linksWrap.appendChild(makeActionPill(fullData.sourcePreviewUrl, 'View Source ↗', 'view', true)); }
-                if (fullData && fullData.previewUrl)       { linksWrap.appendChild(makeActionPill(fullData.previewUrl, 'Preview ↗', 'view', true)); }
-                if (cfg.aiImproveBaseUrl && page.sourceId) {
-                    var aiUrl = cfg.aiImproveBaseUrl + '&source_id=' + String(page.sourceId) + '&target_id=' + String(page.targetId);
-                    linksWrap.appendChild(makeActionPill(aiUrl, 'AI Page →', 'ai', false));
-                }
-
-                body.appendChild(metaRow);
-                body.appendChild(linksWrap);
                 card.appendChild(body);
                 pagesList.appendChild(card);
             });
@@ -922,8 +486,8 @@
         var table  = cel('table', 'ele2gb-wizard-table ele2gb-ai-results-table');
         var thead2 = document.createElement('thead');
         var hr2    = document.createElement('tr');
-        hr2.appendChild(cel('th', '', this.strings.colPage || 'Page'));
-        hr2.appendChild(cel('th', '', this.strings.aiImproveType || 'Type'));
+        hr2.appendChild(cel('th', '', str.colPage || 'Item'));
+        hr2.appendChild(cel('th', '', str.aiImproveType || 'Type'));
         hr2.appendChild(cel('th', '', 'Status'));
         hr2.appendChild(cel('th', '', 'Actions'));
         thead2.appendChild(hr2);
@@ -934,11 +498,11 @@
             var tr = document.createElement('tr');
             tr.className = 'ele2gb-ai-row--' + page.status;
             tr.appendChild(cel('td', 'ele2gb-ai-title-cell', page.title));
-            tr.appendChild(cel('td', '', page.type));
+            tr.appendChild(cel('td', '', typeLabel(page.type) || page.type));
             var tdSt = document.createElement('td');
             tdSt.appendChild(self.makeAiStatusBadge(page.status, page.error));
             tr.appendChild(tdSt);
-            tr.appendChild(self.makeProgressRowActions(page.status, i, 'ai'));
+            tr.appendChild(self.makeProgressRowActions(page.status, i));
             tbody2.appendChild(tr);
         });
         table.appendChild(tbody2);
@@ -951,7 +515,7 @@
             wrap.appendChild(comp);
 
             var doneAct  = cel('div', 'ele2gb-results-actions');
-            var backBtn2 = makeIconBtn('', this.strings.backToList || 'Back to list', 'view-secondary');
+            var backBtn2 = makeIconBtn('', str.backToList || 'Back to list', 'view-secondary');
             backBtn2.addEventListener('click', function () {
                 self.state.aiImprove = null;
                 self.state.selected.clear();
@@ -959,7 +523,7 @@
             });
             doneAct.appendChild(backBtn2);
 
-            if (this.config.feedbackEnabled && this.config.feedbackNonce && done > 0) {
+            if (cfg.feedbackEnabled && cfg.feedbackNonce && done > 0) {
                 var fbRunBtn = makeIconBtn(FEEDBACK_SVG, str.feedbackBtn || 'Send Feedback', 'feedback');
                 fbRunBtn.addEventListener('click', function () {
                     var firstDone = ai.pages.filter(function (p) { return p.status === 'done'; })[0];
@@ -993,7 +557,7 @@
 
         if (failed > 0 && !finished) {
             var note = cel('div', 'ele2gb-paused-notice');
-            note.appendChild(cel('p', '', this.strings.aiImprovePaused || 'Paused — a page failed. Review the error below, then skip or retry to continue.'));
+            note.appendChild(cel('p', '', this.strings.aiImprovePaused || 'Paused — an item failed. Review the error below, then skip or retry to continue.'));
             section.appendChild(note);
         }
         return section;
@@ -1001,24 +565,18 @@
 
     // ── shared progress row actions ───────────────────────────────────────────
 
-    EtgAiEnhancement.prototype.makeProgressRowActions = function (status, index, mode) {
+    EtgAiEnhancement.prototype.makeProgressRowActions = function (status, index) {
         var self  = this;
         var tdAct = document.createElement('td');
 
         if (status === 'failed') {
             var skipBtn = makeIconBtn('', this.strings.skip || 'Skip', 'view');
-            skipBtn.addEventListener('click', function () {
-                if (mode === 'shot') { self.skipBulkShotPage(index); }
-                else                { self.skipAiImprovePage(index); }
-            });
+            skipBtn.addEventListener('click', function () { self.skipAiImprovePage(index); });
             tdAct.appendChild(skipBtn);
 
             var retryBtn = makeIconBtn('', this.strings.retry || 'Retry', 'retry');
             retryBtn.style.marginLeft = '6px';
-            retryBtn.addEventListener('click', function () {
-                if (mode === 'shot') { self.retryBulkShotPage(index); }
-                else                 { self.retryAiImprovePage(index); }
-            });
+            retryBtn.addEventListener('click', function () { self.retryAiImprovePage(index); });
             tdAct.appendChild(retryBtn);
         } else if (status === 'processing') {
             tdAct.appendChild(this.makeRowSpinner());
@@ -1112,13 +670,6 @@
         overlay.parentNode.removeChild(overlay);
     };
 
-    // Backward-compat aliases
-    EtgAiEnhancement.prototype.showAiOverlay = function (title, current, total) {
-        this.showOverlay(this.strings.aiLoaderTitle || 'Improving with AI…', title, current, total,
-            [this.strings.aiStageAnalyzing || 'Analyzing…', this.strings.aiStageGenerating || 'Generating…', this.strings.aiStageSaving || 'Saving…']);
-    };
-    EtgAiEnhancement.prototype.hideAiOverlay = function () { this.hideOverlay(); };
-
     // ── badge / spinner helpers ───────────────────────────────────────────────
 
     EtgAiEnhancement.prototype.makeAiStatusBadge = function (status, error) {
@@ -1179,7 +730,6 @@
             modal.style.marginBottom = '16px';
         }
 
-        // Issue type dropdown
         var issueWrap = cel('div', null);
         issueWrap.style.cssText = 'margin-bottom:16px;';
         var issueLbl = cel('label', null, str.feedbackIssueLabel || 'Issue type');
@@ -1203,7 +753,6 @@
         issueWrap.appendChild(issueSelect);
         modal.appendChild(issueWrap);
 
-        // Issue detail — shown when issue is selected
         var detailWrap = cel('div', null);
         detailWrap.style.cssText = 'margin-bottom:16px;display:none;';
         var detailLbl = cel('label', null, str.feedbackIssueDetailLabel || 'Describe the issue');
@@ -1220,7 +769,6 @@
             detailWrap.style.display = issueSelect.value ? 'block' : 'none';
         });
 
-        // Notes
         var noteLbl = cel('label', null, str.feedbackNoteLabel || 'Additional notes');
         noteLbl.style.cssText = 'display:block;font-size:13px;font-weight:500;margin-bottom:6px;color:#1d2327;';
         modal.appendChild(noteLbl);
@@ -1230,7 +778,6 @@
         noteTA.style.cssText = 'width:100%;padding:6px 8px;border:1px solid #c3c4c7;border-radius:4px;font-size:13px;box-sizing:border-box;resize:vertical;margin-bottom:16px;';
         modal.appendChild(noteTA);
 
-        // Consent
         var consentLbl = document.createElement('label');
         consentLbl.style.cssText = 'display:flex;gap:8px;align-items:flex-start;margin-bottom:20px;cursor:pointer;';
         var consentCb = document.createElement('input');
@@ -1244,7 +791,6 @@
         consentLbl.appendChild(consentSpan);
         modal.appendChild(consentLbl);
 
-        // Actions
         var actRow = cel('div', null);
         actRow.style.cssText = 'display:flex;gap:8px;align-items:center;flex-wrap:wrap;';
         var errSpan = cel('span', null);
@@ -1321,7 +867,6 @@
     };
 
     EtgAiEnhancement.prototype.showAiFeedbackConfirm = function (message) {
-        var self = this;
         var notice = cel('div', 'ele2gb-alert ele2gb-alert-success');
         notice.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:99999;padding:12px 20px;background:#00a32a;color:#fff;border-radius:6px;font-size:13px;box-shadow:0 2px 12px rgba(0,0,0,0.18);max-width:360px;';
         notice.textContent = message;
