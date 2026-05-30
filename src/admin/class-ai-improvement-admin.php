@@ -55,8 +55,6 @@ use function wp_safe_redirect;
 use function wp_unslash;
 use function wp_update_post;
 
-defined( 'ABSPATH' ) || exit;
-
 class AI_Improvement_Admin {
 
 	public const MENU_SLUG = 'ele2gb-ai-improvement';

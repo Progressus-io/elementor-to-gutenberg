@@ -86,8 +86,6 @@ use function wp_is_block_theme;
 
 use const HOUR_IN_SECONDS;
 
-defined( 'ABSPATH' ) || exit;
-
 /**
  * Class Batch_Convert_Wizard
  */
