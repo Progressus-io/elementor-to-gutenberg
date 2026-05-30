@@ -1,0 +1,16 @@
+# Files to exclude from the distributed plugin package (WP.org SVN / ZIP builds).
+# This file is used by deployment scripts (e.g. wp-org-deploy, action-wordpress-plugin-deploy).
+
+.claude
+.git
+.gitignore
+.idea
+.distignore
+node_modules
+package.json
+package-lock.json
+composer.json
+composer.lock
+phpcs.xml
+phpunit.xml
+webpack.config.js
