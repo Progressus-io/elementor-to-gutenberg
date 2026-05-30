@@ -5,6 +5,10 @@
  * @package Progressus\Gutenberg
  */
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 namespace Progressus\Gutenberg\Blocks;
 
 use function esc_html;
