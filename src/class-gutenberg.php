@@ -284,7 +284,7 @@ class Gutenberg {
 	public function fontawesome_icon_block_enqueue_fontawesome() {
 		wp_enqueue_style(
 			'font-awesome-custom',
-			'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css',
+			GUTENBERG_PLUGIN_DIR_URL . '/assets/vendor/fontawesome/css/all.min.css',
 			array(),
 			'6.5.0'
 		);
@@ -303,7 +303,7 @@ class Gutenberg {
 	public function enqueue_scripts(): void {
 		wp_enqueue_style(
 			'font-awesome-custom',
-			'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css',
+			GUTENBERG_PLUGIN_DIR_URL . '/assets/vendor/fontawesome/css/all.min.css',
 			array(),
 			'6.5.0'
 		);
@@ -330,14 +330,14 @@ class Gutenberg {
 		if ( has_block( 'progressus/testimonials' ) ) {
 			wp_enqueue_style(
 				'swiper-css',
-				'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css',
+				GUTENBERG_PLUGIN_DIR_URL . '/assets/vendor/swiper/swiper-bundle.min.css',
 				array(),
 				'11.0.0'
 			);
 
 			wp_enqueue_script(
 				'swiper-js',
-				'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js',
+				GUTENBERG_PLUGIN_DIR_URL . '/assets/vendor/swiper/swiper-bundle.min.js',
 				array(),
 				'11.0.0',
 				true
@@ -391,7 +391,7 @@ class Gutenberg {
 			return;
 		}
 
-		wp_enqueue_style( $handle, $url, array(), null );
+		wp_enqueue_style( $handle, $url, array(), GUTENBERG_PLUGIN_VERSION );
 		$this->enqueued_font_handles[ $handle ] = true;
 	}
 
@@ -423,7 +423,9 @@ class Gutenberg {
 	 * @return int
 	 */
 	private function detect_editor_post_id(): int {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		if ( isset( $_GET['post'] ) ) {
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			return (int) $_GET['post'];
 		}
 
@@ -491,7 +493,7 @@ class Gutenberg {
 		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'progressus_form_nonce' ) ) {
 			wp_send_json_error(
 				array(
-					'message' => __( 'Security verification failed.', 'progressus-gutenberg' ),
+					'message' => __( 'Security verification failed.', 'elementor-to-gutenberg' ),
 				)
 			);
 		}
@@ -511,14 +513,17 @@ class Gutenberg {
 		$admin_email = get_option( 'admin_email' );
 
 		// Prepare email content
-		$subject = sprintf( __( 'New Form Submission: %s', 'progressus-gutenberg' ), $form_name );
-		$message = sprintf( __( "You have received a new form submission from %s:\n\n", 'progressus-gutenberg' ), get_bloginfo( 'name' ) );
+		/* translators: %s: name of the form submitted */
+		$subject = sprintf( __( 'New Form Submission: %s', 'elementor-to-gutenberg' ), $form_name );
+		/* translators: %s: name of the WordPress site */
+		$message = sprintf( __( "You have received a new form submission from %s:\n\n", 'elementor-to-gutenberg' ), get_bloginfo( 'name' ) );
 
 		foreach ( $form_data as $field => $value ) {
 			$message .= sprintf( "%s: %s\n", ucfirst( str_replace( array( '_', '-' ), ' ', $field ) ), $value );
 		}
 
-		$message .= sprintf( "\n\n" . __( 'Submitted at: %s', 'progressus-gutenberg' ), current_time( 'mysql' ) );
+		/* translators: %s: date and time of form submission */
+		$message .= sprintf( "\n\n" . __( 'Submitted at: %s', 'elementor-to-gutenberg' ), current_time( 'mysql' ) );
 
 		// Set email headers
 		$headers = array( 'Content-Type: text/plain; charset=UTF-8' );
@@ -529,13 +534,13 @@ class Gutenberg {
 		if ( $email_sent ) {
 			wp_send_json_success(
 				array(
-					'message' => __( 'Your submission was successful. We will get back to you soon!', 'progressus-gutenberg' ),
+					'message' => __( 'Your submission was successful. We will get back to you soon!', 'elementor-to-gutenberg' ),
 				)
 			);
 		} else {
 			wp_send_json_error(
 				array(
-					'message' => __( 'Your submission failed because of an error. Please try again.', 'progressus-gutenberg' ),
+					'message' => __( 'Your submission failed because of an error. Please try again.', 'elementor-to-gutenberg' ),
 				)
 			);
 		}
