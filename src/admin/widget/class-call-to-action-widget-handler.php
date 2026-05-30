@@ -413,7 +413,7 @@ class Call_To_Action_Widget_Handler implements Widget_Handler_Interface {
 			}
 
 			$aria_label = '';
-			$path       = parse_url( $bg_image_url, PHP_URL_PATH );
+			$path       = wp_parse_url( $bg_image_url, PHP_URL_PATH );
 			if ( $path ) {
 				$aria_label = basename( $path );
 			}

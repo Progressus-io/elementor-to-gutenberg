@@ -125,7 +125,7 @@ class Feedback_Builder {
 
 		return array(
 			'site_url_hash'              => hash( 'sha256', (string) home_url() ),
-			'site_domain'                => (string) parse_url( home_url(), PHP_URL_HOST ),
+			'site_domain'                => (string) wp_parse_url( home_url(), PHP_URL_HOST ),
 			'plugin_version'             => GUTENBERG_PLUGIN_VERSION,
 			'wordpress_version'          => get_bloginfo( 'version' ),
 			'php_version'                => PHP_VERSION,

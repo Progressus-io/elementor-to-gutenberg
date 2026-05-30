@@ -96,6 +96,7 @@ class Menu_Widget_Handler implements Widget_Handler_Interface {
 				array(
 					'post_type'      => 'wp_navigation',
 					'post_status'    => 'any',
+					// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key, WordPress.DB.SlowDBQuery.slow_db_query_meta_value
 					'meta_key'       => 'etg_source_menu_term_id',
 					'meta_value'     => $menu_object->term_id,
 					'posts_per_page' => 1,
