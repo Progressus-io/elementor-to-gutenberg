@@ -5,11 +5,9 @@
  * @package Progressus\Gutenberg
  */
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
-
 namespace Progressus\Gutenberg\Blocks;
+
+defined( 'ABSPATH' ) || exit;
 
 use function esc_html;
 use function get_block_wrapper_attributes;

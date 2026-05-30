@@ -5,11 +5,9 @@
  * @package Progressus\Gutenberg
  */
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
-
 namespace Progressus\Gutenberg\Admin;
+
+defined( 'ABSPATH' ) || exit;
 
 use Progressus\Gutenberg\Admin\Admin_Settings;
 use Progressus\Gutenberg\Admin\AI_Improvement_Admin;

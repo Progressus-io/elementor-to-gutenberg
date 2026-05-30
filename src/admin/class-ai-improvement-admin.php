@@ -5,11 +5,9 @@
  * @package Progressus\Gutenberg
  */
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
-
 namespace Progressus\Gutenberg\Admin;
+
+defined( 'ABSPATH' ) || exit;
 
 use Progressus\Gutenberg\Admin\Helper\AI_Prompt_Builder;
 use Progressus\Gutenberg\Admin\Helper\AI_Workspace_Repository;
