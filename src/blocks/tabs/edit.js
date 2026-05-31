@@ -2,10 +2,8 @@ import { __ } from '@wordpress/i18n';
 import {
 	useBlockProps,
 	InspectorControls,
-	InspectorAdvancedControls,
 	PanelColorSettings,
 	BlockControls,
-	AlignmentToolbar,
 	FontSizePicker,
 } from '@wordpress/block-editor';
 import {
@@ -19,8 +17,6 @@ import {
 	__experimentalBorderControl as BorderControl,
 	ToolbarGroup,
 	ToolbarButton,
-	Flex,
-	FlexItem,
 } from '@wordpress/components';
 import { useState } from '@wordpress/element';
 
@@ -47,7 +43,6 @@ const Edit = ( { attributes, setAttributes } ) => {
 		contentTypography,
 	} = attributes;
 
-	const [ editingTab, setEditingTab ] = useState( activeTab );
 	const blockProps = useBlockProps();
 
 	const addTab = () => {

@@ -1,4 +1,3 @@
-/* global ele2gbAiImprove */
 ( function ( window, document ) {
 	'use strict';
 

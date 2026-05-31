@@ -9,7 +9,6 @@ const Save = ( { attributes } ) => {
 		buttonAlign,
 		successMessage,
 		errorMessage,
-		columnGap,
 		rowGap,
 		labelSpacing,
 		labelTypography,

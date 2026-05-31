@@ -34,12 +34,6 @@ const Save = ( { attributes } ) => {
 		) }&z=${ encodeURIComponent( zoom ) }&output=embed`;
 	}
 
-	const iframeStyle = {
-		width: '100%',
-		height: `${ height }px`,
-		border: '0',
-	};
-
 	// Helper to prefer `attributes.style.spacing` (canonical) and fall back to legacy shapes.
 	const getSpacing = ( name ) => {
 		if ( attributes?.style?.spacing && attributes.style.spacing[ name ] ) {
@@ -79,44 +73,6 @@ const Save = ( { attributes } ) => {
 		return Number( v ) || 0;
 	};
 
-	const buildLonghandStyle = ( boxName ) => {
-		const box = getSpacing( boxName );
-		if ( ! box ) {
-			return null;
-		}
-		// box may be unit-object ({unit, top,right...}) or per-side object with numbers/strings
-		let top, right, bottom, left;
-		if ( box.unit ) {
-			const unit = box.unit || 'px';
-			top = box.top || 0;
-			right = box.right || 0;
-			bottom = box.bottom || 0;
-			left = box.left || 0;
-			return {
-				top: `${ top }${ unit }`,
-				bottom: `${ bottom }${ unit }`,
-				left: `${ left }${ unit }`,
-				right: `${ right }${ unit }`,
-			};
-		}
-		top = normalizeSideValue( box.top ?? box.top === 0 ? box.top : null );
-		right = normalizeSideValue(
-			box.right ?? box.right === 0 ? box.right : null
-		);
-		bottom = normalizeSideValue(
-			box.bottom ?? box.bottom === 0 ? box.bottom : null
-		);
-		left = normalizeSideValue(
-			box.left ?? box.left === 0 ? box.left : null
-		);
-
-		return {
-			top: `${ top }px`,
-			bottom: `${ bottom }px`,
-			left: `${ left }px`,
-			right: `${ right }px`,
-		};
-	};
 	const buildShorthand = ( boxName ) => {
 		const box = getSpacing( boxName );
 		if ( ! box ) {

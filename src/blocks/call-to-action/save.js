@@ -45,7 +45,6 @@ export default function save( { attributes } ) {
 		buttonFontWeight,
 		buttonTextTransform,
 		buttonFontStyle,
-		buttonTextDecoration,
 		buttonLineHeight,
 		buttonLetterSpacing,
 		buttonWordSpacing,

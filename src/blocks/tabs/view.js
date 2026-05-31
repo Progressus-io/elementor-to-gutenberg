@@ -149,9 +149,7 @@ document.addEventListener( 'DOMContentLoaded', function () {
 if ( typeof module !== 'undefined' && module.exports ) {
 	module.exports = {
 		initializeTabs( selector ) {
-			const tabsBlocks = document.querySelectorAll(
-				selector || '.progressus-tabs'
-			);
+			document.querySelectorAll( selector || '.progressus-tabs' );
 			// Re-run initialization logic here if needed
 		},
 	};

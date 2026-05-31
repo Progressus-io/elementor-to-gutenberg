@@ -5,9 +5,8 @@ import {
 	RangeControl,
 	TextControl,
 	ToggleControl,
-	__experimentalUnitControl as UnitControl,
+	ColorPicker,
 } from '@wordpress/components';
-import { ColorPicker } from '@wordpress/components';
 
 export default function Edit( { attributes, setAttributes } ) {
 	const {

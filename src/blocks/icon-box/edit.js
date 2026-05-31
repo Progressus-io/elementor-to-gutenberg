@@ -11,14 +11,12 @@ import {
 import {
 	PanelBody,
 	Button,
-	TextControl,
 	SelectControl,
 	RangeControl,
 	Popover,
 	SearchControl,
 	TabPanel,
 	ColorPicker,
-	ToggleControl,
 } from '@wordpress/components';
 import { useState } from '@wordpress/element';
 
@@ -338,8 +336,6 @@ export default function Edit( { attributes, setAttributes } ) {
 		descriptionColor = '',
 	} = attributes;
 
-	const [ isUploading, setIsUploading ] = useState( false );
-
 	const [ isIconPickerOpen, setIsIconPickerOpen ] = useState( false );
 	const [ iconSearch, setIconSearch ] = useState( '' );
 	const [ showColorPicker, setShowColorPicker ] = useState( false );
@@ -436,20 +432,6 @@ export default function Edit( { attributes, setAttributes } ) {
 			textAlign: alignment,
 		},
 	} );
-
-	const onSelectMedia = ( media ) => {
-		const url = media && media.url ? media.url : '';
-		if ( url && url.toLowerCase().endsWith( '.svg' ) ) {
-			setIsUploading( true );
-			fetch( url )
-				.then( ( res ) => res.text() )
-				.then( ( text ) => setAttributes( { svg: text, svgUrl: url } ) )
-				.catch( () => setAttributes( { svg: '', svgUrl: url } ) )
-				.finally( () => setIsUploading( false ) );
-		} else {
-			setAttributes( { svg: '', svgUrl: url } );
-		}
-	};
 
 	return (
 		<>

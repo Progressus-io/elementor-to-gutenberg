@@ -1,13 +1,12 @@
 import { __ } from '@wordpress/i18n';
-import { useBlockProps } from '@wordpress/block-editor';
-import { InspectorControls } from '@wordpress/block-editor';
+import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
 import {
 	PanelBody,
 	RangeControl,
 	TextControl,
 	SelectControl,
+	ColorPicker,
 } from '@wordpress/components';
-import { ColorPicker } from '@wordpress/components';
 
 const Edit = ( { attributes, setAttributes } ) => {
 	const {
