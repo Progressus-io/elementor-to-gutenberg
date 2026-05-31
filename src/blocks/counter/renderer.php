@@ -21,7 +21,7 @@ use function register_block_type;
  * @param WP_Block $block      Block instance.
  * @return string Returns the counter block markup.
  */
-function render_counter_block( $attributes, $_content, $_block ) {
+function render_counter_block( $attributes, $_content, $_block ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter
 	$start_value = isset( $attributes['startValue'] ) ? intval( $attributes['startValue'] ) : 0;
 	$end_value   = isset( $attributes['endValue'] ) ? intval( $attributes['endValue'] ) : 100;
 	$duration    = isset( $attributes['duration'] ) ? intval( $attributes['duration'] ) : 2000;

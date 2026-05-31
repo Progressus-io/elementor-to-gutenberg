@@ -109,7 +109,7 @@ class AI_Improvement_Admin {
 	 *
 	 * @param string $hook Current admin page hook suffix.
 	 */
-	public function enqueue_assets( string $_hook ): void {
+	public function enqueue_assets( string $_hook ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found
 		if ( empty( $_GET['page'] ) || self::MENU_SLUG !== sanitize_key( wp_unslash( $_GET['page'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			return;
 		}
