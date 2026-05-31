@@ -1,6 +1,6 @@
 document.addEventListener("DOMContentLoaded", function () {
   const carousels = document.querySelectorAll(
-    ".progressus-testimonials-carousel"
+    ".progressus-testimonials-carousel",
   );
 
   carousels.forEach((carousel) => {
@@ -45,7 +45,7 @@ document.addEventListener("DOMContentLoaded", function () {
       if (pagination) {
         pagination.style.marginTop = `${paginationGap}px`;
         const bullets = pagination.querySelectorAll(
-          ".swiper-pagination-bullet"
+          ".swiper-pagination-bullet",
         );
         bullets.forEach((bullet) => {
           bullet.style.width = `${paginationSize}px`;

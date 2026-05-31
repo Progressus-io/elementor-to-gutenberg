@@ -350,11 +350,11 @@ export default function Edit({ attributes, setAttributes }) {
   // Filter icons based on search
   const getFilteredIcons = (category) => {
     return FONTAWESOME_ICONS[category].filter((iconName) =>
-      iconName.toLowerCase().includes(iconSearch.toLowerCase())
+      iconName.toLowerCase().includes(iconSearch.toLowerCase()),
     );
   };
 
-    const iconStyles = {
+  const iconStyles = {
     fontSize: `${size}px`,
     color: color,
     backgroundColor: backgroundColor || "transparent",
@@ -413,7 +413,7 @@ export default function Edit({ attributes, setAttributes }) {
       />
     );
   };
-  
+
   const alignToJustify = (align) => {
     if (align === "left") return "flex-start";
     if (align === "right") return "flex-end";
@@ -505,7 +505,7 @@ export default function Edit({ attributes, setAttributes }) {
                     onChange={setIconSearch}
                     placeholder={__(
                       "Search icons...",
-                      "fontawesome-icon-block"
+                      "fontawesome-icon-block",
                     )}
                   />
                   <TabPanel
@@ -594,7 +594,7 @@ export default function Edit({ attributes, setAttributes }) {
                     fetch(url)
                       .then((res) => res.text())
                       .then((text) =>
-                        setAttributes({ svg: text, svgUrl: url })
+                        setAttributes({ svg: text, svgUrl: url }),
                       );
                   } else {
                     setAttributes({ svg: "", svgUrl: url });

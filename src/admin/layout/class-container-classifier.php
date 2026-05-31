@@ -19,8 +19,8 @@ class Container_Classifier {
 	 * @param array $element Elementor container element.
 	 */
 	public static function is_grid( array $element ): bool {
-		$settings    = is_array( $element['settings'] ?? null ) ? $element['settings'] : array();
-		$direction   = self::get_flex_direction( $settings );
+		$settings  = is_array( $element['settings'] ?? null ) ? $element['settings'] : array();
+		$direction = self::get_flex_direction( $settings );
 
 		$has_explicit_grid_signal = false;
 
@@ -133,7 +133,7 @@ class Container_Classifier {
 		foreach ( $children as $child ) {
 			$el_type = $child['elType'] ?? '';
 			if ( 'widget' === $el_type && in_array( $child['widgetType'] ?? '', $card_widgets, true ) ) {
-				$card_like ++;
+				++$card_like;
 				continue;
 			}
 
@@ -141,7 +141,7 @@ class Container_Classifier {
 				$grandchildren = self::get_children( $child );
 				foreach ( $grandchildren as $grandchild ) {
 					if ( 'widget' === ( $grandchild['elType'] ?? '' ) && in_array( $grandchild['widgetType'] ?? '', $card_widgets, true ) ) {
-						$card_like ++;
+						++$card_like;
 						break;
 					}
 				}
@@ -264,7 +264,7 @@ class Container_Classifier {
 			'image',
 			'video',
 			'counter',
-			'progress'
+			'progress',
 		);
 
 		if ( $has_row ) {
@@ -360,11 +360,11 @@ class Container_Classifier {
 	/**
 	 * Check whether a container has a specific class.
 	 */
-	public static function has_class( array $element, string $class ): bool {
+	public static function has_class( array $element, string $class_name ): bool {
 		$classes = self::get_element_classes( $element );
 
 		foreach ( $classes as $existing ) {
-			if ( $existing === $class ) {
+			if ( $existing === $class_name ) {
 				return true;
 			}
 		}

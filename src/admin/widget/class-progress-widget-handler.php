@@ -156,7 +156,7 @@ class Progress_Widget_Handler implements Widget_Handler_Interface {
 		// Generate block content
 		return sprintf(
 			'<!-- wp:progressus/progress %s --><div class="wp-block-progressus-progress"%s><div class="progressus-progress-bar" style="text-align:left">%s<div class="progressus-progress-bar-container"%s><div class="progressus-progress-bar-fill"%s><div %s>%s<span class="progressus-progress-percentage">%s</span></div></div></div></div></div><!-- /wp:progressus/progress -->',
-			$attrs_json ?: '{}',
+			$attrs_json ? $attrs_json : '{}',
 			$wrapper_style ? sprintf( ' style="%s"', $wrapper_style ) : '',
 			$show_title && $title ? sprintf(
 				'<h4 %s>%s</h4>',

@@ -67,7 +67,11 @@ class Claude_Api_Service {
 		$api_key = self::get_api_key();
 
 		if ( '' === $api_key ) {
-			return array( 'success' => false, 'content' => '', 'error' => 'Claude API key is not configured.' );
+			return array(
+				'success' => false,
+				'content' => '',
+				'error'   => 'Claude API key is not configured.',
+			);
 		}
 
 		$resolved_system = '' !== $system_prompt ? $system_prompt : self::get_system_prompt();
@@ -86,22 +90,27 @@ class Claude_Api_Service {
 				'temperature' => 0,
 				'system'      => $resolved_system,
 				'messages'    => array(
-					array( 'role' => 'user', 'content' => $content ),
+					array(
+						'role'    => 'user',
+						'content' => $content,
+					),
 				),
 			)
 		);
 
 		// Log the full request before sending.
-		self::log_entry( array(
-			'event'                           => 'api_request',
-			'system_prompt'                   => $resolved_system,
-			'user_prompt'                     => $prompt,
-			'elementor_desktop_chunks'        => count( $elementor_shots ),
-			'gutenberg_desktop_chunks'        => count( $gutenberg_shots ),
-			'elementor_mobile_chunks'         => count( $elementor_mobile_shots ),
-			'gutenberg_mobile_chunks'         => count( $gutenberg_mobile_shots ),
-			'user_prompt_length'              => strlen( $prompt ),
-		) );
+		self::log_entry(
+			array(
+				'event'                    => 'api_request',
+				'system_prompt'            => $resolved_system,
+				'user_prompt'              => $prompt,
+				'elementor_desktop_chunks' => count( $elementor_shots ),
+				'gutenberg_desktop_chunks' => count( $gutenberg_shots ),
+				'elementor_mobile_chunks'  => count( $elementor_mobile_shots ),
+				'gutenberg_mobile_chunks'  => count( $gutenberg_mobile_shots ),
+				'user_prompt_length'       => strlen( $prompt ),
+			)
+		);
 
 		$response = wp_remote_post(
 			self::API_URL,
@@ -117,12 +126,18 @@ class Claude_Api_Service {
 		);
 
 		if ( is_wp_error( $response ) ) {
-			self::log_entry( array(
-				'event' => 'api_response',
+			self::log_entry(
+				array(
+					'event'   => 'api_response',
+					'success' => false,
+					'error'   => $response->get_error_message(),
+				)
+			);
+			return array(
 				'success' => false,
+				'content' => '',
 				'error'   => $response->get_error_message(),
-			) );
-			return array( 'success' => false, 'content' => '', 'error' => $response->get_error_message() );
+			);
 		}
 
 		$code = (int) wp_remote_retrieve_response_code( $response );
@@ -131,32 +146,40 @@ class Claude_Api_Service {
 
 		if ( 200 !== $code || empty( $data['content'][0]['text'] ) ) {
 			$error = isset( $data['error']['message'] ) ? (string) $data['error']['message'] : "Unexpected response (HTTP $code).";
-			self::log_entry( array(
-				'event'         => 'api_response',
-				'success'       => false,
-				'http_code'     => $code,
-				'stop_reason'   => '',
-				'input_tokens'  => $data['usage']['input_tokens'] ?? null,
-				'output_tokens' => $data['usage']['output_tokens'] ?? null,
-				'error'         => $error,
-				'raw_response'  => '',
-			) );
-			return array( 'success' => false, 'content' => '', 'error' => $error );
+			self::log_entry(
+				array(
+					'event'         => 'api_response',
+					'success'       => false,
+					'http_code'     => $code,
+					'stop_reason'   => '',
+					'input_tokens'  => $data['usage']['input_tokens'] ?? null,
+					'output_tokens' => $data['usage']['output_tokens'] ?? null,
+					'error'         => $error,
+					'raw_response'  => '',
+				)
+			);
+			return array(
+				'success' => false,
+				'content' => '',
+				'error'   => $error,
+			);
 		}
 
 		$response_text = (string) $data['content'][0]['text'];
 		$stop_reason   = isset( $data['stop_reason'] ) ? (string) $data['stop_reason'] : '';
 
-		self::log_entry( array(
-			'event'         => 'api_response',
-			'success'       => 'max_tokens' !== $stop_reason,
-			'http_code'     => $code,
-			'stop_reason'   => $stop_reason,
-			'input_tokens'  => $data['usage']['input_tokens'] ?? null,
-			'output_tokens' => $data['usage']['output_tokens'] ?? null,
-			'error'         => 'max_tokens' === $stop_reason ? 'Response truncated — max_tokens limit reached.' : '',
-			'raw_response'  => $response_text,
-		) );
+		self::log_entry(
+			array(
+				'event'         => 'api_response',
+				'success'       => 'max_tokens' !== $stop_reason,
+				'http_code'     => $code,
+				'stop_reason'   => $stop_reason,
+				'input_tokens'  => $data['usage']['input_tokens'] ?? null,
+				'output_tokens' => $data['usage']['output_tokens'] ?? null,
+				'error'         => 'max_tokens' === $stop_reason ? 'Response truncated — max_tokens limit reached.' : '',
+				'raw_response'  => $response_text,
+			)
+		);
 
 		if ( 'max_tokens' === $stop_reason ) {
 			return array(
@@ -166,7 +189,11 @@ class Claude_Api_Service {
 			);
 		}
 
-		return array( 'success' => true, 'content' => $response_text, 'error' => '' );
+		return array(
+			'success' => true,
+			'content' => $response_text,
+			'error'   => '',
+		);
 	}
 
 	/**
@@ -195,10 +222,22 @@ class Claude_Api_Service {
 		$image_blocks = array();
 
 		$sets = array(
-			array( 'urls' => $elementor_shots,        'label' => 'DESKTOP screenshot of the ORIGINAL Elementor page' ),
-			array( 'urls' => $gutenberg_shots,        'label' => 'DESKTOP screenshot of the CONVERTED Gutenberg page' ),
-			array( 'urls' => $elementor_mobile_shots, 'label' => 'MOBILE screenshot of the ORIGINAL Elementor page' ),
-			array( 'urls' => $gutenberg_mobile_shots, 'label' => 'MOBILE screenshot of the CONVERTED Gutenberg page' ),
+			array(
+				'urls'  => $elementor_shots,
+				'label' => 'DESKTOP screenshot of the ORIGINAL Elementor page',
+			),
+			array(
+				'urls'  => $gutenberg_shots,
+				'label' => 'DESKTOP screenshot of the CONVERTED Gutenberg page',
+			),
+			array(
+				'urls'  => $elementor_mobile_shots,
+				'label' => 'MOBILE screenshot of the ORIGINAL Elementor page',
+			),
+			array(
+				'urls'  => $gutenberg_mobile_shots,
+				'label' => 'MOBILE screenshot of the CONVERTED Gutenberg page',
+			),
 		);
 
 		foreach ( $sets as $set ) {
@@ -219,7 +258,10 @@ class Claude_Api_Service {
 				);
 				$image_blocks[] = array(
 					'type'   => 'image',
-					'source' => array( 'type' => 'url', 'url' => $url ),
+					'source' => array(
+						'type' => 'url',
+						'url'  => $url,
+					),
 				);
 			}
 		}
@@ -228,7 +270,10 @@ class Claude_Api_Service {
 			return $prompt;
 		}
 
-		$image_blocks[] = array( 'type' => 'text', 'text' => $prompt );
+		$image_blocks[] = array(
+			'type' => 'text',
+			'text' => $prompt,
+		);
 
 		return $image_blocks;
 	}
@@ -276,7 +321,10 @@ class Claude_Api_Service {
 			$gutenberg = trim( $m[1] );
 		}
 
-		return array( 'css' => $css, 'gutenberg' => $gutenberg );
+		return array(
+			'css'       => $css,
+			'gutenberg' => $gutenberg,
+		);
 	}
 
 	/**
@@ -419,7 +467,7 @@ SYSTEM;
 			$data
 		);
 
-		$line = json_encode( $entry, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES );
+		$line = wp_json_encode( $entry, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES );
 
 		if ( false === $line ) {
 			return;

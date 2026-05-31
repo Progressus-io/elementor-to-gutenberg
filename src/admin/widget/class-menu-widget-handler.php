@@ -266,5 +266,4 @@ class Menu_Widget_Handler implements Widget_Handler_Interface {
 			'innerContent' => array(),
 		);
 	}
-
 }

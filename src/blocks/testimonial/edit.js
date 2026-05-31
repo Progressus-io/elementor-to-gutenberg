@@ -36,7 +36,8 @@ function formatTRBL(obj) {
   ];
   const allSame = vals.every((v) => v === vals[0]);
   if (allSame) return vals[0];
-  if (vals[0] === vals[2] && vals[1] === vals[3]) return `${vals[0]} ${vals[1]}`;
+  if (vals[0] === vals[2] && vals[1] === vals[3])
+    return `${vals[0]} ${vals[1]}`;
   return vals.join(" ");
 }
 
@@ -117,7 +118,10 @@ const Edit = ({ attributes, setAttributes }) => {
     <>
       <InspectorControls>
         {/* ── Content Panel ─────────────────────────────────── */}
-        <PanelBody title={__("Content", "progressus-gutenberg")} initialOpen={true}>
+        <PanelBody
+          title={__("Content", "progressus-gutenberg")}
+          initialOpen={true}
+        >
           <TextareaControl
             label={__("Quote / Testimonial", "progressus-gutenberg")}
             value={content}
@@ -147,7 +151,10 @@ const Edit = ({ attributes, setAttributes }) => {
         </PanelBody>
 
         {/* ── Avatar / Image Panel ───────────────────────────── */}
-        <PanelBody title={__("Avatar Image", "progressus-gutenberg")} initialOpen={false}>
+        <PanelBody
+          title={__("Avatar Image", "progressus-gutenberg")}
+          initialOpen={false}
+        >
           <MediaUploadCheck>
             <MediaUpload
               onSelect={(media) =>
@@ -206,7 +213,10 @@ const Edit = ({ attributes, setAttributes }) => {
             values={trblToBoxControl(imageBorderRadius)}
             onChange={(nextVal) =>
               setAttributes({
-                imageBorderRadius: boxControlToTRBL(nextVal, imageBorderRadius?.unit || "px"),
+                imageBorderRadius: boxControlToTRBL(
+                  nextVal,
+                  imageBorderRadius?.unit || "px",
+                ),
               })
             }
           />
@@ -216,7 +226,10 @@ const Edit = ({ attributes, setAttributes }) => {
             values={trblToBoxControl(imageBorderWidth)}
             onChange={(nextVal) =>
               setAttributes({
-                imageBorderWidth: boxControlToTRBL(nextVal, imageBorderWidth?.unit || "px"),
+                imageBorderWidth: boxControlToTRBL(
+                  nextVal,
+                  imageBorderWidth?.unit || "px",
+                ),
               })
             }
           />
@@ -283,9 +296,7 @@ const Edit = ({ attributes, setAttributes }) => {
                   gap: "2px",
                 }}
               >
-                {name && (
-                  <strong className="testimonial-name">{name}</strong>
-                )}
+                {name && <strong className="testimonial-name">{name}</strong>}
                 {job && <span className="testimonial-job">{job}</span>}
               </div>
             )}

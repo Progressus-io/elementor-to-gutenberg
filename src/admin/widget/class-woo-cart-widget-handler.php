@@ -47,8 +47,7 @@ class Woo_Cart_Widget_Handler implements Widget_Handler_Interface {
 	 * @return string
 	 */
 	private function get_cart_template(): string {
-		return
-			"<!-- wp:woocommerce/filled-cart-block -->\n" .
+		return "<!-- wp:woocommerce/filled-cart-block -->\n" .
 			"<!-- wp:woocommerce/cart-items-block -->\n" .
 			"<!-- wp:woocommerce/cart-line-items-block /-->\n" .
 			"<!-- /wp:woocommerce/cart-items-block -->\n" .

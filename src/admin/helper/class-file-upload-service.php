@@ -25,7 +25,14 @@ class File_Upload_Service {
 			return null;
 		}
 
-		$content = file_get_contents( $tmp_file );
+		if ( ! function_exists( 'WP_Filesystem' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/file.php';
+		}
+		WP_Filesystem();
+		global $wp_filesystem;
+		$content = ( $wp_filesystem && method_exists( $wp_filesystem, 'get_contents' ) )
+			? $wp_filesystem->get_contents( $tmp_file )
+			: '';
 		if ( 'json' === $type ) {
 			$data = json_decode( $content, true );
 			if ( JSON_ERROR_NONE !== json_last_error() ) {
@@ -40,7 +47,7 @@ class File_Upload_Service {
 			return $content;
 		}
 
-		$file_array = array(
+		$file_array    = array(
 			'name'     => sanitize_file_name( basename( $file['name'] ) ),
 			'tmp_name' => $tmp_file,
 		);
@@ -70,7 +77,7 @@ class File_Upload_Service {
 			return null;
 		}
 
-		$file_array = array(
+		$file_array    = array(
 			'name'     => sanitize_file_name( basename( $url ) ),
 			'tmp_name' => $tmp_file,
 		);

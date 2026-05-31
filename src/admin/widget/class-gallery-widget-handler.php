@@ -68,7 +68,7 @@ class Gallery_Widget_Handler implements Widget_Handler_Interface {
 		// Map spacing (image_spacing_custom)
 		if (
 			isset( $settings['image_spacing'] ) &&
-			$settings['image_spacing'] === 'custom' &&
+			'custom' === $settings['image_spacing'] &&
 			isset( $settings['image_spacing_custom']['size'] )
 		) {
 			$spacing      = intval( $settings['image_spacing_custom']['size'] );
@@ -79,7 +79,7 @@ class Gallery_Widget_Handler implements Widget_Handler_Interface {
 		if ( isset( $settings['image_border_radius'] ) ) {
 			foreach ( array( 'top', 'right', 'bottom', 'left' ) as $side ) {
 				if ( isset( $settings['image_border_radius'][ $side ] ) ) {
-					$style["border-{$side}-radius"] = intval( $settings['image_border_radius'][ $side ] ) . "px";
+					$style[ "border-{$side}-radius" ] = intval( $settings['image_border_radius'][ $side ] ) . 'px';
 				}
 			}
 		}
@@ -88,7 +88,7 @@ class Gallery_Widget_Handler implements Widget_Handler_Interface {
 		if ( isset( $settings['image_border_width'] ) ) {
 			foreach ( array( 'top', 'right', 'bottom', 'left' ) as $side ) {
 				if ( isset( $settings['image_border_width'][ $side ] ) ) {
-					$style["border-{$side}-width"] = intval( $settings['image_border_width'][ $side ] ) . "px";
+					$style[ "border-{$side}-width" ] = intval( $settings['image_border_width'][ $side ] ) . 'px';
 				}
 			}
 		}
@@ -106,7 +106,7 @@ class Gallery_Widget_Handler implements Widget_Handler_Interface {
 			'ids'       => $image_ids,
 			'sizeSlug'  => $size_slug,
 			'className' => implode( ' ', $custom_classes ),
-			'linkTo'    => 'none'
+			'linkTo'    => 'none',
 		);
 
 		if ( $style ) {
@@ -116,10 +116,10 @@ class Gallery_Widget_Handler implements Widget_Handler_Interface {
 		// Build inner image blocks
 		$inner_blocks = '';
 		$image_count  = isset( $images['id'] ) ? count( $images['id'] ) : 0;
-		for ( $i = 0; $i < $image_count; $i ++ ) {
-			$img_id       = intval( $images['id'][ $i ] );
-			$img_url      = esc_url( $images['url'][ $i ] );
-			$img_size     = esc_attr( $size_slug );
+		for ( $i = 0; $i < $image_count; $i++ ) {
+			$img_id        = intval( $images['id'][ $i ] );
+			$img_url       = esc_url( $images['url'][ $i ] );
+			$img_size      = esc_attr( $size_slug );
 			$inner_blocks .= sprintf(
 				'<!-- wp:image {"id":%d,"sizeSlug":"%s","linkDestination":"none"} -->' .
 				'<figure class="wp-block-image size-%s"><img src="%s" alt=""/></figure>' .

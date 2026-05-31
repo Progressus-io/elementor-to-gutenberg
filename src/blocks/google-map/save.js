@@ -16,13 +16,13 @@ const Save = ({ attributes }) => {
   let src = "";
   if (locLat !== null && locLng !== null) {
     src = `https://maps.google.com/maps?q=${encodeURIComponent(
-      locLat
+      locLat,
     )},${encodeURIComponent(locLng)}&z=${encodeURIComponent(
-      zoom
+      zoom,
     )}&output=embed`;
   } else if (locAddress) {
     src = `https://maps.google.com/maps?q=${encodeURIComponent(
-      locAddress
+      locAddress,
     )}&z=${encodeURIComponent(zoom)}&output=embed`;
   }
 
@@ -81,7 +81,7 @@ const Save = ({ attributes }) => {
     top = normalizeSideValue(box.top ?? box.top === 0 ? box.top : null);
     right = normalizeSideValue(box.right ?? box.right === 0 ? box.right : null);
     bottom = normalizeSideValue(
-      box.bottom ?? box.bottom === 0 ? box.bottom : null
+      box.bottom ?? box.bottom === 0 ? box.bottom : null,
     );
     left = normalizeSideValue(box.left ?? box.left === 0 ? box.left : null);
 
@@ -106,13 +106,13 @@ const Save = ({ attributes }) => {
     }
     const top = normalizeSideValue(box.top ?? box.top === 0 ? box.top : null);
     const right = normalizeSideValue(
-      box.right ?? box.right === 0 ? box.right : null
+      box.right ?? box.right === 0 ? box.right : null,
     );
     const bottom = normalizeSideValue(
-      box.bottom ?? box.bottom === 0 ? box.bottom : null
+      box.bottom ?? box.bottom === 0 ? box.bottom : null,
     );
     const left = normalizeSideValue(
-      box.left ?? box.left === 0 ? box.left : null
+      box.left ?? box.left === 0 ? box.left : null,
     );
     return `${top}px ${right}px ${bottom}px ${left}px`;
   };

@@ -63,7 +63,7 @@ class Text_Editor_Widget_Handler implements Widget_Handler_Interface {
 			$base_attributes['className'] = trim( (string) ( $base_attributes['className'] ?? '' ) . ' ' . $element_class );
 		}
 
-		$markup_classes     = $custom_classes;
+		$markup_classes = $custom_classes;
 		if ( '' !== $element_class ) {
 			$markup_classes[] = $element_class;
 		}
@@ -693,9 +693,9 @@ class Text_Editor_Widget_Handler implements Widget_Handler_Interface {
 
 		$segments = array();
 
-		foreach ( $wrapper->childNodes as $child ) {
-			if ( XML_TEXT_NODE === $child->nodeType ) {
-				$text = trim( $child->nodeValue );
+		foreach ( $wrapper->childNodes as $child ) { // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+			if ( XML_TEXT_NODE === $child->nodeType ) { // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+				$text = trim( $child->nodeValue ); // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 				if ( '' !== $text ) {
 					$segments[] = array(
 						'type'    => 'paragraph',
@@ -706,11 +706,11 @@ class Text_Editor_Widget_Handler implements Widget_Handler_Interface {
 				continue;
 			}
 
-			if ( XML_ELEMENT_NODE !== $child->nodeType ) {
+			if ( XML_ELEMENT_NODE !== $child->nodeType ) { // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 				continue;
 			}
 
-			$tag = strtolower( $child->nodeName );
+			$tag = strtolower( $child->nodeName ); // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 
 			if ( 'p' === $tag ) {
 				$segments[] = array(
@@ -723,8 +723,8 @@ class Text_Editor_Widget_Handler implements Widget_Handler_Interface {
 
 			if ( in_array( $tag, array( 'ul', 'ol' ), true ) ) {
 				$items = array();
-				foreach ( $child->childNodes as $item_node ) {
-					if ( XML_ELEMENT_NODE !== $item_node->nodeType || 'li' !== strtolower( $item_node->nodeName ) ) {
+				foreach ( $child->childNodes as $item_node ) { // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+					if ( XML_ELEMENT_NODE !== $item_node->nodeType || 'li' !== strtolower( $item_node->nodeName ) ) { // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 						continue;
 					}
 
@@ -758,8 +758,8 @@ class Text_Editor_Widget_Handler implements Widget_Handler_Interface {
 	 */
 	private function get_inner_html( \DOMNode $node ): string {
 		$html = '';
-		foreach ( $node->childNodes as $child ) {
-			$html .= $node->ownerDocument->saveHTML( $child );
+		foreach ( $node->childNodes as $child ) { // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+			$html .= $node->ownerDocument->saveHTML( $child ); // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 		}
 
 		return $html;
@@ -851,5 +851,4 @@ class Text_Editor_Widget_Handler implements Widget_Handler_Interface {
 
 		return $html;
 	}
-
 }

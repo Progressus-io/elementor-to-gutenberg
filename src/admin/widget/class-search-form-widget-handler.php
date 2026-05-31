@@ -70,12 +70,12 @@ class Search_Form_Widget_Handler implements Widget_Handler_Interface {
 		}
 
 		$attributes = array(
-			'label'         => $label,
-			'showLabel'     => $show_label,
-			'placeholder'   => $placeholder,
-			'buttonText'    => $button_text,
-			'buttonUseIcon' => $button_use_icon,
-			'buttonPosition'=> $button_position,
+			'label'          => $label,
+			'showLabel'      => $show_label,
+			'placeholder'    => $placeholder,
+			'buttonText'     => $button_text,
+			'buttonUseIcon'  => $button_use_icon,
+			'buttonPosition' => $button_position,
 		);
 
 		if ( '' !== $custom_id ) {
@@ -137,7 +137,7 @@ class Search_Form_Widget_Handler implements Widget_Handler_Interface {
 		}
 
 		if ( is_numeric( $value ) ) {
-			return (int) $value === 1;
+			return 1 === (int) $value;
 		}
 
 		if ( is_string( $value ) ) {

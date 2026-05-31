@@ -114,10 +114,7 @@ class External_CSS_Service {
 
 		$meta = get_post_meta( $post_id, self::META_KEY, true );
 
-		// If meta is already an array (serialized storage), use it directly.
-		if ( is_array( $meta ) ) {
-			// continue
-		} elseif ( is_string( $meta ) && '' !== $meta ) {
+		if ( ! is_array( $meta ) && is_string( $meta ) && '' !== $meta ) {
 			// Most common case: JSON string (sometimes slashed).
 			$raw = trim( wp_unslash( $meta ) );
 
@@ -187,7 +184,14 @@ class External_CSS_Service {
 			);
 		}
 
-		$current_css = (string) @file_get_contents( $path );
+		if ( ! function_exists( 'WP_Filesystem' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/file.php';
+		}
+		WP_Filesystem();
+		global $wp_filesystem;
+		$current_css = ( $wp_filesystem && method_exists( $wp_filesystem, 'get_contents' ) )
+			? (string) $wp_filesystem->get_contents( $path )
+			: '';
 		$separator   = "\n\n/* AI remediation CSS appended on " . gmdate( 'Y-m-d H:i:s' ) . " UTC */\n";
 		$updated_css = trim( $current_css ) . $separator . $css . "\n";
 
@@ -329,7 +333,7 @@ class External_CSS_Service {
 			}
 		}
 
-		return false !== file_put_contents( $path, $contents );
+		return false;
 	}
 
 	/**
@@ -386,5 +390,4 @@ class External_CSS_Service {
 			}
 		}
 	}
-
 }

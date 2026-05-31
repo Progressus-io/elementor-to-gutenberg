@@ -37,8 +37,8 @@ class Posts_Widget_Handler implements Widget_Handler_Interface {
 
 		// Get posts per page (default 10)
 		$posts_per_page = isset( $settings['posts_per_page'] ) ? (int) $settings['posts_per_page'] : 10;
-		if ( isset( $settings[$skin . '_posts_per_page'] ) ) {
-			$posts_per_page = (int) $settings[$skin . '_posts_per_page'];
+		if ( isset( $settings[ $skin . '_posts_per_page' ] ) ) {
+			$posts_per_page = (int) $settings[ $skin . '_posts_per_page' ];
 		}
 		if ( $posts_per_page <= 0 ) {
 			$posts_per_page = 10;
@@ -46,21 +46,21 @@ class Posts_Widget_Handler implements Widget_Handler_Interface {
 
 		// Get order and orderby
 		$order_by = isset( $settings['orderby'] ) ? (string) $settings['orderby'] : 'date';
-		if ( isset( $settings[$skin . '_orderby'] ) ) {
-			$order_by = (string) $settings[$skin . '_orderby'];
+		if ( isset( $settings[ $skin . '_orderby' ] ) ) {
+			$order_by = (string) $settings[ $skin . '_orderby' ];
 		}
-		
+
 		$order = isset( $settings['order'] ) ? strtoupper( (string) $settings['order'] ) : 'DESC';
-		if ( isset( $settings[$skin . '_order'] ) ) {
-			$order = strtoupper( (string) $settings[$skin . '_order'] );
+		if ( isset( $settings[ $skin . '_order' ] ) ) {
+			$order = strtoupper( (string) $settings[ $skin . '_order' ] );
 		}
 
 		// Get columns (default 3)
 		$columns = 3;
 		if ( isset( $settings['columns'] ) ) {
 			$columns = (int) $settings['columns'];
-		} elseif ( isset( $settings[$skin . '_columns'] ) ) {
-			$columns = (int) $settings[$skin . '_columns'];
+		} elseif ( isset( $settings[ $skin . '_columns' ] ) ) {
+			$columns = (int) $settings[ $skin . '_columns' ];
 		}
 		if ( $columns < 1 ) {
 			$columns = 3;
@@ -168,27 +168,23 @@ class Posts_Widget_Handler implements Widget_Handler_Interface {
 
 		// Show featured image (default true)
 		$show_image_key = $skin . '_show_image';
-		$show_image = ! isset( $settings[$show_image_key] ) || 'yes' === $settings[$show_image_key];
-		
-		// Show title (default true)
+		$show_image     = ! isset( $settings[ $show_image_key ] ) || 'yes' === $settings[ $show_image_key ];
+
 		$show_title_key = $skin . '_show_title';
-		$show_title = ! isset( $settings[$show_title_key] ) || 'yes' === $settings[$show_title_key];
-		
-		// Show excerpt (default true)
+		$show_title     = ! isset( $settings[ $show_title_key ] ) || 'yes' === $settings[ $show_title_key ];
+
 		$show_excerpt_key = $skin . '_show_excerpt';
-		$show_excerpt = ! isset( $settings[$show_excerpt_key] ) || 'yes' === $settings[$show_excerpt_key];
-		
-		// Show date (default true)
+		$show_excerpt     = ! isset( $settings[ $show_excerpt_key ] ) || 'yes' === $settings[ $show_excerpt_key ];
+
 		$show_date_key = $skin . '_show_date';
-		$show_date = ! isset( $settings[$show_date_key] ) || 'yes' === $settings[$show_date_key];
-		
-		// Show author (default true)
+		$show_date     = ! isset( $settings[ $show_date_key ] ) || 'yes' === $settings[ $show_date_key ];
+
 		$show_author_key = $skin . '_show_author';
-		$show_author = ! isset( $settings[$show_author_key] ) || 'yes' === $settings[$show_author_key];
-		
+		$show_author     = ! isset( $settings[ $show_author_key ] ) || 'yes' === $settings[ $show_author_key ];
+
 		// Show read more (default true)
 		$show_read_more_key = $skin . '_show_read_more';
-		$show_read_more = ! isset( $settings[$show_read_more_key] ) || 'yes' === $settings[$show_read_more_key];
+		$show_read_more     = ! isset( $settings[ $show_read_more_key ] ) || 'yes' === $settings[ $show_read_more_key ];
 
 		// Build Post Template block
 		$post_template_blocks = array();
@@ -210,8 +206,8 @@ class Posts_Widget_Handler implements Widget_Handler_Interface {
 			$post_template_blocks[] = Block_Builder::build(
 				'post-title',
 				array(
-					'isLink'   => true,
-					'level'    => 2,
+					'isLink' => true,
+					'level'  => 2,
 				),
 				''
 			);
@@ -220,7 +216,7 @@ class Posts_Widget_Handler implements Widget_Handler_Interface {
 		// Post Meta (Date and Author)
 		if ( $show_date || $show_author ) {
 			$post_date_blocks = array();
-			
+
 			if ( $show_date ) {
 				$post_date_blocks[] = Block_Builder::build(
 					'post-date',
@@ -255,11 +251,11 @@ class Posts_Widget_Handler implements Widget_Handler_Interface {
 		// Post Excerpt
 		if ( $show_excerpt ) {
 			$excerpt_attrs = array();
-			
+
 			// Get excerpt length
 			$excerpt_length_key = $skin . '_excerpt_length';
-			if ( isset( $settings[$excerpt_length_key] ) ) {
-				$excerpt_length = (int) $settings[$excerpt_length_key];
+			if ( isset( $settings[ $excerpt_length_key ] ) ) {
+				$excerpt_length = (int) $settings[ $excerpt_length_key ];
 				if ( $excerpt_length > 0 ) {
 					$excerpt_attrs['excerptLength'] = $excerpt_length;
 				}
@@ -275,12 +271,12 @@ class Posts_Widget_Handler implements Widget_Handler_Interface {
 		// Read More button
 		if ( $show_read_more ) {
 			$read_more_text_key = $skin . '_read_more_text';
-			$read_more_text = isset( $settings[$read_more_text_key] ) 
-				? (string) $settings[$read_more_text_key] 
+			$read_more_text     = isset( $settings[ $read_more_text_key ] )
+				? (string) $settings[ $read_more_text_key ]
 				: 'Read More »';
-			
-			$button_html = '<a class="wp-block-button__link wp-element-button"></a>';
-			$button_inner = Block_Builder::build(
+
+			$button_html            = '<a class="wp-block-button__link wp-element-button"></a>';
+			$button_inner           = Block_Builder::build(
 				'button',
 				array(),
 				$button_html
@@ -309,10 +305,10 @@ class Posts_Widget_Handler implements Widget_Handler_Interface {
 
 		// Handle pagination
 		$pagination_type = isset( $settings['pagination_type'] ) ? (string) $settings['pagination_type'] : '';
-		
+
 		if ( '' !== $pagination_type && 'none' !== $pagination_type ) {
 			$pagination_attrs = array();
-			
+
 			// Map pagination types
 			if ( 'numbers' === $pagination_type ) {
 				$pagination_attrs['paginationArrow'] = 'none';
@@ -330,10 +326,10 @@ class Posts_Widget_Handler implements Widget_Handler_Interface {
 		}
 
 		// No results block
-		$no_posts_msg = isset( $settings['nothing_found_message'] ) 
-			? (string) $settings['nothing_found_message'] 
+		$no_posts_msg      = isset( $settings['nothing_found_message'] )
+			? (string) $settings['nothing_found_message']
 			: 'No posts found.';
-		$paragraph_inner = Block_Builder::build(
+		$paragraph_inner   = Block_Builder::build(
 			'paragraph',
 			array(),
 			'<p>' . esc_html( $no_posts_msg ) . '</p>'
@@ -358,8 +354,8 @@ class Posts_Widget_Handler implements Widget_Handler_Interface {
 		$pagination_blocks = array();
 
 		if ( 'prev_next' === $pagination_type || 'numbers_and_prev_next' === $pagination_type ) {
-			$prev_label = isset( $settings['pagination_prev_label'] ) 
-				? (string) $settings['pagination_prev_label'] 
+			$prev_label = isset( $settings['pagination_prev_label'] )
+				? (string) $settings['pagination_prev_label']
 				: '« Previous';
 
 			$pagination_blocks[] = Block_Builder::build(
@@ -380,8 +376,8 @@ class Posts_Widget_Handler implements Widget_Handler_Interface {
 		}
 
 		if ( 'prev_next' === $pagination_type || 'numbers_and_prev_next' === $pagination_type ) {
-			$next_label = isset( $settings['pagination_next_label'] ) 
-				? (string) $settings['pagination_next_label'] 
+			$next_label = isset( $settings['pagination_next_label'] )
+				? (string) $settings['pagination_next_label']
 				: 'Next »';
 
 			$pagination_blocks[] = Block_Builder::build(

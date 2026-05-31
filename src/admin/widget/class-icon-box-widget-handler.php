@@ -187,7 +187,7 @@ class Icon_Box_Widget_Handler implements Widget_Handler_Interface {
 	/**
 	 * Sanitize slider or numeric values from Elementor settings.
 	 */
-	private function sanitize_slider_value( $value, int $default ): int {
+	private function sanitize_slider_value( $value, int $fallback ): int {
 		if ( is_array( $value ) ) {
 			if ( isset( $value['size'] ) && is_numeric( $value['size'] ) ) {
 				return (int) round( $value['size'] );
@@ -200,6 +200,6 @@ class Icon_Box_Widget_Handler implements Widget_Handler_Interface {
 			return (int) round( $value );
 		}
 
-		return $default;
+		return $fallback;
 	}
 }

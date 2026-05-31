@@ -1,6 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
   const progressBars = document.querySelectorAll(
-    ".wp-block-progressus-progress"
+    ".wp-block-progressus-progress",
   );
 
   if (!progressBars.length) return;
@@ -10,7 +10,7 @@ document.addEventListener("DOMContentLoaded", () => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
           const bar = entry.target.querySelector(
-            ".progressus-progress-bar-fill"
+            ".progressus-progress-bar-fill",
           );
           if (bar) {
             // Get the percentage from the width style
@@ -29,7 +29,7 @@ document.addEventListener("DOMContentLoaded", () => {
     },
     {
       threshold: 0.1,
-    }
+    },
   );
 
   progressBars.forEach((bar) => observer.observe(bar));

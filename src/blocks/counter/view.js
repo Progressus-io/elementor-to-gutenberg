@@ -15,7 +15,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const progress = Math.min(timeElapsed / duration, 1);
 
       const currentCount = Math.floor(
-        startVal + (endVal - startVal) * progress
+        startVal + (endVal - startVal) * progress,
       );
       countValue.textContent = currentCount;
 

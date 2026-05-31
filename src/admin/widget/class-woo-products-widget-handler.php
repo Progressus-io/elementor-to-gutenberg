@@ -318,8 +318,7 @@ class Woo_Products_Widget_Handler implements Widget_Handler_Interface {
 	 * @return string
 	 */
 	private function get_product_collection_template(): string {
-		return
-			"<div class=\"wp-block-woocommerce-product-collection\">\n" .
+		return "<div class=\"wp-block-woocommerce-product-collection\">\n" .
 			"<!-- wp:woocommerce/product-template -->\n" .
 
 			"<!-- wp:woocommerce/product-image {\"showSaleBadge\":false,\"isDescendentOfQueryLoop\":true} -->\n" .
@@ -334,5 +333,4 @@ class Woo_Products_Widget_Handler implements Widget_Handler_Interface {
 			"<!-- /wp:woocommerce/product-template -->\n" .
 			"</div>\n";
 	}
-
 }

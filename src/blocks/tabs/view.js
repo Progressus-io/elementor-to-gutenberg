@@ -9,8 +9,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const originalStyles = [];
     tabHeaders.forEach(function (header, index) {
       originalStyles[index] = {
-        style: header.getAttribute('style') || '',
-        isActive: header.classList.contains('active')
+        style: header.getAttribute("style") || "",
+        isActive: header.classList.contains("active"),
       };
     });
 
@@ -37,7 +37,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
           e.preventDefault();
           const currentIndex = Array.from(tabHeaders).indexOf(
-            document.activeElement
+            document.activeElement,
           );
           let nextIndex;
 
@@ -59,7 +59,7 @@ document.addEventListener("DOMContentLoaded", function () {
       header.setAttribute("role", "tab");
       header.setAttribute(
         "aria-selected",
-        index === initialActiveTab ? "true" : "false"
+        index === initialActiveTab ? "true" : "false",
       );
     });
 
@@ -77,21 +77,25 @@ document.addEventListener("DOMContentLoaded", function () {
         header.classList.toggle("active", index === activeIndex);
         header.setAttribute(
           "aria-selected",
-          index === activeIndex ? "true" : "false"
+          index === activeIndex ? "true" : "false",
         );
-        
+
         // Restore original styles based on whether this tab should be active
         if (index === activeIndex) {
           // Apply the style that was originally on the active tab
-          const activeOriginalStyle = originalStyles.find(style => style.isActive);
+          const activeOriginalStyle = originalStyles.find(
+            (style) => style.isActive,
+          );
           if (activeOriginalStyle) {
-            header.setAttribute('style', activeOriginalStyle.style);
+            header.setAttribute("style", activeOriginalStyle.style);
           }
         } else {
           // Apply the style that was originally on inactive tabs
-          const inactiveOriginalStyle = originalStyles.find(style => !style.isActive);
+          const inactiveOriginalStyle = originalStyles.find(
+            (style) => !style.isActive,
+          );
           if (inactiveOriginalStyle) {
-            header.setAttribute('style', inactiveOriginalStyle.style);
+            header.setAttribute("style", inactiveOriginalStyle.style);
           }
         }
       });
@@ -107,7 +111,7 @@ document.addEventListener("DOMContentLoaded", function () {
       // Focus the active tab header for keyboard users
       if (
         document.activeElement &&
-        Array.from( tabHeaders ).includes( document.activeElement )
+        Array.from(tabHeaders).includes(document.activeElement)
       ) {
         tabHeaders[activeIndex].focus();
       }
@@ -131,7 +135,7 @@ if (typeof module !== "undefined" && module.exports) {
   module.exports = {
     initializeTabs: function (selector) {
       const tabsBlocks = document.querySelectorAll(
-        selector || ".progressus-tabs"
+        selector || ".progressus-tabs",
       );
       // Re-run initialization logic here if needed
     },

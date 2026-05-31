@@ -39,8 +39,7 @@ class Map_Widget_Handler implements Widget_Handler_Interface {
 
 		$loc['address'] = $settings['address'] ?? '';
 
-		$zoom = isset( $settings['zoom'] ) ? intval( $settings['zoom']['size'] ) : 14;
-		//$height = isset( $settings['height'] ) ? intval( $settings['height'] ) : 400;
+		$zoom   = isset( $settings['zoom'] ) ? intval( $settings['zoom']['size'] ) : 14;
 		$height = $this->get_dimension_size( isset( $settings['height'] ) ? $settings['height'] : 0, 450 );
 
 		// Build attributes that represent the original settings (keep location object and address)
@@ -61,15 +60,25 @@ class Map_Widget_Handler implements Widget_Handler_Interface {
 		$spacing_attrs = ! empty( $spacing['attributes'] ) ? $spacing['attributes'] : array();
 
 		$norm_spacing = array(
-			'margin'  => array( 'top' => 0, 'right' => 0, 'bottom' => 0, 'left' => 0 ),
-			'padding' => array( 'top' => 0, 'right' => 0, 'bottom' => 0, 'left' => 0 ),
+			'margin'  => array(
+				'top'    => 0,
+				'right'  => 0,
+				'bottom' => 0,
+				'left'   => 0,
+			),
+			'padding' => array(
+				'top'    => 0,
+				'right'  => 0,
+				'bottom' => 0,
+				'left'   => 0,
+			),
 		);
 
 		foreach ( array( 'margin', 'padding' ) as $box ) {
 			if ( ! empty( $spacing_attrs[ $box ] ) && is_array( $spacing_attrs[ $box ] ) ) {
 				foreach ( array( 'top', 'right', 'bottom', 'left' ) as $side ) {
 					$val = $spacing_attrs[ $box ][ $side ] ?? null;
-					if ( $val === null ) {
+					if ( null === $val ) {
 						$norm_spacing[ $box ][ $side ] = 0;
 						continue;
 					}
@@ -105,14 +114,13 @@ class Map_Widget_Handler implements Widget_Handler_Interface {
 		}
 
 		// Build iframe src using lat/lng when available, otherwise address.
-		if ( $attributes['location']['lat'] !== null && $attributes['location']['lng'] !== null ) {
+		if ( null !== $attributes['location']['lat'] && null !== $attributes['location']['lng'] ) {
 			$src = sprintf( 'https://maps.google.com/maps?q=%1$s,%2$s&z=%3$d&output=embed', \esc_attr( $attributes['location']['lat'] ), \esc_attr( $attributes['location']['lng'] ), $zoom );
 		} elseif ( ! empty( $attributes['location']['address'] ) ) {
 			$src = sprintf( 'https://maps.google.com/maps?q=%s&z=%d&output=embed', \rawurlencode( $attributes['location']['address'] ), $zoom );
 		} else {
 			$src = '';
 		}
-
 
 		// Build shorthand style attribute from normalized spacing to match client-side save output.
 		$style_parts = array();
@@ -139,7 +147,7 @@ class Map_Widget_Handler implements Widget_Handler_Interface {
 		return $open . "\n" . $inner . "\n" . $close . "\n";
 	}
 
-	private function get_dimension_size( $value, $default = 0 ) {
+	private function get_dimension_size( $value, $fallback = 0 ) {
 		if ( is_array( $value ) && isset( $value['size'] ) && '' !== $value['size'] && null !== $value['size'] ) {
 			return absint( $value['size'] );
 		}
@@ -148,6 +156,6 @@ class Map_Widget_Handler implements Widget_Handler_Interface {
 			return absint( $value );
 		}
 
-		return absint( $default );
+		return absint( $fallback );
 	}
 }

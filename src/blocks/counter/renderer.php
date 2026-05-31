@@ -21,19 +21,21 @@ use function register_block_type;
  * @param WP_Block $block      Block instance.
  * @return string Returns the counter block markup.
  */
-function render_counter_block( $attributes, $content, $block ) {
+function render_counter_block( $attributes, $_content, $_block ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter
 	$start_value = isset( $attributes['startValue'] ) ? intval( $attributes['startValue'] ) : 0;
 	$end_value   = isset( $attributes['endValue'] ) ? intval( $attributes['endValue'] ) : 100;
 	$duration    = isset( $attributes['duration'] ) ? intval( $attributes['duration'] ) : 2000;
 	$prefix      = isset( $attributes['prefix'] ) ? \esc_html( $attributes['prefix'] ) : '';
 	$suffix      = isset( $attributes['suffix'] ) ? \esc_html( $attributes['suffix'] ) : '';
 
-	$wrapper_attributes = \get_block_wrapper_attributes( array(
-		'class'          => 'wp-block-progressus-counter',
-		'data-start'     => $start_value,
-		'data-end'       => $end_value,
-		'data-duration'  => $duration,
-	) );
+	$wrapper_attributes = \get_block_wrapper_attributes(
+		array(
+			'class'         => 'wp-block-progressus-counter',
+			'data-start'    => $start_value,
+			'data-end'      => $end_value,
+			'data-duration' => $duration,
+		)
+	);
 
 	return sprintf(
 		'<div %1$s><span class="prefix">%2$s</span><span class="counter-value">%3$s</span><span class="suffix">%4$s</span></div>',

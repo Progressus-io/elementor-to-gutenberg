@@ -20,8 +20,8 @@ use function register_block_type;
  * @param WP_Block $block      Block instance.
  * @return string HTML output
  */
-function render_google_map_block( $attributes, $content, $block ) {
-	$loc = isset( $attributes['location'] ) ? $attributes['location'] : null;
+function render_google_map_block( $attributes, $_content, $_block ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter
+	$loc     = isset( $attributes['location'] ) ? $attributes['location'] : null;
 	$address = '';
 	if ( is_array( $loc ) && isset( $loc['address'] ) ) {
 		$address = $loc['address'];
@@ -30,22 +30,22 @@ function render_google_map_block( $attributes, $content, $block ) {
 	}
 
 	$lat = null;
-	if ( is_array( $loc ) && isset( $loc['lat'] ) && $loc['lat'] !== null ) {
+	if ( is_array( $loc ) && isset( $loc['lat'] ) && null !== $loc['lat'] ) {
 		$lat = floatval( $loc['lat'] );
-	} elseif ( isset( $attributes['lat'] ) && $attributes['lat'] !== null ) {
+	} elseif ( isset( $attributes['lat'] ) && null !== $attributes['lat'] ) {
 		$lat = floatval( $attributes['lat'] );
 	}
 
 	$lng = null;
-	if ( is_array( $loc ) && isset( $loc['lng'] ) && $loc['lng'] !== null ) {
+	if ( is_array( $loc ) && isset( $loc['lng'] ) && null !== $loc['lng'] ) {
 		$lng = floatval( $loc['lng'] );
-	} elseif ( isset( $attributes['lng'] ) && $attributes['lng'] !== null ) {
+	} elseif ( isset( $attributes['lng'] ) && null !== $attributes['lng'] ) {
 		$lng = floatval( $attributes['lng'] );
 	}
-	$zoom = isset( $attributes['zoom'] ) ? intval( $attributes['zoom'] ) : 14;
+	$zoom   = isset( $attributes['zoom'] ) ? intval( $attributes['zoom'] ) : 14;
 	$height = isset( $attributes['height'] ) ? intval( $attributes['height'] ) : 400;
 
-	if ( $lat !== null && $lng !== null ) {
+	if ( null !== $lat && null !== $lng ) {
 		$src = sprintf( 'https://maps.google.com/maps?q=%1$s,%2$s&z=%3$d&output=embed', \esc_attr( $lat ), \esc_attr( $lng ), $zoom );
 	} elseif ( ! empty( $address ) ) {
 		$src = sprintf( 'https://maps.google.com/maps?q=%s&z=%d&output=embed', rawurlencode( $address ), $zoom );
@@ -59,8 +59,8 @@ function render_google_map_block( $attributes, $content, $block ) {
 	$location_attr = isset( $attributes['location'] ) && is_array( $attributes['location'] ) ? $attributes['location'] : null;
 	$location_json = $location_attr ? wp_json_encode( $location_attr ) : '';
 
-	$map_type = isset( $attributes['mapType'] ) ? $attributes['mapType'] : '';
-	$zoom_attr = isset( $attributes['zoom'] ) ? intval( $attributes['zoom'] ) : '';
+	$map_type    = isset( $attributes['mapType'] ) ? $attributes['mapType'] : '';
+	$zoom_attr   = isset( $attributes['zoom'] ) ? intval( $attributes['zoom'] ) : '';
 	$height_attr = isset( $attributes['height'] ) ? intval( $attributes['height'] ) : '';
 
 	$wrapper_with_data = rtrim( $wrapper, '>' );
@@ -70,18 +70,18 @@ function render_google_map_block( $attributes, $content, $block ) {
 	if ( $map_type ) {
 		$wrapper_with_data .= ' data-map-type="' . esc_attr( $map_type ) . '"';
 	}
-	if ( $zoom_attr !== '' ) {
+	if ( '' !== $zoom_attr ) {
 		$wrapper_with_data .= ' data-zoom="' . esc_attr( $zoom_attr ) . '"';
 	}
-	if ( $height_attr !== '' ) {
+	if ( '' !== $height_attr ) {
 		$wrapper_with_data .= ' data-height="' . esc_attr( $height_attr ) . '"';
 	}
-	$wrapper_with_data .= '>'; 
+	$wrapper_with_data .= '>';
 
 	$style_parts = array();
 	// Helper: normalize a side value which may be numeric or include units (e.g. '2px' or '1.5%').
-	$normalize = static function( $value ) {
-		if ( $value === '' || $value === null ) {
+	$normalize = static function ( $value ) {
+		if ( '' === $value || null === $value ) {
 			return '0px';
 		}
 		// If it's numeric, append 'px'.
@@ -97,27 +97,27 @@ function render_google_map_block( $attributes, $content, $block ) {
 	};
 
 	if ( isset( $attributes['style']['spacing']['margin'] ) && is_array( $attributes['style']['spacing']['margin'] ) ) {
-		$m = $attributes['style']['spacing']['margin'];
-		$top = isset( $m['top'] ) ? $normalize( $m['top'] ) : '0px';
-		$right = isset( $m['right'] ) ? $normalize( $m['right'] ) : '0px';
-		$bottom = isset( $m['bottom'] ) ? $normalize( $m['bottom'] ) : '0px';
-		$left = isset( $m['left'] ) ? $normalize( $m['left'] ) : '0px';
+		$m             = $attributes['style']['spacing']['margin'];
+		$top           = isset( $m['top'] ) ? $normalize( $m['top'] ) : '0px';
+		$right         = isset( $m['right'] ) ? $normalize( $m['right'] ) : '0px';
+		$bottom        = isset( $m['bottom'] ) ? $normalize( $m['bottom'] ) : '0px';
+		$left          = isset( $m['left'] ) ? $normalize( $m['left'] ) : '0px';
 		$style_parts[] = sprintf( 'margin:%1$s %2$s %3$s %4$s', \esc_attr( $top ), \esc_attr( $right ), \esc_attr( $bottom ), \esc_attr( $left ) );
 	}
 
 	if ( isset( $attributes['style']['spacing']['padding'] ) && is_array( $attributes['style']['spacing']['padding'] ) ) {
-		$p = $attributes['style']['spacing']['padding'];
-		$pt = isset( $p['top'] ) ? $normalize( $p['top'] ) : '0px';
-		$pr = isset( $p['right'] ) ? $normalize( $p['right'] ) : '0px';
-		$pb = isset( $p['bottom'] ) ? $normalize( $p['bottom'] ) : '0px';
-		$pl = isset( $p['left'] ) ? $normalize( $p['left'] ) : '0px';
+		$p             = $attributes['style']['spacing']['padding'];
+		$pt            = isset( $p['top'] ) ? $normalize( $p['top'] ) : '0px';
+		$pr            = isset( $p['right'] ) ? $normalize( $p['right'] ) : '0px';
+		$pb            = isset( $p['bottom'] ) ? $normalize( $p['bottom'] ) : '0px';
+		$pl            = isset( $p['left'] ) ? $normalize( $p['left'] ) : '0px';
 		$style_parts[] = sprintf( 'padding:%1$s %2$s %3$s %4$s', \esc_attr( $pt ), \esc_attr( $pr ), \esc_attr( $pb ), \esc_attr( $pl ) );
 	}
 
 	if ( ! empty( $style_parts ) ) {
 		$style_attr = implode( ';', $style_parts );
 		// inject style attribute into wrapper
-		$wrapper_with_data = rtrim( $wrapper_with_data, '>' );
+		$wrapper_with_data  = rtrim( $wrapper_with_data, '>' );
 		$wrapper_with_data .= ' style="' . esc_attr( $style_attr ) . '">';
 	}
 

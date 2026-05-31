@@ -184,7 +184,7 @@ class WP_Widget_Handler implements Widget_Handler_Interface {
 
 		$class_columns = $columns > 0 ? 'columns-' . (string) $columns : 'columns-default';
 		$out           = '<!-- wp:gallery {"linkTo":"none"} -->' . "\n";
-		$out           .= '<figure class="wp-block-gallery has-nested-images ' . esc_attr( $class_columns ) . ' is-cropped">';
+		$out          .= '<figure class="wp-block-gallery has-nested-images ' . esc_attr( $class_columns ) . ' is-cropped">';
 
 		foreach ( $ids as $id ) {
 			$url = wp_get_attachment_image_url( $id, $size );

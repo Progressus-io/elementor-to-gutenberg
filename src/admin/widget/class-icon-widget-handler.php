@@ -47,7 +47,7 @@ class Icon_Widget_Handler implements Widget_Handler_Interface {
 		$hover_effect     = isset( $settings['hover_effect'] ) ? (string) $settings['hover_effect'] : 'scale-up';
 		$link_settings    = is_array( $settings['link'] ?? null ) ? $settings['link'] : array();
 		$link             = isset( $link_settings['url'] ) ? (string) $link_settings['url'] : '';
-		$link_target = ! empty( $link_settings['is_external'] ) ? '_blank' : '';
+		$link_target      = ! empty( $link_settings['is_external'] ) ? '_blank' : '';
 
 		$icon_style_class = $icon_data['style_class'];
 		$attributes       = array(
@@ -154,7 +154,6 @@ class Icon_Widget_Handler implements Widget_Handler_Interface {
 			'style="' . esc_attr( $wrapper_style ) . '"',
 		);
 
-
 		if ( '' !== $custom_id ) {
 			$wrapper_attrs[] = 'id="' . esc_attr( $custom_id ) . '"';
 		}
@@ -232,7 +231,7 @@ class Icon_Widget_Handler implements Widget_Handler_Interface {
 	/**
 	 * Sanitize slider/dimension values coming from Elementor controls.
 	 */
-	private function sanitize_slider_value( $value, int $default ): int {
+	private function sanitize_slider_value( $value, int $fallback ): int {
 		if ( is_array( $value ) ) {
 			if ( isset( $value['size'] ) && is_numeric( $value['size'] ) ) {
 				return (int) round( $value['size'] );
@@ -247,7 +246,7 @@ class Icon_Widget_Handler implements Widget_Handler_Interface {
 			return (int) round( $value );
 		}
 
-		return $default;
+		return $fallback;
 	}
 
 	/**

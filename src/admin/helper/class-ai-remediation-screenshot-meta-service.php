@@ -173,7 +173,10 @@ class AI_Remediation_Screenshot_Meta_Service {
 	 */
 	public static function generate_and_store( int $source_id, int $target_id, bool $force = false ): array {
 		if ( ! $force && self::has_valid_screenshots( $target_id ) ) {
-			return array( 'success' => true, 'error' => '' );
+			return array(
+				'success' => true,
+				'error'   => '',
+			);
 		}
 
 		if ( 'elementor_library' === get_post_type( $source_id ) ) {
@@ -232,10 +235,16 @@ class AI_Remediation_Screenshot_Meta_Service {
 			if ( ! $gutenberg_mobile_result['success'] ) {
 				$errors[] = 'Gutenberg (mobile): ' . $gutenberg_mobile_result['error'];
 			}
-			return array( 'success' => false, 'error' => implode( ' | ', $errors ) );
+			return array(
+				'success' => false,
+				'error'   => implode( ' | ', $errors ),
+			);
 		}
 
-		return array( 'success' => true, 'error' => '' );
+		return array(
+			'success' => true,
+			'error'   => '',
+		);
 	}
 
 	/**

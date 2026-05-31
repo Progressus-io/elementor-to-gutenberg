@@ -101,7 +101,7 @@ class Nested_Accordion_Widget_Handler implements Widget_Handler_Interface {
 		$id_attr    = ! empty( $css_id ) ? ' id="' . esc_attr( $css_id ) . '"' : '';
 
 		$block_content .= sprintf(
-			"<!-- wp:group%s%s%s --><div class=\"wp-block-group\">",
+			'<!-- wp:group%s%s%s --><div class="wp-block-group">',
 			$class_attr,
 			$id_attr,
 			$style_attr

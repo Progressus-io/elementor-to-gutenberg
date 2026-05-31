@@ -78,26 +78,31 @@ class Call_To_Action_Widget_Handler implements Widget_Handler_Interface {
 		$title = $this->get_first_text_setting( $settings, array( 'title', 'title_text', 'cta_title', 'heading' ) );
 		$title = $this->normalize_text_value( $title );
 
-		$description = $this->get_first_text_setting( $settings, array(
-			'description',
-			'desc',
-			'subtitle',
-			'content',
-			'text'
-		) );
+		$description = $this->get_first_text_setting(
+			$settings,
+			array(
+				'description',
+				'desc',
+				'subtitle',
+				'content',
+				'text',
+			)
+		);
 		$description = $this->normalize_text_value( $description );
 
-		$button_text = $this->get_first_text_setting( $settings, array(
-			'button',
-			'button_text',
-			'cta_text',
-			'link_text'
-		) );
+		$button_text = $this->get_first_text_setting(
+			$settings,
+			array(
+				'button',
+				'button_text',
+				'cta_text',
+				'link_text',
+			)
+		);
 		$button_text = $this->normalize_text_value( $button_text );
 
-// Ribbon.
+		// Ribbon.
 		$ribbon_title = isset( $settings['ribbon_title'] ) ? $this->normalize_text_value( (string) $settings['ribbon_title'] ) : '';
-
 
 		$button_url      = isset( $settings['link']['url'] ) ? (string) $settings['link']['url'] : '';
 		$button_target   = ! empty( $settings['link']['is_external'] );
@@ -117,17 +122,32 @@ class Call_To_Action_Widget_Handler implements Widget_Handler_Interface {
 
 		$content_padding = $this->extract_padding(
 			isset( $settings['padding'] ) && is_array( $settings['padding'] ) ? $settings['padding'] : array(),
-			array( 'top' => 50, 'right' => 50, 'bottom' => 50, 'left' => 50 )
+			array(
+				'top'    => 50,
+				'right'  => 50,
+				'bottom' => 50,
+				'left'   => 50,
+			)
 		);
 
 		$content_margin = $this->extract_padding(
 			isset( $settings['_margin'] ) && is_array( $settings['_margin'] ) ? $settings['_margin'] : array(),
-			array( 'top' => 0, 'right' => 0, 'bottom' => 0, 'left' => 0 )
+			array(
+				'top'    => 0,
+				'right'  => 0,
+				'bottom' => 0,
+				'left'   => 0,
+			)
 		);
 
 		$button_padding = $this->extract_padding(
 			isset( $settings['button_padding'] ) && is_array( $settings['button_padding'] ) ? $settings['button_padding'] : array(),
-			array( 'top' => 12, 'right' => 24, 'bottom' => 12, 'left' => 24 )
+			array(
+				'top'    => 12,
+				'right'  => 24,
+				'bottom' => 12,
+				'left'   => 24,
+			)
 		);
 
 		// Ribbon.
@@ -418,7 +438,7 @@ class Call_To_Action_Widget_Handler implements Widget_Handler_Interface {
 				$aria_label = basename( $path );
 			}
 
-			$image_html = '<div class="call-to-action-image" role="img" aria-label="' . esc_attr( $aria_label ) . '" style="' . implode( ';', $image_style_parts ) . '"></div>';
+			$image_html  = '<div class="call-to-action-image" role="img" aria-label="' . esc_attr( $aria_label ) . '" style="' . implode( ';', $image_style_parts ) . '"></div>';
 			$image_html .= '<div class="call-to-action-image-overlay"></div>';
 		}
 
@@ -440,12 +460,12 @@ class Call_To_Action_Widget_Handler implements Widget_Handler_Interface {
 		}
 
 		$content = '<div ' . implode( ' ', $wrapper_attrs ) . '>' .
-		           '<div class="call-to-action-container" style="' . implode( ';', $container_style_parts ) . '">' .
-		           $ribbon_html .
-		           $image_html .
-		           '<div class="call-to-action-content" style="' . implode( ';', $content_style_parts ) . '">' .
-		           implode( '', $segments ) .
-		           '</div></div></div>';
+					'<div class="call-to-action-container" style="' . implode( ';', $container_style_parts ) . '">' .
+					$ribbon_html .
+					$image_html .
+					'<div class="call-to-action-content" style="' . implode( ';', $content_style_parts ) . '">' .
+					implode( '', $segments ) .
+					'</div></div></div>';
 
 		// Build full attributes then strip defaults (this is what Gutenberg does on save).
 		$block_attributes = array(
@@ -547,7 +567,7 @@ class Call_To_Action_Widget_Handler implements Widget_Handler_Interface {
 	 *
 	 * @return int Sanitized integer value.
 	 */
-	private function sanitize_slider_value( $value, int $default ): int {
+	private function sanitize_slider_value( $value, int $fallback ): int {
 		if ( is_array( $value ) && isset( $value['size'] ) ) {
 			return (int) $value['size'];
 		}
@@ -555,7 +575,7 @@ class Call_To_Action_Widget_Handler implements Widget_Handler_Interface {
 			return (int) $value;
 		}
 
-		return $default;
+		return $fallback;
 	}
 
 	/**
@@ -718,9 +738,24 @@ class Call_To_Action_Widget_Handler implements Widget_Handler_Interface {
 			'buttonLetterSpacing'       => '',
 			'buttonWordSpacing'         => '',
 			'buttonBorderRadius'        => 4,
-			'buttonPadding'             => array( 'top' => 12, 'right' => 24, 'bottom' => 12, 'left' => 24 ),
-			'contentPadding'            => array( 'top' => 50, 'right' => 50, 'bottom' => 50, 'left' => 50 ),
-			'contentMargin'             => array( 'top' => 0, 'right' => 0, 'bottom' => 0, 'left' => 0 ),
+			'buttonPadding'             => array(
+				'top'    => 12,
+				'right'  => 24,
+				'bottom' => 12,
+				'left'   => 24,
+			),
+			'contentPadding'            => array(
+				'top'    => 50,
+				'right'  => 50,
+				'bottom' => 50,
+				'left'   => 50,
+			),
+			'contentMargin'             => array(
+				'top'    => 0,
+				'right'  => 0,
+				'bottom' => 0,
+				'left'   => 0,
+			),
 			'ribbonTitle'               => '',
 			'ribbonBgColor'             => '#007cba',
 			'ribbonTextColor'           => '#ffffff',
