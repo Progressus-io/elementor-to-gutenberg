@@ -20,7 +20,6 @@ import {
 	ToolbarGroup,
 	ToolbarButton,
 } from '@wordpress/components';
-import { useState } from '@wordpress/element';
 
 const Edit = ( { attributes, setAttributes } ) => {
 	const {

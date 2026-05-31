@@ -120,6 +120,7 @@ export default function save( { attributes } ) {
 		>
 			{ imageElement }
 			{ link && ( title || imageUrl ) ? (
+				// eslint-disable-next-line react/jsx-no-target-blank
 				<a
 					href={ link }
 					target={ linkTarget ? '_blank' : undefined }

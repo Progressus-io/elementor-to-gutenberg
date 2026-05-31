@@ -564,35 +564,45 @@ const Edit = ( { attributes, setAttributes } ) => {
 			</InspectorControls>
 			<div { ...blockProps }>
 				<div style={ previewStyle }>
-					{ typeof window !== 'undefined' &&
-					window.google &&
-					window.google.maps ? (
-						<div
-							ref={ mapContainerRef }
-							style={ { width: '100%', height: '100%' } }
-						/>
-					) : src ? (
-						<iframe
-							src={ src }
-							title={ __(
-								'Google Map',
-								'elementor-to-gutenberg'
-							) }
-							style={ {
-								width: '100%',
-								height: '100%',
-								border: 0,
-							} }
-							loading="lazy"
-						/>
-					) : (
-						<div>
-							{ __(
-								'Enter an address or coordinates to preview',
-								'elementor-to-gutenberg'
-							) }
-						</div>
-					) }
+					{ ( () => {
+						const hasGoogleMaps =
+							typeof window !== 'undefined' &&
+							window.google &&
+							window.google.maps;
+						if ( hasGoogleMaps ) {
+							return (
+								<div
+									ref={ mapContainerRef }
+									style={ { width: '100%', height: '100%' } }
+								/>
+							);
+						}
+						if ( src ) {
+							return (
+								<iframe
+									src={ src }
+									title={ __(
+										'Google Map',
+										'elementor-to-gutenberg'
+									) }
+									style={ {
+										width: '100%',
+										height: '100%',
+										border: 0,
+									} }
+									loading="lazy"
+								/>
+							);
+						}
+						return (
+							<div>
+								{ __(
+									'Enter an address or coordinates to preview',
+									'elementor-to-gutenberg'
+								) }
+							</div>
+						);
+					} )() }
 				</div>
 			</div>
 		</Fragment>

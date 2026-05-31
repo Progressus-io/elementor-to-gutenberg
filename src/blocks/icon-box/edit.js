@@ -610,13 +610,14 @@ export default function Edit( { attributes, setAttributes } ) {
 						<div className="components-base-control__label">
 							{ __( 'SVG Upload', 'fontawesome-icon-block' ) }
 						</div>
-						{ svg ? (
+						{ svg && (
 							<div
 								className="svg-preview"
 								style={ { marginBottom: '8px' } }
 								dangerouslySetInnerHTML={ { __html: svg } }
 							/>
-						) : svgUrl ? (
+						) }
+						{ ! svg && svgUrl && (
 							<img
 								src={ svgUrl }
 								alt={ ariaLabel || '' }
@@ -626,7 +627,7 @@ export default function Edit( { attributes, setAttributes } ) {
 									marginBottom: '8px',
 								} }
 							/>
-						) : null }
+						) }
 						<MediaUploadCheck>
 							<MediaUpload
 								onSelect={ ( media ) => {

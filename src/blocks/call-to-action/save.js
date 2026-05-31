@@ -247,6 +247,7 @@ export default function save( { attributes } ) {
 	const buttonElement =
 		buttonText &&
 		( buttonUrl ? (
+			// eslint-disable-next-line react/jsx-no-target-blank
 			<a
 				href={ buttonUrl }
 				className="call-to-action-button"
