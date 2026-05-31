@@ -109,7 +109,7 @@ const Edit = ({ attributes, setAttributes }) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=5&q=${encodeURIComponent(
-        query
+        query,
       )}`;
 
       fetch(url, { headers: { Accept: "application/json" } })
@@ -120,7 +120,7 @@ const Edit = ({ attributes, setAttributes }) => {
               label: item.display_name,
               lat: item.lat,
               lon: item.lon,
-            }))
+            })),
           );
         })
         .catch(() => setSuggestions([]))
@@ -202,7 +202,6 @@ const Edit = ({ attributes, setAttributes }) => {
           // ignore geocode failures in editor
         }
       }
-
     } catch (e) {
       // ignore initialization failures in editor
     }
@@ -234,7 +233,7 @@ const Edit = ({ attributes, setAttributes }) => {
 
     try {
       autocompleteRef.current = new window.google.maps.places.Autocomplete(
-        inputRef.current
+        inputRef.current,
       );
       autocompleteRef.current.setFields(["formatted_address", "geometry"]);
       const listener = () => {
@@ -263,7 +262,7 @@ const Edit = ({ attributes, setAttributes }) => {
       return () => {
         try {
           window.google.maps.event.clearInstanceListeners(
-            autocompleteRef.current
+            autocompleteRef.current,
           );
         } catch (e) {}
         autocompleteRef.current = null;
@@ -277,13 +276,13 @@ const Edit = ({ attributes, setAttributes }) => {
   let src = "";
   if (locLat !== null && locLng !== null) {
     src = `https://maps.google.com/maps?q=${encodeURIComponent(
-      locLat
+      locLat,
     )},${encodeURIComponent(locLng)}&z=${encodeURIComponent(
-      zoom
+      zoom,
     )}&output=embed`;
   } else if (locAddress) {
     src = `https://maps.google.com/maps?q=${encodeURIComponent(
-      locAddress
+      locAddress,
     )}&z=${encodeURIComponent(zoom)}&output=embed`;
   }
 
@@ -297,7 +296,7 @@ const Edit = ({ attributes, setAttributes }) => {
           <p style={{ marginTop: 0, marginBottom: 8 }}>
             {__(
               "Set your Google Maps API Key in the plugin's Integrations Settings page.",
-              "elementor-to-gutenberg"
+              "elementor-to-gutenberg",
             )}{" "}
             <a
               href="/wp-admin/admin.php?page=gutenberg-settings"
@@ -331,7 +330,7 @@ const Edit = ({ attributes, setAttributes }) => {
               onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
               placeholder={__(
                 "Start typing an address...",
-                "elementor-to-gutenberg"
+                "elementor-to-gutenberg",
               )}
               style={{ width: "100%" }}
             />
@@ -512,7 +511,7 @@ const Edit = ({ attributes, setAttributes }) => {
             <div>
               {__(
                 "Enter an address or coordinates to preview",
-                "elementor-to-gutenberg"
+                "elementor-to-gutenberg",
               )}
             </div>
           )}

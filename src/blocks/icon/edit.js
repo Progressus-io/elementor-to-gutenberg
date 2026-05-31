@@ -46,68 +46,287 @@ import "./editor.scss";
 
 // FontAwesome icons organized by categories
 const FONTAWESOME_ICONS = {
-	solid: [
-		// Popular/Common icons
-		'fa-star', 'fa-heart', 'fa-home', 'fa-user', 'fa-envelope', 'fa-phone', 'fa-search', 'fa-shopping-cart',
-		'fa-cog', 'fa-download', 'fa-upload', 'fa-edit', 'fa-trash', 'fa-check', 'fa-times', 'fa-plus',
-		'fa-minus', 'fa-arrow-up', 'fa-arrow-down', 'fa-arrow-left', 'fa-arrow-right', 'fa-play', 'fa-pause',
-		'fa-stop', 'fa-volume-up', 'fa-volume-down', 'fa-volume-mute', 'fa-calendar', 'fa-clock',
-		// Business & Office
-		'fa-briefcase', 'fa-building', 'fa-chart-bar', 'fa-chart-line', 'fa-chart-pie', 'fa-clipboard',
-		'fa-file', 'fa-folder', 'fa-print', 'fa-save', 'fa-calculator', 'fa-handshake', 'fa-users',
-		'fa-user-tie', 'fa-id-card', 'fa-balance-scale', 'fa-gavel', 'fa-award', 'fa-medal', 'fa-trophy',
-		// Technology
-		'fa-laptop', 'fa-desktop', 'fa-mobile-alt', 'fa-tablet-alt', 'fa-keyboard', 'fa-mouse', 'fa-wifi',
-		'fa-bluetooth', 'fa-usb', 'fa-plug', 'fa-battery-full', 'fa-camera', 'fa-video', 'fa-microphone',
-		'fa-headphones', 'fa-tv', 'fa-gamepad', 'fa-code', 'fa-bug', 'fa-database', 'fa-server',
-		// Travel & Transportation
-		'fa-plane', 'fa-car', 'fa-bus', 'fa-train', 'fa-ship', 'fa-bicycle', 'fa-motorcycle', 'fa-taxi',
-		'fa-gas-pump', 'fa-map', 'fa-map-marker-alt', 'fa-compass', 'fa-suitcase', 'fa-umbrella',
-		'fa-hotel', 'fa-bed', 'fa-key', 'fa-door-open', 'fa-passport', 'fa-ticket-alt',
-		// Food & Dining
-		'fa-utensils', 'fa-coffee', 'fa-wine-glass', 'fa-beer', 'fa-pizza-slice', 'fa-hamburger',
-		'fa-ice-cream', 'fa-apple-alt', 'fa-carrot', 'fa-fish', 'fa-egg', 'fa-cheese', 'fa-birthday-cake',
-		// Health & Medical
-		'fa-heart-pulse', 'fa-stethoscope', 'fa-pills', 'fa-syringe', 'fa-band-aid', 'fa-hospital',
-		'fa-ambulance', 'fa-wheelchair', 'fa-dna', 'fa-microscope', 'fa-x-ray', 'fa-tooth',
-		// Sports & Recreation
-		'fa-football-ball', 'fa-basketball-ball', 'fa-baseball-ball', 'fa-tennis-ball', 'fa-volleyball-ball',
-		'fa-golf-ball', 'fa-bowling-ball', 'fa-table-tennis', 'fa-running', 'fa-swimming-pool',
-		'fa-dumbbell', 'fa-hiking', 'fa-campground', 'fa-fire', 'fa-mountain',
-		// Weather
-		'fa-sun', 'fa-moon', 'fa-cloud', 'fa-cloud-rain', 'fa-cloud-snow', 'fa-bolt', 'fa-rainbow',
-		'fa-temperature-high', 'fa-temperature-low', 'fa-wind', 'fa-tornado', 'fa-hurricane',
-		// Shopping & E-commerce
-		'fa-shopping-bag', 'fa-credit-card', 'fa-money-bill', 'fa-coins', 'fa-receipt', 'fa-tag',
-		'fa-tags', 'fa-gift', 'fa-store', 'fa-cash-register', 'fa-barcode', 'fa-percent'
-	],
-	regular: [
-		'fa-star', 'fa-heart', 'fa-envelope', 'fa-file', 'fa-folder', 'fa-user', 'fa-circle',
-		'fa-square', 'fa-calendar', 'fa-clock', 'fa-bookmark', 'fa-comment', 'fa-thumbs-up',
-		'fa-thumbs-down', 'fa-eye', 'fa-eye-slash', 'fa-bell', 'fa-lightbulb', 'fa-gem',
-		'fa-paper-plane', 'fa-flag', 'fa-clipboard', 'fa-edit', 'fa-trash-alt', 'fa-copy',
-		'fa-save', 'fa-image', 'fa-images', 'fa-play-circle', 'fa-pause-circle', 'fa-stop-circle'
-	],
-	brands: [
-		// Social Media
-		'fa-facebook', 'fa-twitter', 'fa-instagram', 'fa-linkedin', 'fa-youtube', 'fa-tiktok',
-		'fa-snapchat', 'fa-pinterest', 'fa-reddit', 'fa-discord', 'fa-telegram', 'fa-whatsapp',
-		'fa-skype', 'fa-zoom', 'fa-slack', 'fa-twitch', 'fa-spotify', 'fa-soundcloud',
-		// Technology Companies
-		'fa-apple', 'fa-google', 'fa-microsoft', 'fa-amazon', 'fa-meta', 'fa-adobe', 'fa-figma',
-		'fa-sketch', 'fa-dropbox', 'fa-github', 'fa-gitlab', 'fa-bitbucket', 'fa-npm',
-		'fa-node-js', 'fa-react', 'fa-vuejs', 'fa-angular', 'fa-bootstrap', 'fa-sass',
-		// Development & Design
-		'fa-html5', 'fa-css3-alt', 'fa-js', 'fa-php', 'fa-python', 'fa-java', 'fa-wordpress',
-		'fa-drupal', 'fa-joomla', 'fa-shopify', 'fa-magento', 'fa-wix', 'fa-squarespace',
-		// Payment & Finance
-		'fa-paypal', 'fa-stripe', 'fa-bitcoin', 'fa-ethereum', 'fa-cc-visa', 'fa-cc-mastercard',
-		'fa-cc-amex', 'fa-cc-paypal', 'fa-cc-apple-pay', 'fa-cc-stripe',
-		// Other Brands
-		'fa-airbnb', 'fa-uber', 'fa-lyft', 'fa-netflix', 'fa-steam', 'fa-playstation',
-		'fa-xbox', 'fa-nintendo-switch', 'fa-android', 'fa-linux', 'fa-windows',
-		'fa-docker', 'fa-aws', 'fa-cloudflare', 'fa-jenkins', 'fa-mailchimp'
-	]
+  solid: [
+    // Popular/Common icons
+    "fa-star",
+    "fa-heart",
+    "fa-home",
+    "fa-user",
+    "fa-envelope",
+    "fa-phone",
+    "fa-search",
+    "fa-shopping-cart",
+    "fa-cog",
+    "fa-download",
+    "fa-upload",
+    "fa-edit",
+    "fa-trash",
+    "fa-check",
+    "fa-times",
+    "fa-plus",
+    "fa-minus",
+    "fa-arrow-up",
+    "fa-arrow-down",
+    "fa-arrow-left",
+    "fa-arrow-right",
+    "fa-play",
+    "fa-pause",
+    "fa-stop",
+    "fa-volume-up",
+    "fa-volume-down",
+    "fa-volume-mute",
+    "fa-calendar",
+    "fa-clock",
+    // Business & Office
+    "fa-briefcase",
+    "fa-building",
+    "fa-chart-bar",
+    "fa-chart-line",
+    "fa-chart-pie",
+    "fa-clipboard",
+    "fa-file",
+    "fa-folder",
+    "fa-print",
+    "fa-save",
+    "fa-calculator",
+    "fa-handshake",
+    "fa-users",
+    "fa-user-tie",
+    "fa-id-card",
+    "fa-balance-scale",
+    "fa-gavel",
+    "fa-award",
+    "fa-medal",
+    "fa-trophy",
+    // Technology
+    "fa-laptop",
+    "fa-desktop",
+    "fa-mobile-alt",
+    "fa-tablet-alt",
+    "fa-keyboard",
+    "fa-mouse",
+    "fa-wifi",
+    "fa-bluetooth",
+    "fa-usb",
+    "fa-plug",
+    "fa-battery-full",
+    "fa-camera",
+    "fa-video",
+    "fa-microphone",
+    "fa-headphones",
+    "fa-tv",
+    "fa-gamepad",
+    "fa-code",
+    "fa-bug",
+    "fa-database",
+    "fa-server",
+    // Travel & Transportation
+    "fa-plane",
+    "fa-car",
+    "fa-bus",
+    "fa-train",
+    "fa-ship",
+    "fa-bicycle",
+    "fa-motorcycle",
+    "fa-taxi",
+    "fa-gas-pump",
+    "fa-map",
+    "fa-map-marker-alt",
+    "fa-compass",
+    "fa-suitcase",
+    "fa-umbrella",
+    "fa-hotel",
+    "fa-bed",
+    "fa-key",
+    "fa-door-open",
+    "fa-passport",
+    "fa-ticket-alt",
+    // Food & Dining
+    "fa-utensils",
+    "fa-coffee",
+    "fa-wine-glass",
+    "fa-beer",
+    "fa-pizza-slice",
+    "fa-hamburger",
+    "fa-ice-cream",
+    "fa-apple-alt",
+    "fa-carrot",
+    "fa-fish",
+    "fa-egg",
+    "fa-cheese",
+    "fa-birthday-cake",
+    // Health & Medical
+    "fa-heart-pulse",
+    "fa-stethoscope",
+    "fa-pills",
+    "fa-syringe",
+    "fa-band-aid",
+    "fa-hospital",
+    "fa-ambulance",
+    "fa-wheelchair",
+    "fa-dna",
+    "fa-microscope",
+    "fa-x-ray",
+    "fa-tooth",
+    // Sports & Recreation
+    "fa-football-ball",
+    "fa-basketball-ball",
+    "fa-baseball-ball",
+    "fa-tennis-ball",
+    "fa-volleyball-ball",
+    "fa-golf-ball",
+    "fa-bowling-ball",
+    "fa-table-tennis",
+    "fa-running",
+    "fa-swimming-pool",
+    "fa-dumbbell",
+    "fa-hiking",
+    "fa-campground",
+    "fa-fire",
+    "fa-mountain",
+    // Weather
+    "fa-sun",
+    "fa-moon",
+    "fa-cloud",
+    "fa-cloud-rain",
+    "fa-cloud-snow",
+    "fa-bolt",
+    "fa-rainbow",
+    "fa-temperature-high",
+    "fa-temperature-low",
+    "fa-wind",
+    "fa-tornado",
+    "fa-hurricane",
+    // Shopping & E-commerce
+    "fa-shopping-bag",
+    "fa-credit-card",
+    "fa-money-bill",
+    "fa-coins",
+    "fa-receipt",
+    "fa-tag",
+    "fa-tags",
+    "fa-gift",
+    "fa-store",
+    "fa-cash-register",
+    "fa-barcode",
+    "fa-percent",
+  ],
+  regular: [
+    "fa-star",
+    "fa-heart",
+    "fa-envelope",
+    "fa-file",
+    "fa-folder",
+    "fa-user",
+    "fa-circle",
+    "fa-square",
+    "fa-calendar",
+    "fa-clock",
+    "fa-bookmark",
+    "fa-comment",
+    "fa-thumbs-up",
+    "fa-thumbs-down",
+    "fa-eye",
+    "fa-eye-slash",
+    "fa-bell",
+    "fa-lightbulb",
+    "fa-gem",
+    "fa-paper-plane",
+    "fa-flag",
+    "fa-clipboard",
+    "fa-edit",
+    "fa-trash-alt",
+    "fa-copy",
+    "fa-save",
+    "fa-image",
+    "fa-images",
+    "fa-play-circle",
+    "fa-pause-circle",
+    "fa-stop-circle",
+  ],
+  brands: [
+    // Social Media
+    "fa-facebook",
+    "fa-twitter",
+    "fa-instagram",
+    "fa-linkedin",
+    "fa-youtube",
+    "fa-tiktok",
+    "fa-snapchat",
+    "fa-pinterest",
+    "fa-reddit",
+    "fa-discord",
+    "fa-telegram",
+    "fa-whatsapp",
+    "fa-skype",
+    "fa-zoom",
+    "fa-slack",
+    "fa-twitch",
+    "fa-spotify",
+    "fa-soundcloud",
+    // Technology Companies
+    "fa-apple",
+    "fa-google",
+    "fa-microsoft",
+    "fa-amazon",
+    "fa-meta",
+    "fa-adobe",
+    "fa-figma",
+    "fa-sketch",
+    "fa-dropbox",
+    "fa-github",
+    "fa-gitlab",
+    "fa-bitbucket",
+    "fa-npm",
+    "fa-node-js",
+    "fa-react",
+    "fa-vuejs",
+    "fa-angular",
+    "fa-bootstrap",
+    "fa-sass",
+    // Development & Design
+    "fa-html5",
+    "fa-css3-alt",
+    "fa-js",
+    "fa-php",
+    "fa-python",
+    "fa-java",
+    "fa-wordpress",
+    "fa-drupal",
+    "fa-joomla",
+    "fa-shopify",
+    "fa-magento",
+    "fa-wix",
+    "fa-squarespace",
+    // Payment & Finance
+    "fa-paypal",
+    "fa-stripe",
+    "fa-bitcoin",
+    "fa-ethereum",
+    "fa-cc-visa",
+    "fa-cc-mastercard",
+    "fa-cc-amex",
+    "fa-cc-paypal",
+    "fa-cc-apple-pay",
+    "fa-cc-stripe",
+    // Other Brands
+    "fa-airbnb",
+    "fa-uber",
+    "fa-lyft",
+    "fa-netflix",
+    "fa-steam",
+    "fa-playstation",
+    "fa-xbox",
+    "fa-nintendo-switch",
+    "fa-android",
+    "fa-linux",
+    "fa-windows",
+    "fa-docker",
+    "fa-aws",
+    "fa-cloudflare",
+    "fa-jenkins",
+    "fa-mailchimp",
+  ],
 };
 
 /**
@@ -148,7 +367,7 @@ export default function Edit({ attributes, setAttributes }) {
   // Filter icons based on search
   const getFilteredIcons = (category) => {
     return FONTAWESOME_ICONS[category].filter((iconName) =>
-      iconName.toLowerCase().includes(iconSearch.toLowerCase())
+      iconName.toLowerCase().includes(iconSearch.toLowerCase()),
     );
   };
 
@@ -274,7 +493,7 @@ export default function Edit({ attributes, setAttributes }) {
                     onChange={setIconSearch}
                     placeholder={__(
                       "Search icons...",
-                      "fontawesome-icon-block"
+                      "fontawesome-icon-block",
                     )}
                   />
                   <TabPanel
@@ -363,7 +582,7 @@ export default function Edit({ attributes, setAttributes }) {
                     fetch(url)
                       .then((res) => res.text())
                       .then((text) =>
-                        setAttributes({ svg: text, svgUrl: url })
+                        setAttributes({ svg: text, svgUrl: url }),
                       );
                   } else {
                     setAttributes({ svg: "", svgUrl: url });
@@ -582,14 +801,14 @@ export default function Edit({ attributes, setAttributes }) {
           <TextControl
             label={__(
               "Accessible Label (aria-label)",
-              "fontawesome-icon-block"
+              "fontawesome-icon-block",
             )}
             value={ariaLabel}
             onChange={(value) => setAttributes({ ariaLabel: value })}
             placeholder={__("Describe the icon...", "fontawesome-icon-block")}
             help={__(
               "Helps screen readers understand the purpose of this icon",
-              "fontawesome-icon-block"
+              "fontawesome-icon-block",
             )}
           />
         </PanelBody>

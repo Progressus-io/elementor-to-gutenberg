@@ -57,7 +57,7 @@ document.addEventListener("DOMContentLoaded", function () {
             if (status === "OK" && results && results[0]) {
               map.setCenter(results[0].geometry.location);
             }
-          }
+          },
         );
       }
 

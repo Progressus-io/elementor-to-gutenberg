@@ -111,14 +111,14 @@ class AI_Enhancement_Admin {
 
 		$has_pages = ! empty( $this->get_converted_pages() );
 		?>
-        <div class="wrap ele2gb-wizard-wrap">
-            <h1><?php esc_html_e( 'AI Enhancement', 'elementor-to-gutenberg' ); ?></h1>
-            <?php if ( ! $has_pages ) : ?>
-                <p><?php esc_html_e( 'No converted pages found. Use the Conversion Wizard to convert Elementor pages first.', 'elementor-to-gutenberg' ); ?></p>
-            <?php else : ?>
-                <div id="etg-ai-enhancement-app"></div>
-            <?php endif; ?>
-        </div>
+		<div class="wrap ele2gb-wizard-wrap">
+			<h1><?php esc_html_e( 'AI Enhancement', 'elementor-to-gutenberg' ); ?></h1>
+			<?php if ( ! $has_pages ) : ?>
+				<p><?php esc_html_e( 'No converted pages found. Use the Conversion Wizard to convert Elementor pages first.', 'elementor-to-gutenberg' ); ?></p>
+			<?php else : ?>
+				<div id="etg-ai-enhancement-app"></div>
+			<?php endif; ?>
+		</div>
 		<?php
 	}
 
@@ -135,11 +135,11 @@ class AI_Enhancement_Admin {
 			}
 
 			$data[] = array(
-				'id'          => $page->ID,
-				'title'       => $page->post_title,
-				'sourceId'    => $source_id,
-				'sourceTitle' => $source_id > 0 ? (string) get_the_title( $source_id ) : '',
-				'type'        => $type,
+				'id'           => $page->ID,
+				'title'        => $page->post_title,
+				'sourceId'     => $source_id,
+				'sourceTitle'  => $source_id > 0 ? (string) get_the_title( $source_id ) : '',
+				'type'         => $type,
 				'lastImproved' => (string) get_post_meta( $page->ID, '_ele2gb_last_ai_improved', true ),
 			);
 		}
@@ -148,64 +148,66 @@ class AI_Enhancement_Admin {
 	}
 
 	private function get_converted_pages(): array {
-		$query = new \WP_Query( array(
-			'post_type'      => array( 'page', 'wp_template_part' ),
-			'post_status'    => 'publish',
-			'posts_per_page' => 50, // phpcs:ignore WordPress.WP.PostsPerPage.posts_per_page_posts_per_page
+		$query = new \WP_Query(
+			array(
+				'post_type'      => array( 'page', 'wp_template_part' ),
+				'post_status'    => 'publish',
+				'posts_per_page' => 50, // phpcs:ignore WordPress.WP.PostsPerPage.posts_per_page_posts_per_page
 			// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
-			'meta_query'     => array(
+			'meta_query'         => array(
 				array(
 					'key'     => '_ele2gb_source_id',
 					'compare' => 'EXISTS',
 				),
 			),
-			'orderby'        => 'modified',
-			'order'          => 'DESC',
-		) );
+			'orderby'            => 'modified',
+			'order'              => 'DESC',
+			)
+		);
 
 		return is_array( $query->posts ) ? $query->posts : array();
 	}
 
 	private function get_strings(): array {
 		return array(
-			'colPage'               => __( 'Converted Page', 'elementor-to-gutenberg' ),
-			'colSource'             => __( 'Source Page', 'elementor-to-gutenberg' ),
-			'colActions'            => __( 'Actions', 'elementor-to-gutenberg' ),
-			'enhanceSingle'         => __( 'Enhance with AI', 'elementor-to-gutenberg' ),
-			'enhanceSelected'       => __( 'Bulk Enhance with AI', 'elementor-to-gutenberg' ),
+			'colPage'                  => __( 'Converted Page', 'elementor-to-gutenberg' ),
+			'colSource'                => __( 'Source Page', 'elementor-to-gutenberg' ),
+			'colActions'               => __( 'Actions', 'elementor-to-gutenberg' ),
+			'enhanceSingle'            => __( 'Enhance with AI', 'elementor-to-gutenberg' ),
+			'enhanceSelected'          => __( 'Bulk Enhance with AI', 'elementor-to-gutenberg' ),
 			/* translators: %1$d: number of selected items */
-			'enhanceSelectedCount'  => __( 'Enhance %1$d items with AI', 'elementor-to-gutenberg' ),
-			'noApiMessage'          => __( 'To enhance pages with AI, you need to enter your Claude API key.', 'elementor-to-gutenberg' ),
-			'addApiLink'            => __( 'Add your API key in Settings', 'elementor-to-gutenberg' ),
-			'back'                  => __( 'Back', 'elementor-to-gutenberg' ),
-			'backToList'            => __( 'Back to list', 'elementor-to-gutenberg' ),
-			'skip'                  => __( 'Skip', 'elementor-to-gutenberg' ),
-			'retry'                 => __( 'Retry', 'elementor-to-gutenberg' ),
-			'aiReadinessTitle'      => __( 'Pre-flight checklist', 'elementor-to-gutenberg' ),
-			'aiReadinessApiValid'   => __( 'API key configured', 'elementor-to-gutenberg' ),
-			'aiReadinessApiInvalid' => __( 'API key not configured', 'elementor-to-gutenberg' ),
+			'enhanceSelectedCount'     => __( 'Enhance %1$d items with AI', 'elementor-to-gutenberg' ),
+			'noApiMessage'             => __( 'To enhance pages with AI, you need to enter your Claude API key.', 'elementor-to-gutenberg' ),
+			'addApiLink'               => __( 'Add your API key in Settings', 'elementor-to-gutenberg' ),
+			'back'                     => __( 'Back', 'elementor-to-gutenberg' ),
+			'backToList'               => __( 'Back to list', 'elementor-to-gutenberg' ),
+			'skip'                     => __( 'Skip', 'elementor-to-gutenberg' ),
+			'retry'                    => __( 'Retry', 'elementor-to-gutenberg' ),
+			'aiReadinessTitle'         => __( 'Pre-flight checklist', 'elementor-to-gutenberg' ),
+			'aiReadinessApiValid'      => __( 'API key configured', 'elementor-to-gutenberg' ),
+			'aiReadinessApiInvalid'    => __( 'API key not configured', 'elementor-to-gutenberg' ),
 			/* translators: %1$d: estimated number of API calls */
-			'aiReadinessCredits'    => __( 'Estimated: ~%1$d API call(s), ~1–2 minutes per item', 'elementor-to-gutenberg' ),
-			'aiImproveWarningTitle' => __( 'AI credits will be used', 'elementor-to-gutenberg' ),
-			'aiImproveWarning'      => __( 'This will use AI credits once per selected item. Make sure your API key has sufficient credits before starting.', 'elementor-to-gutenberg' ),
-			'aiImproveStart'        => __( 'Start AI Enhancement', 'elementor-to-gutenberg' ),
-			'aiImproveError'        => __( 'An unexpected error occurred.', 'elementor-to-gutenberg' ),
-			'aiImproveType'         => __( 'Type', 'elementor-to-gutenberg' ),
-			'aiImprovePaused'       => __( 'Paused — an item failed. Review the error below, then skip or retry to continue.', 'elementor-to-gutenberg' ),
-			'aiImproveFinishedOk'   => __( 'All items improved successfully.', 'elementor-to-gutenberg' ),
+			'aiReadinessCredits'       => __( 'Estimated: ~%1$d API call(s), ~1–2 minutes per item', 'elementor-to-gutenberg' ),
+			'aiImproveWarningTitle'    => __( 'AI credits will be used', 'elementor-to-gutenberg' ),
+			'aiImproveWarning'         => __( 'This will use AI credits once per selected item. Make sure your API key has sufficient credits before starting.', 'elementor-to-gutenberg' ),
+			'aiImproveStart'           => __( 'Start AI Enhancement', 'elementor-to-gutenberg' ),
+			'aiImproveError'           => __( 'An unexpected error occurred.', 'elementor-to-gutenberg' ),
+			'aiImproveType'            => __( 'Type', 'elementor-to-gutenberg' ),
+			'aiImprovePaused'          => __( 'Paused — an item failed. Review the error below, then skip or retry to continue.', 'elementor-to-gutenberg' ),
+			'aiImproveFinishedOk'      => __( 'All items improved successfully.', 'elementor-to-gutenberg' ),
 			/* translators: 1: number of items done, 2: number failed, 3: number skipped */
-			'aiImproveFinishedErr'  => __( 'Finished — %1$d done, %2$d failed, %3$d skipped.', 'elementor-to-gutenberg' ),
-			'aiStatusPending'       => __( 'Pending', 'elementor-to-gutenberg' ),
-			'aiStatusProcessing'    => __( 'Processing…', 'elementor-to-gutenberg' ),
-			'aiStatusDone'          => __( 'Done', 'elementor-to-gutenberg' ),
-			'aiStatusFailed'        => __( 'Failed', 'elementor-to-gutenberg' ),
-			'aiStatusSkipped'       => __( 'Skipped', 'elementor-to-gutenberg' ),
-			'aiLoaderTitle'         => __( 'Improving with AI…', 'elementor-to-gutenberg' ),
-			'aiStageAnalyzing'      => __( 'Analyzing…', 'elementor-to-gutenberg' ),
-			'aiStageGenerating'     => __( 'Generating…', 'elementor-to-gutenberg' ),
-			'aiStageSaving'         => __( 'Saving…', 'elementor-to-gutenberg' ),
-			'statTotalPages'        => __( 'Converted Items', 'elementor-to-gutenberg' ),
-			'statAiEnhanced'        => __( 'AI-Enhanced', 'elementor-to-gutenberg' ),
+			'aiImproveFinishedErr'     => __( 'Finished — %1$d done, %2$d failed, %3$d skipped.', 'elementor-to-gutenberg' ),
+			'aiStatusPending'          => __( 'Pending', 'elementor-to-gutenberg' ),
+			'aiStatusProcessing'       => __( 'Processing…', 'elementor-to-gutenberg' ),
+			'aiStatusDone'             => __( 'Done', 'elementor-to-gutenberg' ),
+			'aiStatusFailed'           => __( 'Failed', 'elementor-to-gutenberg' ),
+			'aiStatusSkipped'          => __( 'Skipped', 'elementor-to-gutenberg' ),
+			'aiLoaderTitle'            => __( 'Improving with AI…', 'elementor-to-gutenberg' ),
+			'aiStageAnalyzing'         => __( 'Analyzing…', 'elementor-to-gutenberg' ),
+			'aiStageGenerating'        => __( 'Generating…', 'elementor-to-gutenberg' ),
+			'aiStageSaving'            => __( 'Saving…', 'elementor-to-gutenberg' ),
+			'statTotalPages'           => __( 'Converted Items', 'elementor-to-gutenberg' ),
+			'statAiEnhanced'           => __( 'AI-Enhanced', 'elementor-to-gutenberg' ),
 
 			// Feedback strings
 			'feedbackBtn'              => __( 'Send Feedback', 'elementor-to-gutenberg' ),
@@ -286,11 +288,11 @@ class AI_Enhancement_Admin {
 			),
 
 			'page'           => array(
-				'target_id'    => $target_id,
-				'source_id'    => $source_id > 0 ? $source_id : null,
-				'title'        => $target_post->post_title,
+				'target_id'     => $target_id,
+				'source_id'     => $source_id > 0 ? $source_id : null,
+				'title'         => $target_post->post_title,
 				'last_improved' => (string) get_post_meta( $target_id, '_ele2gb_last_ai_improved', true ),
-				'screenshots'  => array(
+				'screenshots'   => array(
 					'elementor_desktop' => $this->get_first_screenshot( $target_id, '_etg_ai_elementor_screenshot_url' ),
 					'gutenberg_desktop' => $this->get_first_screenshot( $target_id, '_etg_ai_gutenberg_screenshot_url' ),
 					'elementor_mobile'  => $this->get_first_screenshot( $target_id, '_etg_ai_elementor_screenshot_mobile_url' ),

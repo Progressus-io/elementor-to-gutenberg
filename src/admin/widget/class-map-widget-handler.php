@@ -39,7 +39,7 @@ class Map_Widget_Handler implements Widget_Handler_Interface {
 
 		$loc['address'] = $settings['address'] ?? '';
 
-		$zoom = isset( $settings['zoom'] ) ? intval( $settings['zoom']['size'] ) : 14;
+		$zoom   = isset( $settings['zoom'] ) ? intval( $settings['zoom']['size'] ) : 14;
 		$height = $this->get_dimension_size( isset( $settings['height'] ) ? $settings['height'] : 0, 450 );
 
 		// Build attributes that represent the original settings (keep location object and address)

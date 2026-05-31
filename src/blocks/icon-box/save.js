@@ -19,12 +19,14 @@ export default function save({ attributes }) {
   } = attributes;
 
   const wrapper_classes = arrayUnique(["wp-block-icon-box", className]).join(
-    " "
+    " ",
   );
 
   const icon_html = svgUrl
-      ? `<img src="${svgUrl}" alt="" style="${svgStyle ? svgStyle : `width:${size}px;height:auto;`}" class="svg-icon" />`
-      : `<i class="${iconStyle} ${icon}" style="font-size:${size}px;"></i>`;
+    ? `<img src="${svgUrl}" alt="" style="${
+        svgStyle ? svgStyle : `width:${size}px;height:auto;`
+      }" class="svg-icon" />`
+    : `<i class="${iconStyle} ${icon}" style="font-size:${size}px;"></i>`;
 
   return (
     <div
