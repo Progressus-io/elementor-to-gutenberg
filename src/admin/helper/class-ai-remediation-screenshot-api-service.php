@@ -120,8 +120,8 @@ class AI_Remediation_Screenshot_Api_Service {
 
 		$http_code = (int) wp_remote_retrieve_response_code( $response );
 		if ( 200 !== $http_code ) {
-			/* translators: %d: HTTP status code returned by the remote service */
 			$failure['error'] = sprintf(
+				/* translators: %d: HTTP status code returned by the remote service */
 				__( 'Screenshot service returned HTTP status %d.', 'elementor-to-gutenberg' ),
 				$http_code
 			);

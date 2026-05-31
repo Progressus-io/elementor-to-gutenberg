@@ -7,6 +7,8 @@
 
 namespace Progressus\Gutenberg\Blocks;
 
+defined( 'ABSPATH' ) || exit;
+
 use function esc_html;
 use function get_block_wrapper_attributes;
 use function register_block_type;

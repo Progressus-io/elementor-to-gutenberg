@@ -7,6 +7,8 @@
 
 namespace Progressus\Gutenberg\Admin;
 
+defined( 'ABSPATH' ) || exit;
+
 use Progressus\Gutenberg\Admin\Helper\AI_Prompt_Builder;
 use Progressus\Gutenberg\Admin\Helper\AI_Workspace_Repository;
 use Progressus\Gutenberg\Admin\Helper\External_CSS_Service;
@@ -52,8 +54,6 @@ use function wp_nonce_field;
 use function wp_safe_redirect;
 use function wp_unslash;
 use function wp_update_post;
-
-defined( 'ABSPATH' ) || exit;
 
 class AI_Improvement_Admin {
 
@@ -489,7 +489,8 @@ class AI_Improvement_Admin {
 	 * @param array $data Associative array of fields to log.
 	 */
 	private static function log_improvement( array $data ): void {
-		$log_file = WP_CONTENT_DIR . '/ele2gb-claude-api.log';
+		$upload_dir = wp_upload_dir();
+		$log_file   = trailingslashit( $upload_dir['basedir'] ) . 'ele2gb-claude-api.log';
 
 		$entry = array_merge(
 			array( 'timestamp' => gmdate( 'Y-m-d H:i:s' ), 'source' => 'run_improvement' ),
@@ -963,7 +964,7 @@ class AI_Improvement_Admin {
 				? sprintf( esc_html__( '%1$s: %2$s', 'elementor-to-gutenberg' ), $prefix, esc_html( $ai_error ) )
 				: $prefix . '.';
 			?>
-			<div class="notice notice-error is-dismissible"><p><?php echo $msg; // Already escaped above. ?></p></div>
+			<div class="notice notice-error is-dismissible"><p><?php echo esc_html( $msg ); ?></p></div>
 			<?php
 			return;
 		}
@@ -989,7 +990,7 @@ class AI_Improvement_Admin {
 		$notice_type = $messages[ $notice_code ][0];
 		$message     = $messages[ $notice_code ][1];
 		?>
-		<div class="notice notice-<?php echo esc_attr( $notice_type ); ?> is-dismissible"><p><?php echo $message; // Already escaped via esc_html__. ?></p></div>
+		<div class="notice notice-<?php echo esc_attr( $notice_type ); ?> is-dismissible"><p><?php echo esc_html( $message ); ?></p></div>
 		<?php
 	}
 
@@ -1080,7 +1081,7 @@ class AI_Improvement_Admin {
 					<div class="etg-ai-card">
 						<div class="etg-ai-card-header">
 							<h2><?php esc_html_e( 'Screenshots', 'elementor-to-gutenberg' ); ?></h2>
-							<span class="etg-status-pill etg-status-pill--<?php echo esc_attr( $pill[0] ); ?>"><?php echo $pill[1]; // Already escaped. ?></span>
+							<span class="etg-status-pill etg-status-pill--<?php echo esc_attr( $pill[0] ); ?>"><?php echo esc_html( $pill[1] ); ?></span>
 							<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="etg-inline-form">
 								<?php wp_nonce_field( 'ele2gb_ai_regenerate_screenshots_' . $target_id ); ?>
 								<input type="hidden" name="action" value="ele2gb_ai_regenerate_screenshots" />

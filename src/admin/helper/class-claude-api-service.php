@@ -408,7 +408,8 @@ SYSTEM;
 	 * @param array $data Log entry fields (merged with timestamp + model).
 	 */
 	private static function log_entry( array $data ): void {
-		$log_file = WP_CONTENT_DIR . '/ele2gb-claude-api.log';
+		$upload_dir = wp_upload_dir();
+		$log_file   = trailingslashit( $upload_dir['basedir'] ) . 'ele2gb-claude-api.log';
 
 		$entry = array_merge(
 			array(

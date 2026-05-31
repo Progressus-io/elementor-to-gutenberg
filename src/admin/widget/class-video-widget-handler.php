@@ -74,7 +74,7 @@ class Video_Widget_Handler implements Widget_Handler_Interface {
 		} elseif ( preg_match( '#youtube\.com/embed/([^?&]+)#i', $url, $matches ) ) {
 			$video_id = $matches[1];
 		} else {
-			$parts = parse_url( $url );
+			$parts = wp_parse_url( $url );
 			if ( isset( $parts['query'] ) ) {
 				parse_str( $parts['query'], $query_vars );
 				if ( ! empty( $query_vars['v'] ) ) {

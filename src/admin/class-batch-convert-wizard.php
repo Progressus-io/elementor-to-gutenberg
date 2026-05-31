@@ -7,6 +7,8 @@
 
 namespace Progressus\Gutenberg\Admin;
 
+defined( 'ABSPATH' ) || exit;
+
 use Progressus\Gutenberg\Admin\Admin_Settings;
 use Progressus\Gutenberg\Admin\AI_Improvement_Admin;
 use Progressus\Gutenberg\Admin\Conversion_Log_Admin;
@@ -83,8 +85,6 @@ use function delete_transient;
 use function wp_is_block_theme;
 
 use const HOUR_IN_SECONDS;
-
-defined( 'ABSPATH' ) || exit;
 
 /**
  * Class Batch_Convert_Wizard
@@ -318,18 +318,20 @@ class Batch_Convert_Wizard {
 	public function ajax_start_job(): void {
 		$this->verify_ajax_request();
 
+		// phpcs:disable WordPress.Security.NonceVerification.Missing -- nonce verified in verify_ajax_request()
 		$mode             = isset( $_POST['mode'] ) ? sanitize_key( wp_unslash( $_POST['mode'] ) ) : 'auto';
 		$conflict_policy  = isset( $_POST['conflictPolicy'] ) ? sanitize_key( wp_unslash( $_POST['conflictPolicy'] ) ) : 'skip';
 		$skip_converted   = ! empty( $_POST['skipConverted'] );
 
-		$raw_pages         = isset( $_POST['pages'] ) ? wp_unslash( $_POST['pages'] ) : array();
-		$raw_headers       = isset( $_POST['headerTemplates'] ) ? wp_unslash( $_POST['headerTemplates'] ) : array();
-		$raw_footers       = isset( $_POST['footerTemplates'] ) ? wp_unslash( $_POST['footerTemplates'] ) : array();
+		$raw_pages         = isset( $_POST['pages'] ) ? array_map( 'sanitize_text_field', (array) wp_unslash( $_POST['pages'] ) ) : array();
+		$raw_headers       = isset( $_POST['headerTemplates'] ) ? array_map( 'sanitize_text_field', (array) wp_unslash( $_POST['headerTemplates'] ) ) : array();
+		$raw_footers       = isset( $_POST['footerTemplates'] ) ? array_map( 'sanitize_text_field', (array) wp_unslash( $_POST['footerTemplates'] ) ) : array();
 		$default_header    = isset( $_POST['defaultHeader'] ) ? absint( wp_unslash( $_POST['defaultHeader'] ) ) : 0;
 		$default_footer    = isset( $_POST['defaultFooter'] ) ? absint( wp_unslash( $_POST['defaultFooter'] ) ) : 0;
 		$change_theme      = ! empty( $_POST['changeTheme'] );
 		$new_theme         = isset( $_POST['newTheme'] ) ? sanitize_text_field( wp_unslash( $_POST['newTheme'] ) ) : '';
 		$copy_custom_css   = ! empty( $_POST['copyCustomCss'] );
+		// phpcs:enable WordPress.Security.NonceVerification.Missing
 		$selected_page_ids = array_map( 'absint', (array) $raw_pages );
 		$selected_headers  = $this->normalize_template_selection( $raw_headers );
 		$selected_footers  = $this->normalize_template_selection( $raw_footers );
@@ -439,6 +441,7 @@ class Batch_Convert_Wizard {
 	public function ajax_poll_job(): void {
 		$this->verify_ajax_request();
 
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified in verify_ajax_request()
 		$job_id = isset( $_POST['jobId'] ) ? sanitize_text_field( wp_unslash( $_POST['jobId'] ) ) : '';
 		if ( '' === $job_id ) {
 			wp_send_json_error(
@@ -889,6 +892,7 @@ class Batch_Convert_Wizard {
 					'post_status'    => array( 'publish', 'draft', 'pending', 'future', 'private' ),
 					'posts_per_page' => self::ITEMS_PER_QUERY,
 					'paged'          => $paged,
+					// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 					'meta_query'     => array(
 						array(
 							'key'     => '_elementor_data',
@@ -939,13 +943,15 @@ class Batch_Convert_Wizard {
 		$safe_ids = array_map( 'absint', $page_ids );
 		$ids_str  = implode( ',', $safe_ids );
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// All IDs are verified integers via array_map('absint').
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$rows = $wpdb->get_results(
 			"SELECT post_id, meta_value FROM {$wpdb->postmeta}
 			 WHERE meta_key = '_elementor_data'
 			 AND post_id IN ({$ids_str})",
 			ARRAY_A
 		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
 		if ( empty( $rows ) ) {
 			return array();
@@ -1001,6 +1007,7 @@ class Batch_Convert_Wizard {
 
 		global $wpdb;
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$slugs = $wpdb->get_col(
 			"SELECT DISTINCT p.post_type
 			 FROM {$wpdb->posts} p
@@ -1227,6 +1234,7 @@ class Batch_Convert_Wizard {
 				'post_type'      => 'elementor_library',
 				'post_status'    => array( 'publish', 'draft', 'pending', 'future', 'private' ),
 				'posts_per_page' => - 1,
+				// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 				'meta_query'     => array(
 					array(
 						'key'     => '_elementor_template_type',
@@ -1276,6 +1284,7 @@ class Batch_Convert_Wizard {
 				'post_type'      => 'elementor-hf',
 				'post_status'    => array( 'publish', 'draft', 'pending', 'future', 'private' ),
 				'posts_per_page' => - 1,
+				// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 				'meta_query'     => array(
 					array(
 						'key'     => 'ehf_template_type',
@@ -2188,6 +2197,7 @@ class Batch_Convert_Wizard {
 
         if ( ! empty( $options['skip_converted'] ) && $existing_target_id > 0 && $this->has_been_converted( $source_id, $existing_target_id ) ) {
             $title             = get_the_title( $source_id );
+			/* translators: %s: page title */
 			$message           = sprintf( esc_html__( 'Skipped: “%s” is already converted.', 'elementor-to-gutenberg' ), $title );
 			$result['message'] = $message;
 			$result['target']  = $existing_target_id;
@@ -2248,6 +2258,7 @@ class Batch_Convert_Wizard {
                 $write_id = $existing_target_id;
             } else {
                 $title             = get_the_title( $source_id );
+                /* translators: %s: page title */
                 $message           = sprintf( esc_html__( 'Skipped: “%s” already has a converted copy.', 'elementor-to-gutenberg' ), $title );
                 $result['message'] = $message;
                 $result['target']  = $existing_target_id;
@@ -2319,6 +2330,7 @@ class Batch_Convert_Wizard {
 
 
 		$title   = get_the_title( $source_id );
+		/* translators: %s: page title */
 		$message = sprintf( esc_html__( 'Converted “%s” to Gutenberg blocks.', 'elementor-to-gutenberg' ), $title );
 
 		$result['status']  = 'success';
@@ -2583,6 +2595,7 @@ class Batch_Convert_Wizard {
 
 		$label   = 'header' === $template_info['type'] ? esc_html__( 'header', 'elementor-to-gutenberg' ) : esc_html__( 'footer', 'elementor-to-gutenberg' );
 		$title   = get_the_title( $post );
+		/* translators: 1: template type (header or footer), 2: template title */
 		$message = sprintf( esc_html__( 'Converted %1$s “%2$s”.', 'elementor-to-gutenberg' ), $label, $title );
 
 
@@ -2605,6 +2618,7 @@ class Batch_Convert_Wizard {
 	private function save_template_part( array $template_info, WP_Post $source_post, string $content, int $existing_target ): int {
 		$slug = sanitize_title( sprintf( 'converted-%s-%d', $template_info['type'], $source_post->ID ) );
 
+		/* translators: 1: template type (Header or Footer), 2: template title */
 		$title_format = esc_html__( 'Converted %1$s: %2$s', 'elementor-to-gutenberg' );
 		$label        = 'header' === $template_info['type'] ? esc_html__( 'Header', 'elementor-to-gutenberg' ) : esc_html__( 'Footer', 'elementor-to-gutenberg' );
 		$post_title   = sprintf( $title_format, $label, get_the_title( $source_post ) );
@@ -2695,6 +2709,7 @@ class Batch_Convert_Wizard {
 				'post_status'    => array( 'publish', 'draft', 'pending', 'future', 'private' ),
 				'posts_per_page' => - 1,
 				'name'           => 'header',
+				// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
 				'tax_query'      => array(
 					'relation' => 'AND',
 					array(
@@ -2760,6 +2775,7 @@ class Batch_Convert_Wizard {
 				'post_status'    => array( 'publish', 'draft', 'pending', 'future', 'private' ),
 				'posts_per_page' => - 1,
 				'name'           => 'footer',
+				// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
 				'tax_query'      => array(
 					'relation' => 'AND',
 					array(
@@ -2860,6 +2876,7 @@ class Batch_Convert_Wizard {
 
 		$content = $this->build_page_template_content( $header_slug, $footer_slug );
 
+		/* translators: %s: page title the template was created for */
 		$title_format = esc_html__( 'Page Template: %s', 'elementor-to-gutenberg' );
 		$post_title   = sprintf( $title_format, get_the_title( $converted_page_id ) );
 
@@ -2914,6 +2931,7 @@ class Batch_Convert_Wizard {
 		);
 
 		if ( $theme ) {
+			// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
 			$query_args['tax_query'] = array(
 				array(
 					'taxonomy' => 'wp_theme',
@@ -2972,6 +2990,7 @@ class Batch_Convert_Wizard {
 				'post_status'    => array( 'publish', 'draft', 'pending', 'future', 'private' ),
 				'posts_per_page' => - 1,
 				'fields'         => 'ids',
+				// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 				'meta_query'     => array(
 					array(
 						'key'   => '_ele2gb_template_role',
@@ -3007,6 +3026,7 @@ class Batch_Convert_Wizard {
 				'post_status'    => array( 'publish', 'draft', 'pending', 'future', 'private' ),
 				'posts_per_page' => 1,
 				'fields'         => 'ids',
+				// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 				'meta_query'     => array(
 					array(
 						'key'   => '_ele2gb_source_id',
@@ -3205,6 +3225,7 @@ class Batch_Convert_Wizard {
 	 */
 	private function get_strings(): array {
 		return array(
+			/* translators: 1: current step number, 2: total steps, 3: step label */
 			'step'                   => __( 'Step %1$s of %2$s — %3$s', 'elementor-to-gutenberg' ),
 			'stepLabelMode'          => __( 'Mode', 'elementor-to-gutenberg' ),
 			'stepLabelTheme'         => __( 'Theme', 'elementor-to-gutenberg' ),
@@ -3226,12 +3247,15 @@ class Batch_Convert_Wizard {
 			'selectPagesTitle'       => __( 'Select Content', 'elementor-to-gutenberg' ),
 			'selectAll'              => __( 'Select all', 'elementor-to-gutenberg' ),
 			'selectAllAcrossTypes'   => __( 'Select all across all types', 'elementor-to-gutenberg' ),
+			/* translators: 1: number of selected items, 2: total number of items */
 			'selectionSummary'       => __( '%1$d selected / %2$d total', 'elementor-to-gutenberg' ),
 			'noPagesFound'           => __( 'No Elementor content found for conversion.', 'elementor-to-gutenberg' ),
+			/* translators: 1: tab label, 2: item count */
 			'tabCountLabel'          => __( '%1$s (%2$d)', 'elementor-to-gutenberg' ),
 			'skipConverted'          => __( 'Skip pages that were already converted', 'elementor-to-gutenberg' ),
 			'selectAllEligible'      => __( 'Select all eligible', 'elementor-to-gutenberg' ),
 			'clearSelection'         => __( 'Clear selection', 'elementor-to-gutenberg' ),
+			/* translators: %1$d: number of selected items */
 			'selectionChip'          => __( '%1$d selected', 'elementor-to-gutenberg' ),
 			'filterAll'              => __( 'All', 'elementor-to-gutenberg' ),
 			'filterEligible'         => __( 'Eligible', 'elementor-to-gutenberg' ),
@@ -3243,6 +3267,7 @@ class Batch_Convert_Wizard {
 			'statusAlreadyConverted' => __( 'Already converted', 'elementor-to-gutenberg' ),
 			'statusFailedLastRun'    => __( 'Failed last run', 'elementor-to-gutenberg' ),
 			'conflictsTitle'         => __( 'Resolve Conflicts', 'elementor-to-gutenberg' ),
+			/* translators: %1$d: number of conflicting pages */
 			'conflictDetected'       => __( '%1$d selected pages already have a converted version.', 'elementor-to-gutenberg' ),
 			'conflictOverwrite'      => __( 'Update existing pages in place (overwrite)', 'elementor-to-gutenberg' ),
 			'conflictSkip'           => __( 'Skip those pages', 'elementor-to-gutenberg' ),
@@ -3256,7 +3281,9 @@ class Batch_Convert_Wizard {
 			'themeSuggestedCore'     => __( 'Suggested core block themes', 'elementor-to-gutenberg' ),
 			'themeInstalledList'     => __( 'Installed block themes', 'elementor-to-gutenberg' ),
 			'themeNoInstalled'       => __( 'No compatible block themes are installed.', 'elementor-to-gutenberg' ),
+			/* translators: %s: selected theme name */
 			'themeSelectedSummary'   => __( 'Selected: %s', 'elementor-to-gutenberg' ),
+			/* translators: %s: current active theme name */
 			'themeUsingCurrentSummary' => __( 'Using current theme: %s', 'elementor-to-gutenberg' ),
 			'themeStatusInstalled'   => __( 'Installed', 'elementor-to-gutenberg' ),
 			'themeStatusNotInstalled' => __( 'Not installed', 'elementor-to-gutenberg' ),
@@ -3270,6 +3297,7 @@ class Batch_Convert_Wizard {
 			'themeActiveLabel'       => __( 'Active', 'elementor-to-gutenberg' ),
 			'themeWarningInline'     => __( 'Theme step failed — conversion continued using current theme. Update WordPress to use this theme.', 'elementor-to-gutenberg' ),
 			'reviewTitle'            => __( 'Review & Confirm', 'elementor-to-gutenberg' ),
+			/* translators: 1: total selected pages, 2: pages to convert, 3: pages to skip */
 			'reviewSummary'          => __( '%1$d pages selected — %2$d will be converted, %3$d skipped.', 'elementor-to-gutenberg' ),
 			'startConversion'        => __( 'Start Conversion', 'elementor-to-gutenberg' ),
 			'backgroundInfo'         => __( 'Conversion runs in the background. You can safely close this page.', 'elementor-to-gutenberg' ),
@@ -3289,6 +3317,7 @@ class Batch_Convert_Wizard {
 			'startNew'               => __( 'Start new conversion', 'elementor-to-gutenberg' ),
 			'aiLoaderTitle'          => __( 'Improving with AI…', 'elementor-to-gutenberg' ),
 			'aiLoaderMessage'        => __( 'Analysing page structure and generating improvements. This may take up to 2 minutes.', 'elementor-to-gutenberg' ),
+			/* translators: %1$d: number of items to improve */
 			'aiImproveAllBtn'        => __( 'Improve all with AI (%1$d)', 'elementor-to-gutenberg' ),
 			'aiImproveTitle'         => __( 'AI Improvement', 'elementor-to-gutenberg' ),
 			'aiImproveWarningTitle'  => __( 'AI credits will be used', 'elementor-to-gutenberg' ),
@@ -3298,6 +3327,7 @@ class Batch_Convert_Wizard {
 			'aiReadinessApiValid'    => __( 'API key configured', 'elementor-to-gutenberg' ),
 			'aiReadinessApiInvalid'  => __( 'API key not configured', 'elementor-to-gutenberg' ),
 			'aiReadinessApiMissing'  => __( 'AI features require a valid API key. ', 'elementor-to-gutenberg' ),
+			/* translators: %1$d: estimated number of API calls */
 			'aiReadinessCredits'     => __( 'Estimated: ~%1$d API call(s), ~1–2 minutes per item', 'elementor-to-gutenberg' ),
 			'goToSettings'           => __( 'Go to Settings →', 'elementor-to-gutenberg' ),
 			'editSection'            => __( 'Edit', 'elementor-to-gutenberg' ),
@@ -3317,6 +3347,7 @@ class Batch_Convert_Wizard {
 			'resultsNeedsAttention'  => __( 'Needs attention', 'elementor-to-gutenberg' ),
 			'resultsCompleted'       => __( 'Completed successfully', 'elementor-to-gutenberg' ),
 			'errorNoOutput'          => __( 'No Gutenberg output was generated. The source may contain unsupported widgets or empty content.', 'elementor-to-gutenberg' ),
+			/* translators: %1$d: number of successfully converted items */
 			'improveSuccessful'      => __( 'Improve successful items with AI (%1$d)', 'elementor-to-gutenberg' ),
 			'themeChangeWarning'     => __( 'Changing the active theme may affect the live site appearance. Test on staging when possible.', 'elementor-to-gutenberg' ),
 			'aiImproveStart'         => __( 'Start AI Improvement', 'elementor-to-gutenberg' ),
@@ -3325,6 +3356,7 @@ class Batch_Convert_Wizard {
 			'aiImproveType'          => __( 'Type', 'elementor-to-gutenberg' ),
 			'aiImprovePaused'        => __( 'Paused — a page failed. Review the error below, then skip or retry to continue.', 'elementor-to-gutenberg' ),
 			'aiImproveFinishedOk'    => __( 'All items improved successfully.', 'elementor-to-gutenberg' ),
+			/* translators: 1: items done, 2: items failed, 3: items skipped */
 			'aiImproveFinishedErr'   => __( 'Finished with issues — %1$d done, %2$d failed, %3$d skipped.', 'elementor-to-gutenberg' ),
 			'aiStatusPending'        => __( 'Pending', 'elementor-to-gutenberg' ),
 			'aiStatusProcessing'     => __( 'Processing…', 'elementor-to-gutenberg' ),
@@ -3350,11 +3382,14 @@ class Batch_Convert_Wizard {
 			'warnDescDynamic'        => __( 'This page uses Elementor dynamic tags. Connections to external data will be lost — manual reconnection in Gutenberg is needed.', 'elementor-to-gutenberg' ),
 			'warnTitleAnimation'     => __( 'Animations', 'elementor-to-gutenberg' ),
 			'warnDescAnimation'      => __( 'Entrance animations will not carry over to Gutenberg and must be re-applied manually.', 'elementor-to-gutenberg' ),
+			/* translators: 1: count of unsupported widgets, 2: comma-separated widget names */
 			'warnUnsupportedWidgets' => __( '%1$d unsupported widget(s): %2$s', 'elementor-to-gutenberg' ),
 			'warnDynamicContent'     => __( 'Has dynamic content — links to data may be lost', 'elementor-to-gutenberg' ),
 			'warnAnimations'         => __( 'Has animations — will not be converted', 'elementor-to-gutenberg' ),
 			'tableActions'           => __( 'Actions', 'elementor-to-gutenberg' ),
+			/* translators: %s: elapsed time for the conversion job */
 			'jobCompleted'           => __( 'Conversion completed successfully in %s.', 'elementor-to-gutenberg' ),
+			/* translators: %s: elapsed time for the conversion job */
 			'jobCompletedWithErrors' => __( 'Conversion finished with issues in %s.', 'elementor-to-gutenberg' ),
 			'jobRunning'             => __( 'Conversion in progress…', 'elementor-to-gutenberg' ),
 			'resumeJob'              => __( 'Resuming an active conversion job.', 'elementor-to-gutenberg' ),
@@ -3366,7 +3401,9 @@ class Batch_Convert_Wizard {
 			'footersLabel'           => __( 'Footers', 'elementor-to-gutenberg' ),
 			'defaultHeaderLabel'     => __( 'Default header after conversion', 'elementor-to-gutenberg' ),
 			'defaultFooterLabel'     => __( 'Default footer after conversion', 'elementor-to-gutenberg' ),
+			/* translators: 1: number of selected headers, 2: number of selected footers */
 			'headerFooterSummary'    => __( '%1$d headers and %2$d footers selected for conversion.', 'elementor-to-gutenberg' ),
+			/* translators: 1: name of default header template, 2: name of default footer template */
 			'headerFooterDefaults'   => __( 'Default header: %1$s — Default footer: %2$s', 'elementor-to-gutenberg' ),
 			'cancel'                 => __( 'Cancel', 'elementor-to-gutenberg' ),
 			'jobCancelled'           => __( 'Conversion was cancelled.', 'elementor-to-gutenberg' ),
@@ -3374,6 +3411,7 @@ class Batch_Convert_Wizard {
 			// Feedback feature strings
 			'feedbackButtonRun'      => __( 'Send Feedback', 'elementor-to-gutenberg' ),
 			'feedbackButtonItem'     => __( 'Feedback', 'elementor-to-gutenberg' ),
+			/* translators: %d: number of selected items to send feedback for */
 			'feedbackButtonSelected' => __( 'Send Feedback for Selected (%d)', 'elementor-to-gutenberg' ),
 			'feedbackModalTitle'     => __( 'How did the conversion go?', 'elementor-to-gutenberg' ),
 			'feedbackItemTitle'      => __( 'How did this page convert?', 'elementor-to-gutenberg' ),
@@ -3384,7 +3422,9 @@ class Batch_Convert_Wizard {
 			'feedbackSubmit'         => __( 'Send Feedback', 'elementor-to-gutenberg' ),
 			'feedbackCancel'         => __( 'Cancel', 'elementor-to-gutenberg' ),
 			'feedbackSending'        => __( 'Sending…', 'elementor-to-gutenberg' ),
+			/* translators: %s: feedback submission ID */
 			'feedbackSuccess'        => __( 'Thank you! Feedback submitted (ID: %s).', 'elementor-to-gutenberg' ),
+			/* translators: %s: error message */
 			'feedbackError'          => __( 'Could not send feedback: %s', 'elementor-to-gutenberg' ),
 			'feedbackNoIssue'        => __( 'No issue', 'elementor-to-gutenberg' ),
 			'feedbackIssueLayout'    => __( 'Layout issue', 'elementor-to-gutenberg' ),
@@ -3430,6 +3470,7 @@ class Batch_Convert_Wizard {
 	public function ajax_cancel_job(): void {
 		$this->verify_ajax_request();
 
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified in verify_ajax_request()
 		$job_id = isset( $_POST['jobId'] ) ? sanitize_text_field( wp_unslash( $_POST['jobId'] ) ) : '';
 
 		if ( '' === $job_id ) {
@@ -3772,7 +3813,7 @@ class Batch_Convert_Wizard {
 		}
 
 		// Consent is mandatory — re-verified server-side.
-		$consent_raw = isset( $_POST['consent_given'] ) ? (string) wp_unslash( $_POST['consent_given'] ) : '';
+		$consent_raw = isset( $_POST['consent_given'] ) ? sanitize_text_field( wp_unslash( $_POST['consent_given'] ) ) : '';
 		if ( 'true' !== $consent_raw ) {
 			wp_send_json_error( array( 'error' => esc_html__( 'Consent is required to submit feedback.', 'elementor-to-gutenberg' ) ) );
 		}
@@ -3793,10 +3834,10 @@ class Batch_Convert_Wizard {
 
 		// Per-item ratings/notes keyed by source_id.
 		$raw_item_ratings = isset( $_POST['item_ratings'] ) && is_array( $_POST['item_ratings'] )
-			? (array) wp_unslash( $_POST['item_ratings'] )
+			? array_map( 'sanitize_text_field', (array) wp_unslash( $_POST['item_ratings'] ) )
 			: array();
 		$raw_item_notes   = isset( $_POST['item_notes'] ) && is_array( $_POST['item_notes'] )
-			? (array) wp_unslash( $_POST['item_notes'] )
+			? array_map( 'sanitize_textarea_field', (array) wp_unslash( $_POST['item_notes'] ) )
 			: array();
 
 		$item_ratings = array();
@@ -3805,20 +3846,18 @@ class Batch_Convert_Wizard {
 		}
 		$item_notes = array();
 		foreach ( $raw_item_notes as $sid => $note ) {
-			$item_notes[ (int) $sid ] = wp_strip_all_tags( substr( (string) $note, 0, 1000 ) );
+			$item_notes[ (int) $sid ] = substr( (string) $note, 0, 1000 );
 		}
 
+		$raw_rating    = isset( $_POST['rating'] ) ? sanitize_text_field( wp_unslash( $_POST['rating'] ) ) : '';
+		$raw_detail    = isset( $_POST['issue_detail'] ) ? sanitize_textarea_field( wp_unslash( $_POST['issue_detail'] ) ) : '';
+		$raw_user_note = isset( $_POST['user_note'] ) ? sanitize_textarea_field( wp_unslash( $_POST['user_note'] ) ) : '';
+
 		$user_feedback = array(
-			'rating'        => isset( $_POST['rating'] ) && '' !== (string) wp_unslash( $_POST['rating'] )
-				? (int) wp_unslash( $_POST['rating'] )
-				: null,
+			'rating'        => '' !== $raw_rating ? (int) $raw_rating : null,
 			'issue_type'    => isset( $_POST['issue_type'] ) ? sanitize_key( wp_unslash( $_POST['issue_type'] ) ) : '',
-			'issue_detail'  => isset( $_POST['issue_detail'] )
-				? wp_strip_all_tags( substr( (string) wp_unslash( $_POST['issue_detail'] ), 0, 500 ) )
-				: '',
-			'user_note'     => isset( $_POST['user_note'] )
-				? wp_strip_all_tags( substr( (string) wp_unslash( $_POST['user_note'] ), 0, 2000 ) )
-				: '',
+			'issue_detail'  => substr( $raw_detail, 0, 500 ),
+			'user_note'     => substr( $raw_user_note, 0, 2000 ),
 			'consent_given' => true,
 			'item_ratings'  => $item_ratings,
 			'item_notes'    => $item_notes,
@@ -3826,11 +3865,11 @@ class Batch_Convert_Wizard {
 
 		$client_info = array(
 			'user_agent'         => isset( $_POST['user_agent'] ) ? sanitize_text_field( wp_unslash( $_POST['user_agent'] ) ) : '',
-			'screen_width'       => isset( $_POST['screen_width'] ) ? (int) wp_unslash( $_POST['screen_width'] ) : 0,
-			'screen_height'      => isset( $_POST['screen_height'] ) ? (int) wp_unslash( $_POST['screen_height'] ) : 0,
-			'viewport_width'     => isset( $_POST['viewport_width'] ) ? (int) wp_unslash( $_POST['viewport_width'] ) : 0,
-			'viewport_height'    => isset( $_POST['viewport_height'] ) ? (int) wp_unslash( $_POST['viewport_height'] ) : 0,
-			'device_pixel_ratio' => isset( $_POST['device_pixel_ratio'] ) ? (float) wp_unslash( $_POST['device_pixel_ratio'] ) : 1.0,
+			'screen_width'       => isset( $_POST['screen_width'] ) ? absint( wp_unslash( $_POST['screen_width'] ) ) : 0,
+			'screen_height'      => isset( $_POST['screen_height'] ) ? absint( wp_unslash( $_POST['screen_height'] ) ) : 0,
+			'viewport_width'     => isset( $_POST['viewport_width'] ) ? absint( wp_unslash( $_POST['viewport_width'] ) ) : 0,
+			'viewport_height'    => isset( $_POST['viewport_height'] ) ? absint( wp_unslash( $_POST['viewport_height'] ) ) : 0,
+			'device_pixel_ratio' => isset( $_POST['device_pixel_ratio'] ) ? (float) sanitize_text_field( wp_unslash( $_POST['device_pixel_ratio'] ) ) : 1.0,
 		);
 
 		$manifest = Feedback_Builder::build( $job_id, $selected_source_ids, $user_feedback, $client_info );

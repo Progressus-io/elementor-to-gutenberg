@@ -46,7 +46,7 @@ class Icon_Parser {
 				$result['type'] = 'svg';
 				$result['url']  = (string) $value['url'];
 
-				$parsed_url = parse_url( $result['url'] );
+				$parsed_url = wp_parse_url( $result['url'] );
 				if ( is_array( $parsed_url ) && isset( $parsed_url['path'] ) ) {
 					$result['slug'] = basename( $parsed_url['path'] );
 				}

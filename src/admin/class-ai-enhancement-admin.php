@@ -152,6 +152,7 @@ class AI_Enhancement_Admin {
 			'post_type'      => array( 'page', 'wp_template_part' ),
 			'post_status'    => 'publish',
 			'posts_per_page' => 200,
+			// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 			'meta_query'     => array(
 				array(
 					'key'     => '_ele2gb_source_id',
@@ -172,6 +173,7 @@ class AI_Enhancement_Admin {
 			'colActions'            => __( 'Actions', 'elementor-to-gutenberg' ),
 			'enhanceSingle'         => __( 'Enhance with AI', 'elementor-to-gutenberg' ),
 			'enhanceSelected'       => __( 'Bulk Enhance with AI', 'elementor-to-gutenberg' ),
+			/* translators: %1$d: number of selected items */
 			'enhanceSelectedCount'  => __( 'Enhance %1$d items with AI', 'elementor-to-gutenberg' ),
 			'noApiMessage'          => __( 'To enhance pages with AI, you need to enter your Claude API key.', 'elementor-to-gutenberg' ),
 			'addApiLink'            => __( 'Add your API key in Settings', 'elementor-to-gutenberg' ),
@@ -182,6 +184,7 @@ class AI_Enhancement_Admin {
 			'aiReadinessTitle'      => __( 'Pre-flight checklist', 'elementor-to-gutenberg' ),
 			'aiReadinessApiValid'   => __( 'API key configured', 'elementor-to-gutenberg' ),
 			'aiReadinessApiInvalid' => __( 'API key not configured', 'elementor-to-gutenberg' ),
+			/* translators: %1$d: estimated number of API calls */
 			'aiReadinessCredits'    => __( 'Estimated: ~%1$d API call(s), ~1–2 minutes per item', 'elementor-to-gutenberg' ),
 			'aiImproveWarningTitle' => __( 'AI credits will be used', 'elementor-to-gutenberg' ),
 			'aiImproveWarning'      => __( 'This will use AI credits once per selected item. Make sure your API key has sufficient credits before starting.', 'elementor-to-gutenberg' ),
@@ -190,6 +193,7 @@ class AI_Enhancement_Admin {
 			'aiImproveType'         => __( 'Type', 'elementor-to-gutenberg' ),
 			'aiImprovePaused'       => __( 'Paused — an item failed. Review the error below, then skip or retry to continue.', 'elementor-to-gutenberg' ),
 			'aiImproveFinishedOk'   => __( 'All items improved successfully.', 'elementor-to-gutenberg' ),
+			/* translators: 1: number of items done, 2: number failed, 3: number skipped */
 			'aiImproveFinishedErr'  => __( 'Finished — %1$d done, %2$d failed, %3$d skipped.', 'elementor-to-gutenberg' ),
 			'aiStatusPending'       => __( 'Pending', 'elementor-to-gutenberg' ),
 			'aiStatusProcessing'    => __( 'Processing…', 'elementor-to-gutenberg' ),
@@ -213,7 +217,9 @@ class AI_Enhancement_Admin {
 			'feedbackSubmit'           => __( 'Send Feedback', 'elementor-to-gutenberg' ),
 			'feedbackCancel'           => __( 'Cancel', 'elementor-to-gutenberg' ),
 			'feedbackSending'          => __( 'Sending…', 'elementor-to-gutenberg' ),
+			/* translators: %1$s: feedback submission ID */
 			'feedbackSuccess'          => __( 'Thank you! Feedback submitted (ID: %1$s).', 'elementor-to-gutenberg' ),
+			/* translators: %s: error message describing why feedback could not be sent */
 			'feedbackError'            => __( 'Could not send feedback: %s', 'elementor-to-gutenberg' ),
 			'feedbackNoIssue'          => __( 'No issue', 'elementor-to-gutenberg' ),
 			'feedbackIssueLayout'      => __( 'Layout issues after AI', 'elementor-to-gutenberg' ),
@@ -235,7 +241,7 @@ class AI_Enhancement_Admin {
 			return;
 		}
 
-		$consent_raw = isset( $_POST['consent_given'] ) ? (string) wp_unslash( $_POST['consent_given'] ) : '';
+		$consent_raw = isset( $_POST['consent_given'] ) ? sanitize_text_field( wp_unslash( $_POST['consent_given'] ) ) : '';
 		if ( 'true' !== $consent_raw ) {
 			wp_send_json_error( array( 'error' => esc_html__( 'Consent is required to submit feedback.', 'elementor-to-gutenberg' ) ) );
 			return;
@@ -244,8 +250,10 @@ class AI_Enhancement_Admin {
 		$target_id    = isset( $_POST['target_id'] ) ? absint( $_POST['target_id'] ) : 0;
 		$source_id    = isset( $_POST['source_id'] ) ? absint( $_POST['source_id'] ) : 0;
 		$issue_type   = isset( $_POST['issue_type'] ) ? sanitize_key( wp_unslash( $_POST['issue_type'] ) ) : '';
-		$issue_detail = isset( $_POST['issue_detail'] ) ? wp_strip_all_tags( substr( (string) wp_unslash( $_POST['issue_detail'] ), 0, 500 ) ) : '';
-		$user_note    = isset( $_POST['user_note'] ) ? wp_strip_all_tags( substr( (string) wp_unslash( $_POST['user_note'] ), 0, 2000 ) ) : '';
+		$issue_detail = isset( $_POST['issue_detail'] ) ? sanitize_textarea_field( wp_unslash( $_POST['issue_detail'] ) ) : '';
+		$issue_detail = substr( $issue_detail, 0, 500 );
+		$user_note    = isset( $_POST['user_note'] ) ? sanitize_textarea_field( wp_unslash( $_POST['user_note'] ) ) : '';
+		$user_note    = substr( $user_note, 0, 2000 );
 
 		if ( $target_id <= 0 ) {
 			wp_send_json_error( array( 'error' => esc_html__( 'Invalid page ID.', 'elementor-to-gutenberg' ) ) );
@@ -268,7 +276,7 @@ class AI_Enhancement_Admin {
 
 			'site'           => array(
 				'site_url_hash'               => hash( 'sha256', (string) home_url() ),
-				'site_domain'                 => (string) parse_url( home_url(), PHP_URL_HOST ),
+				'site_domain'                 => (string) wp_parse_url( home_url(), PHP_URL_HOST ),
 				'plugin_version'              => GUTENBERG_PLUGIN_VERSION,
 				'wordpress_version'           => get_bloginfo( 'version' ),
 				'php_version'                 => PHP_VERSION,
