@@ -86,7 +86,7 @@ export default function save( { attributes } ) {
 			style={ {
 				display: 'flex',
 				justifyContent:
-					( { center: 'center', right: 'flex-end' } )[
+					{ center: 'center', right: 'flex-end' }[
 						effectiveAlignment
 					] || 'flex-start',
 				marginBottom: imageSpace || undefined,
@@ -123,12 +123,14 @@ export default function save( { attributes } ) {
 				<a
 					href={ link }
 					target={ linkTarget ? '_blank' : undefined }
-					rel={ [
-						nofollow ? 'nofollow' : null,
-						linkTarget ? 'noreferrer' : null,
-					]
-						.filter( Boolean )
-						.join( ' ' ) || undefined }
+					rel={
+						[
+							nofollow ? 'nofollow' : null,
+							linkTarget ? 'noreferrer' : null,
+						]
+							.filter( Boolean )
+							.join( ' ' ) || undefined
+					}
 					aria-label={ title }
 				>
 					{ titleElement }

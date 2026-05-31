@@ -251,12 +251,14 @@ export default function save( { attributes } ) {
 				href={ buttonUrl }
 				className="call-to-action-button"
 				target={ buttonTarget ? '_blank' : undefined }
-				rel={ [
-					buttonNofollow ? 'nofollow' : null,
-					buttonTarget ? 'noreferrer' : null,
-				]
-					.filter( Boolean )
-					.join( ' ' ) || undefined }
+				rel={
+					[
+						buttonNofollow ? 'nofollow' : null,
+						buttonTarget ? 'noreferrer' : null,
+					]
+						.filter( Boolean )
+						.join( ' ' ) || undefined
+				}
 				style={ buttonStyles }
 			>
 				<RichText.Content tagName="span" value={ buttonText } />

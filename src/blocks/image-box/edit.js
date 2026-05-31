@@ -697,7 +697,10 @@ export default function Edit( { attributes, setAttributes } ) {
 					style={ {
 						display: 'flex',
 						flexDirection: 'column',
-						alignItems: ( { center: 'center', right: 'flex-end' } )[ effectiveAlignment ] || 'flex-start',
+						alignItems:
+							{ center: 'center', right: 'flex-end' }[
+								effectiveAlignment
+							] || 'flex-start',
 						gap: 12,
 					} }
 				>
@@ -785,7 +788,9 @@ export default function Edit( { attributes, setAttributes } ) {
 								textDecoration:
 									descriptionTextDecoration || undefined,
 								lineHeight: withPx( descriptionLineHeight ),
-								letterSpacing: withPx( descriptionLetterSpacing ),
+								letterSpacing: withPx(
+									descriptionLetterSpacing
+								),
 								wordSpacing: withPx( descriptionWordSpacing ),
 								margin: 0,
 							} }

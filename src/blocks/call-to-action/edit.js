@@ -1281,8 +1281,12 @@ export default function Edit( { attributes, setAttributes } ) {
 									lineHeight: descriptionLineHeight
 										? String( descriptionLineHeight )
 										: undefined,
-									letterSpacing: withPx( descriptionLetterSpacing ),
-									wordSpacing: withPx( descriptionWordSpacing ),
+									letterSpacing: withPx(
+										descriptionLetterSpacing
+									),
+									wordSpacing: withPx(
+										descriptionWordSpacing
+									),
 									marginBottom: `${ descriptionSpacing }px`,
 								} }
 								placeholder={ __(
@@ -1320,7 +1324,8 @@ export default function Edit( { attributes, setAttributes } ) {
 									lineHeight: buttonLineHeight
 										? String( buttonLineHeight )
 										: undefined,
-									letterSpacing: withPx( buttonLetterSpacing ),
+									letterSpacing:
+										withPx( buttonLetterSpacing ),
 									wordSpacing: withPx( buttonWordSpacing ),
 									border: 'none',
 									cursor: 'pointer',

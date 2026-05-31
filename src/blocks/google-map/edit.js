@@ -574,7 +574,10 @@ const Edit = ( { attributes, setAttributes } ) => {
 					) : src ? (
 						<iframe
 							src={ src }
-							title={ __( 'Google Map', 'elementor-to-gutenberg' ) }
+							title={ __(
+								'Google Map',
+								'elementor-to-gutenberg'
+							) }
 							style={ {
 								width: '100%',
 								height: '100%',
