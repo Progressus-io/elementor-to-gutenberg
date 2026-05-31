@@ -383,7 +383,7 @@ class Testimonial_Carousel_Widget_Handler implements Widget_Handler_Interface {
 				'%sborder:%dpx solid %s;border-radius:%dpx;padding:%dpx %dpx %dpx %dpx;text-align:%s;max-width:%d%%;margin:0 auto',
 				$slide_bg_style,
 				$slide_border_size['top'],
-				$slide_border_color ?: '#ddd',
+				$slide_border_color ? $slide_border_color : '#ddd',
 				$slide_border_radius,
 				$slide_padding['top'],
 				$slide_padding['right'],

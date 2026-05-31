@@ -519,7 +519,7 @@ class Batch_Convert_Wizard {
 						'ai_model'          => Claude_Api_Service::MODEL,
 						'sanitized'         => true,
 						'site_url_hash'     => hash( 'sha256', (string) get_site_url() ),
-						'started_at'        => gmdate( 'c', $job['started_at'] ?: time() ),
+						'started_at'        => gmdate( 'c', ! empty( $job['started_at'] ) ? $job['started_at'] : time() ),
 					)
 				);
 			} catch ( \Throwable $e ) {
@@ -548,6 +548,7 @@ class Batch_Convert_Wizard {
 			if ( '' !== $run_id && Admin_Settings::is_logging_enabled() ) {
 				try {
 					$_is_template = 'page' !== $item['type'];
+					$_post_type   = get_post_type( (int) ( $item['data']['id'] ?? 0 ) );
 					Diagnostic_Logger::log_item_start(
 						$run_id,
 						array(
@@ -555,7 +556,7 @@ class Batch_Convert_Wizard {
 							'source_id'       => (int) ( $item['data']['id'] ?? 0 ),
 							'target_id'       => null,
 							'title'           => $item['data']['title'] ?? '',
-							'post_type'       => get_post_type( (int) ( $item['data']['id'] ?? 0 ) ) ?: '',
+							'post_type'       => $_post_type ? $_post_type : '',
 							'template_type'   => $_is_template ? ( $item['data']['type'] ?? null ) : null,
 							'conversion_type' => $item['type'],
 						)
@@ -812,7 +813,7 @@ class Batch_Convert_Wizard {
 			if ( '' !== $run_id && Admin_Settings::is_logging_enabled() ) {
 				try {
 					$_js      = is_array( $job['jsonl_stats'] ?? null ) ? $job['jsonl_stats'] : array();
-					$_run_dur = max( 0, $job['completed_at'] - ( $job['started_at'] ?: $job['completed_at'] ) );
+					$_run_dur = max( 0, $job['completed_at'] - ( ! empty( $job['started_at'] ) ? $job['started_at'] : $job['completed_at'] ) );
 					$_s_ok    = ( (int) ( $_js['success_count'] ?? 0 ) ) + ( (int) ( $_js['success_with_warnings_count'] ?? 0 ) );
 					$_final   = $_s_ok > 0 ? 'SUCCESS' : ( ( (int) ( $_js['failed_count'] ?? 0 ) ) > 0 ? 'FAILED' : 'SKIPPED' );
 

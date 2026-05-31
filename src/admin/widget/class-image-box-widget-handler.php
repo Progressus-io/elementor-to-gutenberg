@@ -217,7 +217,7 @@ class Image_Box_Widget_Handler implements Widget_Handler_Interface {
 			$wrapper_attrs[] = 'id="' . esc_attr( $custom_id ) . '"';
 		}
 
-		$alignment_value = $text_align ?: 'left';
+		$alignment_value = $text_align ? $text_align : 'left';
 		$wrapper_style   = $this->build_inline_style(
 			array(
 				'text-align' => $alignment_value,
@@ -282,8 +282,8 @@ class Image_Box_Widget_Handler implements Widget_Handler_Interface {
 			'descriptionLineHeight'     => $description_line_height,
 			'descriptionLetterSpacing'  => $description_letter_spacing,
 			'descriptionWordSpacing'    => $description_word_spacing,
-			'align'                     => $text_align ?: 'left',
-			'alignment'                 => $text_align ?: 'left',
+			'align'                     => $text_align ? $text_align : 'left',
+			'alignment'                 => $text_align ? $text_align : 'left',
 			'className'                 => implode( ' ', $custom_classes ),
 			'anchor'                    => $custom_id,
 		);

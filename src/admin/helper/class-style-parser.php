@@ -677,9 +677,10 @@ class Style_Parser {
 			if ( '' !== $normalized ) {
 				$matched_slug = self::match_theme_color_slug( $normalized );
 				if ( null !== $matched_slug ) {
+					$resolved_color = self::resolve_theme_color_value( $matched_slug );
 					return array(
 						'slug'  => self::clean_class( $matched_slug ),
-						'color' => self::resolve_theme_color_value( $matched_slug ) ?: $normalized,
+						'color' => $resolved_color ? $resolved_color : $normalized,
 					);
 				}
 
