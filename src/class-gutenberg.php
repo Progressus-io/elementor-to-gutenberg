@@ -467,6 +467,10 @@ class Gutenberg {
 			return;
 		}
 
+		if ( ! function_exists( 'register_block_template' ) ) {
+			return;
+		}
+
 		register_block_template(
 			self::FULL_WIDTH_TEMPLATE_ID,
 			array(

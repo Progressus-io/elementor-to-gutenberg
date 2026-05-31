@@ -268,6 +268,7 @@ class Woo_Products_Widget_Handler implements Widget_Handler_Interface {
 				'order'                         => $order,
 				'orderBy'                       => $orderby,
 				'search'                        => '',
+				// phpcs:ignore WordPressVIPMinimum.Performance.WPQueryParams.PostNotIn_exclude -- block attribute array, not a WP_Query call
 				'exclude'                       => array(),
 				'inherit'                       => false,
 				'taxQuery'                      => $tax_query,

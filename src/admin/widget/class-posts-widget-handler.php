@@ -84,6 +84,7 @@ class Posts_Widget_Handler implements Widget_Handler_Interface {
 			'orderBy'  => $order_by,
 			'author'   => '',
 			'search'   => '',
+			// phpcs:ignore WordPressVIPMinimum.Performance.WPQueryParams.PostNotIn_exclude -- block attribute array, not a WP_Query call
 			'exclude'  => array(),
 			'sticky'   => '',
 			'inherit'  => false,
