@@ -40,7 +40,7 @@ class File_Upload_Service {
 			return $content;
 		}
 
-		$file_array = array(
+		$file_array    = array(
 			'name'     => sanitize_file_name( basename( $file['name'] ) ),
 			'tmp_name' => $tmp_file,
 		);
@@ -70,7 +70,7 @@ class File_Upload_Service {
 			return null;
 		}
 
-		$file_array = array(
+		$file_array    = array(
 			'name'     => sanitize_file_name( basename( $url ) ),
 			'tmp_name' => $tmp_file,
 		);

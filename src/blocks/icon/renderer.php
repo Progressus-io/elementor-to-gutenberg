@@ -10,7 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 function gutenberg_render_icon_block( $attributes ) {
-	$defaults = array(
+	$defaults   = array(
 		'icon'                 => 'star-filled',
 		'iconStyle'            => 'fas',
 		'size'                 => 32,
@@ -56,8 +56,8 @@ function gutenberg_render_icon_block( $attributes ) {
 
 	// Wrap in link if applicable.
 	if ( ! empty( $attributes['link'] ) ) {
-		$target     = $attributes['linkTarget'] ? ' target="_blank" rel="noopener noreferrer"' : '';
-		$icon_html  = sprintf(
+		$target    = $attributes['linkTarget'] ? ' target="_blank" rel="noopener noreferrer"' : '';
+		$icon_html = sprintf(
 			'<a href="%s"%s>%s</a>',
 			esc_url( $attributes['link'] ),
 			$target,

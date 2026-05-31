@@ -40,7 +40,6 @@ class Elementor_Elements_Parser {
 						$inner
 					);
 				}
-
 			} elseif ( isset( $element['elType'] ) && 'widget' === $element['elType'] ) {
 				$handler = Widget_Handler_Factory::get_handler( $element['widgetType'] );
 				if ( null !== $handler ) {

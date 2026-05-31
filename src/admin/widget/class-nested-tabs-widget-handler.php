@@ -144,8 +144,18 @@ class Nested_Tabs_Widget_Handler implements Widget_Handler_Interface {
 			'activeTabBorderColor'      => '',
 			'tabTextColor'              => '',
 			'activeTabTextColor'        => '',
-			'tabPadding'                => array( 'top' => 12, 'right' => 16, 'bottom' => 12, 'left' => 16 ),
-			'tabMargin'                 => array( 'top' => 0, 'right' => 2, 'bottom' => 0, 'left' => 0 ),
+			'tabPadding'                => array(
+				'top'    => 12,
+				'right'  => 16,
+				'bottom' => 12,
+				'left'   => 16,
+			),
+			'tabMargin'                 => array(
+				'top'    => 0,
+				'right'  => 2,
+				'bottom' => 0,
+				'left'   => 0,
+			),
 			'tabBorderRadius'           => 4,
 			'tabBorderWidth'            => 1,
 			'tabBorderStyle'            => 'solid',
@@ -155,8 +165,18 @@ class Nested_Tabs_Widget_Handler implements Widget_Handler_Interface {
 			'tabFontFamily'             => '',
 			'tabContentBackgroundColor' => '',
 			'tabContentTextColor'       => '',
-			'tabContentPadding'         => array( 'top' => 20, 'right' => 20, 'bottom' => 20, 'left' => 20 ),
-			'tabContentMargin'          => array( 'top' => 0, 'right' => 0, 'bottom' => 0, 'left' => 0 ),
+			'tabContentPadding'         => array(
+				'top'    => 20,
+				'right'  => 20,
+				'bottom' => 20,
+				'left'   => 20,
+			),
+			'tabContentMargin'          => array(
+				'top'    => 0,
+				'right'  => 0,
+				'bottom' => 0,
+				'left'   => 0,
+			),
 			'tabContentBorderColor'     => '',
 			'tabContentBorderRadius'    => 4,
 			'tabContentFontSize'        => 14,
@@ -193,10 +213,10 @@ class Nested_Tabs_Widget_Handler implements Widget_Handler_Interface {
 		$tab_style = isset( $attrs['tabStyle'] ) ? (string) $attrs['tabStyle'] : 'horizontal';
 
 		$wrapper_style = 'display:' . ( 'vertical' === $tab_style ? 'flex' : 'block' ) . ';' .
-		                 'flex-direction:' . ( 'vertical' === $tab_style ? 'row' : 'column' );
+						'flex-direction:' . ( 'vertical' === $tab_style ? 'row' : 'column' );
 
 		$headers_style = 'display:flex;' .
-		                 'flex-direction:' . ( 'vertical' === $tab_style ? 'column' : 'row' );
+						'flex-direction:' . ( 'vertical' === $tab_style ? 'column' : 'row' );
 
 		$tab_color           = isset( $attrs['tabColor'] ) ? (string) $attrs['tabColor'] : '';
 		$active_tab_color    = isset( $attrs['activeTabColor'] ) ? (string) $attrs['activeTabColor'] : '';
@@ -302,17 +322,17 @@ class Nested_Tabs_Widget_Handler implements Widget_Handler_Interface {
 
 		$contents_html = '';
 		foreach ( $tabs as $i => $tab ) {
-			$is_active     = ( $i === $active );
-			$class         = 'progressus-tab-content' . ( $is_active ? ' active' : ' ' );
-			$style         = 'display:' . ( $is_active ? 'block' : 'none' );
-			$content       = isset( $tab['content'] ) ? (string) $tab['content'] : '';
+			$is_active      = ( $i === $active );
+			$class          = 'progressus-tab-content' . ( $is_active ? ' active' : ' ' );
+			$style          = 'display:' . ( $is_active ? 'block' : 'none' );
+			$content        = isset( $tab['content'] ) ? (string) $tab['content'] : '';
 			$contents_html .= '<div class="' . esc_attr( $class ) . '" style="' . esc_attr( $style ) . '">' . esc_attr( $content ) . '</div>';
 		}
 
 		return '<div class="wp-block-progressus-tabs">' .
-		       '<div class="progressus-tabs" style="' . esc_attr( $wrapper_style ) . '" data-tab-style="' . esc_attr( $tab_style ) . '" data-active-tab="' . esc_attr( (string) $active ) . '">' .
-		       '<div class="progressus-tabs-headers" style="' . esc_attr( $headers_style ) . '">' . $headers_html . '</div>' .
-		       '<div class="progressus-tabs-content" style="' . esc_attr( implode( ';', $content_style_parts ) ) . '">' . $contents_html . '</div>' .
-		       '</div></div>';
+				'<div class="progressus-tabs" style="' . esc_attr( $wrapper_style ) . '" data-tab-style="' . esc_attr( $tab_style ) . '" data-active-tab="' . esc_attr( (string) $active ) . '">' .
+				'<div class="progressus-tabs-headers" style="' . esc_attr( $headers_style ) . '">' . $headers_html . '</div>' .
+				'<div class="progressus-tabs-content" style="' . esc_attr( implode( ';', $content_style_parts ) ) . '">' . $contents_html . '</div>' .
+				'</div></div>';
 	}
 }

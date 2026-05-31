@@ -192,8 +192,8 @@ class Gutenberg {
 			$slug_only = isset( $parts[1] ) ? (string) $parts[1] : $assigned;
 		}
 		if ( false !== strpos( $block_template_id, '//' ) ) {
-			$parts        = explode( '//', $block_template_id, 2 );
-			$theirs_slug  = isset( $parts[1] ) ? (string) $parts[1] : '';
+			$parts       = explode( '//', $block_template_id, 2 );
+			$theirs_slug = isset( $parts[1] ) ? (string) $parts[1] : '';
 			if ( '' !== $theirs_slug && $slug_only === $theirs_slug ) {
 				return true;
 			}
@@ -359,7 +359,6 @@ class Gutenberg {
 		}
 
 		$this->enqueue_woocommerce_widget_styles();
-
 	}
 
 	/**
@@ -477,7 +476,7 @@ class Gutenberg {
 				'title'       => __( 'ETG Full Width Page', 'elementor-to-gutenberg' ),
 				'description' => __( 'Template for converted full width pages that keeps the active theme header and footer without forcing constrained page layout.', 'elementor-to-gutenberg' ),
 				'post_types'  => array( 'page' ),
-				'content' => sprintf(
+				'content'     => sprintf(
 					'<!-- wp:template-part {"slug":"header","theme":"%1$s","tagName":"header"} /-->' . "\n\n" .
 					'<!-- wp:group {"tagName":"main","className":"etg-full-width-page"} -->' . "\n" .
 					'<main class="wp-block-group etg-full-width-page"><!-- wp:post-content /--></main>' . "\n" .
@@ -610,7 +609,7 @@ class Gutenberg {
 		$handle_prefix = 'gutenberg-plugin-wc-';
 
 		if ( has_block( 'woocommerce/product-button', get_the_ID() )
-		     || has_block( 'woocommerce/add-to-cart-form', get_the_ID() )
+			|| has_block( 'woocommerce/add-to-cart-form', get_the_ID() )
 		) {
 			$required[ $handle_prefix . 'add-to-cart' ] = 'widget-wc-product-add-to-cart.min.css';
 		}
@@ -776,5 +775,4 @@ class Gutenberg {
 
 		return $existing;
 	}
-
 }

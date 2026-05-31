@@ -28,12 +28,14 @@ function render_counter_block( $attributes, $content, $block ) {
 	$prefix      = isset( $attributes['prefix'] ) ? \esc_html( $attributes['prefix'] ) : '';
 	$suffix      = isset( $attributes['suffix'] ) ? \esc_html( $attributes['suffix'] ) : '';
 
-	$wrapper_attributes = \get_block_wrapper_attributes( array(
-		'class'          => 'wp-block-progressus-counter',
-		'data-start'     => $start_value,
-		'data-end'       => $end_value,
-		'data-duration'  => $duration,
-	) );
+	$wrapper_attributes = \get_block_wrapper_attributes(
+		array(
+			'class'         => 'wp-block-progressus-counter',
+			'data-start'    => $start_value,
+			'data-end'      => $end_value,
+			'data-duration' => $duration,
+		)
+	);
 
 	return sprintf(
 		'<div %1$s><span class="prefix">%2$s</span><span class="counter-value">%3$s</span><span class="suffix">%4$s</span></div>',

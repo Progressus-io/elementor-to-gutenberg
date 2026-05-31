@@ -43,7 +43,7 @@ class Divider_Widget_Handler implements Widget_Handler_Interface {
 		$custom_id     = $settings['_element_id'] ?? '';
 		$custom_css    = $settings['custom_css'] ?? '';
 		$unique_class  = 'divider-' . uniqid();
-		$custom_class  .= ' ' . $unique_class;
+		$custom_class .= ' ' . $unique_class;
 
 		// Alignment → group wrapper.
 		$group_attrs = array();
@@ -69,10 +69,9 @@ class Divider_Widget_Handler implements Widget_Handler_Interface {
 				}
 
 				$inline_style .= 'width:' . esc_attr( $size . $unit ) . ';';
-				$has_width    = true;
+				$has_width     = true;
 			}
 		}
-
 
 		// Color.
 		$color_sources = array();
@@ -111,10 +110,9 @@ class Divider_Widget_Handler implements Widget_Handler_Interface {
 			if ( '' !== $resolved_color['color'] ) {
 				$has_custom_color                                = true;
 				$separator_attrs['style']['color']['background'] = $resolved_color['color'];
-				$inline_style                                    .= 'background-color:' . esc_attr( $resolved_color['color'] ) . ';color:' . esc_attr( $resolved_color['color'] ) . ';';
+				$inline_style                                   .= 'background-color:' . esc_attr( $resolved_color['color'] ) . ';color:' . esc_attr( $resolved_color['color'] ) . ';';
 			}
 		}
-
 
 		// Style (solid/dashed/dotted).
 		if ( isset( $settings['style'] ) ) {
@@ -180,7 +178,7 @@ class Divider_Widget_Handler implements Widget_Handler_Interface {
 			);
 
 			// Second separator (with css opacity).
-			$second_attrs  = array(
+			$second_attrs   = array(
 				'opacity'   => 'css',
 				'className' => trim( $unique_class ),
 			);
@@ -221,7 +219,7 @@ class Divider_Widget_Handler implements Widget_Handler_Interface {
 		// Save inline CSS.
 		if ( $inline_style ) {
 			$element_selector = '.' . $unique_class;
-			$custom_css       .= sprintf( '%s{ %s }', $element_selector, $inline_style );
+			$custom_css      .= sprintf( '%s{ %s }', $element_selector, $inline_style );
 		}
 		if ( ! empty( $custom_css ) ) {
 			Style_Parser::save_custom_css( $custom_css );

@@ -40,8 +40,7 @@ class Woo_Checkout_Widget_Handler implements Widget_Handler_Interface {
 	 */
 	private function get_checkout_template(): string {
 		// Same template content as in Elementor_Shortcode_Widget_Handler::get_checkout_template()
-		return
-			"<!-- wp:woocommerce/checkout-totals-block -->\n" .
+		return "<!-- wp:woocommerce/checkout-totals-block -->\n" .
 			"<!-- wp:woocommerce/checkout-order-summary-block -->\n" .
 			"<!-- wp:woocommerce/checkout-order-summary-cart-items-block /-->\n" .
 			"<!-- wp:woocommerce/checkout-order-summary-coupon-form-block /-->\n" .

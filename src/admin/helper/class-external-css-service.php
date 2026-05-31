@@ -386,5 +386,4 @@ class External_CSS_Service {
 			}
 		}
 	}
-
 }

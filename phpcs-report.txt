@@ -1,0 +1,322 @@
+
+FILE: C:\xampp\htdocs\ele\wp-content\plugins\elementor-to-gutenberg\src\admin\class-ai-enhancement-admin.php
+----------------------------------------------------------------------------------------------------------------------------------------------------
+FOUND 11 ERRORS AND 45 WARNINGS AFFECTING 56 LINES
+----------------------------------------------------------------------------------------------------------------------------------------------------
+   1 | ERROR   | [x] End of line character is invalid; expected "\n" but found "\r\n"
+ 114 | ERROR   | [x] Tabs must be used to indent lines; spaces are not allowed
+ 115 | ERROR   | [x] Tabs must be used to indent lines; spaces are not allowed
+ 116 | ERROR   | [x] Tabs must be used to indent lines; spaces are not allowed
+ 117 | ERROR   | [x] Tabs must be used to indent lines; spaces are not allowed
+ 118 | ERROR   | [x] Tabs must be used to indent lines; spaces are not allowed
+ 119 | ERROR   | [x] Tabs must be used to indent lines; spaces are not allowed
+ 120 | ERROR   | [x] Tabs must be used to indent lines; spaces are not allowed
+ 121 | ERROR   | [x] Tabs must be used to indent lines; spaces are not allowed
+ 138 | WARNING | [x] Array double arrow not aligned correctly; expected 11 space(s) between "'id'" and double arrow, but found 10.
+ 139 | WARNING | [x] Array double arrow not aligned correctly; expected 8 space(s) between "'title'" and double arrow, but found 7.
+ 140 | WARNING | [x] Array double arrow not aligned correctly; expected 5 space(s) between "'sourceId'" and double arrow, but found 4.
+ 141 | WARNING | [x] Array double arrow not aligned correctly; expected 2 space(s) between "'sourceTitle'" and double arrow, but found 1.
+ 142 | WARNING | [x] Array double arrow not aligned correctly; expected 9 space(s) between "'type'" and double arrow, but found 8.
+ 151 | ERROR   | [x] Opening parenthesis of a multi-line function call must be the last content on the line
+ 154 | WARNING | [ ] Detected high pagination limit, `posts_per_page` is set to `200`
+ 164 | ERROR   | [x] Closing parenthesis of a multi-line function call must be on a line by itself
+ 171 | WARNING | [x] Array double arrow not aligned correctly; expected 18 space(s) between "'colPage'" and double arrow, but found 15.
+ 172 | WARNING | [x] Array double arrow not aligned correctly; expected 16 space(s) between "'colSource'" and double arrow, but found 13.
+ 173 | WARNING | [x] Array double arrow not aligned correctly; expected 15 space(s) between "'colActions'" and double arrow, but found 12.
+ 174 | WARNING | [x] Array double arrow not aligned correctly; expected 12 space(s) between "'enhanceSingle'" and double arrow, but found 9.
+ 175 | WARNING | [x] Array double arrow not aligned correctly; expected 10 space(s) between "'enhanceSelected'" and double arrow, but found 7.
+ 177 | WARNING | [x] Array double arrow not aligned correctly; expected 5 space(s) between "'enhanceSelectedCount'" and double arrow, but found 2.
+ 178 | WARNING | [x] Array double arrow not aligned correctly; expected 13 space(s) between "'noApiMessage'" and double arrow, but found 10.
+ 179 | WARNING | [x] Array double arrow not aligned correctly; expected 15 space(s) between "'addApiLink'" and double arrow, but found 12.
+ 180 | WARNING | [x] Array double arrow not aligned correctly; expected 21 space(s) between "'back'" and double arrow, but found 18.
+ 181 | WARNING | [x] Array double arrow not aligned correctly; expected 15 space(s) between "'backToList'" and double arrow, but found 12.
+ 182 | WARNING | [x] Array double arrow not aligned correctly; expected 21 space(s) between "'skip'" and double arrow, but found 18.
+ 183 | WARNING | [x] Array double arrow not aligned correctly; expected 20 space(s) between "'retry'" and double arrow, but found 17.
+ 184 | WARNING | [x] Array double arrow not aligned correctly; expected 9 space(s) between "'aiReadinessTitle'" and double arrow, but found 6.
+ 185 | WARNING | [x] Array double arrow not aligned correctly; expected 6 space(s) between "'aiReadinessApiValid'" and double arrow, but found 3.
+ 186 | WARNING | [x] Array double arrow not aligned correctly; expected 4 space(s) between "'aiReadinessApiInvalid'" and double arrow, but found 1.
+ 188 | WARNING | [x] Array double arrow not aligned correctly; expected 7 space(s) between "'aiReadinessCredits'" and double arrow, but found 4.
+ 189 | WARNING | [x] Array double arrow not aligned correctly; expected 4 space(s) between "'aiImproveWarningTitle'" and double arrow, but found 1.
+ 190 | WARNING | [x] Array double arrow not aligned correctly; expected 9 space(s) between "'aiImproveWarning'" and double arrow, but found 6.
+ 191 | WARNING | [x] Array double arrow not aligned correctly; expected 11 space(s) between "'aiImproveStart'" and double arrow, but found 8.
+ 192 | WARNING | [x] Array double arrow not aligned correctly; expected 11 space(s) between "'aiImproveError'" and double arrow, but found 8.
+ 193 | WARNING | [x] Array double arrow not aligned correctly; expected 12 space(s) between "'aiImproveType'" and double arrow, but found 9.
+ 194 | WARNING | [x] Array double arrow not aligned correctly; expected 10 space(s) between "'aiImprovePaused'" and double arrow, but found 7.
+ 195 | WARNING | [x] Array double arrow not aligned correctly; expected 6 space(s) between "'aiImproveFinishedOk'" and double arrow, but found 3.
+ 197 | WARNING | [x] Array double arrow not aligned correctly; expected 5 space(s) between "'aiImproveFinishedErr'" and double arrow, but found 2.
+ 198 | WARNING | [x] Array double arrow not aligned correctly; expected 10 space(s) between "'aiStatusPending'" and double arrow, but found 7.
+ 199 | WARNING | [x] Array double arrow not aligned correctly; expected 7 space(s) between "'aiStatusProcessing'" and double arrow, but found 4.
+ 200 | WARNING | [x] Array double arrow not aligned correctly; expected 13 space(s) between "'aiStatusDone'" and double arrow, but found 10.
+ 201 | WARNING | [x] Array double arrow not aligned correctly; expected 11 space(s) between "'aiStatusFailed'" and double arrow, but found 8.
+ 202 | WARNING | [x] Array double arrow not aligned correctly; expected 10 space(s) between "'aiStatusSkipped'" and double arrow, but found 7.
+ 203 | WARNING | [x] Array double arrow not aligned correctly; expected 12 space(s) between "'aiLoaderTitle'" and double arrow, but found 9.
+ 204 | WARNING | [x] Array double arrow not aligned correctly; expected 9 space(s) between "'aiStageAnalyzing'" and double arrow, but found 6.
+ 205 | WARNING | [x] Array double arrow not aligned correctly; expected 8 space(s) between "'aiStageGenerating'" and double arrow, but found 5.
+ 206 | WARNING | [x] Array double arrow not aligned correctly; expected 12 space(s) between "'aiStageSaving'" and double arrow, but found 9.
+ 207 | WARNING | [x] Array double arrow not aligned correctly; expected 11 space(s) between "'statTotalPages'" and double arrow, but found 8.
+ 208 | WARNING | [x] Array double arrow not aligned correctly; expected 11 space(s) between "'statAiEnhanced'" and double arrow, but found 8.
+ 289 | WARNING | [x] Array double arrow not aligned correctly; expected 5 space(s) between "'target_id'" and double arrow, but found 4.
+ 290 | WARNING | [x] Array double arrow not aligned correctly; expected 5 space(s) between "'source_id'" and double arrow, but found 4.
+ 291 | WARNING | [x] Array double arrow not aligned correctly; expected 9 space(s) between "'title'" and double arrow, but found 8.
+ 293 | WARNING | [x] Array double arrow not aligned correctly; expected 3 space(s) between "'screenshots'" and double arrow, but found 2.
+----------------------------------------------------------------------------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 55 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+----------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+FILE: C:\xampp\htdocs\ele\wp-content\plugins\elementor-to-gutenberg\src\admin\class-ai-improvement-admin.php
+------------------------------------------------------------------------------------------------------------
+FOUND 0 ERRORS AND 2 WARNINGS AFFECTING 2 LINES
+------------------------------------------------------------------------------------------------------------
+ 112 | WARNING | The method parameter $hook is never used
+ 521 | WARNING | json_encode() is discouraged. Use wp_json_encode() instead.
+------------------------------------------------------------------------------------------------------------
+
+
+FILE: C:\xampp\htdocs\ele\wp-content\plugins\elementor-to-gutenberg\src\admin\class-batch-convert-wizard.php
+------------------------------------------------------------------------------------------------------------
+FOUND 9 ERRORS AND 2 WARNINGS AFFECTING 11 LINES
+------------------------------------------------------------------------------------------------------------
+    1 | WARNING | File has mixed line endings; this may cause incorrect results
+  213 | WARNING | The method parameter $hook is never used
+  455 | ERROR   | Use Yoda Condition checks, you must.
+  522 | ERROR   | Using short ternaries is not allowed as they are rarely used correctly
+  525 | ERROR   | Empty CATCH statement detected
+  558 | ERROR   | Using short ternaries is not allowed as they are rarely used correctly
+  563 | ERROR   | Empty CATCH statement detected
+  792 | ERROR   | Empty CATCH statement detected
+  815 | ERROR   | Using short ternaries is not allowed as they are rarely used correctly
+  847 | ERROR   | Empty CATCH statement detected
+ 3494 | ERROR   | Use Yoda Condition checks, you must.
+------------------------------------------------------------------------------------------------------------
+
+
+FILE: C:\xampp\htdocs\ele\wp-content\plugins\elementor-to-gutenberg\src\admin\helper\class-claude-api-service.php
+-----------------------------------------------------------------------------------------------------------------
+FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
+-----------------------------------------------------------------------------------------------------------------
+ 470 | WARNING | json_encode() is discouraged. Use wp_json_encode() instead.
+-----------------------------------------------------------------------------------------------------------------
+
+
+FILE: C:\xampp\htdocs\ele\wp-content\plugins\elementor-to-gutenberg\src\admin\helper\class-external-css-service.php
+--------------------------------------------------------------------------------------------------------------------------------------
+FOUND 1 ERROR AND 3 WARNINGS AFFECTING 3 LINES
+--------------------------------------------------------------------------------------------------------------------------------------
+ 118 | ERROR   | Empty IF statement detected
+ 190 | WARNING | Silencing errors is strongly discouraged. Use proper error checking instead. Found: @file_get_contents( $path ...
+ 190 | WARNING | file_get_contents() is discouraged. Use wp_remote_get() for remote URLs instead.
+ 332 | WARNING | File operations should use WP_Filesystem methods instead of direct PHP filesystem calls. Found: file_put_contents().
+--------------------------------------------------------------------------------------------------------------------------------------
+
+
+FILE: C:\xampp\htdocs\ele\wp-content\plugins\elementor-to-gutenberg\src\admin\helper\class-file-upload-service.php
+------------------------------------------------------------------------------------------------------------------
+FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
+------------------------------------------------------------------------------------------------------------------
+ 28 | WARNING | file_get_contents() is discouraged. Use wp_remote_get() for remote URLs instead.
+------------------------------------------------------------------------------------------------------------------
+
+
+FILE: C:\xampp\htdocs\ele\wp-content\plugins\elementor-to-gutenberg\src\admin\helper\class-style-parser.php
+------------------------------------------------------------------------------------------------------------------
+FOUND 1 ERROR AND 3 WARNINGS AFFECTING 4 LINES
+------------------------------------------------------------------------------------------------------------------
+  682 | ERROR   | Using short ternaries is not allowed as they are rarely used correctly
+ 2221 | WARNING | It is recommended not to use reserved keyword "new" as function parameter name. Found: $new
+ 2266 | WARNING | It is recommended not to use reserved keyword "class" as function parameter name. Found: $class
+ 2289 | WARNING | It is recommended not to use reserved keyword "class" as function parameter name. Found: $class
+------------------------------------------------------------------------------------------------------------------
+
+
+FILE: C:\xampp\htdocs\ele\wp-content\plugins\elementor-to-gutenberg\src\admin\helper\External_Style_Collector.php
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+FOUND 2 ERRORS AFFECTING 1 LINE
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ 1 | ERROR | Filenames should be all lowercase with hyphens as word separators. Expected external-style-collector.php, but found External_Style_Collector.php.
+ 1 | ERROR | Class file names should be based on the class name with "class-" prepended. Expected class-external-style-collector.php, but found External_Style_Collector.php.
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+FILE: C:\xampp\htdocs\ele\wp-content\plugins\elementor-to-gutenberg\src\admin\layout\class-container-classifier.php
+-------------------------------------------------------------------------------------------------------------------
+FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
+-------------------------------------------------------------------------------------------------------------------
+ 363 | WARNING | It is recommended not to use reserved keyword "class" as function parameter name. Found: $class
+-------------------------------------------------------------------------------------------------------------------
+
+
+FILE: C:\xampp\htdocs\ele\wp-content\plugins\elementor-to-gutenberg\src\admin\widget\class-call-to-action-widget-handler.php
+----------------------------------------------------------------------------------------------------------------------------
+FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
+----------------------------------------------------------------------------------------------------------------------------
+ 570 | WARNING | It is recommended not to use reserved keyword "default" as function parameter name. Found: $default
+----------------------------------------------------------------------------------------------------------------------------
+
+
+FILE: C:\xampp\htdocs\ele\wp-content\plugins\elementor-to-gutenberg\src\admin\widget\class-divider-widget-handler.php
+---------------------------------------------------------------------------------------------------------------------
+FOUND 1 ERROR AND 1 WARNING AFFECTING 1 LINE
+---------------------------------------------------------------------------------------------------------------------
+ 119 | WARNING | [x] Loose comparisons are not allowed. Expected: "==="; Found: "=="
+ 119 | ERROR   | [ ] String concat is not required here; use a single string instead
+---------------------------------------------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 1 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+---------------------------------------------------------------------------------------------------------------------
+
+
+FILE: C:\xampp\htdocs\ele\wp-content\plugins\elementor-to-gutenberg\src\admin\widget\class-gallery-widget-handler.php
+---------------------------------------------------------------------------------------------------------------------
+FOUND 1 ERROR AFFECTING 1 LINE
+---------------------------------------------------------------------------------------------------------------------
+ 71 | ERROR | Use Yoda Condition checks, you must.
+---------------------------------------------------------------------------------------------------------------------
+
+
+FILE: C:\xampp\htdocs\ele\wp-content\plugins\elementor-to-gutenberg\src\admin\widget\class-icon-box-widget-handler.php
+----------------------------------------------------------------------------------------------------------------------
+FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
+----------------------------------------------------------------------------------------------------------------------
+ 190 | WARNING | It is recommended not to use reserved keyword "default" as function parameter name. Found: $default
+----------------------------------------------------------------------------------------------------------------------
+
+
+FILE: C:\xampp\htdocs\ele\wp-content\plugins\elementor-to-gutenberg\src\admin\widget\class-icon-widget-handler.php
+---------------------------------------------------------------------------------------------------------------------
+FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
+---------------------------------------------------------------------------------------------------------------------
+ 234 | WARNING | It is recommended not to use reserved keyword "default" as function parameter name. Found: $default
+---------------------------------------------------------------------------------------------------------------------
+
+
+FILE: C:\xampp\htdocs\ele\wp-content\plugins\elementor-to-gutenberg\src\admin\widget\class-image-box-widget-handler.php
+-----------------------------------------------------------------------------------------------------------------------
+FOUND 3 ERRORS AND 1 WARNING AFFECTING 4 LINES
+-----------------------------------------------------------------------------------------------------------------------
+ 220 | ERROR   | Using short ternaries is not allowed as they are rarely used correctly
+ 285 | ERROR   | Using short ternaries is not allowed as they are rarely used correctly
+ 286 | ERROR   | Using short ternaries is not allowed as they are rarely used correctly
+ 354 | WARNING | It is recommended not to use reserved keyword "default" as function parameter name. Found: $default
+-----------------------------------------------------------------------------------------------------------------------
+
+
+FILE: C:\xampp\htdocs\ele\wp-content\plugins\elementor-to-gutenberg\src\admin\widget\class-map-widget-handler.php
+---------------------------------------------------------------------------------------------------------------------
+FOUND 3 ERRORS AND 2 WARNINGS AFFECTING 4 LINES
+---------------------------------------------------------------------------------------------------------------------
+  43 | WARNING | This comment is 63% valid code; is this commented out code?
+  82 | ERROR   | Use Yoda Condition checks, you must.
+ 118 | ERROR   | Use Yoda Condition checks, you must.
+ 118 | ERROR   | Use Yoda Condition checks, you must.
+ 151 | WARNING | It is recommended not to use reserved keyword "default" as function parameter name. Found: $default
+---------------------------------------------------------------------------------------------------------------------
+
+
+FILE: C:\xampp\htdocs\ele\wp-content\plugins\elementor-to-gutenberg\src\admin\widget\class-posts-widget-handler.php
+-------------------------------------------------------------------------------------------------------------------
+FOUND 0 ERRORS AND 4 WARNINGS AFFECTING 4 LINES
+-------------------------------------------------------------------------------------------------------------------
+ 173 | WARNING | This comment is 45% valid code; is this commented out code?
+ 177 | WARNING | This comment is 45% valid code; is this commented out code?
+ 181 | WARNING | This comment is 45% valid code; is this commented out code?
+ 185 | WARNING | This comment is 45% valid code; is this commented out code?
+-------------------------------------------------------------------------------------------------------------------
+
+
+FILE: C:\xampp\htdocs\ele\wp-content\plugins\elementor-to-gutenberg\src\admin\widget\class-progress-widget-handler.php
+----------------------------------------------------------------------------------------------------------------------
+FOUND 1 ERROR AFFECTING 1 LINE
+----------------------------------------------------------------------------------------------------------------------
+ 159 | ERROR | Using short ternaries is not allowed as they are rarely used correctly
+----------------------------------------------------------------------------------------------------------------------
+
+
+FILE: C:\xampp\htdocs\ele\wp-content\plugins\elementor-to-gutenberg\src\admin\widget\class-search-form-widget-handler.php
+-------------------------------------------------------------------------------------------------------------------------
+FOUND 1 ERROR AFFECTING 1 LINE
+-------------------------------------------------------------------------------------------------------------------------
+ 140 | ERROR | Use Yoda Condition checks, you must.
+-------------------------------------------------------------------------------------------------------------------------
+
+
+FILE: C:\xampp\htdocs\ele\wp-content\plugins\elementor-to-gutenberg\src\admin\widget\class-social-icon-widget-handler.php
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+FOUND 1 ERROR AFFECTING 1 LINE
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ 1 | ERROR | Class file names should be based on the class name with "class-" prepended. Expected class-social-icons-widget-handler.php, but found class-social-icon-widget-handler.php.
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+FILE: C:\xampp\htdocs\ele\wp-content\plugins\elementor-to-gutenberg\src\admin\widget\class-testimonial-carousel-widget-handler.php
+----------------------------------------------------------------------------------------------------------------------------------
+FOUND 1 ERROR AFFECTING 1 LINE
+----------------------------------------------------------------------------------------------------------------------------------
+ 386 | ERROR | Using short ternaries is not allowed as they are rarely used correctly
+----------------------------------------------------------------------------------------------------------------------------------
+
+
+FILE: C:\xampp\htdocs\ele\wp-content\plugins\elementor-to-gutenberg\src\admin\widget\class-testimonial-widget-handler.php
+-------------------------------------------------------------------------------------------------------------------------
+FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
+-------------------------------------------------------------------------------------------------------------------------
+ 268 | WARNING | It is recommended not to use reserved keyword "default" as function parameter name. Found: $default
+-------------------------------------------------------------------------------------------------------------------------
+
+
+FILE: C:\xampp\htdocs\ele\wp-content\plugins\elementor-to-gutenberg\src\admin\widget\class-text-editor-widget-handler.php
+-------------------------------------------------------------------------------------------------------------------------
+FOUND 10 ERRORS AFFECTING 9 LINES
+-------------------------------------------------------------------------------------------------------------------------
+ 696 | ERROR | Object property "$childNodes" is not in valid snake_case format, try "$child_nodes"
+ 697 | ERROR | Object property "$nodeType" is not in valid snake_case format, try "$node_type"
+ 698 | ERROR | Object property "$nodeValue" is not in valid snake_case format, try "$node_value"
+ 709 | ERROR | Object property "$nodeType" is not in valid snake_case format, try "$node_type"
+ 713 | ERROR | Object property "$nodeName" is not in valid snake_case format, try "$node_name"
+ 726 | ERROR | Object property "$childNodes" is not in valid snake_case format, try "$child_nodes"
+ 727 | ERROR | Object property "$nodeType" is not in valid snake_case format, try "$node_type"
+ 727 | ERROR | Object property "$nodeName" is not in valid snake_case format, try "$node_name"
+ 761 | ERROR | Object property "$childNodes" is not in valid snake_case format, try "$child_nodes"
+ 762 | ERROR | Object property "$ownerDocument" is not in valid snake_case format, try "$owner_document"
+-------------------------------------------------------------------------------------------------------------------------
+
+
+FILE: C:\xampp\htdocs\ele\wp-content\plugins\elementor-to-gutenberg\src\blocks\counter\renderer.php
+---------------------------------------------------------------------------------------------------
+FOUND 0 ERRORS AND 2 WARNINGS AFFECTING 1 LINE
+---------------------------------------------------------------------------------------------------
+ 24 | WARNING | The method parameter $content is never used
+ 24 | WARNING | The method parameter $block is never used
+---------------------------------------------------------------------------------------------------
+
+
+FILE: C:\xampp\htdocs\ele\wp-content\plugins\elementor-to-gutenberg\src\blocks\google-map\renderer.php
+------------------------------------------------------------------------------------------------------
+FOUND 10 ERRORS AND 2 WARNINGS AFFECTING 9 LINES
+------------------------------------------------------------------------------------------------------
+ 23 | WARNING | The method parameter $content is never used
+ 23 | WARNING | The method parameter $block is never used
+ 33 | ERROR   | Use Yoda Condition checks, you must.
+ 35 | ERROR   | Use Yoda Condition checks, you must.
+ 40 | ERROR   | Use Yoda Condition checks, you must.
+ 42 | ERROR   | Use Yoda Condition checks, you must.
+ 48 | ERROR   | Use Yoda Condition checks, you must.
+ 48 | ERROR   | Use Yoda Condition checks, you must.
+ 73 | ERROR   | Use Yoda Condition checks, you must.
+ 76 | ERROR   | Use Yoda Condition checks, you must.
+ 84 | ERROR   | Use Yoda Condition checks, you must.
+ 84 | ERROR   | Use Yoda Condition checks, you must.
+------------------------------------------------------------------------------------------------------
+
+
+FILE: C:\xampp\htdocs\ele\wp-content\plugins\elementor-to-gutenberg\src\blocks\tabs\renderer.php
+------------------------------------------------------------------------------------------------
+FOUND 3 ERRORS AND 2 WARNINGS AFFECTING 4 LINES
+------------------------------------------------------------------------------------------------
+  24 | WARNING | The method parameter $content is never used
+  24 | WARNING | The method parameter $block is never used
+  74 | ERROR   | Use Yoda Condition checks, you must.
+ 129 | ERROR   | Use Yoda Condition checks, you must.
+ 132 | ERROR   | Use Yoda Condition checks, you must.
+------------------------------------------------------------------------------------------------
+
+

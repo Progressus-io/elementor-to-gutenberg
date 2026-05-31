@@ -61,8 +61,18 @@ class Map_Widget_Handler implements Widget_Handler_Interface {
 		$spacing_attrs = ! empty( $spacing['attributes'] ) ? $spacing['attributes'] : array();
 
 		$norm_spacing = array(
-			'margin'  => array( 'top' => 0, 'right' => 0, 'bottom' => 0, 'left' => 0 ),
-			'padding' => array( 'top' => 0, 'right' => 0, 'bottom' => 0, 'left' => 0 ),
+			'margin'  => array(
+				'top'    => 0,
+				'right'  => 0,
+				'bottom' => 0,
+				'left'   => 0,
+			),
+			'padding' => array(
+				'top'    => 0,
+				'right'  => 0,
+				'bottom' => 0,
+				'left'   => 0,
+			),
 		);
 
 		foreach ( array( 'margin', 'padding' ) as $box ) {
@@ -112,7 +122,6 @@ class Map_Widget_Handler implements Widget_Handler_Interface {
 		} else {
 			$src = '';
 		}
-
 
 		// Build shorthand style attribute from normalized spacing to match client-side save output.
 		$style_parts = array();

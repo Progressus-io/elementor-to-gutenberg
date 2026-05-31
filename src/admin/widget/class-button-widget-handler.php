@@ -51,11 +51,14 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 		$border      = Style_Parser::parse_border( $settings );
 		$border_attr = isset( $border['attributes'] ) ? $border['attributes'] : array();
 
-		$alignment      = Alignment_Helper::detect_alignment( $settings, array(
-			'button_align',
-			'align',
-			'alignment'
-		) );
+		$alignment      = Alignment_Helper::detect_alignment(
+			$settings,
+			array(
+				'button_align',
+				'align',
+				'alignment',
+			)
+		);
 		$buttons_layout = array();
 		if ( '' !== $alignment ) {
 			$buttons_layout = array(
@@ -159,7 +162,6 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 			}
 		}
 
-
 		if ( '' !== $url ) {
 			$button_attributes['url'] = $url;
 		}
@@ -182,7 +184,6 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 			Style_Parser::save_custom_css( $custom_css );
 		}
 
-
 		$icon_html = '';
 		if ( '' !== $icon_data['class_name'] ) {
 			$icon_html = '<span class="etg-button-icon ' . esc_attr( $icon_data['class_name'] ) . '" aria-hidden="true"></span>';
@@ -190,7 +191,6 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 		} elseif ( '' !== $icon_data['url'] ) {
 			$icon_html = '<span class="etg-button-icon"><img src="' . esc_url( $icon_data['url'] ) . '" alt="" aria-hidden="true" /></span>';
 		}
-
 
 		// Normalize typography for core/button to avoid Gutenberg dropping/reshuffling values.
 		if ( isset( $button_attributes['style']['typography'] ) && is_array( $button_attributes['style']['typography'] ) ) {
@@ -383,5 +383,4 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 
 		return false;
 	}
-
 }

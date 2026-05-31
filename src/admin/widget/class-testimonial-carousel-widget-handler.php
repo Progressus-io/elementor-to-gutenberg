@@ -269,13 +269,12 @@ class Testimonial_Carousel_Widget_Handler implements Widget_Handler_Interface {
 				$attributes_json = '{}';
 			}
 
-			$block_content = '<!-- wp:progressus/testimonials ' . $attributes_json . ' -->';
+			$block_content  = '<!-- wp:progressus/testimonials ' . $attributes_json . ' -->';
 			$block_content .= $rendered_html;
 			$block_content .= '<!-- /wp:progressus/testimonials -->';
 		}
 
 		return $block_content . "\n";
-
 	}
 
 	/**
@@ -297,7 +296,7 @@ class Testimonial_Carousel_Widget_Handler implements Widget_Handler_Interface {
 			'top'    => 1,
 			'right'  => 1,
 			'bottom' => 1,
-			'left'   => 1
+			'left'   => 1,
 		);
 		$slide_border_radius       = $attributes['slideBorderRadius'] ?? 0;
 		$slide_border_color        = $attributes['slideBorderColor'] ?? '';
@@ -305,7 +304,7 @@ class Testimonial_Carousel_Widget_Handler implements Widget_Handler_Interface {
 			'top'    => 20,
 			'right'  => 20,
 			'bottom' => 20,
-			'left'   => 20
+			'left'   => 20,
 		);
 		$content_gap               = $attributes['contentGap'] ?? 20;
 		$content_color             = $attributes['contentColor'] ?? '';
@@ -324,17 +323,16 @@ class Testimonial_Carousel_Widget_Handler implements Widget_Handler_Interface {
 			'top'    => 0,
 			'right'  => 0,
 			'bottom' => 0,
-			'left'   => 0
+			'left'   => 0,
 		);
 		$_padding                  = $attributes['_padding'] ?? array(
 			'top'    => 0,
 			'right'  => 0,
 			'bottom' => 0,
-			'left'   => 0
+			'left'   => 0,
 		);
 		$custom_id                 = $attributes['customId'] ?? '';
 		$custom_class              = $attributes['customClass'] ?? '';
-
 
 		$line_height = (string) ( $content_typography['lineHeight'] ?? '24' );
 		$line_height = trim( $line_height );
@@ -358,7 +356,6 @@ class Testimonial_Carousel_Widget_Handler implements Widget_Handler_Interface {
 			(string) ( $content_typography['fontFamily'] ?? '' ),
 			(int) $content_gap
 		);
-
 
 		$custom_class = trim( (string) $custom_class );
 		$class_attr   = trim( 'wp-block-progressus-testimonials ' . $custom_class );
@@ -628,6 +625,4 @@ class Testimonial_Carousel_Widget_Handler implements Widget_Handler_Interface {
 
 		return $a === $b;
 	}
-
-
 }

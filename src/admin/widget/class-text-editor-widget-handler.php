@@ -63,7 +63,7 @@ class Text_Editor_Widget_Handler implements Widget_Handler_Interface {
 			$base_attributes['className'] = trim( (string) ( $base_attributes['className'] ?? '' ) . ' ' . $element_class );
 		}
 
-		$markup_classes     = $custom_classes;
+		$markup_classes = $custom_classes;
 		if ( '' !== $element_class ) {
 			$markup_classes[] = $element_class;
 		}
@@ -851,5 +851,4 @@ class Text_Editor_Widget_Handler implements Widget_Handler_Interface {
 
 		return $html;
 	}
-
 }

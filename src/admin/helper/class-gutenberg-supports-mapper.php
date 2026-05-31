@@ -128,14 +128,18 @@ class Gutenberg_Supports_Mapper {
 
 		$always_allow = array(
 			'className' => true,
-			'align'     => in_array( $block_slug, array(
-				'group',
-				'image',
-				'columns',
-				'column',
-				'buttons',
-				'button'
-			), true ),
+			'align'     => in_array(
+				$block_slug,
+				array(
+					'group',
+					'image',
+					'columns',
+					'column',
+					'buttons',
+					'button',
+				),
+				true
+			),
 			'anchor'    => in_array( $block_slug, array( 'heading', 'group' ), true ),
 		);
 

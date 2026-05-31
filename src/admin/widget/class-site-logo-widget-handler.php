@@ -37,27 +37,27 @@ class Site_Logo_Widget_Handler implements Widget_Handler_Interface {
 		} elseif ( isset( $settings['width'] ) && is_numeric( $settings['width'] ) ) {
 			$width = (int) $settings['width'];
 		}
-		
+
 		if ( $width ) {
 			$attributes['width'] = $width;
 		}
 
 		// Class name - check if image has border radius or other style that suggests rounded.
-		$class_name = '';
+		$class_name    = '';
 		$border_radius = $settings['image_border_radius'] ?? array();
 		if ( ! empty( $border_radius['top'] ) && (int) $border_radius['top'] > 0 ) {
 			$class_name = 'is-style-rounded';
 		}
-		
+
 		if ( ! empty( $class_name ) ) {
 			$attributes['className'] = $class_name;
 		}
 
 		// Spacing - use Style_Parser for margin/padding.
 		$spacing['attributes'] = Style_Parser::parse_spacing( $settings );
-		$spacing = array();
-        if ( ! empty( $spacing['attributes'] ) ) {
-            $attributes['style']['spacing'] = $spacing['attributes'];
+		$spacing               = array();
+		if ( ! empty( $spacing['attributes'] ) ) {
+			$attributes['style']['spacing'] = $spacing['attributes'];
 		}
 
 		// Add background color if present.

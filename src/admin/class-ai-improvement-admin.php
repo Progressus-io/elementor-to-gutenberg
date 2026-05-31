@@ -136,29 +136,29 @@ class AI_Improvement_Admin {
 			'ele2gb-ai-improve',
 			'ele2gbAiImprove',
 			array(
-				'processingLabel'   => __( 'Processing…', 'elementor-to-gutenberg' ),
-				'improvingLabel'    => __( 'Improving with AI…', 'elementor-to-gutenberg' ),
-				'refiningLabel'     => __( 'Refining with AI…', 'elementor-to-gutenberg' ),
-				'mobileLabel'       => __( 'Improving mobile with AI…', 'elementor-to-gutenberg' ),
-				'ajaxUrl'           => admin_url( 'admin-ajax.php' ),
-				'feedbackNonce'     => wp_create_nonce( AI_Enhancement_Admin::FEEDBACK_NONCE ),
-				'targetId'          => $target_id_asset,
-				'sourceId'          => $source_id_asset,
-				'feedbackTitle'     => __( 'How did AI Enhancement go?', 'elementor-to-gutenberg' ),
-				'feedbackIssue'     => __( 'Issue type', 'elementor-to-gutenberg' ),
+				'processingLabel'     => __( 'Processing…', 'elementor-to-gutenberg' ),
+				'improvingLabel'      => __( 'Improving with AI…', 'elementor-to-gutenberg' ),
+				'refiningLabel'       => __( 'Refining with AI…', 'elementor-to-gutenberg' ),
+				'mobileLabel'         => __( 'Improving mobile with AI…', 'elementor-to-gutenberg' ),
+				'ajaxUrl'             => admin_url( 'admin-ajax.php' ),
+				'feedbackNonce'       => wp_create_nonce( AI_Enhancement_Admin::FEEDBACK_NONCE ),
+				'targetId'            => $target_id_asset,
+				'sourceId'            => $source_id_asset,
+				'feedbackTitle'       => __( 'How did AI Enhancement go?', 'elementor-to-gutenberg' ),
+				'feedbackIssue'       => __( 'Issue type', 'elementor-to-gutenberg' ),
 				'feedbackIssueDetail' => __( 'Describe the issue', 'elementor-to-gutenberg' ),
-				'feedbackNote'      => __( 'Additional notes', 'elementor-to-gutenberg' ),
-				'feedbackConsent'   => __( 'I consent to sending this anonymised AI enhancement report to the plugin developer for quality improvement. No passwords, API keys, or user data are included.', 'elementor-to-gutenberg' ),
-				'feedbackSubmit'    => __( 'Send Feedback', 'elementor-to-gutenberg' ),
-				'feedbackCancel'    => __( 'Cancel', 'elementor-to-gutenberg' ),
-				'feedbackSending'   => __( 'Sending…', 'elementor-to-gutenberg' ),
-				'feedbackSuccess'   => __( 'Thank you! Feedback submitted.', 'elementor-to-gutenberg' ),
-				'feedbackNoIssue'   => __( 'No issue', 'elementor-to-gutenberg' ),
-				'feedbackLayout'    => __( 'Layout issues after AI', 'elementor-to-gutenberg' ),
-				'feedbackMissing'   => __( 'Wrong or missing content', 'elementor-to-gutenberg' ),
-				'feedbackCss'       => __( 'CSS / styling problems', 'elementor-to-gutenberg' ),
-				'feedbackQuality'   => __( 'AI output quality', 'elementor-to-gutenberg' ),
-				'feedbackOther'     => __( 'Other', 'elementor-to-gutenberg' ),
+				'feedbackNote'        => __( 'Additional notes', 'elementor-to-gutenberg' ),
+				'feedbackConsent'     => __( 'I consent to sending this anonymised AI enhancement report to the plugin developer for quality improvement. No passwords, API keys, or user data are included.', 'elementor-to-gutenberg' ),
+				'feedbackSubmit'      => __( 'Send Feedback', 'elementor-to-gutenberg' ),
+				'feedbackCancel'      => __( 'Cancel', 'elementor-to-gutenberg' ),
+				'feedbackSending'     => __( 'Sending…', 'elementor-to-gutenberg' ),
+				'feedbackSuccess'     => __( 'Thank you! Feedback submitted.', 'elementor-to-gutenberg' ),
+				'feedbackNoIssue'     => __( 'No issue', 'elementor-to-gutenberg' ),
+				'feedbackLayout'      => __( 'Layout issues after AI', 'elementor-to-gutenberg' ),
+				'feedbackMissing'     => __( 'Wrong or missing content', 'elementor-to-gutenberg' ),
+				'feedbackCss'         => __( 'CSS / styling problems', 'elementor-to-gutenberg' ),
+				'feedbackQuality'     => __( 'AI output quality', 'elementor-to-gutenberg' ),
+				'feedbackOther'       => __( 'Other', 'elementor-to-gutenberg' ),
 			)
 		);
 	}
@@ -269,17 +269,17 @@ class AI_Improvement_Admin {
 		);
 
 		$workspace_to_save = array(
-			'target_post_id'                 => $target_id,
-			'source_post_id'                 => $source_id,
-			'prepared_prompt'                => $prompt,
-			'elementor_json_snapshot'        => $elementor_json,
-			'gutenberg_snapshot'             => $gutenberg_content,
-			'elementor_screenshot'           => $elementor_shots,
-			'gutenberg_screenshot'           => $gutenberg_shots,
-			'elementor_mobile_screenshot'    => $elementor_mobile_shots,
-			'gutenberg_mobile_screenshot'    => $gutenberg_mobile_shots,
-			'css_result_draft'               => isset( $existing_workspace['css_result_draft'] ) ? (string) $existing_workspace['css_result_draft'] : '',
-			'gutenberg_result_draft'         => isset( $existing_workspace['gutenberg_result_draft'] ) ? (string) $existing_workspace['gutenberg_result_draft'] : '',
+			'target_post_id'              => $target_id,
+			'source_post_id'              => $source_id,
+			'prepared_prompt'             => $prompt,
+			'elementor_json_snapshot'     => $elementor_json,
+			'gutenberg_snapshot'          => $gutenberg_content,
+			'elementor_screenshot'        => $elementor_shots,
+			'gutenberg_screenshot'        => $gutenberg_shots,
+			'elementor_mobile_screenshot' => $elementor_mobile_shots,
+			'gutenberg_mobile_screenshot' => $gutenberg_mobile_shots,
+			'css_result_draft'            => isset( $existing_workspace['css_result_draft'] ) ? (string) $existing_workspace['css_result_draft'] : '',
+			'gutenberg_result_draft'      => isset( $existing_workspace['gutenberg_result_draft'] ) ? (string) $existing_workspace['gutenberg_result_draft'] : '',
 		);
 		AI_Workspace_Repository::save( $target_id, $workspace_to_save );
 
@@ -337,7 +337,11 @@ class AI_Improvement_Admin {
 	 */
 	public static function run_improvement( int $source_id, int $target_id ): array {
 		$failure = static function ( string $error, string $notice = 'ai_failed' ): array {
-			return array( 'success' => false, 'error' => $error, 'notice' => $notice );
+			return array(
+				'success' => false,
+				'error'   => $error,
+				'notice'  => $notice,
+			);
 		};
 
 		// Maintenance-mode check: screenshots require a publicly reachable site.
@@ -408,11 +412,13 @@ class AI_Improvement_Admin {
 		$api_result = Claude_Api_Service::send( $prompt, $elementor_shots, $gutenberg_shots );
 
 		if ( ! $api_result['success'] ) {
-			self::log_improvement( array(
-				'step'      => 'api_failed',
-				'target_id' => $target_id,
-				'error'     => $api_result['error'],
-			) );
+			self::log_improvement(
+				array(
+					'step'      => 'api_failed',
+					'target_id' => $target_id,
+					'error'     => $api_result['error'],
+				)
+			);
 			return $failure( $api_result['error'], 'ai_failed' );
 		}
 
@@ -420,19 +426,23 @@ class AI_Improvement_Admin {
 		$css_result       = self::fix_css_namespace( $parsed['css'], $source_id, $target_id );
 		$gutenberg_result = $parsed['gutenberg'];
 
-		self::log_improvement( array(
-			'step'              => 'parse_complete',
-			'target_id'         => $target_id,
-			'css_length'        => strlen( $css_result ),
-			'gutenberg_length'  => strlen( $gutenberg_result ),
-			'gutenberg_preview' => substr( $gutenberg_result, 0, 120 ),
-		) );
+		self::log_improvement(
+			array(
+				'step'              => 'parse_complete',
+				'target_id'         => $target_id,
+				'css_length'        => strlen( $css_result ),
+				'gutenberg_length'  => strlen( $gutenberg_result ),
+				'gutenberg_preview' => substr( $gutenberg_result, 0, 120 ),
+			)
+		);
 
 		if ( '' === trim( $gutenberg_result ) ) {
-			self::log_improvement( array(
-				'step'      => 'parse_failed_empty_gutenberg',
-				'target_id' => $target_id,
-			) );
+			self::log_improvement(
+				array(
+					'step'      => 'parse_failed_empty_gutenberg',
+					'target_id' => $target_id,
+				)
+			);
 			return $failure(
 				__( 'No valid Gutenberg content could be parsed from the AI response.', 'elementor-to-gutenberg' ),
 				'ai_parse_failed'
@@ -448,19 +458,23 @@ class AI_Improvement_Admin {
 		);
 
 		if ( is_wp_error( $update_result ) ) {
-			self::log_improvement( array(
-				'step'      => 'wp_update_post_failed',
-				'target_id' => $target_id,
-				'error'     => $update_result->get_error_message(),
-			) );
+			self::log_improvement(
+				array(
+					'step'      => 'wp_update_post_failed',
+					'target_id' => $target_id,
+					'error'     => $update_result->get_error_message(),
+				)
+			);
 			return $failure( $update_result->get_error_message(), 'update_failed' );
 		}
 
-		self::log_improvement( array(
-			'step'          => 'wp_update_post_success',
-			'target_id'     => $target_id,
-			'returned_id'   => $update_result,
-		) );
+		self::log_improvement(
+			array(
+				'step'        => 'wp_update_post_success',
+				'target_id'   => $target_id,
+				'returned_id' => $update_result,
+			)
+		);
 
 		if ( '' !== trim( $css_result ) ) {
 			External_CSS_Service::save_post_css( $target_id, $css_result );
@@ -480,7 +494,11 @@ class AI_Improvement_Admin {
 
 		update_post_meta( $target_id, '_ele2gb_last_ai_improved', current_time( 'mysql' ) );
 
-		return array( 'success' => true, 'error' => '', 'notice' => 'updated' );
+		return array(
+			'success' => true,
+			'error'   => '',
+			'notice'  => 'updated',
+		);
 	}
 
 	/**
@@ -493,7 +511,10 @@ class AI_Improvement_Admin {
 		$log_file   = trailingslashit( $upload_dir['basedir'] ) . 'ele2gb-claude-api.log';
 
 		$entry = array_merge(
-			array( 'timestamp' => gmdate( 'Y-m-d H:i:s' ), 'source' => 'run_improvement' ),
+			array(
+				'timestamp' => gmdate( 'Y-m-d H:i:s' ),
+				'source'    => 'run_improvement',
+			),
 			$data
 		);
 
@@ -565,7 +586,11 @@ class AI_Improvement_Admin {
 	 */
 	public static function run_refinement( int $source_id, int $target_id, string $focus_instruction ): array {
 		$failure = static function ( string $error, string $notice = 'ai_failed' ): array {
-			return array( 'success' => false, 'error' => $error, 'notice' => $notice );
+			return array(
+				'success' => false,
+				'error'   => $error,
+				'notice'  => $notice,
+			);
 		};
 
 		$gutenberg_content = (string) get_post_field( 'post_content', $target_id );
@@ -607,11 +632,13 @@ class AI_Improvement_Admin {
 		);
 
 		if ( ! $api_result['success'] ) {
-			self::log_improvement( array(
-				'step'      => 'refine_api_failed',
-				'target_id' => $target_id,
-				'error'     => $api_result['error'],
-			) );
+			self::log_improvement(
+				array(
+					'step'      => 'refine_api_failed',
+					'target_id' => $target_id,
+					'error'     => $api_result['error'],
+				)
+			);
 			return $failure( $api_result['error'], 'ai_failed' );
 		}
 
@@ -619,19 +646,23 @@ class AI_Improvement_Admin {
 		$css_result       = self::fix_css_namespace( $parsed['css'], $source_id, $target_id );
 		$gutenberg_result = $parsed['gutenberg'];
 
-		self::log_improvement( array(
-			'step'              => 'refine_parse_complete',
-			'target_id'         => $target_id,
-			'css_length'        => strlen( $css_result ),
-			'gutenberg_length'  => strlen( $gutenberg_result ),
-			'gutenberg_preview' => substr( $gutenberg_result, 0, 120 ),
-		) );
+		self::log_improvement(
+			array(
+				'step'              => 'refine_parse_complete',
+				'target_id'         => $target_id,
+				'css_length'        => strlen( $css_result ),
+				'gutenberg_length'  => strlen( $gutenberg_result ),
+				'gutenberg_preview' => substr( $gutenberg_result, 0, 120 ),
+			)
+		);
 
 		if ( '' === trim( $gutenberg_result ) ) {
-			self::log_improvement( array(
-				'step'      => 'refine_parse_failed_empty_gutenberg',
-				'target_id' => $target_id,
-			) );
+			self::log_improvement(
+				array(
+					'step'      => 'refine_parse_failed_empty_gutenberg',
+					'target_id' => $target_id,
+				)
+			);
 			return $failure(
 				__( 'No valid Gutenberg content could be parsed from the AI refinement response.', 'elementor-to-gutenberg' ),
 				'ai_parse_failed'
@@ -647,11 +678,13 @@ class AI_Improvement_Admin {
 		);
 
 		if ( is_wp_error( $update_result ) ) {
-			self::log_improvement( array(
-				'step'      => 'refine_wp_update_post_failed',
-				'target_id' => $target_id,
-				'error'     => $update_result->get_error_message(),
-			) );
+			self::log_improvement(
+				array(
+					'step'      => 'refine_wp_update_post_failed',
+					'target_id' => $target_id,
+					'error'     => $update_result->get_error_message(),
+				)
+			);
 			return $failure( $update_result->get_error_message(), 'update_failed' );
 		}
 
@@ -674,7 +707,11 @@ class AI_Improvement_Admin {
 
 		update_post_meta( $target_id, '_ele2gb_last_ai_improved', current_time( 'mysql' ) );
 
-		return array( 'success' => true, 'error' => '', 'notice' => 'refined' );
+		return array(
+			'success' => true,
+			'error'   => '',
+			'notice'  => 'refined',
+		);
 	}
 
 	/**
@@ -737,7 +774,11 @@ class AI_Improvement_Admin {
 	 */
 	public static function run_mobile_improvement( int $source_id, int $target_id ): array {
 		$failure = static function ( string $error, string $notice = 'mobile_failed' ): array {
-			return array( 'success' => false, 'error' => $error, 'notice' => $notice );
+			return array(
+				'success' => false,
+				'error'   => $error,
+				'notice'  => $notice,
+			);
 		};
 
 		$gutenberg_content = (string) get_post_field( 'post_content', $target_id );
@@ -781,11 +822,13 @@ class AI_Improvement_Admin {
 		);
 
 		if ( ! $api_result['success'] ) {
-			self::log_improvement( array(
-				'step'      => 'mobile_api_failed',
-				'target_id' => $target_id,
-				'error'     => $api_result['error'],
-			) );
+			self::log_improvement(
+				array(
+					'step'      => 'mobile_api_failed',
+					'target_id' => $target_id,
+					'error'     => $api_result['error'],
+				)
+			);
 			return $failure( $api_result['error'], 'mobile_failed' );
 		}
 
@@ -795,12 +838,14 @@ class AI_Improvement_Admin {
 			$target_id
 		);
 
-		self::log_improvement( array(
-			'step'        => 'mobile_parse_complete',
-			'target_id'   => $target_id,
-			'css_length'  => strlen( $mobile_css ),
-			'css_preview' => substr( $mobile_css, 0, 200 ),
-		) );
+		self::log_improvement(
+			array(
+				'step'        => 'mobile_parse_complete',
+				'target_id'   => $target_id,
+				'css_length'  => strlen( $mobile_css ),
+				'css_preview' => substr( $mobile_css, 0, 200 ),
+			)
+		);
 
 		$merged_css = self::merge_mobile_css( $current_css, $mobile_css );
 
@@ -814,7 +859,11 @@ class AI_Improvement_Admin {
 
 		update_post_meta( $target_id, '_ele2gb_last_ai_mobile_improved', current_time( 'mysql' ) );
 
-		return array( 'success' => true, 'error' => '', 'notice' => 'mobile_improved' );
+		return array(
+			'success' => true,
+			'error'   => '',
+			'notice'  => 'mobile_improved',
+		);
 	}
 
 	/**
@@ -959,7 +1008,7 @@ class AI_Improvement_Admin {
 			$prefix = 'mobile_failed' === $notice_code
 				? esc_html__( 'Mobile improvement failed', 'elementor-to-gutenberg' )
 				: esc_html__( 'Claude API call failed', 'elementor-to-gutenberg' );
-			$msg = '' !== $ai_error
+			$msg    = '' !== $ai_error
 				/* translators: 1: failure prefix, 2: error message returned by Claude API */
 				? sprintf( esc_html__( '%1$s: %2$s', 'elementor-to-gutenberg' ), $prefix, esc_html( $ai_error ) )
 				: $prefix . '.';
@@ -1020,11 +1069,11 @@ class AI_Improvement_Admin {
 
 		$pill_map = array(
 			AI_Remediation_Screenshot_Meta_Service::STATUS_SUCCESS       => array( 'success', esc_html__( 'Generated', 'elementor-to-gutenberg' ) ),
-			AI_Remediation_Screenshot_Meta_Service::STATUS_FAILED        => array( 'error',   esc_html__( 'Failed', 'elementor-to-gutenberg' ) ),
+			AI_Remediation_Screenshot_Meta_Service::STATUS_FAILED        => array( 'error', esc_html__( 'Failed', 'elementor-to-gutenberg' ) ),
 			AI_Remediation_Screenshot_Meta_Service::STATUS_PENDING       => array( 'pending', esc_html__( 'Pending', 'elementor-to-gutenberg' ) ),
 			AI_Remediation_Screenshot_Meta_Service::STATUS_NOT_GENERATED => array( 'neutral', esc_html__( 'Not generated', 'elementor-to-gutenberg' ) ),
 		);
-		$pill = isset( $pill_map[ $screenshot_status ] ) ? $pill_map[ $screenshot_status ] : array( 'neutral', esc_html( $screenshot_status ) );
+		$pill     = isset( $pill_map[ $screenshot_status ] ) ? $pill_map[ $screenshot_status ] : array( 'neutral', esc_html( $screenshot_status ) );
 
 		$enhancement_url = admin_url( 'admin.php?page=' . AI_Enhancement_Admin::MENU_SLUG );
 		$target_edit_url = admin_url( 'post.php?post=' . $target_id . '&action=edit' );

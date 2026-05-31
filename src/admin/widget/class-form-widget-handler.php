@@ -92,11 +92,11 @@ class Form_Widget_Handler implements Widget_Handler_Interface {
 		}
 
 		// Label typography.
-		$label_typography = array(
-			'fontFamily'     => $settings['label_typography_font_family'] ?? '',
-			'fontWeight'     => $settings['label_typography_font_weight'] ?? 'normal',
-			'letterSpacing'  => (float) ( $settings['label_typography_letter_spacing']['size'] ?? 0 ),
-			'wordSpacing'    => (float) ( $settings['label_typography_word_spacing']['size'] ?? 0 ),
+		$label_typography              = array(
+			'fontFamily'    => $settings['label_typography_font_family'] ?? '',
+			'fontWeight'    => $settings['label_typography_font_weight'] ?? 'normal',
+			'letterSpacing' => (float) ( $settings['label_typography_letter_spacing']['size'] ?? 0 ),
+			'wordSpacing'   => (float) ( $settings['label_typography_word_spacing']['size'] ?? 0 ),
 		);
 		$attributes['labelTypography'] = $label_typography;
 
@@ -146,24 +146,44 @@ class Form_Widget_Handler implements Widget_Handler_Interface {
 	 * @return string HTML content.
 	 */
 	private function generate_form_html( array $attributes ): string {
-		$form_name              = $attributes['formName'] ?? 'contact-form';
-		$form_fields            = $attributes['formFields'] ?? array();
-		$input_size             = $attributes['inputSize'] ?? 'md';
-		$button_text            = $attributes['buttonText'] ?? 'Send';
-		$button_align           = $attributes['buttonAlign'] ?? 'start';
-		$success_message        = $attributes['successMessage'] ?? 'Your submission was successful.';
-		$error_message          = $attributes['errorMessage'] ?? 'Your submission failed because of an error.';
-		$row_gap                = $attributes['rowGap'] ?? 20;
-		$label_spacing          = $attributes['labelSpacing'] ?? 8;
-		$label_typography       = $attributes['labelTypography'] ?? array();
+		$form_name               = $attributes['formName'] ?? 'contact-form';
+		$form_fields             = $attributes['formFields'] ?? array();
+		$input_size              = $attributes['inputSize'] ?? 'md';
+		$button_text             = $attributes['buttonText'] ?? 'Send';
+		$button_align            = $attributes['buttonAlign'] ?? 'start';
+		$success_message         = $attributes['successMessage'] ?? 'Your submission was successful.';
+		$error_message           = $attributes['errorMessage'] ?? 'Your submission failed because of an error.';
+		$row_gap                 = $attributes['rowGap'] ?? 20;
+		$label_spacing           = $attributes['labelSpacing'] ?? 8;
+		$label_typography        = $attributes['labelTypography'] ?? array();
 		$button_background_color = $attributes['buttonBackgroundColor'] ?? '';
-		$button_text_color      = $attributes['buttonTextColor'] ?? '';
-		$button_border_radius   = $attributes['buttonBorderRadius'] ?? array( 'top' => 0, 'right' => 0, 'bottom' => 0, 'left' => 0 );
-		$button_padding         = $attributes['buttonPadding'] ?? array( 'top' => 12, 'right' => 24, 'bottom' => 12, 'left' => 24 );
-		$_margin                = $attributes['_margin'] ?? array( 'top' => 0, 'right' => 0, 'bottom' => 0, 'left' => 0 );
-		$_padding               = $attributes['_padding'] ?? array( 'top' => 0, 'right' => 0, 'bottom' => 0, 'left' => 0 );
-		$custom_id              = $attributes['customId'] ?? '';
-		$custom_class           = $attributes['customClass'] ?? '';
+		$button_text_color       = $attributes['buttonTextColor'] ?? '';
+		$button_border_radius    = $attributes['buttonBorderRadius'] ?? array(
+			'top'    => 0,
+			'right'  => 0,
+			'bottom' => 0,
+			'left'   => 0,
+		);
+		$button_padding          = $attributes['buttonPadding'] ?? array(
+			'top'    => 12,
+			'right'  => 24,
+			'bottom' => 12,
+			'left'   => 24,
+		);
+		$_margin                 = $attributes['_margin'] ?? array(
+			'top'    => 0,
+			'right'  => 0,
+			'bottom' => 0,
+			'left'   => 0,
+		);
+		$_padding                = $attributes['_padding'] ?? array(
+			'top'    => 0,
+			'right'  => 0,
+			'bottom' => 0,
+			'left'   => 0,
+		);
+		$custom_id               = $attributes['customId'] ?? '';
+		$custom_class            = $attributes['customClass'] ?? '';
 
 		$form_style = sprintf(
 			'margin:%dpx %dpx %dpx %dpx;padding:%dpx %dpx %dpx %dpx',

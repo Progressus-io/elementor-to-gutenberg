@@ -46,12 +46,24 @@ class Testimonial_Widget_Handler implements Widget_Handler_Interface {
 		// Image border-radius TRBL object (passed as-is to match block attribute shape).
 		$border_radius_raw = isset( $settings['image_border_radius'] ) && is_array( $settings['image_border_radius'] )
 			? $settings['image_border_radius']
-			: array( 'top' => '0', 'right' => '0', 'bottom' => '0', 'left' => '0', 'unit' => 'px' );
+			: array(
+				'top'    => '0',
+				'right'  => '0',
+				'bottom' => '0',
+				'left'   => '0',
+				'unit'   => 'px',
+			);
 
 		// Image border-width TRBL object.
 		$border_width_raw = isset( $settings['image_border_width'] ) && is_array( $settings['image_border_width'] )
 			? $settings['image_border_width']
-			: array( 'top' => '0', 'right' => '0', 'bottom' => '0', 'left' => '0', 'unit' => 'px' );
+			: array(
+				'top'    => '0',
+				'right'  => '0',
+				'bottom' => '0',
+				'left'   => '0',
+				'unit'   => 'px',
+			);
 
 		// Normalise TRBL objects to only the keys the block expects.
 		$border_radius_attr = $this->normalise_trbl_attr( $border_radius_raw );
@@ -101,7 +113,7 @@ class Testimonial_Widget_Handler implements Widget_Handler_Interface {
 				$custom_classes
 			)
 		);
-		$wrapper_style = 'text-align:' . esc_attr( $alignment );
+		$wrapper_style   = 'text-align:' . esc_attr( $alignment );
 
 		$wrapper_open = '<div class="' . esc_attr( implode( ' ', array_unique( $wrapper_classes ) ) ) . '"';
 		if ( '' !== $custom_id ) {
@@ -193,10 +205,10 @@ class Testimonial_Widget_Handler implements Widget_Handler_Interface {
 	 */
 	private function normalise_trbl_attr( array $raw ): array {
 		return array(
-			'top'    => isset( $raw['top'] )    ? (string) $raw['top']    : '0',
-			'right'  => isset( $raw['right'] )  ? (string) $raw['right']  : '0',
+			'top'    => isset( $raw['top'] ) ? (string) $raw['top'] : '0',
+			'right'  => isset( $raw['right'] ) ? (string) $raw['right'] : '0',
 			'bottom' => isset( $raw['bottom'] ) ? (string) $raw['bottom'] : '0',
-			'left'   => isset( $raw['left'] )   ? (string) $raw['left']   : '0',
+			'left'   => isset( $raw['left'] ) ? (string) $raw['left'] : '0',
 			'unit'   => isset( $raw['unit'] ) && '' !== (string) $raw['unit'] ? (string) $raw['unit'] : 'px',
 		);
 	}
@@ -211,19 +223,25 @@ class Testimonial_Widget_Handler implements Widget_Handler_Interface {
 	 */
 	private function strip_default_attrs( array $attrs ): array {
 		$defaults = array(
-			'content'           => '',
-			'name'              => '',
-			'job'               => '',
-			'alignment'         => 'left',
-			'imageUrl'          => '',
-			'imageId'           => 0,
-			'imageSize'         => 63,
-			'imageBorderColor'  => '',
-			'customId'          => '',
-			'customClass'       => '',
+			'content'          => '',
+			'name'             => '',
+			'job'              => '',
+			'alignment'        => 'left',
+			'imageUrl'         => '',
+			'imageId'          => 0,
+			'imageSize'        => 63,
+			'imageBorderColor' => '',
+			'customId'         => '',
+			'customClass'      => '',
 		);
 
-		$trbl_zero = array( 'top' => '0', 'right' => '0', 'bottom' => '0', 'left' => '0', 'unit' => 'px' );
+		$trbl_zero                     = array(
+			'top'    => '0',
+			'right'  => '0',
+			'bottom' => '0',
+			'left'   => '0',
+			'unit'   => 'px',
+		);
 		$defaults['imageBorderRadius'] = $trbl_zero;
 		$defaults['imageBorderWidth']  = $trbl_zero;
 
@@ -274,10 +292,10 @@ class Testimonial_Widget_Handler implements Widget_Handler_Interface {
 		$unit = isset( $value['unit'] ) && '' !== (string) $value['unit'] ? (string) $value['unit'] : 'px';
 
 		$sides = array(
-			isset( $value['top'] )    ? (string) $value['top']    : '',
-			isset( $value['right'] )  ? (string) $value['right']  : '',
+			isset( $value['top'] ) ? (string) $value['top'] : '',
+			isset( $value['right'] ) ? (string) $value['right'] : '',
 			isset( $value['bottom'] ) ? (string) $value['bottom'] : '',
-			isset( $value['left'] )   ? (string) $value['left']   : '',
+			isset( $value['left'] ) ? (string) $value['left'] : '',
 		);
 
 		// If any side is missing, bail.

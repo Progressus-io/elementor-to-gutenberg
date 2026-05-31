@@ -21,7 +21,7 @@ use function register_block_type;
  * @return string HTML output
  */
 function render_google_map_block( $attributes, $content, $block ) {
-	$loc = isset( $attributes['location'] ) ? $attributes['location'] : null;
+	$loc     = isset( $attributes['location'] ) ? $attributes['location'] : null;
 	$address = '';
 	if ( is_array( $loc ) && isset( $loc['address'] ) ) {
 		$address = $loc['address'];
@@ -42,7 +42,7 @@ function render_google_map_block( $attributes, $content, $block ) {
 	} elseif ( isset( $attributes['lng'] ) && $attributes['lng'] !== null ) {
 		$lng = floatval( $attributes['lng'] );
 	}
-	$zoom = isset( $attributes['zoom'] ) ? intval( $attributes['zoom'] ) : 14;
+	$zoom   = isset( $attributes['zoom'] ) ? intval( $attributes['zoom'] ) : 14;
 	$height = isset( $attributes['height'] ) ? intval( $attributes['height'] ) : 400;
 
 	if ( $lat !== null && $lng !== null ) {
@@ -59,8 +59,8 @@ function render_google_map_block( $attributes, $content, $block ) {
 	$location_attr = isset( $attributes['location'] ) && is_array( $attributes['location'] ) ? $attributes['location'] : null;
 	$location_json = $location_attr ? wp_json_encode( $location_attr ) : '';
 
-	$map_type = isset( $attributes['mapType'] ) ? $attributes['mapType'] : '';
-	$zoom_attr = isset( $attributes['zoom'] ) ? intval( $attributes['zoom'] ) : '';
+	$map_type    = isset( $attributes['mapType'] ) ? $attributes['mapType'] : '';
+	$zoom_attr   = isset( $attributes['zoom'] ) ? intval( $attributes['zoom'] ) : '';
 	$height_attr = isset( $attributes['height'] ) ? intval( $attributes['height'] ) : '';
 
 	$wrapper_with_data = rtrim( $wrapper, '>' );
@@ -76,11 +76,11 @@ function render_google_map_block( $attributes, $content, $block ) {
 	if ( $height_attr !== '' ) {
 		$wrapper_with_data .= ' data-height="' . esc_attr( $height_attr ) . '"';
 	}
-	$wrapper_with_data .= '>'; 
+	$wrapper_with_data .= '>';
 
 	$style_parts = array();
 	// Helper: normalize a side value which may be numeric or include units (e.g. '2px' or '1.5%').
-	$normalize = static function( $value ) {
+	$normalize = static function ( $value ) {
 		if ( $value === '' || $value === null ) {
 			return '0px';
 		}
@@ -97,27 +97,27 @@ function render_google_map_block( $attributes, $content, $block ) {
 	};
 
 	if ( isset( $attributes['style']['spacing']['margin'] ) && is_array( $attributes['style']['spacing']['margin'] ) ) {
-		$m = $attributes['style']['spacing']['margin'];
-		$top = isset( $m['top'] ) ? $normalize( $m['top'] ) : '0px';
-		$right = isset( $m['right'] ) ? $normalize( $m['right'] ) : '0px';
-		$bottom = isset( $m['bottom'] ) ? $normalize( $m['bottom'] ) : '0px';
-		$left = isset( $m['left'] ) ? $normalize( $m['left'] ) : '0px';
+		$m             = $attributes['style']['spacing']['margin'];
+		$top           = isset( $m['top'] ) ? $normalize( $m['top'] ) : '0px';
+		$right         = isset( $m['right'] ) ? $normalize( $m['right'] ) : '0px';
+		$bottom        = isset( $m['bottom'] ) ? $normalize( $m['bottom'] ) : '0px';
+		$left          = isset( $m['left'] ) ? $normalize( $m['left'] ) : '0px';
 		$style_parts[] = sprintf( 'margin:%1$s %2$s %3$s %4$s', \esc_attr( $top ), \esc_attr( $right ), \esc_attr( $bottom ), \esc_attr( $left ) );
 	}
 
 	if ( isset( $attributes['style']['spacing']['padding'] ) && is_array( $attributes['style']['spacing']['padding'] ) ) {
-		$p = $attributes['style']['spacing']['padding'];
-		$pt = isset( $p['top'] ) ? $normalize( $p['top'] ) : '0px';
-		$pr = isset( $p['right'] ) ? $normalize( $p['right'] ) : '0px';
-		$pb = isset( $p['bottom'] ) ? $normalize( $p['bottom'] ) : '0px';
-		$pl = isset( $p['left'] ) ? $normalize( $p['left'] ) : '0px';
+		$p             = $attributes['style']['spacing']['padding'];
+		$pt            = isset( $p['top'] ) ? $normalize( $p['top'] ) : '0px';
+		$pr            = isset( $p['right'] ) ? $normalize( $p['right'] ) : '0px';
+		$pb            = isset( $p['bottom'] ) ? $normalize( $p['bottom'] ) : '0px';
+		$pl            = isset( $p['left'] ) ? $normalize( $p['left'] ) : '0px';
 		$style_parts[] = sprintf( 'padding:%1$s %2$s %3$s %4$s', \esc_attr( $pt ), \esc_attr( $pr ), \esc_attr( $pb ), \esc_attr( $pl ) );
 	}
 
 	if ( ! empty( $style_parts ) ) {
 		$style_attr = implode( ';', $style_parts );
 		// inject style attribute into wrapper
-		$wrapper_with_data = rtrim( $wrapper_with_data, '>' );
+		$wrapper_with_data  = rtrim( $wrapper_with_data, '>' );
 		$wrapper_with_data .= ' style="' . esc_attr( $style_attr ) . '">';
 	}
 

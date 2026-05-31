@@ -47,7 +47,7 @@ class Icon_Widget_Handler implements Widget_Handler_Interface {
 		$hover_effect     = isset( $settings['hover_effect'] ) ? (string) $settings['hover_effect'] : 'scale-up';
 		$link_settings    = is_array( $settings['link'] ?? null ) ? $settings['link'] : array();
 		$link             = isset( $link_settings['url'] ) ? (string) $link_settings['url'] : '';
-		$link_target = ! empty( $link_settings['is_external'] ) ? '_blank' : '';
+		$link_target      = ! empty( $link_settings['is_external'] ) ? '_blank' : '';
 
 		$icon_style_class = $icon_data['style_class'];
 		$attributes       = array(
@@ -153,7 +153,6 @@ class Icon_Widget_Handler implements Widget_Handler_Interface {
 			'class="' . esc_attr( implode( ' ', array_unique( array_filter( $wrapper_classes ) ) ) ) . '"',
 			'style="' . esc_attr( $wrapper_style ) . '"',
 		);
-
 
 		if ( '' !== $custom_id ) {
 			$wrapper_attrs[] = 'id="' . esc_attr( $custom_id ) . '"';

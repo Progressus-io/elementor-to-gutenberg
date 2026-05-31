@@ -71,11 +71,26 @@ class Style_Parser {
 		$attributes  = array();
 		$style_parts = array();
 		$fields      = array(
-			'typography_font_family'     => array( 'attr' => 'fontFamily', 'css' => 'font-family' ),
-			'typography_text_transform'  => array( 'attr' => 'textTransform', 'css' => 'text-transform' ),
-			'typography_font_style'      => array( 'attr' => 'fontStyle', 'css' => 'font-style' ),
-			'typography_font_weight'     => array( 'attr' => 'fontWeight', 'css' => 'font-weight' ),
-			'typography_text_decoration' => array( 'attr' => 'textDecoration', 'css' => 'text-decoration' ),
+			'typography_font_family'     => array(
+				'attr' => 'fontFamily',
+				'css'  => 'font-family',
+			),
+			'typography_text_transform'  => array(
+				'attr' => 'textTransform',
+				'css'  => 'text-transform',
+			),
+			'typography_font_style'      => array(
+				'attr' => 'fontStyle',
+				'css'  => 'font-style',
+			),
+			'typography_font_weight'     => array(
+				'attr' => 'fontWeight',
+				'css'  => 'font-weight',
+			),
+			'typography_text_decoration' => array(
+				'attr' => 'textDecoration',
+				'css'  => 'text-decoration',
+			),
 		);
 
 		foreach ( $fields as $key => $map ) {
@@ -89,21 +104,25 @@ class Style_Parser {
 		}
 
 		$dimensions = array(
-			'typography_font_size'      => array( 'attr' => 'fontSize', 'css' => 'font-size', 'default_unit' => 'px' ),
+			'typography_font_size'      => array(
+				'attr'         => 'fontSize',
+				'css'          => 'font-size',
+				'default_unit' => 'px',
+			),
 			'typography_line_height'    => array(
 				'attr'         => 'lineHeight',
 				'css'          => 'line-height',
-				'default_unit' => ''
+				'default_unit' => '',
 			),
 			'typography_letter_spacing' => array(
 				'attr'         => 'letterSpacing',
 				'css'          => 'letter-spacing',
-				'default_unit' => 'px'
+				'default_unit' => 'px',
 			),
 			'typography_word_spacing'   => array(
 				'attr'         => 'wordSpacing',
 				'css'          => 'word-spacing',
-				'default_unit' => 'px'
+				'default_unit' => 'px',
 			),
 		);
 
@@ -300,24 +319,39 @@ class Style_Parser {
 	public static function extract_text_color_css_value( array $settings, string $key ): array {
 		$raw = isset( $settings[ $key ] ) ? self::sanitize_scalar( $settings[ $key ] ) : '';
 		if ( '' === $raw ) {
-			return array( 'color' => '', 'safe' => true );
+			return array(
+				'color' => '',
+				'safe'  => true,
+			);
 		}
 
 		if ( preg_match( '/^var\(\s*--[a-z0-9\-_]+\s*\)$/i', $raw ) ) {
-			return array( 'color' => $raw, 'safe' => true );
+			return array(
+				'color' => $raw,
+				'safe'  => true,
+			);
 		}
 
 		$resolved = self::resolve_elementor_color_reference( $raw );
 		if ( '' !== $resolved['color'] ) {
-			return array( 'color' => $resolved['color'], 'safe' => true );
+			return array(
+				'color' => $resolved['color'],
+				'safe'  => true,
+			);
 		}
 
 		$normalized = self::normalize_color_value( $raw );
 		if ( '' !== $normalized ) {
-			return array( 'color' => $normalized, 'safe' => true );
+			return array(
+				'color' => $normalized,
+				'safe'  => true,
+			);
 		}
 
-		return array( 'color' => '', 'safe' => false );
+		return array(
+			'color' => '',
+			'safe'  => false,
+		);
 	}
 
 	private static function append_dimension_rule( array &$rules, string $property, ?string $value, string $sanitizer ): void {
@@ -523,9 +557,9 @@ class Style_Parser {
 		$bg_mode = self::sanitize_scalar(
 			$settings['button_background_background']
 			?? $settings['_button_background_background']
-			   ?? $settings['background_background']
-			      ?? $settings['_background_background']
-			         ?? ''
+				?? $settings['background_background']
+					?? $settings['_background_background']
+					?? ''
 		);
 
 		$bg_mode = strtolower( trim( $bg_mode ) );
@@ -602,7 +636,6 @@ class Style_Parser {
 			$anchor_classes[]                           = 'has-background';
 			$anchor_styles[]                            = 'background-color:' . $background_value;
 		}
-
 
 		return array(
 			'attributes'     => $attributes,
@@ -1795,22 +1828,32 @@ class Style_Parser {
 				}
 
 				$attributes['radius'][ $attr_key ] = $value;
-				$style_parts[]                     = sprintf( 'border-%s-radius:%s;', str_replace( array(
-					'Left',
-					'Right'
-				), array( 'left', 'right' ), strtolower( preg_replace( '/([A-Z])/', '-$1', $attr_key ) ) ), $value );
+				$style_parts[]                     = sprintf(
+					'border-%s-radius:%s;',
+					str_replace(
+						array(
+							'Left',
+							'Right',
+						),
+						array( 'left', 'right' ),
+						strtolower( preg_replace( '/([A-Z])/', '-$1', $attr_key ) )
+					),
+					$value
+				);
 			}
 		}
 
 		$width_sources = array( '_border_width', 'border_width', 'button_border_width', '_button_border_width' );
-		$color_info    = self::extract_color_from_sources( array(
-			$settings['border_color'] ?? '',
-			$settings['_border_color'] ?? '',
-			$settings['button_border_color'] ?? '',
-			$settings['_button_border_color'] ?? '',
-			( isset( $settings['__globals__'] ) && is_array( $settings['__globals__'] ) ) ? ( $settings['__globals__']['border_color'] ?? '' ) : '',
-			( isset( $settings['__globals__'] ) && is_array( $settings['__globals__'] ) ) ? ( $settings['__globals__']['button_border_color'] ?? '' ) : '',
-		) );
+		$color_info    = self::extract_color_from_sources(
+			array(
+				$settings['border_color'] ?? '',
+				$settings['_border_color'] ?? '',
+				$settings['button_border_color'] ?? '',
+				$settings['_button_border_color'] ?? '',
+				( isset( $settings['__globals__'] ) && is_array( $settings['__globals__'] ) ) ? ( $settings['__globals__']['border_color'] ?? '' ) : '',
+				( isset( $settings['__globals__'] ) && is_array( $settings['__globals__'] ) ) ? ( $settings['__globals__']['button_border_color'] ?? '' ) : '',
+			)
+		);
 
 		$color = $color_info['color'];
 		if ( '' === $color && '' !== $color_info['slug'] ) {

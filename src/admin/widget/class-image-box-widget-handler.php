@@ -69,11 +69,14 @@ class Image_Box_Widget_Handler implements Widget_Handler_Interface {
 		$image_height        = $image_dimensions['height'];
 		$title               = isset( $settings['title_text'] ) ? (string) $settings['title_text'] : '';
 		$description         = isset( $settings['description_text'] ) ? (string) $settings['description_text'] : '';
-		$text_align          = Alignment_Helper::detect_alignment( $settings, array(
-			'text_align',
-			'align_mobile',
-			'align'
-		) );
+		$text_align          = Alignment_Helper::detect_alignment(
+			$settings,
+			array(
+				'text_align',
+				'align_mobile',
+				'align',
+			)
+		);
 		$text_align          = $this->normalize_text_alignment( $text_align );
 		$image_space         = $this->normalize_css_dimension( $settings['image_space'] ?? null );
 		$image_radius        = $this->resolve_image_border_radius( $settings, $element );
@@ -232,11 +235,15 @@ class Image_Box_Widget_Handler implements Widget_Handler_Interface {
 		$sanitized_description = '' !== trim( $description ) ? wp_kses_post( $description ) : '';
 		// Store the same newline-normalized description in attributes so attributes JSON
 		// matches the inner HTML used above.
-		$sanitized_description_no_newlines = '' !== $sanitized_description ? str_replace( array(
-			"\r\n",
-			"\r",
-			"\n"
-		), '', $sanitized_description ) : '';
+		$sanitized_description_no_newlines = '' !== $sanitized_description ? str_replace(
+			array(
+				"\r\n",
+				"\r",
+				"\n",
+			),
+			'',
+			$sanitized_description
+		) : '';
 
 		$block_attributes = array(
 			'imageUrl'                  => $image_url,
