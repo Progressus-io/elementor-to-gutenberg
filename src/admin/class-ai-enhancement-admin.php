@@ -151,7 +151,7 @@ class AI_Enhancement_Admin {
 		$query = new \WP_Query( array(
 			'post_type'      => array( 'page', 'wp_template_part' ),
 			'post_status'    => 'publish',
-			'posts_per_page' => 200,
+			'posts_per_page' => 200, // phpcs:ignore WordPress.WP.PostsPerPage.posts_per_page_posts_per_page
 			// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 			'meta_query'     => array(
 				array(
