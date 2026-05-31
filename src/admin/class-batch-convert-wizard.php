@@ -562,7 +562,7 @@ class Batch_Convert_Wizard {
 						)
 					);
 				} catch ( \Throwable $e ) {
-					// Never interrupt conversion
+					unset( $e );
 				}
 			}
 
@@ -791,7 +791,7 @@ class Batch_Convert_Wizard {
 							( (int) ( $job['jsonl_stats']['fallback_widgets_summary'][ $_fw ] ?? 0 ) ) + 1;
 					}
 				} catch ( \Throwable $e ) {
-					// Never interrupt conversion
+					unset( $e );
 				}
 			}
 
@@ -846,7 +846,7 @@ class Batch_Convert_Wizard {
 						)
 					);
 				} catch ( \Throwable $e ) {
-					// Never interrupt conversion
+					unset( $e );
 				}
 			}
 		}
