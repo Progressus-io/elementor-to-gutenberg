@@ -148,7 +148,7 @@ class Map_Widget_Handler implements Widget_Handler_Interface {
 		return $open . "\n" . $inner . "\n" . $close . "\n";
 	}
 
-	private function get_dimension_size( $value, $default = 0 ) {
+	private function get_dimension_size( $value, $fallback = 0 ) {
 		if ( is_array( $value ) && isset( $value['size'] ) && '' !== $value['size'] && null !== $value['size'] ) {
 			return absint( $value['size'] );
 		}
@@ -157,6 +157,6 @@ class Map_Widget_Handler implements Widget_Handler_Interface {
 			return absint( $value );
 		}
 
-		return absint( $default );
+		return absint( $fallback );
 	}
 }

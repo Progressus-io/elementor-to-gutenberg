@@ -2219,9 +2219,9 @@ class Style_Parser {
 	 * @param string $existing Existing class list.
 	 * @param string $new New class or classes.
 	 */
-	private static function append_class( string $existing, string $new ): string {
+	private static function append_class( string $existing, string $additional ): string {
 		$existing_list = '' === $existing ? array() : preg_split( '/\s+/', $existing );
-		$new_list      = preg_split( '/\s+/', $new );
+		$new_list      = preg_split( '/\s+/', $additional );
 		$combined      = array();
 
 		foreach ( array_merge( (array) $existing_list, (array) $new_list ) as $class ) {
@@ -2264,13 +2264,13 @@ class Style_Parser {
 	 *
 	 * @return string Sanitized class name or empty string if disallowed.
 	 */
-	public static function clean_class( string $class ): string {
-		$class = trim( $class );
-		if ( '' === $class ) {
+	public static function clean_class( string $class_name ): string {
+		$class_name = trim( $class_name );
+		if ( '' === $class_name ) {
 			return '';
 		}
 
-		$sanitized = sanitize_html_class( $class );
+		$sanitized = sanitize_html_class( $class_name );
 		if ( '' === $sanitized ) {
 			return '';
 		}
@@ -2287,7 +2287,7 @@ class Style_Parser {
 	 *
 	 * @param string $class Sanitized class name.
 	 */
-	private static function is_disallowed_elementor_class( string $class ): bool {
+	private static function is_disallowed_elementor_class( string $class_name ): bool {
 		$blocked_exact = array(
 			'e-con',
 			'e-con-full',
@@ -2296,7 +2296,7 @@ class Style_Parser {
 			'e-grid',
 		);
 
-		if ( in_array( $class, $blocked_exact, true ) ) {
+		if ( in_array( $class_name, $blocked_exact, true ) ) {
 			return true;
 		}
 
@@ -2310,7 +2310,7 @@ class Style_Parser {
 		);
 
 		foreach ( $blocked_prefixes as $prefix ) {
-			if ( 0 === strpos( $class, $prefix ) ) {
+			if ( 0 === strpos( $class_name, $prefix ) ) {
 				return true;
 			}
 		}

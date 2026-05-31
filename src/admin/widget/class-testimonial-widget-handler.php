@@ -265,14 +265,14 @@ class Testimonial_Widget_Handler implements Widget_Handler_Interface {
 	 *
 	 * @return int Resolved integer size.
 	 */
-	private function resolve_slider_size( $value, int $default ): int {
+	private function resolve_slider_size( $value, int $fallback ): int {
 		if ( is_array( $value ) && isset( $value['size'] ) && is_numeric( $value['size'] ) ) {
 			return (int) round( (float) $value['size'] );
 		}
 		if ( is_numeric( $value ) ) {
 			return (int) round( (float) $value );
 		}
-		return $default;
+		return $fallback;
 	}
 
 	/**

@@ -360,11 +360,11 @@ class Container_Classifier {
 	/**
 	 * Check whether a container has a specific class.
 	 */
-	public static function has_class( array $element, string $class ): bool {
+	public static function has_class( array $element, string $class_name ): bool {
 		$classes = self::get_element_classes( $element );
 
 		foreach ( $classes as $existing ) {
-			if ( $existing === $class ) {
+			if ( $existing === $class_name ) {
 				return true;
 			}
 		}

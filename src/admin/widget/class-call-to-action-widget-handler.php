@@ -567,7 +567,7 @@ class Call_To_Action_Widget_Handler implements Widget_Handler_Interface {
 	 *
 	 * @return int Sanitized integer value.
 	 */
-	private function sanitize_slider_value( $value, int $default ): int {
+	private function sanitize_slider_value( $value, int $fallback ): int {
 		if ( is_array( $value ) && isset( $value['size'] ) ) {
 			return (int) $value['size'];
 		}
@@ -575,7 +575,7 @@ class Call_To_Action_Widget_Handler implements Widget_Handler_Interface {
 			return (int) $value;
 		}
 
-		return $default;
+		return $fallback;
 	}
 
 	/**
