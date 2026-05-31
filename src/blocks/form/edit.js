@@ -7,6 +7,7 @@ import {
 	ToggleControl,
 	RangeControl,
 	Button,
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalBoxControl as BoxControl,
 } from '@wordpress/components';
 import { useState } from '@wordpress/element';

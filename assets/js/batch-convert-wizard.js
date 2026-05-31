@@ -3151,7 +3151,7 @@
 		/**
 		 * Open the full or multi-item feedback modal.
 		 * sourceIds: array of source post IDs to include.
-		 * @param sourceIds
+		 * @param {Array} sourceIds
 		 */
 		openFeedbackModal( sourceIds ) {
 			this.closeFeedbackModal();
@@ -3408,9 +3408,9 @@
 
 		/**
 		 * Open the compact per-item feedback modal (stars + note only).
-		 * @param sourceId
-		 * @param title
-		 * @param jobId
+		 * @param {string|number} sourceId
+		 * @param {string}        title
+		 * @param {string}        jobId
 		 */
 		openItemFeedbackModal( sourceId, title, jobId ) {
 			this.closeFeedbackModal();

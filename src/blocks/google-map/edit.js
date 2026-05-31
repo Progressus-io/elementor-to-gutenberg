@@ -5,6 +5,7 @@ import {
 	TextControl,
 	RangeControl,
 	SelectControl,
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalBoxControl as BoxControl,
 } from '@wordpress/components';
 import { Fragment, useState, useEffect, useRef } from '@wordpress/element';

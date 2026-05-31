@@ -14,13 +14,14 @@ import {
 	RangeControl,
 	Button,
 	ColorPicker,
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalBoxControl as BoxControl,
 } from '@wordpress/components';
 
 /**
  * Format a TRBL object (with .top, .right, .bottom, .left, .unit) into a CSS shorthand string.
  * Returns empty string when all sides are zero/absent.
- * @param obj
+ * @param {Object} obj
  */
 function formatTRBL( obj ) {
 	if ( ! obj ) {
@@ -49,8 +50,8 @@ function formatTRBL( obj ) {
 
 /**
  * Convert a BoxControl value object (with top/right/bottom/left as numbers) to our TRBL attribute format.
- * @param boxValue
- * @param unit
+ * @param {Object} boxValue
+ * @param {string} unit
  */
 function boxControlToTRBL( boxValue, unit = 'px' ) {
 	return {
@@ -64,7 +65,7 @@ function boxControlToTRBL( boxValue, unit = 'px' ) {
 
 /**
  * Convert our TRBL attribute format to a BoxControl value object.
- * @param trbl
+ * @param {Object} trbl
  */
 function trblToBoxControl( trbl ) {
 	return {

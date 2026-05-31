@@ -11,7 +11,7 @@
  * Mirrors the PHP resolve_trbl_css() helper.
  *
  * Returns empty string when obj is falsy.
- * @param obj
+ * @param {Object} obj
  */
 function formatTRBL( obj ) {
 	if ( ! obj ) {

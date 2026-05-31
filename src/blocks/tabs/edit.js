@@ -13,7 +13,9 @@ import {
 	Button,
 	TextareaControl,
 	RangeControl,
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalBoxControl as BoxControl,
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalBorderControl as BorderControl,
 	ToolbarGroup,
 	ToolbarButton,
