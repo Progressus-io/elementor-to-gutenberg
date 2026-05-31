@@ -116,7 +116,7 @@ class Divider_Widget_Handler implements Widget_Handler_Interface {
 
 		// Style (solid/dashed/dotted).
 		if ( isset( $settings['style'] ) ) {
-			$separator_attrs['className'] .= esc_attr( $settings['style'] ) == 'dotted' ? ' is-style-' . 'dots' : ' is-style-' . esc_attr( $settings['style'] );
+			$separator_attrs['className'] .= 'dotted' === esc_attr( $settings['style'] ) ? ' is-style-dots' : ' is-style-' . esc_attr( $settings['style'] );
 		}
 
 		// Margin / Spacing.

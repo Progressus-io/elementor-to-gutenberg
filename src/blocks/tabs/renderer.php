@@ -21,7 +21,7 @@ use function register_block_type;
  * @param WP_Block $block      Block instance.
  * @return string Returns the tabs block markup.
  */
-function render_tabs_block( $attributes, $content, $block ) {
+function render_tabs_block( $attributes, $_content, $_block ) {
 	$tabs                     = isset( $attributes['tabs'] ) ? $attributes['tabs'] : array();
 	$active_tab               = isset( $attributes['activeTab'] ) ? intval( $attributes['activeTab'] ) : 0;
 	$tab_style                = isset( $attributes['tabStyle'] ) ? \esc_html( $attributes['tabStyle'] ) : 'horizontal';

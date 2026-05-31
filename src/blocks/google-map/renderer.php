@@ -20,7 +20,7 @@ use function register_block_type;
  * @param WP_Block $block      Block instance.
  * @return string HTML output
  */
-function render_google_map_block( $attributes, $content, $block ) {
+function render_google_map_block( $attributes, $_content, $_block ) {
 	$loc     = isset( $attributes['location'] ) ? $attributes['location'] : null;
 	$address = '';
 	if ( is_array( $loc ) && isset( $loc['address'] ) ) {

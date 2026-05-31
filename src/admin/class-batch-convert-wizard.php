@@ -210,7 +210,7 @@ class Batch_Convert_Wizard {
 	 *
 	 * @param string $hook Current admin page hook suffix.
 	 */
-	public function enqueue_assets( string $hook ): void {
+	public function enqueue_assets( string $_hook ): void {
 		if ( empty( $_GET['page'] ) || self::MENU_SLUG !== sanitize_key( wp_unslash( $_GET['page'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			return;
 		}

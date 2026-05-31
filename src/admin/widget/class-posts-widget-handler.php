@@ -170,19 +170,15 @@ class Posts_Widget_Handler implements Widget_Handler_Interface {
 		$show_image_key = $skin . '_show_image';
 		$show_image     = ! isset( $settings[ $show_image_key ] ) || 'yes' === $settings[ $show_image_key ];
 
-		// Show title (default true)
 		$show_title_key = $skin . '_show_title';
 		$show_title     = ! isset( $settings[ $show_title_key ] ) || 'yes' === $settings[ $show_title_key ];
 
-		// Show excerpt (default true)
 		$show_excerpt_key = $skin . '_show_excerpt';
 		$show_excerpt     = ! isset( $settings[ $show_excerpt_key ] ) || 'yes' === $settings[ $show_excerpt_key ];
 
-		// Show date (default true)
 		$show_date_key = $skin . '_show_date';
 		$show_date     = ! isset( $settings[ $show_date_key ] ) || 'yes' === $settings[ $show_date_key ];
 
-		// Show author (default true)
 		$show_author_key = $skin . '_show_author';
 		$show_author     = ! isset( $settings[ $show_author_key ] ) || 'yes' === $settings[ $show_author_key ];
 
