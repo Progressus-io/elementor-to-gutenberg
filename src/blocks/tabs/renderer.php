@@ -71,7 +71,7 @@ function render_tabs_block( $attributes, $content, $block ) {
 	);
 
 	$tabs_style = '';
-	if ( $tab_style === 'vertical' ) {
+	if ( 'vertical' === $tab_style ) {
 		$tabs_style = 'display: flex; flex-direction: row;';
 	}
 
@@ -126,10 +126,10 @@ function render_tabs_block( $attributes, $content, $block ) {
 		$border_style,
 		$border_color,
 		$border_radius,
-		$tab_style === 'horizontal' ? 'border-top: none;' : ''
+		'horizontal' === $tab_style ? 'border-top: none;' : ''
 	);
 
-	$headers_direction = $tab_style === 'vertical' ? 'column' : 'row';
+	$headers_direction = 'vertical' === $tab_style ? 'column' : 'row';
 
 	$output  = sprintf( '<div %s>', $wrapper_attributes );
 	$output .= sprintf( '<div class="progressus-tabs" style="%s">', $tabs_style );

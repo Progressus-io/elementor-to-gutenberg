@@ -452,7 +452,7 @@ class Batch_Convert_Wizard {
 		}
 
 		$job = $this->get_job( $job_id );
-		if ( empty( $job ) || (int) $job['user_id'] !== get_current_user_id() ) {
+		if ( empty( $job ) || get_current_user_id() !== (int) $job['user_id'] ) {
 			wp_send_json_error(
 				array(
 					'message' => esc_html__( 'Conversion job could not be found.', 'elementor-to-gutenberg' ),
@@ -3491,7 +3491,7 @@ class Batch_Convert_Wizard {
 		}
 
 		$job = $this->get_job( $job_id );
-		if ( empty( $job ) || (int) $job['user_id'] !== get_current_user_id() ) {
+		if ( empty( $job ) || get_current_user_id() !== (int) $job['user_id'] ) {
 			wp_send_json_error(
 				array(
 					'message' => esc_html__( 'Conversion job could not be found.', 'elementor-to-gutenberg' ),

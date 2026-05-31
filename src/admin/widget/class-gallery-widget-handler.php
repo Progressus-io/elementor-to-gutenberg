@@ -68,7 +68,7 @@ class Gallery_Widget_Handler implements Widget_Handler_Interface {
 		// Map spacing (image_spacing_custom)
 		if (
 			isset( $settings['image_spacing'] ) &&
-			$settings['image_spacing'] === 'custom' &&
+			'custom' === $settings['image_spacing'] &&
 			isset( $settings['image_spacing_custom']['size'] )
 		) {
 			$spacing      = intval( $settings['image_spacing_custom']['size'] );

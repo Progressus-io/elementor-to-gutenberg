@@ -79,7 +79,7 @@ class Map_Widget_Handler implements Widget_Handler_Interface {
 			if ( ! empty( $spacing_attrs[ $box ] ) && is_array( $spacing_attrs[ $box ] ) ) {
 				foreach ( array( 'top', 'right', 'bottom', 'left' ) as $side ) {
 					$val = $spacing_attrs[ $box ][ $side ] ?? null;
-					if ( $val === null ) {
+					if ( null === $val ) {
 						$norm_spacing[ $box ][ $side ] = 0;
 						continue;
 					}
@@ -115,7 +115,7 @@ class Map_Widget_Handler implements Widget_Handler_Interface {
 		}
 
 		// Build iframe src using lat/lng when available, otherwise address.
-		if ( $attributes['location']['lat'] !== null && $attributes['location']['lng'] !== null ) {
+		if ( null !== $attributes['location']['lat'] && null !== $attributes['location']['lng'] ) {
 			$src = sprintf( 'https://maps.google.com/maps?q=%1$s,%2$s&z=%3$d&output=embed', \esc_attr( $attributes['location']['lat'] ), \esc_attr( $attributes['location']['lng'] ), $zoom );
 		} elseif ( ! empty( $attributes['location']['address'] ) ) {
 			$src = sprintf( 'https://maps.google.com/maps?q=%s&z=%d&output=embed', \rawurlencode( $attributes['location']['address'] ), $zoom );

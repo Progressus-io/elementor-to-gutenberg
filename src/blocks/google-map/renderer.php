@@ -30,22 +30,22 @@ function render_google_map_block( $attributes, $content, $block ) {
 	}
 
 	$lat = null;
-	if ( is_array( $loc ) && isset( $loc['lat'] ) && $loc['lat'] !== null ) {
+	if ( is_array( $loc ) && isset( $loc['lat'] ) && null !== $loc['lat'] ) {
 		$lat = floatval( $loc['lat'] );
-	} elseif ( isset( $attributes['lat'] ) && $attributes['lat'] !== null ) {
+	} elseif ( isset( $attributes['lat'] ) && null !== $attributes['lat'] ) {
 		$lat = floatval( $attributes['lat'] );
 	}
 
 	$lng = null;
-	if ( is_array( $loc ) && isset( $loc['lng'] ) && $loc['lng'] !== null ) {
+	if ( is_array( $loc ) && isset( $loc['lng'] ) && null !== $loc['lng'] ) {
 		$lng = floatval( $loc['lng'] );
-	} elseif ( isset( $attributes['lng'] ) && $attributes['lng'] !== null ) {
+	} elseif ( isset( $attributes['lng'] ) && null !== $attributes['lng'] ) {
 		$lng = floatval( $attributes['lng'] );
 	}
 	$zoom   = isset( $attributes['zoom'] ) ? intval( $attributes['zoom'] ) : 14;
 	$height = isset( $attributes['height'] ) ? intval( $attributes['height'] ) : 400;
 
-	if ( $lat !== null && $lng !== null ) {
+	if ( null !== $lat && null !== $lng ) {
 		$src = sprintf( 'https://maps.google.com/maps?q=%1$s,%2$s&z=%3$d&output=embed', \esc_attr( $lat ), \esc_attr( $lng ), $zoom );
 	} elseif ( ! empty( $address ) ) {
 		$src = sprintf( 'https://maps.google.com/maps?q=%s&z=%d&output=embed', rawurlencode( $address ), $zoom );
@@ -70,10 +70,10 @@ function render_google_map_block( $attributes, $content, $block ) {
 	if ( $map_type ) {
 		$wrapper_with_data .= ' data-map-type="' . esc_attr( $map_type ) . '"';
 	}
-	if ( $zoom_attr !== '' ) {
+	if ( '' !== $zoom_attr ) {
 		$wrapper_with_data .= ' data-zoom="' . esc_attr( $zoom_attr ) . '"';
 	}
-	if ( $height_attr !== '' ) {
+	if ( '' !== $height_attr ) {
 		$wrapper_with_data .= ' data-height="' . esc_attr( $height_attr ) . '"';
 	}
 	$wrapper_with_data .= '>';
@@ -81,7 +81,7 @@ function render_google_map_block( $attributes, $content, $block ) {
 	$style_parts = array();
 	// Helper: normalize a side value which may be numeric or include units (e.g. '2px' or '1.5%').
 	$normalize = static function ( $value ) {
-		if ( $value === '' || $value === null ) {
+		if ( '' === $value || null === $value ) {
 			return '0px';
 		}
 		// If it's numeric, append 'px'.
