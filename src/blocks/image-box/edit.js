@@ -67,6 +67,14 @@ export default function Edit( { attributes, setAttributes } ) {
 
 	const effectiveAlignment = alignment || align || 'left';
 
+	// Helper: ensures a spacing value has a px unit.
+	const withPx = ( v ) => {
+		if ( ! v ) {
+			return undefined;
+		}
+		return String( v ).includes( 'px' ) ? v : `${ v }px`;
+	};
+
 	// Get block props with alignment support
 	const blockProps = useBlockProps( {
 		style: {
@@ -689,12 +697,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					style={ {
 						display: 'flex',
 						flexDirection: 'column',
-						alignItems:
-							effectiveAlignment === 'center'
-								? 'center'
-								: effectiveAlignment === 'right'
-								? 'flex-end'
-								: 'flex-start',
+						alignItems: ( { center: 'center', right: 'flex-end' } )[ effectiveAlignment ] || 'flex-start',
 						gap: 12,
 					} }
 				>
@@ -754,27 +757,9 @@ export default function Edit( { attributes, setAttributes } ) {
 								fontStyle: titleFontStyle || undefined,
 								textDecoration:
 									titleTextDecoration || undefined,
-								lineHeight: titleLineHeight
-									? titleLineHeight
-											.toString()
-											.includes( 'px' )
-										? titleLineHeight
-										: `${ titleLineHeight }px`
-									: undefined,
-								letterSpacing: titleLetterSpacing
-									? titleLetterSpacing
-											.toString()
-											.includes( 'px' )
-										? titleLetterSpacing
-										: `${ titleLetterSpacing }px`
-									: undefined,
-								wordSpacing: titleWordSpacing
-									? titleWordSpacing
-											.toString()
-											.includes( 'px' )
-										? titleWordSpacing
-										: `${ titleWordSpacing }px`
-									: undefined,
+								lineHeight: withPx( titleLineHeight ),
+								letterSpacing: withPx( titleLetterSpacing ),
+								wordSpacing: withPx( titleWordSpacing ),
 								margin: '0 0 8px 0',
 							} }
 							placeholder={ __(
@@ -799,27 +784,9 @@ export default function Edit( { attributes, setAttributes } ) {
 								fontStyle: descriptionFontStyle || undefined,
 								textDecoration:
 									descriptionTextDecoration || undefined,
-								lineHeight: descriptionLineHeight
-									? descriptionLineHeight
-											.toString()
-											.includes( 'px' )
-										? descriptionLineHeight
-										: `${ descriptionLineHeight }px`
-									: undefined,
-								letterSpacing: descriptionLetterSpacing
-									? descriptionLetterSpacing
-											.toString()
-											.includes( 'px' )
-										? descriptionLetterSpacing
-										: `${ descriptionLetterSpacing }px`
-									: undefined,
-								wordSpacing: descriptionWordSpacing
-									? descriptionWordSpacing
-											.toString()
-											.includes( 'px' )
-										? descriptionWordSpacing
-										: `${ descriptionWordSpacing }px`
-									: undefined,
+								lineHeight: withPx( descriptionLineHeight ),
+								letterSpacing: withPx( descriptionLetterSpacing ),
+								wordSpacing: withPx( descriptionWordSpacing ),
 								margin: 0,
 							} }
 							placeholder={ __(

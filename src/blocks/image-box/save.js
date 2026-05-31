@@ -45,6 +45,14 @@ export default function save( { attributes } ) {
 
 	const effectiveAlignment = alignment || align || 'left';
 
+	// Helper: ensures a spacing value has a px unit.
+	const withPx = ( v ) => {
+		if ( ! v ) {
+			return undefined;
+		}
+		return String( v ).includes( 'px' ) ? v : `${ v }px`;
+	};
+
 	const wrapperClasses = arrayUnique( [ 'wp-block-image-box', className ] )
 		.filter( Boolean )
 		.join( ' ' );
@@ -59,16 +67,8 @@ export default function save( { attributes } ) {
 		fontStyle: titleFontStyle || undefined,
 		textDecoration: titleTextDecoration || undefined,
 		lineHeight: titleLineHeight ? String( titleLineHeight ) : undefined,
-		letterSpacing: titleLetterSpacing
-			? String( titleLetterSpacing ).includes( 'px' )
-				? titleLetterSpacing
-				: `${ titleLetterSpacing }px`
-			: undefined,
-		wordSpacing: titleWordSpacing
-			? String( titleWordSpacing ).includes( 'px' )
-				? titleWordSpacing
-				: `${ titleWordSpacing }px`
-			: undefined,
+		letterSpacing: withPx( titleLetterSpacing ),
+		wordSpacing: withPx( titleWordSpacing ),
 	};
 
 	const titleElement = title && (
@@ -86,11 +86,9 @@ export default function save( { attributes } ) {
 			style={ {
 				display: 'flex',
 				justifyContent:
-					effectiveAlignment === 'center'
-						? 'center'
-						: effectiveAlignment === 'right'
-						? 'flex-end'
-						: 'flex-start',
+					( { center: 'center', right: 'flex-end' } )[
+						effectiveAlignment
+					] || 'flex-start',
 				marginBottom: imageSpace || undefined,
 				width: '100%',
 			} }
@@ -125,7 +123,12 @@ export default function save( { attributes } ) {
 				<a
 					href={ link }
 					target={ linkTarget ? '_blank' : undefined }
-					rel={ nofollow ? 'nofollow' : undefined }
+					rel={ [
+						nofollow ? 'nofollow' : null,
+						linkTarget ? 'noreferrer' : null,
+					]
+						.filter( Boolean )
+						.join( ' ' ) || undefined }
 					aria-label={ title }
 				>
 					{ titleElement }
@@ -149,18 +152,8 @@ export default function save( { attributes } ) {
 						lineHeight: descriptionLineHeight
 							? String( descriptionLineHeight )
 							: undefined,
-						letterSpacing: descriptionLetterSpacing
-							? String( descriptionLetterSpacing ).includes(
-									'px'
-							  )
-								? descriptionLetterSpacing
-								: `${ descriptionLetterSpacing }px`
-							: undefined,
-						wordSpacing: descriptionWordSpacing
-							? String( descriptionWordSpacing ).includes( 'px' )
-								? descriptionWordSpacing
-								: `${ descriptionWordSpacing }px`
-							: undefined,
+						letterSpacing: withPx( descriptionLetterSpacing ),
+						wordSpacing: withPx( descriptionWordSpacing ),
 					} }
 				/>
 			) }

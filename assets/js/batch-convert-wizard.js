@@ -1165,11 +1165,15 @@
 			}
 
 			const actions = createElement( 'div', 'ele2gb-theme-card-actions' );
-			const buttonLabel = isActive
-				? this.strings.themeActionActive || 'Active'
-				: isInstalled
-				? this.strings.themeActionUseTheme || 'Use this theme'
-				: this.strings.themeActionInstall || 'Install';
+			let buttonLabel;
+			if ( isActive ) {
+				buttonLabel = this.strings.themeActionActive || 'Active';
+			} else if ( isInstalled ) {
+				buttonLabel =
+					this.strings.themeActionUseTheme || 'Use this theme';
+			} else {
+				buttonLabel = this.strings.themeActionInstall || 'Install';
+			}
 			const buttonClass =
 				'button button-primary' + ( isActive ? ' disabled' : '' );
 			const actionButton = createButton( buttonLabel, buttonClass );
@@ -1197,11 +1201,15 @@
 				)
 			);
 
-			const statusText = isActive
-				? this.strings.themeActiveLabel || 'Active'
-				: isInstalled
-				? this.strings.themeStatusInstalled || 'Installed'
-				: this.strings.themeStatusNotInstalled || 'Not installed';
+			let statusText;
+			if ( isActive ) {
+				statusText = this.strings.themeActiveLabel || 'Active';
+			} else if ( isInstalled ) {
+				statusText = this.strings.themeStatusInstalled || 'Installed';
+			} else {
+				statusText =
+					this.strings.themeStatusNotInstalled || 'Not installed';
+			}
 			titleRow.appendChild(
 				createElement( 'span', 'ele2gb-theme-status-pill', statusText )
 			);

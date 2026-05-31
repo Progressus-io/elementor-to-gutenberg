@@ -697,8 +697,9 @@ const Edit = ( { attributes, setAttributes } ) => {
 						} }
 					>
 						{ tabs.map( ( tab, index ) => (
-							<div
+							<button
 								key={ index }
+								type="button"
 								className={ `progressus-tab-header ${
 									index === activeTab ? 'active' : ''
 								}` }
@@ -712,7 +713,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 								}
 							>
 								{ tab.title }
-							</div>
+							</button>
 						) ) }
 					</div>
 

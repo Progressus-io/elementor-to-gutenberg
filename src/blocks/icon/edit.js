@@ -549,12 +549,13 @@ export default function Edit( { attributes, setAttributes } ) {
 										] }
 									>
 										{ ( tab ) => {
+											const stylePrefixMap = {
+												solid: 'fas',
+												regular: 'far',
+											};
 											const stylePrefix =
-												tab.name === 'solid'
-													? 'fas'
-													: tab.name === 'regular'
-													? 'far'
-													: 'fab';
+												stylePrefixMap[ tab.name ] ||
+												'fab';
 											const filteredIcons =
 												getFilteredIcons( tab.name );
 

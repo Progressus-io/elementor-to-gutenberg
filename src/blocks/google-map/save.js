@@ -7,18 +7,18 @@ const Save = ( { attributes } ) => {
 	// Prefer `location` attribute when present (Elementor-style)
 	const locAddress =
 		location && location.address ? location.address : address || '';
-	const locLat =
-		location && location.lat !== null
-			? location.lat
-			: lat !== null
-			? lat
-			: null;
-	const locLng =
-		location && location.lng !== null
-			? location.lng
-			: lng !== null
-			? lng
-			: null;
+	let locLat = null;
+	if ( location && location.lat !== null ) {
+		locLat = location.lat;
+	} else if ( lat !== null ) {
+		locLat = lat;
+	}
+	let locLng = null;
+	if ( location && location.lng !== null ) {
+		locLng = location.lng;
+	} else if ( lng !== null ) {
+		locLng = lng;
+	}
 
 	// Prefer coordinates when provided, otherwise fall back to address.
 	let src = '';

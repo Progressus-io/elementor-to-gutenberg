@@ -29,18 +29,18 @@ const Edit = ( { attributes, setAttributes } ) => {
 		locationAttr && locationAttr.address
 			? locationAttr.address
 			: addressAttr || '';
-	const locLat =
-		locationAttr && locationAttr.lat !== null
-			? locationAttr.lat
-			: latAttr !== null
-			? latAttr
-			: null;
-	const locLng =
-		locationAttr && locationAttr.lng !== null
-			? locationAttr.lng
-			: lngAttr !== null
-			? lngAttr
-			: null;
+	let locLat = null;
+	if ( locationAttr && locationAttr.lat !== null ) {
+		locLat = locationAttr.lat;
+	} else if ( latAttr !== null ) {
+		locLat = latAttr;
+	}
+	let locLng = null;
+	if ( locationAttr && locationAttr.lng !== null ) {
+		locLng = locationAttr.lng;
+	} else if ( lngAttr !== null ) {
+		locLng = lngAttr;
+	}
 
 	const blockProps = useBlockProps();
 	const mapContainerRef = useRef( null );
@@ -304,6 +304,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 		} catch ( e ) {
 			// ignore
 		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [] );
 
 	// Prepare iframe src like save.js
@@ -349,10 +350,14 @@ const Edit = ( { attributes, setAttributes } ) => {
 						</a>
 					</p>
 					<div style={ { marginBottom: 8 } }>
-						<label className="components-base-control__label">
+						<label
+							htmlFor="google-map-address-input"
+							className="components-base-control__label"
+						>
 							{ __( 'Address', 'elementor-to-gutenberg' ) }
 						</label>
 						<input
+							id="google-map-address-input"
 							type="text"
 							ref={ inputRef }
 							className="components-text-control__input"
@@ -569,6 +574,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					) : src ? (
 						<iframe
 							src={ src }
+							title={ __( 'Google Map', 'elementor-to-gutenberg' ) }
 							style={ {
 								width: '100%',
 								height: '100%',

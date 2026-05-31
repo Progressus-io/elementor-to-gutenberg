@@ -116,6 +116,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						}
 					/>
 					<div className="components-base-control">
+						{ /* eslint-disable-next-line jsx-a11y/label-has-associated-control */ }
 						<label className="components-base-control__label">
 							{ __( 'Number Color', 'elementor-to-gutenberg' ) }
 						</label>
@@ -136,6 +137,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						max={ 100 }
 					/>
 					<div className="components-base-control">
+						{ /* eslint-disable-next-line jsx-a11y/label-has-associated-control */ }
 						<label className="components-base-control__label">
 							{ __( 'Title Color', 'elementor-to-gutenberg' ) }
 						</label>

@@ -88,6 +88,24 @@ export default function save( { attributes } ) {
 		.filter( Boolean )
 		.join( ' ' );
 
+	// Helper: ensures a spacing value has a px unit.
+	const withPx = ( v ) => {
+		if ( ! v ) {
+			return undefined;
+		}
+		return String( v ).includes( 'px' ) ? v : `${ v }px`;
+	};
+
+	// Lookup maps to avoid nested ternaries.
+	const justifyContentMap = { center: 'center', right: 'flex-end' };
+	const flexDirectionMap = {
+		above: 'column',
+		below: 'column-reverse',
+		right: 'row-reverse',
+		left: 'row',
+	};
+	const maxWidthMap = { center: '600px', above: '100%', below: '100%' };
+
 	// Build title styles
 	const titleStyles = {
 		fontSize: `${ titleSize }px`,
@@ -99,16 +117,8 @@ export default function save( { attributes } ) {
 		fontStyle: titleFontStyle || undefined,
 		textDecoration: titleTextDecoration || undefined,
 		lineHeight: titleLineHeight ? String( titleLineHeight ) : undefined,
-		letterSpacing: titleLetterSpacing
-			? String( titleLetterSpacing ).includes( 'px' )
-				? titleLetterSpacing
-				: `${ titleLetterSpacing }px`
-			: undefined,
-		wordSpacing: titleWordSpacing
-			? String( titleWordSpacing ).includes( 'px' )
-				? titleWordSpacing
-				: `${ titleWordSpacing }px`
-			: undefined,
+		letterSpacing: withPx( titleLetterSpacing ),
+		wordSpacing: withPx( titleWordSpacing ),
 	};
 
 	// Build description styles
@@ -123,16 +133,8 @@ export default function save( { attributes } ) {
 		lineHeight: descriptionLineHeight
 			? String( descriptionLineHeight )
 			: undefined,
-		letterSpacing: descriptionLetterSpacing
-			? String( descriptionLetterSpacing ).includes( 'px' )
-				? descriptionLetterSpacing
-				: `${ descriptionLetterSpacing }px`
-			: undefined,
-		wordSpacing: descriptionWordSpacing
-			? String( descriptionWordSpacing ).includes( 'px' )
-				? descriptionWordSpacing
-				: `${ descriptionWordSpacing }px`
-			: undefined,
+		letterSpacing: withPx( descriptionLetterSpacing ),
+		wordSpacing: withPx( descriptionWordSpacing ),
 		marginBottom: `${ descriptionSpacing }px`,
 	};
 
@@ -154,16 +156,8 @@ export default function save( { attributes } ) {
 		textTransform: buttonTextTransform || undefined,
 		fontStyle: buttonFontStyle || undefined,
 		lineHeight: buttonLineHeight ? String( buttonLineHeight ) : undefined,
-		letterSpacing: buttonLetterSpacing
-			? String( buttonLetterSpacing ).includes( 'px' )
-				? buttonLetterSpacing
-				: `${ buttonLetterSpacing }px`
-			: undefined,
-		wordSpacing: buttonWordSpacing
-			? String( buttonWordSpacing ).includes( 'px' )
-				? buttonWordSpacing
-				: `${ buttonWordSpacing }px`
-			: undefined,
+		letterSpacing: withPx( buttonLetterSpacing ),
+		wordSpacing: withPx( buttonWordSpacing ),
 	};
 
 	const alignItems =
@@ -174,22 +168,8 @@ export default function save( { attributes } ) {
 		display: 'flex',
 		position: 'relative',
 		alignItems,
-		justifyContent:
-			layout === 'center'
-				? 'center'
-				: layout === 'right'
-				? 'flex-end'
-				: 'flex-start',
-		flexDirection:
-			layout === 'above'
-				? 'column'
-				: layout === 'below'
-				? 'column-reverse'
-				: layout === 'right'
-				? 'row-reverse'
-				: layout === 'left'
-				? 'row'
-				: undefined,
+		justifyContent: justifyContentMap[ layout ] || 'flex-start',
+		flexDirection: flexDirectionMap[ layout ],
 		...( bgImageUrl &&
 			layout === 'center' && {
 				backgroundImage: `url(${ bgImageUrl })`,
@@ -208,12 +188,7 @@ export default function save( { attributes } ) {
 		margin: `${ contentMargin?.top || 0 }px ${
 			contentMargin?.right || 0
 		}px ${ contentMargin?.bottom || 0 }px ${ contentMargin?.left || 0 }px`,
-		maxWidth:
-			layout === 'center'
-				? '600px'
-				: layout === 'above' || layout === 'below'
-				? '100%'
-				: '50%',
+		maxWidth: maxWidthMap[ layout ] || '50%',
 		...( layout === 'left' || layout === 'right'
 			? {
 					flexBasis: '50%',
@@ -240,16 +215,8 @@ export default function save( { attributes } ) {
 		fontStyle: ribbonFontStyle || undefined,
 		textDecoration: ribbonTextDecoration || undefined,
 		lineHeight: ribbonLineHeight ? String( ribbonLineHeight ) : undefined,
-		letterSpacing: ribbonLetterSpacing
-			? String( ribbonLetterSpacing ).includes( 'px' )
-				? ribbonLetterSpacing
-				: `${ ribbonLetterSpacing }px`
-			: undefined,
-		wordSpacing: ribbonWordSpacing
-			? String( ribbonWordSpacing ).includes( 'px' )
-				? ribbonWordSpacing
-				: `${ ribbonWordSpacing }px`
-			: undefined,
+		letterSpacing: withPx( ribbonLetterSpacing ),
+		wordSpacing: withPx( ribbonWordSpacing ),
 		padding: '8px 16px',
 		borderRadius: '4px',
 		zIndex: '10',
@@ -284,7 +251,12 @@ export default function save( { attributes } ) {
 				href={ buttonUrl }
 				className="call-to-action-button"
 				target={ buttonTarget ? '_blank' : undefined }
-				rel={ buttonNofollow ? 'nofollow' : undefined }
+				rel={ [
+					buttonNofollow ? 'nofollow' : null,
+					buttonTarget ? 'noreferrer' : null,
+				]
+					.filter( Boolean )
+					.join( ' ' ) || undefined }
 				style={ buttonStyles }
 			>
 				<RichText.Content tagName="span" value={ buttonText } />

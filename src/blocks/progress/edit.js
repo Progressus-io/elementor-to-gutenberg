@@ -139,6 +139,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						max={ 50 }
 					/>
 					<div>
+						{ /* eslint-disable-next-line jsx-a11y/label-has-associated-control */ }
 						<label>
 							{ __(
 								'Progress Text Color',
@@ -162,6 +163,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						enableAlpha
 					/>
 					<div>
+						{ /* eslint-disable-next-line jsx-a11y/label-has-associated-control */ }
 						<label>
 							{ __( 'Bar Color', 'progressus-gutenberg' ) }
 						</label>
@@ -174,6 +176,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						/>
 					</div>
 					<div>
+						{ /* eslint-disable-next-line jsx-a11y/label-has-associated-control */ }
 						<label>
 							{ __( 'Background Color', 'progressus-gutenberg' ) }
 						</label>
@@ -186,6 +189,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						/>
 					</div>
 					<div>
+						{ /* eslint-disable-next-line jsx-a11y/label-has-associated-control */ }
 						<label>
 							{ __( 'Title Color', 'progressus-gutenberg' ) }
 						</label>

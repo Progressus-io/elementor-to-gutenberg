@@ -96,6 +96,24 @@ export default function Edit( { attributes, setAttributes } ) {
 	const [ showRibbonBgColor, setShowRibbonBgColor ] = useState( false );
 	const [ showRibbonTextColor, setShowRibbonTextColor ] = useState( false );
 
+	// Helper: ensures a spacing value has a px unit.
+	const withPx = ( v ) => {
+		if ( ! v ) {
+			return undefined;
+		}
+		return String( v ).includes( 'px' ) ? v : `${ v }px`;
+	};
+
+	// Lookup maps to avoid nested ternaries.
+	const justifyContentMap = { center: 'center', right: 'flex-end' };
+	const flexDirectionMap = {
+		above: 'column',
+		below: 'column-reverse',
+		right: 'row-reverse',
+		left: 'row',
+	};
+	const maxWidthMap = { center: '600px', above: '100%', below: '100%' };
+
 	const blockProps = useBlockProps( {
 		className: `call-to-action-layout-${ layout } call-to-action-align-${ alignment }`,
 	} );
@@ -131,23 +149,9 @@ export default function Edit( { attributes, setAttributes } ) {
 		minHeight: `${ imageMinHeight }px`,
 		display: 'flex',
 		alignItems,
-		justifyContent:
-			layout === 'center'
-				? 'center'
-				: layout === 'right'
-				? 'flex-end'
-				: 'flex-start',
+		justifyContent: justifyContentMap[ layout ] || 'flex-start',
 		position: 'relative',
-		flexDirection:
-			layout === 'above'
-				? 'column'
-				: layout === 'below'
-				? 'column-reverse'
-				: layout === 'right'
-				? 'row-reverse'
-				: layout === 'left'
-				? 'row'
-				: undefined,
+		flexDirection: flexDirectionMap[ layout ],
 		...( bgImageUrl &&
 			layout === 'center' && {
 				backgroundImage: `url(${ bgImageUrl })`,
@@ -166,12 +170,7 @@ export default function Edit( { attributes, setAttributes } ) {
 		margin: `${ contentMargin.top || 0 }px ${
 			contentMargin.right || 0
 		}px ${ contentMargin.bottom || 0 }px ${ contentMargin.left || 0 }px`,
-		maxWidth:
-			layout === 'center'
-				? '600px'
-				: layout === 'above' || layout === 'below'
-				? '100%'
-				: '50%',
+		maxWidth: maxWidthMap[ layout ] || '50%',
 		...( layout === 'left' || layout === 'right'
 			? {
 					flexBasis: '50%',
@@ -926,6 +925,7 @@ export default function Edit( { attributes, setAttributes } ) {
 								max={ 100 }
 							/>
 							<div className="color-control-wrapper">
+								{ /* eslint-disable-next-line jsx-a11y/label-has-associated-control */ }
 								<label>
 									{ __(
 										'Ribbon Background Color',
@@ -965,6 +965,7 @@ export default function Edit( { attributes, setAttributes } ) {
 								) }
 							</div>
 							<div className="color-control-wrapper">
+								{ /* eslint-disable-next-line jsx-a11y/label-has-associated-control */ }
 								<label>
 									{ __(
 										'Ribbon Text Color',
@@ -1180,20 +1181,8 @@ export default function Edit( { attributes, setAttributes } ) {
 								lineHeight: ribbonLineHeight
 									? String( ribbonLineHeight )
 									: undefined,
-								letterSpacing: ribbonLetterSpacing
-									? String( ribbonLetterSpacing ).includes(
-											'px'
-									  )
-										? ribbonLetterSpacing
-										: `${ ribbonLetterSpacing }px`
-									: undefined,
-								wordSpacing: ribbonWordSpacing
-									? String( ribbonWordSpacing ).includes(
-											'px'
-									  )
-										? ribbonWordSpacing
-										: `${ ribbonWordSpacing }px`
-									: undefined,
+								letterSpacing: withPx( ribbonLetterSpacing ),
+								wordSpacing: withPx( ribbonWordSpacing ),
 								padding: '8px 16px',
 								borderRadius: '4px',
 								zIndex: '10',
@@ -1258,20 +1247,8 @@ export default function Edit( { attributes, setAttributes } ) {
 									lineHeight: titleLineHeight
 										? String( titleLineHeight )
 										: undefined,
-									letterSpacing: titleLetterSpacing
-										? String( titleLetterSpacing ).includes(
-												'px'
-										  )
-											? titleLetterSpacing
-											: `${ titleLetterSpacing }px`
-										: undefined,
-									wordSpacing: titleWordSpacing
-										? String( titleWordSpacing ).includes(
-												'px'
-										  )
-											? titleWordSpacing
-											: `${ titleWordSpacing }px`
-										: undefined,
+									letterSpacing: withPx( titleLetterSpacing ),
+									wordSpacing: withPx( titleWordSpacing ),
 									marginBottom: '16px',
 								} }
 								placeholder={ __(
@@ -1304,20 +1281,8 @@ export default function Edit( { attributes, setAttributes } ) {
 									lineHeight: descriptionLineHeight
 										? String( descriptionLineHeight )
 										: undefined,
-									letterSpacing: descriptionLetterSpacing
-										? String(
-												descriptionLetterSpacing
-										  ).includes( 'px' )
-											? descriptionLetterSpacing
-											: `${ descriptionLetterSpacing }px`
-										: undefined,
-									wordSpacing: descriptionWordSpacing
-										? String(
-												descriptionWordSpacing
-										  ).includes( 'px' )
-											? descriptionWordSpacing
-											: `${ descriptionWordSpacing }px`
-										: undefined,
+									letterSpacing: withPx( descriptionLetterSpacing ),
+									wordSpacing: withPx( descriptionWordSpacing ),
 									marginBottom: `${ descriptionSpacing }px`,
 								} }
 								placeholder={ __(
@@ -1355,20 +1320,8 @@ export default function Edit( { attributes, setAttributes } ) {
 									lineHeight: buttonLineHeight
 										? String( buttonLineHeight )
 										: undefined,
-									letterSpacing: buttonLetterSpacing
-										? String(
-												buttonLetterSpacing
-										  ).includes( 'px' )
-											? buttonLetterSpacing
-											: `${ buttonLetterSpacing }px`
-										: undefined,
-									wordSpacing: buttonWordSpacing
-										? String( buttonWordSpacing ).includes(
-												'px'
-										  )
-											? buttonWordSpacing
-											: `${ buttonWordSpacing }px`
-										: undefined,
+									letterSpacing: withPx( buttonLetterSpacing ),
+									wordSpacing: withPx( buttonWordSpacing ),
 									border: 'none',
 									cursor: 'pointer',
 								} }

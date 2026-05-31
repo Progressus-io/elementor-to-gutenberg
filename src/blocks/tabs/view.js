@@ -41,7 +41,7 @@ document.addEventListener( 'DOMContentLoaded', function () {
 				if ( e.key === 'ArrowLeft' || e.key === 'ArrowRight' ) {
 					e.preventDefault();
 					const currentIndex = Array.from( tabHeaders ).indexOf(
-						document.activeElement
+						e.target.ownerDocument.activeElement
 					);
 					let nextIndex;
 
@@ -125,8 +125,10 @@ document.addEventListener( 'DOMContentLoaded', function () {
 
 			// Focus the active tab header for keyboard users
 			if (
-				document.activeElement &&
-				Array.from( tabHeaders ).includes( document.activeElement )
+				tabsBlock.ownerDocument.activeElement &&
+				Array.from( tabHeaders ).includes(
+					tabsBlock.ownerDocument.activeElement
+				)
 			) {
 				tabHeaders[ activeIndex ].focus();
 			}
