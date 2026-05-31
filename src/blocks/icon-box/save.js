@@ -18,12 +18,12 @@ export default function save( { attributes } ) {
 		anchor,
 	} = attributes;
 
-	const wrapper_classes = arrayUnique( [
+	const wrapperClasses = arrayUnique( [
 		'wp-block-icon-box',
 		className,
 	] ).join( ' ' );
 
-	const icon_html = svgUrl
+	const iconHtml = svgUrl
 		? `<img src="${ svgUrl }" alt="" style="${
 				svgStyle ? svgStyle : `width:${ size }px;height:auto;`
 		  }" class="svg-icon" />`
@@ -31,13 +31,13 @@ export default function save( { attributes } ) {
 
 	return (
 		<div
-			className={ wrapper_classes }
+			className={ wrapperClasses }
 			style={ { textAlign: alignment } }
 			id={ anchor || undefined }
 		>
 			<div
 				className="icon-box-icon"
-				dangerouslySetInnerHTML={ { __html: icon_html } }
+				dangerouslySetInnerHTML={ { __html: iconHtml } }
 			/>
 			{ title && (
 				<RichText.Content

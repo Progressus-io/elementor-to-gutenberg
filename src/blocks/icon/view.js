@@ -1,3 +1,4 @@
+/* global IntersectionObserver */
 /**
  * Use this file for JavaScript code that you want to run in the front-end
  * on posts/pages that contain this block.
@@ -168,6 +169,7 @@ window.addEventListener(
 			e.target.href &&
 			e.target.href.includes( 'font-awesome' )
 		) {
+			// eslint-disable-next-line no-console
 			console.warn(
 				'FontAwesome failed to load from CDN. Icons may not display correctly.'
 			);

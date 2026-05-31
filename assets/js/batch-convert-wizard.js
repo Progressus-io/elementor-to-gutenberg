@@ -1,3 +1,4 @@
+/* global navigator */
 ( function ( window, document ) {
 	'use strict';
 
@@ -1698,28 +1699,28 @@
 							( s, n ) => s + n,
 							0
 						);
-						const badge = createElement(
+						const unsupportedBadge = createElement(
 							'span',
 							'ele2gb-warn-badge ele2gb-warn-badge--unsupported'
 						);
-						badge.textContent = '⚠ ' + totalCount;
-						trigger.appendChild( badge );
+						unsupportedBadge.textContent = '⚠ ' + totalCount;
+						trigger.appendChild( unsupportedBadge );
 					}
 					if ( warnings.hasDynamic ) {
-						const badge = createElement(
+						const dynamicBadge = createElement(
 							'span',
 							'ele2gb-warn-badge ele2gb-warn-badge--dynamic'
 						);
-						badge.textContent = '◎';
-						trigger.appendChild( badge );
+						dynamicBadge.textContent = '◎';
+						trigger.appendChild( dynamicBadge );
 					}
 					if ( warnings.hasAnimation ) {
-						const badge = createElement(
+						const animationBadge = createElement(
 							'span',
 							'ele2gb-warn-badge ele2gb-warn-badge--animation'
 						);
-						badge.textContent = '✶';
-						trigger.appendChild( badge );
+						animationBadge.textContent = '✶';
+						trigger.appendChild( animationBadge );
 					}
 					trigger.addEventListener( 'click', ( e ) => {
 						e.stopPropagation();
@@ -3365,11 +3366,11 @@
 					.then( function ( r ) {
 						return r.json();
 					} )
-					.then( function ( data ) {
-						if ( data.success ) {
+					.then( function ( response ) {
+						if ( response.success ) {
 							const fbId =
-								data.data && data.data.feedback_id
-									? String( data.data.feedback_id )
+								response.data && response.data.feedback_id
+									? String( response.data.feedback_id )
 									: '';
 							self.closeFeedbackModal();
 							self.showFeedbackConfirm(
@@ -3381,8 +3382,8 @@
 							);
 						} else {
 							const msg =
-								data.data && data.data.error
-									? String( data.data.error )
+								response.data && response.data.error
+									? String( response.data.error )
 									: self.strings.aiImproveError ||
 									  'An unexpected error occurred.';
 							errSpan.textContent = msg;
@@ -3556,11 +3557,11 @@
 					.then( function ( r ) {
 						return r.json();
 					} )
-					.then( function ( data ) {
-						if ( data.success ) {
+					.then( function ( response ) {
+						if ( response.success ) {
 							const fbId =
-								data.data && data.data.feedback_id
-									? String( data.data.feedback_id )
+								response.data && response.data.feedback_id
+									? String( response.data.feedback_id )
 									: '';
 							self.closeFeedbackModal();
 							self.showFeedbackConfirm(
@@ -3572,8 +3573,8 @@
 							);
 						} else {
 							const msg =
-								data.data && data.data.error
-									? String( data.data.error )
+								response.data && response.data.error
+									? String( response.data.error )
 									: self.strings.aiImproveError ||
 									  'An unexpected error occurred.';
 							errSpan.textContent = msg;
@@ -3699,17 +3700,17 @@
 				body: formData,
 			} )
 				.then( ( response ) => response.json() )
-				.then( ( data ) => {
+				.then( ( result ) => {
 					this.hideAiOverlay();
-					if ( data.success ) {
+					if ( result.success ) {
 						ai.pages[ index ].status = 'done';
 						this.render();
 						this.advanceAiImprove( index );
 					} else {
 						ai.pages[ index ].status = 'failed';
 						ai.pages[ index ].error =
-							data.data && data.data.message
-								? String( data.data.message )
+							result.data && result.data.message
+								? String( result.data.message )
 								: this.strings.aiImproveError ||
 								  'An unexpected error occurred.';
 						this.render();

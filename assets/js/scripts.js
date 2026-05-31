@@ -1,3 +1,4 @@
+/* global jQuery */
 jQuery( document ).ready( function ( $ ) {
 	const $buttons = $( '.gb-tab-title' );
 	const $contents = $( '.gb-tab-content' );

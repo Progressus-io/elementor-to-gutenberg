@@ -54,7 +54,7 @@ document.addEventListener( 'DOMContentLoaded', function () {
 
 		try {
 			const center =
-				location && location.lat != null && location.lng != null
+				location && location.lat !== null && location.lng !== null
 					? {
 							lat: parseFloat( location.lat ),
 							lng: parseFloat( location.lng ),

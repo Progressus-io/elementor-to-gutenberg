@@ -1,3 +1,4 @@
+/* global progressusFormData */
 /**
  * Form submission handler with loader and AJAX
  */
@@ -70,6 +71,7 @@ document.addEventListener( 'DOMContentLoaded', function () {
 					}, 5000 );
 				} )
 				.catch( ( error ) => {
+					// eslint-disable-next-line no-console
 					console.error( 'Form submission error:', error );
 
 					// Remove loader and restore button

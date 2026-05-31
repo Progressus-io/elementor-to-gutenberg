@@ -79,7 +79,7 @@ export default function save( { attributes } ) {
 		}
 	};
 
-	const wrapper_classes = arrayUnique( [
+	const wrapperClasses = arrayUnique( [
 		'wp-block-call-to-action',
 		alignment ? `has-text-align-${ alignment }` : '',
 		`call-to-action-layout-${ layout }`,
@@ -336,7 +336,7 @@ export default function save( { attributes } ) {
 
 	return (
 		<div
-			className={ wrapper_classes }
+			className={ wrapperClasses }
 			style={ { textAlign: alignment } }
 			id={ anchor || undefined }
 		>

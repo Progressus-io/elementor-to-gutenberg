@@ -45,7 +45,7 @@ export default function save( { attributes } ) {
 
 	const effectiveAlignment = alignment || align || 'left';
 
-	const wrapper_classes = arrayUnique( [ 'wp-block-image-box', className ] )
+	const wrapperClasses = arrayUnique( [ 'wp-block-image-box', className ] )
 		.filter( Boolean )
 		.join( ' ' );
 
@@ -112,7 +112,7 @@ export default function save( { attributes } ) {
 
 	return (
 		<div
-			className={ wrapper_classes }
+			className={ wrapperClasses }
 			style={ {
 				textAlign: effectiveAlignment,
 				padding: wrapperPadding || undefined,

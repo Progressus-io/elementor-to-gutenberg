@@ -1,3 +1,4 @@
+/* global IntersectionObserver */
 document.addEventListener( 'DOMContentLoaded', () => {
 	const progressBars = document.querySelectorAll(
 		'.wp-block-progressus-progress'
@@ -20,6 +21,7 @@ document.addEventListener( 'DOMContentLoaded', () => {
 						// First set to 0
 						bar.style.width = '0%';
 						// Force a reflow
+						// eslint-disable-next-line no-unused-expressions
 						bar.offsetWidth;
 						// Then animate to the target width
 						bar.style.width = width;

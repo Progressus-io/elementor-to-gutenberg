@@ -1,3 +1,4 @@
+/* global requestAnimationFrame, IntersectionObserver */
 document.addEventListener( 'DOMContentLoaded', function () {
 	const counters = document.querySelectorAll(
 		'.wp-block-progressus-counter'

@@ -29,15 +29,15 @@ const Edit = ( { attributes, setAttributes } ) => {
 			? locationAttr.address
 			: addressAttr || '';
 	const locLat =
-		locationAttr && locationAttr.lat != null
+		locationAttr && locationAttr.lat !== null
 			? locationAttr.lat
-			: latAttr != null
+			: latAttr !== null
 			? latAttr
 			: null;
 	const locLng =
-		locationAttr && locationAttr.lng != null
+		locationAttr && locationAttr.lng !== null
 			? locationAttr.lng
-			: lngAttr != null
+			: lngAttr !== null
 			? lngAttr
 			: null;
 

@@ -8,15 +8,15 @@ const Save = ( { attributes } ) => {
 	const locAddress =
 		location && location.address ? location.address : address || '';
 	const locLat =
-		location && location.lat != null
+		location && location.lat !== null
 			? location.lat
-			: lat != null
+			: lat !== null
 			? lat
 			: null;
 	const locLng =
-		location && location.lng != null
+		location && location.lng !== null
 			? location.lng
-			: lng != null
+			: lng !== null
 			? lng
 			: null;
 
