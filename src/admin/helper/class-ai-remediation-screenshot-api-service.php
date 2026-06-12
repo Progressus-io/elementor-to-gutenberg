@@ -48,7 +48,7 @@ class AI_Remediation_Screenshot_Api_Service {
 	/**
 	 * Hardcoded screenshot service endpoint URL.
 	 */
-	const ENDPOINT_URL = 'http://lvendr.xyz/screanshots';
+	const ENDPOINT_URL = 'https://webshot.lvendr.com';
 
 	/**
 	 * Hardcoded request timeout in seconds.
