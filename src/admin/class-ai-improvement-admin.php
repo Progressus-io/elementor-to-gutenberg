@@ -29,6 +29,7 @@ use function esc_attr;
 use function esc_html;
 use function esc_html__;
 use function esc_url;
+use function get_permalink;
 use function get_post;
 use function get_post_field;
 use function get_post_meta;
@@ -36,7 +37,9 @@ use function get_post_status;
 use function get_post_type;
 use function get_the_title;
 use function get_transient;
+use function home_url;
 use function is_array;
+use function is_wp_error;
 use function plugins_url;
 use function sanitize_key;
 use function sanitize_text_field;
@@ -51,6 +54,9 @@ use function wp_enqueue_style;
 use function wp_json_encode;
 use function wp_localize_script;
 use function wp_nonce_field;
+use function wp_parse_url;
+use function wp_remote_get;
+use function wp_remote_retrieve_response_code;
 use function wp_safe_redirect;
 use function wp_unslash;
 use function wp_update_post;
@@ -318,9 +324,8 @@ class AI_Improvement_Admin {
 
 		if ( ! $result['success'] ) {
 			$notice = $result['notice'] ?? 'ai_failed';
-			if ( 'ai_failed' === $notice ) {
-				set_transient( 'ele2gb_ai_error_' . $target_id, $result['error'], 60 );
-			}
+			// Store the concrete reason so the redirect target can show "why".
+			set_transient( 'ele2gb_ai_error_' . $target_id, $result['error'], 60 );
 			$this->redirect_with_notice( $source_id, $target_id, $notice );
 		}
 
@@ -344,38 +349,27 @@ class AI_Improvement_Admin {
 			);
 		};
 
-		// Maintenance-mode check: screenshots require a publicly reachable site.
-		if ( file_exists( (string) ABSPATH . '.maintenance' ) || ( defined( 'WP_MAINTENANCE_MODE' ) && WP_MAINTENANCE_MODE ) ) {
-			return $failure(
-				__( 'The website is in maintenance mode. AI enhancement requires a publicly accessible site.', 'elementor-to-gutenberg' )
-			);
+		// Pre-flight: make sure the page is publicly reachable before spending an
+		// AI call. The remote screenshot service runs off-site, so any URL it
+		// cannot open (maintenance mode, unpublished, password-protected,
+		// localhost / private IP, HTTP error) must be caught here with a concrete
+		// reason rather than producing a cryptic screenshot failure later.
+		$access = self::check_page_accessibility( $source_id, $target_id );
+		if ( ! $access['accessible'] ) {
+			return $failure( $access['reason'], 'page_inaccessible' );
 		}
 
-		// For regular pages (not FSE template parts / Elementor library templates):
-		// verify the target page is published and not password-protected.
-		if ( 'elementor_library' !== get_post_type( $source_id ) ) {
-			if ( 'publish' !== (string) get_post_status( $target_id ) ) {
-				return $failure(
-					__( 'The converted page must be published before AI enhancement.', 'elementor-to-gutenberg' )
-				);
-			}
-			if ( '' !== (string) get_post_field( 'post_password', $target_id ) ) {
-				return $failure(
-					__( 'The converted page is password-protected. AI enhancement requires a publicly accessible page.', 'elementor-to-gutenberg' )
-				);
-			}
-		}
-
-		// Generate fresh screenshots. Fail fast if they cannot be captured —
-		// sending the AI call without screenshots produces lower-quality results.
+		// Generate fresh screenshots. Do NOT send the AI request if they could not
+		// be captured — enhancing without screenshots produces poor results.
 		$screenshot_result = AI_Remediation_Screenshot_Meta_Service::generate_and_store( $source_id, $target_id, true );
 		if ( ! $screenshot_result['success'] ) {
 			return $failure(
 				sprintf(
 					/* translators: %s: screenshot error details */
-					__( 'Screenshot generation failed: %s', 'elementor-to-gutenberg' ),
+					__( 'Screenshots could not be generated, so AI enhancement was not run: %s', 'elementor-to-gutenberg' ),
 					$screenshot_result['error']
-				)
+				),
+				'screenshot_failed'
 			);
 		}
 
@@ -527,6 +521,125 @@ class AI_Improvement_Admin {
 	}
 
 	/**
+	 * Verify the converted page is publicly reachable before any AI call.
+	 *
+	 * The screenshot service runs on a remote host, so it can only load a page
+	 * that is reachable from the public internet. This runs a layered set of
+	 * checks and returns the FIRST concrete reason the page cannot be enhanced,
+	 * so the user sees exactly why instead of a generic screenshot error.
+	 *
+	 * @param int $source_id Elementor source post ID.
+	 * @param int $target_id Converted Gutenberg post ID.
+	 * @return array{accessible: bool, reason: string}
+	 */
+	private static function check_page_accessibility( int $source_id, int $target_id ): array {
+		$deny = static function ( string $reason ): array {
+			return array(
+				'accessible' => false,
+				'reason'     => $reason,
+			);
+		};
+
+		// Maintenance mode: the whole site returns the maintenance screen.
+		if ( file_exists( (string) ABSPATH . '.maintenance' ) || ( defined( 'WP_MAINTENANCE_MODE' ) && WP_MAINTENANCE_MODE ) ) {
+			return $deny( __( 'The website is in maintenance mode, so the screenshot service cannot load it. Disable maintenance mode and try again.', 'elementor-to-gutenberg' ) );
+		}
+
+		$is_library = 'elementor_library' === get_post_type( $source_id );
+
+		// Resolve the public URL the screenshot service will actually open.
+		if ( $is_library ) {
+			$page_url = home_url( '/' );
+		} else {
+			// Publish / password checks only apply to standalone converted pages.
+			if ( 'publish' !== (string) get_post_status( $target_id ) ) {
+				return $deny( __( 'The converted page is not published yet. Publish it so the screenshot service can load it, then try again.', 'elementor-to-gutenberg' ) );
+			}
+			if ( '' !== (string) get_post_field( 'post_password', $target_id ) ) {
+				return $deny( __( 'The converted page is password-protected. Remove the password so the screenshot service can load it, then try again.', 'elementor-to-gutenberg' ) );
+			}
+			$page_url = (string) get_permalink( $target_id );
+		}
+
+		if ( '' === $page_url ) {
+			return $deny( __( 'The public URL of the converted page could not be resolved.', 'elementor-to-gutenberg' ) );
+		}
+
+		$host = (string) wp_parse_url( $page_url, PHP_URL_HOST );
+		if ( self::is_non_public_host( $host ) ) {
+			return $deny(
+				sprintf(
+					/* translators: %s: site hostname (e.g. localhost) */
+					__( 'This site (%s) is only reachable on your local network, so the remote screenshot service cannot open it. AI Enhancement needs a publicly accessible URL — run it on a live or staging site.', 'elementor-to-gutenberg' ),
+					$host
+				)
+			);
+		}
+
+		$response = wp_remote_get(
+			$page_url,
+			array(
+				'timeout'     => 15,
+				'redirection' => 3,
+				'sslverify'   => true,
+				'headers'     => array( 'User-Agent' => 'ETG-AI-Enhancement/1.0' ),
+			)
+		);
+
+		if ( ! is_wp_error( $response ) ) {
+			$code = (int) wp_remote_retrieve_response_code( $response );
+			if ( $code >= 400 ) {
+				return $deny(
+					sprintf(
+						/* translators: 1: page URL, 2: HTTP status code */
+						__( 'The converted page (%1$s) returned HTTP status %2$d, so the screenshot service cannot load it. Check that the page is public and not behind login or HTTP authentication.', 'elementor-to-gutenberg' ),
+						$page_url,
+						$code
+					)
+				);
+			}
+		}
+
+		return array(
+			'accessible' => true,
+			'reason'     => '',
+		);
+	}
+
+	/**
+	 * Determine whether a hostname is non-public (localhost, dev TLD, or a
+	 * private/reserved IP) and therefore unreachable by the remote screenshot
+	 * service.
+	 *
+	 * @param string $host Hostname extracted from the page URL.
+	 * @return bool True when the host cannot be reached from the public internet.
+	 */
+	private static function is_non_public_host( string $host ): bool {
+		$host = strtolower( trim( $host ) );
+
+		if ( '' === $host ) {
+			return true;
+		}
+
+		// localhost and common local/development TLDs.
+		if ( 'localhost' === $host || 1 === preg_match( '/\.(local|localhost|test|internal|invalid|example)$/', $host ) ) {
+			return true;
+		}
+
+		// IPv6 loopback.
+		if ( '::1' === $host ) {
+			return true;
+		}
+
+		// IPv4 literal in a private or reserved range (e.g. 127.0.0.1, 192.168.x).
+		if ( false !== filter_var( $host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 ) ) {
+			return false === filter_var( $host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE );
+		}
+
+		return false;
+	}
+
+	/**
 	 * Handle the "Refine with AI" action (Round 2+).
 	 *
 	 * Takes fresh screenshots, then sends the current page state plus the user's
@@ -556,16 +669,11 @@ class AI_Improvement_Admin {
 			$this->redirect_with_notice( $source_id, $target_id, 'invalid_mapping' );
 		}
 
-		// Take fresh screenshots right before sending to Claude.
-		AI_Remediation_Screenshot_Meta_Service::generate_and_store( $source_id, $target_id, true );
-
 		$result = self::run_refinement( $source_id, $target_id, $focus_instruction );
 
 		if ( ! $result['success'] ) {
 			$notice = $result['notice'] ?? 'ai_failed';
-			if ( 'ai_failed' === $notice ) {
-				set_transient( 'ele2gb_ai_error_' . $target_id, $result['error'], 60 );
-			}
+			set_transient( 'ele2gb_ai_error_' . $target_id, $result['error'], 60 );
 			$this->redirect_with_notice( $source_id, $target_id, $notice );
 		}
 
@@ -592,6 +700,26 @@ class AI_Improvement_Admin {
 				'notice'  => $notice,
 			);
 		};
+
+		// Pre-flight: block the AI call if the page is not publicly reachable.
+		$access = self::check_page_accessibility( $source_id, $target_id );
+		if ( ! $access['accessible'] ) {
+			return $failure( $access['reason'], 'page_inaccessible' );
+		}
+
+		// Take fresh screenshots right before sending to Claude; do not send the
+		// AI request if they could not be captured.
+		$screenshot_result = AI_Remediation_Screenshot_Meta_Service::generate_and_store( $source_id, $target_id, true );
+		if ( ! $screenshot_result['success'] ) {
+			return $failure(
+				sprintf(
+					/* translators: %s: screenshot error details */
+					__( 'Screenshots could not be generated, so AI refinement was not run: %s', 'elementor-to-gutenberg' ),
+					$screenshot_result['error']
+				),
+				'screenshot_failed'
+			);
+		}
 
 		$gutenberg_content = (string) get_post_field( 'post_content', $target_id );
 		$elementor_json    = get_post_meta( $source_id, '_elementor_data', true );
@@ -745,16 +873,11 @@ class AI_Improvement_Admin {
 			$this->redirect_with_notice( $source_id, $target_id, 'invalid_mapping' );
 		}
 
-		// Take fresh screenshots so the mobile pass works against the current rendering.
-		AI_Remediation_Screenshot_Meta_Service::generate_and_store( $source_id, $target_id, true );
-
 		$result = self::run_mobile_improvement( $source_id, $target_id );
 
 		if ( ! $result['success'] ) {
 			$notice = $result['notice'] ?? 'mobile_failed';
-			if ( 'mobile_failed' === $notice ) {
-				set_transient( 'ele2gb_ai_error_' . $target_id, $result['error'], 60 );
-			}
+			set_transient( 'ele2gb_ai_error_' . $target_id, $result['error'], 60 );
 			$this->redirect_with_notice( $source_id, $target_id, $notice );
 		}
 
@@ -780,6 +903,25 @@ class AI_Improvement_Admin {
 				'notice'  => $notice,
 			);
 		};
+
+		// Pre-flight: block the AI call if the page is not publicly reachable.
+		$access = self::check_page_accessibility( $source_id, $target_id );
+		if ( ! $access['accessible'] ) {
+			return $failure( $access['reason'] );
+		}
+
+		// Take fresh screenshots so the mobile pass works against the current
+		// rendering; do not send the AI request if they could not be captured.
+		$screenshot_result = AI_Remediation_Screenshot_Meta_Service::generate_and_store( $source_id, $target_id, true );
+		if ( ! $screenshot_result['success'] ) {
+			return $failure(
+				sprintf(
+					/* translators: %s: screenshot error details */
+					__( 'Screenshots could not be generated, so mobile AI enhancement was not run: %s', 'elementor-to-gutenberg' ),
+					$screenshot_result['error']
+				)
+			);
+		}
 
 		$gutenberg_content = (string) get_post_field( 'post_content', $target_id );
 		$elementor_json    = get_post_meta( $source_id, '_elementor_data', true );
@@ -999,17 +1141,23 @@ class AI_Improvement_Admin {
 			return;
 		}
 
-		if ( 'ai_failed' === $notice_code || 'mobile_failed' === $notice_code ) {
+		// Failure codes that carry a detailed "why" message in a transient.
+		$detail_prefixes = array(
+			'ai_failed'         => esc_html__( 'Claude API call failed', 'elementor-to-gutenberg' ),
+			'mobile_failed'     => esc_html__( 'Mobile improvement failed', 'elementor-to-gutenberg' ),
+			'page_inaccessible' => esc_html__( 'AI enhancement was not run because this page is not accessible', 'elementor-to-gutenberg' ),
+			'screenshot_failed' => esc_html__( 'AI enhancement was not run because screenshots could not be generated', 'elementor-to-gutenberg' ),
+		);
+
+		if ( isset( $detail_prefixes[ $notice_code ] ) ) {
 			$ai_error = '';
 			if ( $target_id > 0 ) {
 				$ai_error = (string) get_transient( 'ele2gb_ai_error_' . $target_id );
 				delete_transient( 'ele2gb_ai_error_' . $target_id );
 			}
-			$prefix = 'mobile_failed' === $notice_code
-				? esc_html__( 'Mobile improvement failed', 'elementor-to-gutenberg' )
-				: esc_html__( 'Claude API call failed', 'elementor-to-gutenberg' );
+			$prefix = $detail_prefixes[ $notice_code ];
 			$msg    = '' !== $ai_error
-				/* translators: 1: failure prefix, 2: error message returned by Claude API */
+				/* translators: 1: failure prefix, 2: detailed reason for the failure */
 				? sprintf( esc_html__( '%1$s: %2$s', 'elementor-to-gutenberg' ), $prefix, esc_html( $ai_error ) )
 				: $prefix . '.';
 			?>

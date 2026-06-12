@@ -378,8 +378,8 @@ class Admin_Settings {
 	 */
 	public function add_admin_menu(): void {
 		add_menu_page(
-			esc_html__( 'Elementor to Gutenberg Migrator', 'elementor-to-gutenberg' ),
-			esc_html__( 'Elementor to Gutenberg Migrator', 'elementor-to-gutenberg' ),
+			esc_html__( 'Migration from Elementor to Gutenberg', 'elementor-to-gutenberg' ),
+			esc_html__( 'Migration from Elementor to Gutenberg', 'elementor-to-gutenberg' ),
 			'manage_options',
 			'gutenberg-settings',
 			array( $this, 'settings_page_content' ),
@@ -573,7 +573,7 @@ class Admin_Settings {
 		$current_width    = $this->get_section_content_width_px();
 		?>
         <div class="wrap">
-            <h1><?php esc_html_e( 'Elementor to Gutenberg Migrator', 'elementor-to-gutenberg' ); ?></h1>
+            <h1><?php esc_html_e( 'Migration from Elementor to Gutenberg', 'elementor-to-gutenberg' ); ?></h1>
             <p><?php esc_html_e( 'Professional migration tool to convert Elementor layouts into native Gutenberg blocks.', 'elementor-to-gutenberg' ); ?></p>
             <?php if ( isset( $_GET['etg_settings_saved'] ) && '1' === $_GET['etg_settings_saved'] ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
                 <div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Settings saved.', 'elementor-to-gutenberg' ); ?></p></div>
