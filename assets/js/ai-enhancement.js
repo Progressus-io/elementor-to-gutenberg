@@ -22,38 +22,82 @@
 		} );
 	}
 
-	const AI_SVG =
-		'<svg width="15" height="15" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M10 2l1.8 5.4H17l-4.4 3.2 1.7 5.1L10 13l-4.3 2.7 1.7-5.1L3 7.4h5.2z" fill="currentColor"/></svg>';
-	const FEEDBACK_SVG =
-		'<svg width="13" height="13" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M18 13a2 2 0 01-2 2H6l-4 4V4a2 2 0 012-2h12a2 2 0 012 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>';
+	const CHECK_SVG =
+		'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>';
 
+	// SVG sentinels kept so existing call sites (makeIconBtn) keep their meaning;
+	// they now map to design-system icon names rendered by pgsIcons.
+	const AI_SVG = 'sparkles';
+	const FEEDBACK_SVG = 'message-square';
+
+	function icon( name ) {
+		const span = cel( 'span', 'pgs-btn__icon' );
+		span.innerHTML = '<i data-icon="' + name + '"></i>';
+		return span;
+	}
+
+	const MOD_VARIANT = {
+		'ai-primary': 'primary',
+		ai: 'secondary',
+		'view-secondary': 'secondary',
+		view: 'ghost',
+		retry: 'secondary',
+		feedback: 'ghost',
+	};
+
+	function modSize( mod ) {
+		return mod === 'view' || mod === 'retry' || mod === 'feedback'
+			? 'sm'
+			: 'md';
+	}
+
+	// Enhance-single deep link rendered as a secondary pgs button.
 	function makeActionPill( href, label, mod, targetBlank ) {
-		const a = cel( 'a', 'ele2gb-action-pill ele2gb-action-pill--' + mod );
+		const variant = MOD_VARIANT[ mod ] || 'secondary';
+		const a = cel(
+			'a',
+			'pgs-btn pgs-btn--' + variant + ' pgs-btn--' + modSize( mod )
+		);
 		a.href = href;
 		if ( targetBlank ) {
 			a.target = '_blank';
 			a.rel = 'noopener';
 		}
-		a.appendChild( cel( 'span', 'ele2gb-action-pill-label', label ) );
+		a.appendChild( icon( 'sparkles' ) );
+		a.appendChild( cel( 'span', 'pgs-btn__label', label ) );
 		return a;
 	}
 
 	function makeIconBtn( iconHtml, label, mod ) {
+		const variant = MOD_VARIANT[ mod ] || 'secondary';
 		const btn = cel(
 			'button',
-			'ele2gb-action-pill ele2gb-action-pill--' + mod
+			'pgs-btn pgs-btn--' + variant + ' pgs-btn--' + modSize( mod )
 		);
 		btn.type = 'button';
-		if ( iconHtml ) {
-			const icon = document.createElement( 'span' );
-			icon.className = 'ele2gb-action-pill-icon';
-			icon.innerHTML = iconHtml;
-			btn.appendChild( icon );
+		if ( iconHtml === AI_SVG ) {
+			btn.appendChild( icon( 'sparkles' ) );
+		} else if ( iconHtml === FEEDBACK_SVG ) {
+			btn.appendChild( icon( 'message-square' ) );
 		}
 		if ( label ) {
-			btn.appendChild( cel( 'span', 'ele2gb-action-pill-label', label ) );
+			btn.appendChild( cel( 'span', 'pgs-btn__label', label ) );
 		}
 		return btn;
+	}
+
+	// pgs-check control: returns { label, input }.
+	function pgsCheck() {
+		const label = cel( 'label', 'pgs-check' );
+		const input = document.createElement( 'input' );
+		input.type = 'checkbox';
+		input.className = 'pgs-check__input';
+		const box = cel( 'span', 'pgs-check__box' );
+		box.setAttribute( 'aria-hidden', 'true' );
+		box.innerHTML = CHECK_SVG;
+		label.appendChild( input );
+		label.appendChild( box );
+		return { label: label, input: input };
 	}
 
 	function typeLabel( type ) {
@@ -89,11 +133,27 @@
 			return;
 		}
 		this.root.innerHTML = '';
+		const col = cel( 'div', 'pgs-col' );
 		if ( this.state.aiImprove ) {
-			this.root.appendChild( this.renderAiImproveStep() );
+			col.appendChild( this.renderAiImproveStep() );
 		} else {
-			this.root.appendChild( this.renderSelectionStep() );
+			col.appendChild( this.renderSelectionStep() );
 		}
+		this.root.appendChild( col );
+		if ( window.pgsIcons ) {
+			window.pgsIcons.create( this.root );
+		}
+	};
+
+	EtgAiEnhancement.prototype.pageTitle = function ( title, sub ) {
+		const pt = cel( 'div', 'pgs-pagetitle' );
+		const box = cel( 'div' );
+		box.appendChild( cel( 'h1', '', title ) );
+		if ( sub ) {
+			box.appendChild( cel( 'p', '', sub ) );
+		}
+		pt.appendChild( box );
+		return pt;
 	};
 
 	// ── stats bar ─────────────────────────────────────────────────────────────
@@ -106,51 +166,70 @@
 		} ).length;
 		const s = this.strings;
 
-		const bar = cel( 'div', 'ele2gb-enhancement-stats' );
+		const grid = cel( 'div', 'pgs-grid2-13' );
 
-		function tile( value, label, mod ) {
-			const t = cel(
-				'div',
-				'ele2gb-enhancement-stat' +
-					( mod ? ' ele2gb-enhancement-stat--' + mod : '' )
+		function stat( value, label, iconName, mods ) {
+			const t = cel( 'div', 'pgs-stat' + ( mods ? ' ' + mods : '' ) );
+			const top = cel( 'div', 'pgs-stat__top' );
+			top.appendChild(
+				cel( 'span', 'pgs-stat__value', String( value ) )
 			);
-			t.appendChild(
-				cel( 'span', 'ele2gb-enhancement-stat-value', String( value ) )
-			);
-			t.appendChild(
-				cel( 'span', 'ele2gb-enhancement-stat-label', label )
-			);
+			if ( iconName ) {
+				const ic = cel( 'span', 'pgs-stat__icon' );
+				ic.innerHTML = '<i data-icon="' + iconName + '"></i>';
+				top.appendChild( ic );
+			}
+			t.appendChild( top );
+			t.appendChild( cel( 'span', 'pgs-stat__label', label ) );
 			return t;
 		}
 
-		bar.appendChild(
-			tile( total, s.statTotalPages || 'Converted Items', '' )
+		grid.appendChild(
+			stat( total, s.statTotalPages || 'Converted items', 'blocks', '' )
 		);
-		bar.appendChild(
-			tile(
+		grid.appendChild(
+			stat(
 				enhanced,
-				s.statAiEnhanced || 'AI-Enhanced',
-				enhanced > 0 && enhanced === total ? 'success' : ''
+				s.statAiEnhanced || 'AI-enhanced',
+				'sparkles',
+				'pgs-stat--tinted pgs-stat--brand'
 			)
 		);
 
-		return bar;
+		return grid;
 	};
 
 	// ── selection step ────────────────────────────────────────────────────────
 
 	EtgAiEnhancement.prototype.renderSelectionStep = function () {
 		const self = this;
-		const wrap = cel( 'div' );
+		const wrap = cel( 'div', 'pgs-stack' );
+		wrap.style.gap = 'var(--gap-section)';
+
+		wrap.appendChild(
+			this.pageTitle(
+				this.strings.pageTitle || 'AI Enhancement',
+				this.strings.pageSubtitle ||
+					'Refine converted pages until they visually match the original.'
+			)
+		);
 
 		// Hidden no-API banner
 		if ( ! this.config.aiConfigured ) {
-			const notice = cel( 'div', 'ele2gb-alert ele2gb-alert-warning' );
+			const notice = cel( 'div', 'pgs-banner pgs-banner--warning' );
 			notice.id = 'etg-no-api-notice';
 			notice.style.display = 'none';
-			const noticeText = document.createTextNode(
-				( this.strings.noApiMessage ||
-					'A Claude API key is required.' ) + ' '
+			notice.setAttribute( 'role', 'status' );
+			const ic = cel( 'span', 'pgs-banner__icon' );
+			ic.innerHTML = '<i data-icon="alert-triangle"></i>';
+			notice.appendChild( ic );
+			const body = cel( 'div', 'pgs-banner__body' );
+			const text = cel( 'span', 'pgs-banner__text' );
+			text.appendChild(
+				document.createTextNode(
+					( this.strings.noApiMessage ||
+						'A Claude API key is required.' ) + ' '
+				)
 			);
 			const noticeLink = cel(
 				'a',
@@ -158,67 +237,79 @@
 				this.strings.addApiLink || 'Add your API key in Settings'
 			);
 			noticeLink.href = this.config.settingsUrl || '#';
-			notice.appendChild( noticeText );
-			notice.appendChild( noticeLink );
+			text.appendChild( noticeLink );
+			body.appendChild( text );
+			notice.appendChild( body );
 			wrap.appendChild( notice );
 		}
 
-		// Stats bar
+		// Stats
 		wrap.appendChild( this.renderStatsBar() );
 
-		// Toolbar
-		const toolbar = cel( 'div', 'ele2gb-select-toolbar' );
+		// Queue card
+		const card = cel( 'div', 'pgs-card' );
 
-		const selectAllWrap = cel( 'label', 'ele2gb-master-select-label' );
-		const selectAllCb = document.createElement( 'input' );
-		selectAllCb.type = 'checkbox';
-		selectAllCb.id = 'etg-select-all';
-		selectAllCb.className = 'ele2gb-master-select-checkbox';
-		selectAllCb.addEventListener( 'change', function ( e ) {
-			self.onSelectAll( e.target.checked );
-		} );
-		selectAllWrap.appendChild( selectAllCb );
-		selectAllWrap.appendChild( document.createTextNode( ' Select all' ) );
-		toolbar.appendChild( selectAllWrap );
+		const header = cel( 'div', 'pgs-card__header' );
+		const headLeft = cel( 'div' );
+		headLeft.appendChild(
+			cel(
+				'div',
+				'pgs-card__eyebrow',
+				fmt(
+					this.strings.queueEyebrow || 'Queue (%1$d)',
+					this.pages.length
+				)
+			)
+		);
+		headLeft.appendChild(
+			cel(
+				'div',
+				'pgs-card__title',
+				this.strings.queueTitle || 'Items to enhance'
+			)
+		);
+		header.appendChild( headLeft );
 
-		const toolbarRight = cel( 'div', 'ele2gb-toolbar-right' );
-
+		const headActions = cel( 'div', 'pgs-card__actions' );
 		const bulkAiBtn = makeIconBtn(
 			AI_SVG,
 			this.strings.enhanceSelected || 'Bulk Enhance with AI',
-			'ai-primary'
+			'view-secondary'
 		);
+		bulkAiBtn.className = 'pgs-btn pgs-btn--subtle pgs-btn--sm';
 		bulkAiBtn.id = 'etg-bulk-enhance-btn';
 		bulkAiBtn.disabled = true;
 		bulkAiBtn.addEventListener( 'click', function () {
 			self.onBulkEnhanceClick();
 		} );
-		toolbarRight.appendChild( bulkAiBtn );
-
-		toolbar.appendChild( toolbarRight );
-		wrap.appendChild( toolbar );
+		headActions.appendChild( bulkAiBtn );
+		header.appendChild( headActions );
+		card.appendChild( header );
 
 		// Table
-		const tableWrap = cel( 'div', 'ele2gb-table-wrapper' );
-		const table = cel( 'table', 'ele2gb-wizard-table' );
+		const table = cel( 'table', 'pgs-table' );
 
 		const thead = document.createElement( 'thead' );
 		const hr = document.createElement( 'tr' );
 
 		const thCb = cel( 'th' );
-		thCb.style.width = '36px';
+		thCb.style.width = '38px';
+		const masterCheck = pgsCheck();
+		masterCheck.input.id = 'etg-select-all';
+		masterCheck.input.addEventListener( 'change', function ( e ) {
+			self.onSelectAll( e.target.checked );
+		} );
+		thCb.appendChild( masterCheck.label );
 		hr.appendChild( thCb );
 
 		hr.appendChild(
-			cel( 'th', '', this.strings.colPage || 'Converted Page' )
+			cel( 'th', '', this.strings.colPage || 'Converted page' )
 		);
-
-		const thSrc = cel( 'th', '', this.strings.colSource || 'Source Page' );
-		thSrc.style.width = '180px';
-		hr.appendChild( thSrc );
-
+		hr.appendChild(
+			cel( 'th', '', this.strings.colSource || 'Source page' )
+		);
 		const thAct = cel( 'th', '', this.strings.colActions || 'Actions' );
-		thAct.style.width = '160px';
+		thAct.style.textAlign = 'right';
 		hr.appendChild( thAct );
 
 		thead.appendChild( hr );
@@ -230,41 +321,37 @@
 
 			// Checkbox
 			const tdCb = document.createElement( 'td' );
-			const cb = document.createElement( 'input' );
-			cb.type = 'checkbox';
-			cb.value = String( page.id );
-			cb.dataset.pageId = String( page.id );
-			cb.addEventListener( 'change', function () {
+			const rowCheck = pgsCheck();
+			rowCheck.input.value = String( page.id );
+			rowCheck.input.dataset.pageId = String( page.id );
+			rowCheck.input.addEventListener( 'change', function () {
 				self.onRowCheck();
 			} );
-			tdCb.appendChild( cb );
+			tdCb.appendChild( rowCheck.label );
 			tr.appendChild( tdCb );
 
-			// Converted page title + type badge
+			// Converted page title + type + enhanced flag
 			const tdTitle = document.createElement( 'td' );
-			const strong = cel( 'strong' );
+			const titleWrap = cel( 'div', 'pgs-table__linkstrong' );
 			const titleLink = cel( 'a', '', page.title || String( page.id ) );
 			titleLink.href =
 				self.config.editBaseUrl + String( page.id ) + '&action=edit';
 			titleLink.target = '_blank';
-			strong.appendChild( titleLink );
-			tdTitle.appendChild( strong );
-
+			titleWrap.appendChild( titleLink );
 			const tl = typeLabel( page.type );
 			if ( tl ) {
-				const typeBadge = cel( 'span', 'ele2gb-result-meta' );
-				typeBadge.style.marginLeft = '6px';
-				typeBadge.textContent = tl;
-				tdTitle.appendChild( typeBadge );
-			}
-			if ( page.lastImproved ) {
-				tdTitle.appendChild(
-					cel(
-						'div',
-						'ele2gb-result-meta ele2gb-result-meta--enhanced',
-						'✓ AI-enhanced'
-					)
+				titleWrap.appendChild(
+					cel( 'span', 'pgs-table__sub', ' ' + tl )
 				);
+			}
+			tdTitle.appendChild( titleWrap );
+			if ( page.lastImproved ) {
+				const enh = cel( 'div', 'pgs-aienh' );
+				enh.innerHTML = '<i data-icon="check"></i>';
+				enh.appendChild(
+					document.createTextNode( ' ' + ( self.strings.aiEnhancedFlag || 'AI-enhanced' ) )
+				);
+				tdTitle.appendChild( enh );
 			}
 			tr.appendChild( tdTitle );
 
@@ -273,7 +360,7 @@
 			if ( page.sourceId ) {
 				const srcLink = cel(
 					'a',
-					'',
+					'pgs-table__link',
 					page.sourceTitle || String( page.sourceId )
 				);
 				srcLink.href =
@@ -283,13 +370,15 @@
 				srcLink.target = '_blank';
 				tdSource.appendChild( srcLink );
 			} else {
+				tdSource.className = 'pgs-table__muted';
 				tdSource.textContent = '—';
 			}
 			tr.appendChild( tdSource );
 
-			// Actions: Enhance with AI only
+			// Actions: Enhance with AI
 			const tdAct = document.createElement( 'td' );
-			const actGroup = cel( 'div', 'ele2gb-action-group' );
+			tdAct.style.textAlign = 'right';
+			const actGroup = cel( 'div', 'pgs-rowactions' );
 
 			if (
 				self.config.aiConfigured &&
@@ -302,24 +391,28 @@
 					String( page.sourceId ) +
 					'&target_id=' +
 					String( page.id );
-				actGroup.appendChild(
-					makeActionPill(
-						improveUrl,
-						self.strings.enhanceSingle || 'Enhance with AI',
-						'ai',
-						false
-					)
+				const pill = makeActionPill(
+					improveUrl,
+					page.lastImproved
+						? self.strings.reEnhance || 'Re-enhance'
+						: self.strings.enhanceSingle || 'Enhance with AI',
+					'ai',
+					false
 				);
+				if ( page.lastImproved ) {
+					pill.className = 'pgs-btn pgs-btn--ghost pgs-btn--sm';
+				}
+				actGroup.appendChild( pill );
 			} else {
 				const noKeyBtn = makeIconBtn(
-					'',
+					AI_SVG,
 					self.strings.enhanceSingle || 'Enhance with AI',
 					'ai'
 				);
 				noKeyBtn.addEventListener( 'click', function () {
 					const n = document.getElementById( 'etg-no-api-notice' );
 					if ( n ) {
-						n.style.display = 'block';
+						n.style.display = 'flex';
 						n.scrollIntoView( {
 							behavior: 'smooth',
 							block: 'center',
@@ -335,8 +428,8 @@
 		} );
 
 		table.appendChild( tbody );
-		tableWrap.appendChild( table );
-		wrap.appendChild( tableWrap );
+		card.appendChild( table );
+		wrap.appendChild( card );
 
 		return wrap;
 	};
@@ -382,7 +475,7 @@
 		const aiBtn = document.getElementById( 'etg-bulk-enhance-btn' );
 		if ( aiBtn ) {
 			aiBtn.disabled = count === 0;
-			const aiLbl = aiBtn.querySelector( '.ele2gb-action-pill-label' );
+			const aiLbl = aiBtn.querySelector( '.pgs-btn__label' );
 			if ( aiLbl ) {
 				aiLbl.textContent =
 					count > 0
@@ -403,7 +496,7 @@
 		if ( ! this.config.aiConfigured ) {
 			const notice = document.getElementById( 'etg-no-api-notice' );
 			if ( notice ) {
-				notice.style.display = 'block';
+				notice.style.display = 'flex';
 				notice.scrollIntoView( {
 					behavior: 'smooth',
 					block: 'center',
@@ -553,158 +646,188 @@
 	EtgAiEnhancement.prototype.renderAiImproveStep = function () {
 		const self = this;
 		const ai = this.state.aiImprove;
-		const wrap = cel( 'div', 'ele2gb-ai-improve-step' );
+		const wrap = cel( 'div', 'pgs-stack' );
+		wrap.style.gap = 'var(--gap-section)';
 		const cfg = this.config;
 		const str = this.strings;
 
+		wrap.appendChild(
+			this.pageTitle(
+				str.bulkTitle || 'Bulk AI Enhancement',
+				str.bulkSubtitle ||
+					'Each selected item is enhanced one at a time.'
+			)
+		);
+
 		if ( ! ai.started ) {
-			const readinessPanel = cel( 'div', 'ele2gb-ai-readiness-panel' );
-			const rHeader = cel( 'div', 'ele2gb-ai-readiness-header' );
-			rHeader.appendChild(
+			// Pre-flight checklist card
+			const card = cel( 'div', 'pgs-card' );
+			const pre = cel( 'div', 'pgs-preflight' );
+
+			const head = cel( 'div', 'pgs-preflight__head' );
+			head.appendChild(
 				cel(
-					'h3',
-					'ele2gb-ai-readiness-title',
-					str.aiReadinessTitle || 'Pre-flight Checklist'
+					'span',
+					'pgs-eyebrow',
+					str.aiReadinessTitle || 'Pre-flight checklist'
 				)
 			);
 			if ( cfg.aiConfigured ) {
-				rHeader.appendChild(
-					cel( 'span', 'ele2gb-ai-readiness-all-ready', '✓ Ready' )
-				);
+				const pill = cel( 'span', 'pgs-pill pgs-pill--success' );
+				const pIc = cel( 'span', 'pgs-pill__icon' );
+				pIc.innerHTML = '<i data-icon="check"></i>';
+				pill.appendChild( pIc );
+				pill.appendChild( document.createTextNode( str.ready || 'Ready' ) );
+				head.appendChild( pill );
 			}
-			readinessPanel.appendChild( rHeader );
+			pre.appendChild( head );
 
-			const apiRow = cel( 'div', 'ele2gb-ai-readiness-row' );
-			const apiIcon = cel(
-				'div',
-				'ele2gb-ai-readiness-icon ' +
-					( cfg.aiConfigured
-						? 'ele2gb-ai-readiness-icon--ok'
-						: 'ele2gb-ai-readiness-icon--error' ),
-				cfg.aiConfigured ? '✓' : '✗'
-			);
-			const apiLbl = cel(
+			const apiRow = cel( 'div', 'pgs-preflight__item' );
+			const apiMark = cel(
 				'span',
-				'ele2gb-ai-readiness-status' +
-					( cfg.aiConfigured ? '' : ' is-invalid' ),
 				cfg.aiConfigured
-					? str.aiReadinessApiValid || 'API key configured'
-					: str.aiReadinessApiInvalid || 'API key not configured'
+					? 'pgs-preflight__ok'
+					: 'pgs-preflight__num'
 			);
-			apiRow.appendChild( apiIcon );
-			apiRow.appendChild( apiLbl );
-			readinessPanel.appendChild( apiRow );
+			apiMark.innerHTML = cfg.aiConfigured
+				? '<i data-icon="check"></i>'
+				: '<i data-icon="x"></i>';
+			if ( ! cfg.aiConfigured ) {
+				apiMark.style.background = 'var(--error-solid)';
+			}
+			apiRow.appendChild( apiMark );
+			apiRow.appendChild(
+				document.createTextNode(
+					cfg.aiConfigured
+						? str.aiReadinessApiValid || 'API key configured'
+						: str.aiReadinessApiInvalid || 'API key not configured'
+				)
+			);
+			pre.appendChild( apiRow );
 
-			const cntRow = cel( 'div', 'ele2gb-ai-readiness-row' );
-			const cntIcon = cel(
-				'div',
-				'ele2gb-ai-readiness-icon ele2gb-ai-readiness-icon--info',
+			const cntRow = cel( 'div', 'pgs-preflight__item' );
+			const cntNum = cel(
+				'span',
+				'pgs-preflight__num',
 				String( ai.pages.length )
 			);
-			const cntLbl = cel(
-				'span',
-				'ele2gb-ai-readiness-status',
-				fmt(
-					str.aiReadinessCredits ||
-						'Estimated: ~%1$d API call(s), ~1–2 minutes per item',
-					ai.pages.length
+			cntRow.appendChild( cntNum );
+			cntRow.appendChild(
+				document.createTextNode(
+					fmt(
+						str.aiReadinessCredits ||
+							'Estimated: ~%1$d API call(s), ~1–2 minutes per item',
+						ai.pages.length
+					)
 				)
 			);
-			cntRow.appendChild( cntIcon );
-			cntRow.appendChild( cntLbl );
-			readinessPanel.appendChild( cntRow );
-			wrap.appendChild( readinessPanel );
+			pre.appendChild( cntRow );
 
-			const pagesSection = cel( 'div', 'ele2gb-preflight-pages-section' );
-			pagesSection.appendChild(
+			card.appendChild( pre );
+			wrap.appendChild( card );
+
+			// Items-to-enhance card (table)
+			const listCard = cel( 'div', 'pgs-card' );
+			const listHead = cel( 'div', 'pgs-card__header' );
+			const lh = cel( 'div' );
+			lh.appendChild(
 				cel(
-					'p',
-					'ele2gb-preflight-section-label',
-					'Items to enhance (' + ai.pages.length + ')'
+					'div',
+					'pgs-card__eyebrow',
+					fmt( str.queueEyebrow || 'Queue (%1$d)', ai.pages.length )
 				)
 			);
-			const pagesList = cel( 'div', 'ele2gb-preflight-pages' );
+			lh.appendChild(
+				cel( 'div', 'pgs-card__title', str.queueTitle || 'Items to enhance' )
+			);
+			listHead.appendChild( lh );
+			listCard.appendChild( listHead );
 
+			const t = cel( 'table', 'pgs-table' );
+			const th = document.createElement( 'thead' );
+			const thr = document.createElement( 'tr' );
+			thr.appendChild( cel( 'th', '', str.colPage || 'Item' ) );
+			thr.appendChild( cel( 'th', '', str.aiImproveType || 'Type' ) );
+			thr.appendChild( cel( 'th', '', str.colSource || 'Source page' ) );
+			th.appendChild( thr );
+			t.appendChild( th );
+			const tb = document.createElement( 'tbody' );
 			ai.pages.forEach( function ( page ) {
 				const fullData = cfg.pages
 					? cfg.pages.filter( function ( p ) {
 							return p.id === page.targetId;
 					  } )[ 0 ]
 					: null;
-				const card = cel( 'div', 'ele2gb-preflight-page-card' );
-				const body = cel( 'div', 'ele2gb-preflight-page-body' );
-
-				const titleRow = cel( 'div', 'ele2gb-preflight-page-title' );
-				const tLink = cel(
-					'a',
-					'',
-					page.title || String( page.targetId )
-				);
+				const tr = document.createElement( 'tr' );
+				const tdT = document.createElement( 'td' );
+				const tw = cel( 'div', 'pgs-table__linkstrong' );
+				const tLink = cel( 'a', '', page.title || String( page.targetId ) );
 				tLink.href =
 					cfg.editBaseUrl + String( page.targetId ) + '&action=edit';
 				tLink.target = '_blank';
-				titleRow.appendChild( tLink );
+				tw.appendChild( tLink );
+				tdT.appendChild( tw );
 				if ( fullData && fullData.lastImproved ) {
-					titleRow.appendChild(
-						cel(
-							'span',
-							'ele2gb-preflight-improved-badge',
-							'✓ Enhanced'
-						)
+					const enh = cel( 'div', 'pgs-aienh' );
+					enh.innerHTML = '<i data-icon="check"></i>';
+					enh.appendChild(
+						document.createTextNode( ' ' + ( str.aiEnhancedFlag || 'AI-enhanced' ) )
 					);
+					tdT.appendChild( enh );
 				}
-				body.appendChild( titleRow );
-
-				const tl = typeLabel( page.type );
-				if ( tl ) {
-					body.appendChild(
-						cel( 'div', 'ele2gb-preflight-page-source', tl )
-					);
-				}
-
-				if ( fullData && fullData.sourceTitle ) {
-					body.appendChild(
-						cel(
-							'div',
-							'ele2gb-preflight-page-source',
-							'Source: ' + fullData.sourceTitle
-						)
-					);
-				}
-
-				card.appendChild( body );
-				pagesList.appendChild( card );
+				tr.appendChild( tdT );
+				tr.appendChild(
+					cel( 'td', 'pgs-table__muted', typeLabel( page.type ) || '—' )
+				);
+				tr.appendChild(
+					cel(
+						'td',
+						'pgs-table__muted',
+						fullData && fullData.sourceTitle
+							? fullData.sourceTitle
+							: '—'
+					)
+				);
+				tb.appendChild( tr );
 			} );
+			t.appendChild( tb );
+			listCard.appendChild( t );
+			wrap.appendChild( listCard );
 
-			pagesSection.appendChild( pagesList );
-			wrap.appendChild( pagesSection );
-
-			const warnBox = cel( 'div', 'ele2gb-ai-warning-notice' );
-			const warnIcon = cel( 'div', 'ele2gb-ai-warning-icon', '⚠' );
-			const warnText = cel( 'div', 'ele2gb-ai-warning-text' );
-			warnText.appendChild(
+			// Warning banner
+			const warnBox = cel( 'div', 'pgs-banner pgs-banner--warning' );
+			warnBox.setAttribute( 'role', 'status' );
+			const warnIcon = cel( 'span', 'pgs-banner__icon' );
+			warnIcon.innerHTML = '<i data-icon="alert-triangle"></i>';
+			warnBox.appendChild( warnIcon );
+			const warnBody = cel( 'div', 'pgs-banner__body' );
+			warnBody.appendChild(
 				cel(
-					'strong',
-					'',
+					'span',
+					'pgs-banner__title',
 					str.aiImproveWarningTitle || 'AI credits will be used'
 				)
 			);
-			warnText.appendChild(
+			warnBody.appendChild(
 				cel(
-					'p',
-					'',
+					'span',
+					'pgs-banner__text',
 					str.aiImproveWarning ||
 						'This will use AI credits once per selected item. Make sure your API key has sufficient credits before starting.'
 				)
 			);
-			warnBox.appendChild( warnIcon );
-			warnBox.appendChild( warnText );
+			warnBox.appendChild( warnBody );
 			wrap.appendChild( warnBox );
 
-			const actions = cel( 'div', 'ele2gb-results-actions' );
+			// Actions
+			const actions = cel( 'div', 'pgs-wizard__nav pgs-wizard__nav--end' );
+			actions.style.borderTop = 'none';
+			actions.style.paddingTop = '0';
+			actions.style.marginTop = '0';
+			actions.style.justifyContent = 'space-between';
 			const backBtn = makeIconBtn(
 				'',
-				'← ' + ( str.back || 'Back' ),
+				str.back || 'Back',
 				'view-secondary'
 			);
 			backBtn.addEventListener( 'click', function () {
@@ -758,61 +881,71 @@
 			)
 		);
 
-		const table = cel(
-			'table',
-			'ele2gb-wizard-table ele2gb-ai-results-table'
-		);
+		const card = cel( 'div', 'pgs-card pgs-card--flat' );
+		const table = cel( 'table', 'pgs-table' );
 		const thead2 = document.createElement( 'thead' );
 		const hr2 = document.createElement( 'tr' );
 		hr2.appendChild( cel( 'th', '', str.colPage || 'Item' ) );
 		hr2.appendChild( cel( 'th', '', str.aiImproveType || 'Type' ) );
-		hr2.appendChild( cel( 'th', '', 'Status' ) );
-		hr2.appendChild( cel( 'th', '', 'Actions' ) );
+		hr2.appendChild( cel( 'th', '', str.statusLabel || 'Status' ) );
+		const thA = cel( 'th', '', str.colActions || 'Actions' );
+		thA.style.textAlign = 'right';
+		hr2.appendChild( thA );
 		thead2.appendChild( hr2 );
 		table.appendChild( thead2 );
 
 		const tbody2 = document.createElement( 'tbody' );
 		ai.pages.forEach( function ( page, i ) {
 			const tr = document.createElement( 'tr' );
-			tr.className = 'ele2gb-ai-row--' + page.status;
-			tr.appendChild( cel( 'td', 'ele2gb-ai-title-cell', page.title ) );
+			tr.appendChild( cel( 'td', 'pgs-table__strong', page.title ) );
 			tr.appendChild(
-				cel( 'td', '', typeLabel( page.type ) || page.type )
+				cel( 'td', 'pgs-table__muted', typeLabel( page.type ) || page.type )
 			);
 			const tdSt = document.createElement( 'td' );
-			tdSt.appendChild(
-				self.makeAiStatusBadge( page.status, page.error )
-			);
+			tdSt.appendChild( self.makeAiStatusBadge( page.status, page.error ) );
 			tr.appendChild( tdSt );
 			tr.appendChild( self.makeProgressRowActions( page.status, i ) );
 			tbody2.appendChild( tr );
 		} );
 		table.appendChild( tbody2 );
-		wrap.appendChild( table );
+		card.appendChild( table );
+		wrap.appendChild( card );
 
 		if ( ai.finished ) {
-			const msg =
-				failed === 0 && skipped === 0
-					? str.aiImproveFinishedOk ||
-					  'All items improved successfully.'
-					: fmt(
-							str.aiImproveFinishedErr ||
-								'Finished — %1$d done, %2$d failed, %3$d skipped.',
-							done,
-							failed,
-							skipped
-					  );
+			const isOk = failed === 0 && skipped === 0;
+			const msg = isOk
+				? str.aiImproveFinishedOk || 'All items improved successfully.'
+				: fmt(
+						str.aiImproveFinishedErr ||
+							'Finished — %1$d done, %2$d failed, %3$d skipped.',
+						done,
+						failed,
+						skipped
+				  );
 			const comp = cel(
 				'div',
-				'ele2gb-ai-completion ' +
-					( failed === 0 && skipped === 0
-						? 'ele2gb-ai-completion--success'
-						: 'ele2gb-ai-completion--partial' )
+				'pgs-banner ' +
+					( isOk ? 'pgs-banner--success' : 'pgs-banner--warning' )
 			);
-			comp.appendChild( cel( 'p', '', msg ) );
+			comp.setAttribute( 'role', 'status' );
+			const cIc = cel( 'span', 'pgs-banner__icon' );
+			cIc.innerHTML =
+				'<i data-icon="' +
+				( isOk ? 'check-circle-2' : 'alert-triangle' ) +
+				'"></i>';
+			comp.appendChild( cIc );
+			const cBody = cel( 'div', 'pgs-banner__body' );
+			cBody.appendChild( cel( 'span', 'pgs-banner__text', msg ) );
+			comp.appendChild( cBody );
 			wrap.appendChild( comp );
 
-			const doneAct = cel( 'div', 'ele2gb-results-actions' );
+			const doneAct = cel(
+				'div',
+				'pgs-wizard__nav pgs-wizard__nav--end'
+			);
+			doneAct.style.borderTop = 'none';
+			doneAct.style.paddingTop = '0';
+			doneAct.style.marginTop = '0';
 			const backBtn2 = makeIconBtn(
 				'',
 				str.backToList || 'Back to list',
@@ -862,71 +995,98 @@
 		pct,
 		finished
 	) {
-		const section = cel( 'div', 'ele2gb-progress-section' );
-		const bar = cel( 'div', 'ele2gb-progress-bar' );
-		const fill = cel( 'div', 'ele2gb-progress-fill' );
-		fill.style.width = pct + '%';
-		bar.appendChild( fill );
-		section.appendChild( bar );
+		const section = cel( 'div', 'pgs-stack' );
 
-		const chips = cel( 'div', 'ele2gb-status-chips' );
+		const progress = cel(
+			'div',
+			'pgs-progress pgs-progress--lg' +
+				( finished ? '' : ' pgs-progress--running' )
+		);
+		const phead = cel( 'div', 'pgs-progress__head' );
+		phead.appendChild(
+			cel(
+				'span',
+				'pgs-progress__value',
+				pct >= 100 ? this.strings.complete || 'Complete' : pct + '%'
+			)
+		);
+		progress.appendChild( phead );
+		const track = cel( 'div', 'pgs-progress__track' );
+		track.setAttribute( 'role', 'progressbar' );
+		const fill = cel( 'div', 'pgs-progress__fill pgs-progress__fill--migrate' );
+		fill.style.width = pct + '%';
+		track.appendChild( fill );
+		progress.appendChild( track );
+		section.appendChild( progress );
+
+		const chips = cel( 'div', 'pgs-stack' );
+		chips.style.flexDirection = 'row';
+		chips.style.flexWrap = 'wrap';
+		chips.style.gap = 'var(--space-2)';
+		function chip( label, variant ) {
+			const c = cel( 'span', 'pgs-pill pgs-pill--' + variant );
+			const d = cel( 'span', 'pgs-pill__dot' );
+			d.setAttribute( 'aria-hidden', 'true' );
+			c.appendChild( d );
+			c.appendChild( document.createTextNode( label ) );
+			return c;
+		}
 		if ( done > 0 ) {
 			chips.appendChild(
-				cel(
-					'span',
-					'ele2gb-status-chip ele2gb-status-chip--done',
-					fmt( this.strings.aiStatusDone || 'Done (%1$d)', done )
+				chip(
+					fmt( this.strings.aiStatusDone || 'Done (%1$d)', done ),
+					'success'
 				)
 			);
 		}
 		if ( failed > 0 ) {
 			chips.appendChild(
-				cel(
-					'span',
-					'ele2gb-status-chip ele2gb-status-chip--failed',
-					fmt(
-						this.strings.aiStatusFailed || 'Failed (%1$d)',
-						failed
-					)
+				chip(
+					fmt( this.strings.aiStatusFailed || 'Failed (%1$d)', failed ),
+					'error'
 				)
 			);
 		}
 		if ( skipped > 0 ) {
 			chips.appendChild(
-				cel(
-					'span',
-					'ele2gb-status-chip ele2gb-status-chip--skipped',
+				chip(
 					fmt(
 						this.strings.aiStatusSkipped || 'Skipped (%1$d)',
 						skipped
-					)
+					),
+					'neutral'
 				)
 			);
 		}
 		if ( pending > 0 ) {
 			chips.appendChild(
-				cel(
-					'span',
-					'ele2gb-status-chip ele2gb-status-chip--pending',
+				chip(
 					fmt(
 						this.strings.aiStatusPending || 'Pending (%1$d)',
 						pending
-					)
+					),
+					'info'
 				)
 			);
 		}
 		section.appendChild( chips );
 
 		if ( failed > 0 && ! finished ) {
-			const note = cel( 'div', 'ele2gb-paused-notice' );
-			note.appendChild(
+			const note = cel( 'div', 'pgs-banner pgs-banner--warning' );
+			note.setAttribute( 'role', 'status' );
+			const nIc = cel( 'span', 'pgs-banner__icon' );
+			nIc.innerHTML = '<i data-icon="alert-triangle"></i>';
+			note.appendChild( nIc );
+			const nBody = cel( 'div', 'pgs-banner__body' );
+			nBody.appendChild(
 				cel(
-					'p',
-					'',
+					'span',
+					'pgs-banner__text',
 					this.strings.aiImprovePaused ||
 						'Paused — an item failed. Review the error below, then skip or retry to continue.'
 				)
 			);
+			note.appendChild( nBody );
 			section.appendChild( note );
 		}
 		return section;
@@ -940,32 +1100,30 @@
 	) {
 		const self = this;
 		const tdAct = document.createElement( 'td' );
+		tdAct.style.textAlign = 'right';
+		const group = cel( 'div', 'pgs-rowactions' );
 
 		if ( status === 'failed' ) {
-			const skipBtn = makeIconBtn(
-				'',
-				this.strings.skip || 'Skip',
-				'view'
-			);
+			const skipBtn = makeIconBtn( '', this.strings.skip || 'Skip', 'view' );
 			skipBtn.addEventListener( 'click', function () {
 				self.skipAiImprovePage( index );
 			} );
-			tdAct.appendChild( skipBtn );
+			group.appendChild( skipBtn );
 
 			const retryBtn = makeIconBtn(
 				'',
 				this.strings.retry || 'Retry',
 				'retry'
 			);
-			retryBtn.style.marginLeft = '6px';
 			retryBtn.addEventListener( 'click', function () {
 				self.retryAiImprovePage( index );
 			} );
-			tdAct.appendChild( retryBtn );
+			group.appendChild( retryBtn );
 		} else if ( status === 'processing' ) {
-			tdAct.appendChild( this.makeRowSpinner() );
+			group.appendChild( this.makeRowSpinner() );
 		}
 
+		tdAct.appendChild( group );
 		return tdAct;
 	};
 
@@ -988,15 +1146,15 @@
 			document.head.appendChild( style );
 		}
 
-		const accentColor = stages ? '#2271b1' : '#0ea5e9';
+		const accentColor = '#4f44dd';
 		const overlay = document.createElement( 'div' );
 		overlay.id = 'ele2gb-bulk-ai-overlay';
 		overlay.style.cssText =
-			'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.55);z-index:999999;display:flex;align-items:center;justify-content:center;';
+			'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(12,16,24,0.55);z-index:999999;display:flex;align-items:center;justify-content:center;font-family:"Hanken Grotesk",system-ui,sans-serif;';
 
 		const card = document.createElement( 'div' );
 		card.style.cssText =
-			'background:#fff;border-radius:10px;padding:40px 48px;max-width:480px;width:90%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.18);';
+			'background:#fff;border-radius:12px;padding:40px 48px;max-width:480px;width:90%;text-align:center;box-shadow:0 8px 40px rgba(12,16,24,0.18);';
 
 		const svgNS = 'http://www.w3.org/2000/svg';
 		const spinWrap = document.createElement( 'div' );
@@ -1020,12 +1178,12 @@
 
 		const h3 = document.createElement( 'h3' );
 		h3.style.cssText =
-			'margin:0 0 8px;font-size:18px;color:#1d2327;font-weight:700;';
+			'margin:0 0 8px;font-size:18px;color:#151b26;font-weight:700;font-family:"Schibsted Grotesk",sans-serif;';
 		h3.textContent = title;
 		card.appendChild( h3 );
 
 		const sub = document.createElement( 'p' );
-		sub.style.cssText = 'margin:0 0 12px;color:#50575e;font-size:13px;';
+		sub.style.cssText = 'margin:0 0 12px;color:#36404f;font-size:13px;';
 		sub.textContent = subtitle;
 		card.appendChild( sub );
 
@@ -1044,10 +1202,10 @@
 			stages.forEach( function ( label, idx ) {
 				const dot = document.createElement( 'span' );
 				dot.style.cssText =
-					'font-size:12px;padding:2px 10px;border-radius:12px;transition:background 0.3s,color 0.3s;background:' +
-					( idx === 0 ? accentColor : '#dcdcde' ) +
+					'font-size:12px;padding:2px 10px;border-radius:999px;transition:background 0.3s,color 0.3s;background:' +
+					( idx === 0 ? accentColor : '#e1e7f0' ) +
 					';color:' +
-					( idx === 0 ? '#fff' : '#50575e' ) +
+					( idx === 0 ? '#fff' : '#36404f' ) +
 					';';
 				dot.textContent = label;
 				dotsWrap.appendChild( dot );
@@ -1056,8 +1214,8 @@
 			const t1 = setTimeout( function () {
 				const d = dotsWrap.children;
 				if ( d[ 0 ] ) {
-					d[ 0 ].style.background = '#dcdcde';
-					d[ 0 ].style.color = '#50575e';
+					d[ 0 ].style.background = '#e1e7f0';
+					d[ 0 ].style.color = '#36404f';
 				}
 				if ( d[ 1 ] ) {
 					d[ 1 ].style.background = accentColor;
@@ -1067,8 +1225,8 @@
 			const t2 = setTimeout( function () {
 				const d = dotsWrap.children;
 				if ( d[ 1 ] ) {
-					d[ 1 ].style.background = '#dcdcde';
-					d[ 1 ].style.color = '#50575e';
+					d[ 1 ].style.background = '#e1e7f0';
+					d[ 1 ].style.color = '#36404f';
 				}
 				if ( d[ 2 ] ) {
 					d[ 2 ].style.background = accentColor;
@@ -1107,15 +1265,32 @@
 			failed: this.strings.aiStatusFailed || 'Failed',
 			skipped: this.strings.aiStatusSkipped || 'Skipped',
 		};
+		const variants = {
+			pending: 'pgs-pill--neutral',
+			processing: 'pgs-pill--info pgs-pill--pending',
+			done: 'pgs-pill--success',
+			failed: 'pgs-pill--error',
+			skipped: 'pgs-pill--neutral',
+		};
 		const badge = cel(
 			'span',
-			'ele2gb-ai-badge ele2gb-ai-badge--' + status,
-			labels[ status ] || status
+			'pgs-pill ' + ( variants[ status ] || 'pgs-pill--neutral' )
+		);
+		const dot = cel( 'span', 'pgs-pill__dot' );
+		dot.setAttribute( 'aria-hidden', 'true' );
+		badge.appendChild( dot );
+		badge.appendChild(
+			document.createTextNode( labels[ status ] || status )
 		);
 		if ( status === 'failed' && error ) {
-			badge.appendChild(
-				cel( 'span', 'ele2gb-ai-badge-error', ' — ' + error )
-			);
+			// Render the pill plus an error note in one wrapper for the cell.
+			const wrap = cel( 'div', 'pgs-stack' );
+			wrap.style.gap = 'var(--space-1)';
+			wrap.appendChild( badge );
+			const errSpan = cel( 'div', 'pgs-table__meta', error );
+			errSpan.style.color = 'var(--error-fg)';
+			wrap.appendChild( errSpan );
+			return wrap;
 		}
 		return badge;
 	};
@@ -1134,7 +1309,7 @@
 		c.setAttribute( 'cx', '12' );
 		c.setAttribute( 'cy', '12' );
 		c.setAttribute( 'r', '10' );
-		c.setAttribute( 'stroke', '#2271b1' );
+		c.setAttribute( 'stroke', '#4f44dd' );
 		c.setAttribute( 'stroke-width', '3' );
 		c.setAttribute( 'stroke-dasharray', '40 20' );
 		svg.appendChild( c );
@@ -1159,21 +1334,21 @@
 		const overlay = document.createElement( 'div' );
 		overlay.id = 'etg-ae-feedback-overlay';
 		overlay.style.cssText =
-			'position:fixed;top:0;left:0;right:0;bottom:0;z-index:100000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.55);padding:20px;box-sizing:border-box;';
+			'position:fixed;top:0;left:0;right:0;bottom:0;z-index:100000;display:flex;align-items:center;justify-content:center;background:rgba(12,16,24,0.55);padding:20px;box-sizing:border-box;font-family:"Hanken Grotesk",system-ui,sans-serif;';
 
 		const modal = document.createElement( 'div' );
 		modal.style.cssText =
-			'background:#fff;border-radius:8px;padding:28px 32px;max-width:500px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 4px 32px rgba(0,0,0,0.18);box-sizing:border-box;';
+			'background:#fff;border-radius:12px;padding:28px 32px;max-width:500px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 4px 32px rgba(12,16,24,0.18);box-sizing:border-box;';
 
 		const h2 = document.createElement( 'h2' );
 		h2.style.cssText =
-			'margin:0 0 4px;font-size:17px;font-weight:600;color:#1d2327;';
+			'margin:0 0 4px;font-size:17px;font-weight:600;color:#151b26;font-family:"Schibsted Grotesk",sans-serif;';
 		h2.textContent = str.feedbackModalTitle || 'How did AI Enhancement go?';
 		modal.appendChild( h2 );
 
 		if ( title ) {
 			const sub = cel( 'p', null, title );
-			sub.style.cssText = 'margin:0 0 20px;font-size:12px;color:#787c82;';
+			sub.style.cssText = 'margin:0 0 20px;font-size:12px;color:#677489;';
 			modal.appendChild( sub );
 		} else {
 			modal.style.marginBottom = '16px';
@@ -1187,11 +1362,11 @@
 			str.feedbackIssueLabel || 'Issue type'
 		);
 		issueLbl.style.cssText =
-			'display:block;font-size:13px;font-weight:500;margin-bottom:6px;color:#1d2327;';
+			'display:block;font-size:13px;font-weight:500;margin-bottom:6px;color:#151b26;';
 		issueWrap.appendChild( issueLbl );
 		const issueSelect = document.createElement( 'select' );
 		issueSelect.style.cssText =
-			'width:100%;padding:6px 8px;border:1px solid #c3c4c7;border-radius:4px;font-size:13px;';
+			'width:100%;padding:7px 10px;border:1px solid #cdd6e4;border-radius:6px;font-size:13px;';
 		[
 			[ '', str.feedbackNoIssue || 'No issue' ],
 			[ 'layout', str.feedbackIssueLayout || 'Layout issues after AI' ],
@@ -1219,13 +1394,13 @@
 			str.feedbackIssueDetailLabel || 'Describe the issue'
 		);
 		detailLbl.style.cssText =
-			'display:block;font-size:13px;font-weight:500;margin-bottom:6px;color:#1d2327;';
+			'display:block;font-size:13px;font-weight:500;margin-bottom:6px;color:#151b26;';
 		detailWrap.appendChild( detailLbl );
 		const detailInput = document.createElement( 'textarea' );
 		detailInput.rows = 2;
 		detailInput.maxLength = 500;
 		detailInput.style.cssText =
-			'width:100%;padding:6px 8px;border:1px solid #c3c4c7;border-radius:4px;font-size:13px;box-sizing:border-box;resize:vertical;';
+			'width:100%;padding:7px 10px;border:1px solid #cdd6e4;border-radius:6px;font-size:13px;box-sizing:border-box;resize:vertical;';
 		detailWrap.appendChild( detailInput );
 		modal.appendChild( detailWrap );
 
@@ -1239,13 +1414,13 @@
 			str.feedbackNoteLabel || 'Additional notes'
 		);
 		noteLbl.style.cssText =
-			'display:block;font-size:13px;font-weight:500;margin-bottom:6px;color:#1d2327;';
+			'display:block;font-size:13px;font-weight:500;margin-bottom:6px;color:#151b26;';
 		modal.appendChild( noteLbl );
 		const noteTA = document.createElement( 'textarea' );
 		noteTA.rows = 3;
 		noteTA.maxLength = 2000;
 		noteTA.style.cssText =
-			'width:100%;padding:6px 8px;border:1px solid #c3c4c7;border-radius:4px;font-size:13px;box-sizing:border-box;resize:vertical;margin-bottom:16px;';
+			'width:100%;padding:7px 10px;border:1px solid #cdd6e4;border-radius:6px;font-size:13px;box-sizing:border-box;resize:vertical;margin-bottom:16px;';
 		modal.appendChild( noteTA );
 
 		const consentLbl = document.createElement( 'label' );
@@ -1257,7 +1432,7 @@
 		consentCb.style.cssText = 'margin-top:3px;flex-shrink:0;';
 		const consentSpan = cel( 'span', null );
 		consentSpan.style.cssText =
-			'font-size:12px;color:#50575e;line-height:1.5;';
+			'font-size:12px;color:#36404f;line-height:1.5;';
 		consentSpan.textContent =
 			str.feedbackConsentLabel ||
 			'I consent to sending this anonymised AI enhancement report to the plugin developer for quality improvement. No passwords, API keys, or user data are included.';
@@ -1270,11 +1445,11 @@
 			'display:flex;gap:8px;align-items:center;flex-wrap:wrap;';
 		const errSpan = cel( 'span', null );
 		errSpan.style.cssText =
-			'flex:1;font-size:12px;color:#d63638;min-width:0;';
+			'flex:1;font-size:12px;color:#e0463d;min-width:0;';
 		actRow.appendChild( errSpan );
 		const cancelBtn = document.createElement( 'button' );
 		cancelBtn.type = 'button';
-		cancelBtn.className = 'button';
+		cancelBtn.className = 'pgs-btn pgs-btn--secondary pgs-btn--sm';
 		cancelBtn.textContent = str.feedbackCancel || 'Cancel';
 		cancelBtn.addEventListener( 'click', function () {
 			self.closeAiFeedbackModal();
@@ -1282,7 +1457,7 @@
 		actRow.appendChild( cancelBtn );
 		const submitBtn = document.createElement( 'button' );
 		submitBtn.type = 'button';
-		submitBtn.className = 'button button-primary';
+		submitBtn.className = 'pgs-btn pgs-btn--primary pgs-btn--sm';
 		submitBtn.textContent = str.feedbackSubmit || 'Send Feedback';
 		submitBtn.disabled = true;
 		actRow.appendChild( submitBtn );
@@ -1295,6 +1470,9 @@
 		overlay.appendChild( modal );
 		document.body.appendChild( overlay );
 		this._feedbackOverlay = overlay;
+		if ( window.pgsIcons ) {
+			window.pgsIcons.create( modal );
+		}
 
 		overlay.addEventListener( 'click', function ( e ) {
 			if ( e.target === overlay ) {
@@ -1377,9 +1555,9 @@
 	};
 
 	EtgAiEnhancement.prototype.showAiFeedbackConfirm = function ( message ) {
-		const notice = cel( 'div', 'ele2gb-alert ele2gb-alert-success' );
+		const notice = cel( 'div', null );
 		notice.style.cssText =
-			'position:fixed;bottom:24px;right:24px;z-index:99999;padding:12px 20px;background:#00a32a;color:#fff;border-radius:6px;font-size:13px;box-shadow:0 2px 12px rgba(0,0,0,0.18);max-width:360px;';
+			'position:fixed;bottom:24px;right:24px;z-index:99999;padding:12px 20px;background:#12a16d;color:#fff;border-radius:8px;font-size:13px;box-shadow:0 2px 12px rgba(12,16,24,0.18);max-width:360px;font-family:"Hanken Grotesk",system-ui,sans-serif;';
 		notice.textContent = message;
 		document.body.appendChild( notice );
 		setTimeout( function () {

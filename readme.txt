@@ -1,7 +1,7 @@
 === Migration from Elementor to Gutenberg ===
 Contributors: progressus
 Tags: elementor, gutenberg, migration, conversion, blocks
-Requires at least: 6.0
+Requires at least: 6.7
 Tested up to: 7.0
 Stable tag: 1.0.0
 Requires PHP: 7.4

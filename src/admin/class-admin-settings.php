@@ -157,6 +157,36 @@ class Admin_Settings {
 		add_action( 'admin_post_myplugin_convert_page', array( $this, 'myplugin_handle_convert_page' ) );
 		add_action( 'admin_post_etg_save_screenshot_settings', array( $this, 'save_screenshot_settings' ) );
 		add_action( 'admin_post_etg_save_settings', array( $this, 'save_all_settings' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
+	}
+
+	/**
+	 * Enqueue the Progressus design-system stylesheet + inline icon engine
+	 * on the Settings screen so its .pgs markup is styled and its
+	 * <i data-icon> placeholders are replaced with inline SVG.
+	 */
+	public function enqueue_assets(): void {
+		if ( empty( $_GET['page'] ) || 'gutenberg-settings' !== sanitize_key( wp_unslash( $_GET['page'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			return;
+		}
+
+		$css_path  = GUTENBERG_PLUGIN_DIR_PATH . '/assets/css/batch-wizard.css';
+		$icons_path = GUTENBERG_PLUGIN_DIR_PATH . '/assets/js/pgs-icons.js';
+
+		wp_enqueue_style(
+			'ele2gb-pgs-admin',
+			plugins_url( 'assets/css/batch-wizard.css', GUTENBERG_PLUGIN_MAIN_FILE ),
+			array(),
+			GUTENBERG_PLUGIN_DEBUG && file_exists( $css_path ) ? (string) filemtime( $css_path ) : GUTENBERG_PLUGIN_VERSION
+		);
+
+		wp_enqueue_script(
+			'ele2gb-pgs-icons',
+			plugins_url( 'assets/js/pgs-icons.js', GUTENBERG_PLUGIN_MAIN_FILE ),
+			array(),
+			GUTENBERG_PLUGIN_DEBUG && file_exists( $icons_path ) ? (string) filemtime( $icons_path ) : GUTENBERG_PLUGIN_VERSION,
+			true
+		);
 	}
 
 	/**
@@ -572,108 +602,162 @@ class Admin_Settings {
 		$copy_meta_enabled = self::is_copy_meta_enabled();
 		$current_width    = $this->get_section_content_width_px();
 		?>
-        <div class="wrap">
-            <h1><?php esc_html_e( 'Migration from Elementor to Gutenberg', 'elementor-to-gutenberg' ); ?></h1>
-            <p><?php esc_html_e( 'Professional migration tool to convert Elementor layouts into native Gutenberg blocks.', 'elementor-to-gutenberg' ); ?></p>
-            <?php if ( isset( $_GET['etg_settings_saved'] ) && '1' === $_GET['etg_settings_saved'] ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
-                <div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Settings saved.', 'elementor-to-gutenberg' ); ?></p></div>
-            <?php endif; ?>
+        <div class="wrap pgs">
+        <div class="pgs-screen" data-screen-label="Settings">
 
-            <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
-                <?php wp_nonce_field( 'etg_save_settings' ); ?>
-                <input type="hidden" name="action" value="etg_save_settings" />
+            <header class="pgs-pluginhead">
+                <span class="pgs-pluginhead__brand"><span class="pgs-pluginhead__name"><?php esc_html_e( 'Migration from Elementor to Gutenberg', 'elementor-to-gutenberg' ); ?></span></span>
+            </header>
+            <hr class="wp-header-end" style="margin:0;border:0;">
 
-                <hr />
-                <h2><?php esc_html_e( 'Layout Settings', 'elementor-to-gutenberg' ); ?></h2>
-                <p><?php esc_html_e( 'Controls the content width applied to converted top-level Elementor sections. Match this to your Elementor kit\'s container width so converted pages render at the same width as the originals.', 'elementor-to-gutenberg' ); ?></p>
-                <table class="form-table" role="presentation">
-                    <tbody>
-                    <tr>
-                        <th scope="row">
-                            <label for="etg_section_content_width"><?php esc_html_e( 'Section content width (px)', 'elementor-to-gutenberg' ); ?></label>
-                        </th>
-                        <td>
-                            <input type="number" id="etg_section_content_width" name="etg_layout_settings[section_content_width]" value="<?php echo esc_attr( (string) $current_width ); ?>" min="320" max="2560" step="10" class="small-text" />
-                            <p class="description"><?php esc_html_e( 'Typical values: 1140 (Elementor Hello theme default, SaaSland), 1200 (wider marketing kits), 1024 (narrow/documentation kits). Clamped to 320–2560.', 'elementor-to-gutenberg' ); ?></p>
-                        </td>
-                    </tr>
-                    </tbody>
-                </table>
+            <div class="pgs-col">
+                <div class="pgs-pagetitle">
+                    <div>
+                        <h1><?php esc_html_e( 'Migration from Elementor to Gutenberg', 'elementor-to-gutenberg' ); ?></h1>
+                        <p><?php esc_html_e( 'Professional migration tool to convert Elementor layouts into native Gutenberg blocks.', 'elementor-to-gutenberg' ); ?></p>
+                    </div>
+                </div>
 
-                <hr />
-                <h2><?php esc_html_e( 'Conversion Preferences', 'elementor-to-gutenberg' ); ?></h2>
-                <p><?php esc_html_e( 'Global preferences applied to every conversion run by the Migration Wizard.', 'elementor-to-gutenberg' ); ?></p>
-                <table class="form-table" role="presentation">
-                    <tbody>
-                    <tr>
-                        <th scope="row"><?php esc_html_e( 'Metadata', 'elementor-to-gutenberg' ); ?></th>
-                        <td>
-                            <label>
-                                <input type="checkbox" name="etg_conversion_preferences[copy_meta_and_featured_image]" value="1" <?php checked( $copy_meta_enabled ); ?> />
-                                <?php esc_html_e( 'Copy metadata and featured image', 'elementor-to-gutenberg' ); ?>
-                            </label>
-                            <p class="description"><?php esc_html_e( 'When enabled, every converted page automatically copies post meta fields and the featured image from the source Elementor page. When disabled, the wizard skips this step entirely.', 'elementor-to-gutenberg' ); ?></p>
-                        </td>
-                    </tr>
-                    </tbody>
-                </table>
+                <?php if ( isset( $_GET['etg_settings_saved'] ) && '1' === $_GET['etg_settings_saved'] ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
+                    <div class="pgs-banner pgs-banner--success" role="status">
+                        <span class="pgs-banner__icon"><i data-icon="check-circle-2"></i></span>
+                        <div class="pgs-banner__body"><span class="pgs-banner__text"><?php esc_html_e( 'Settings saved.', 'elementor-to-gutenberg' ); ?></span></div>
+                    </div>
+                <?php endif; ?>
 
-                        <hr />
-                <h2><?php esc_html_e( 'Logging', 'elementor-to-gutenberg' ); ?></h2>
-                <p><?php esc_html_e( 'Track which widgets were converted, skipped, or produced no output during each migration. Results are visible in the Conversion Log page.', 'elementor-to-gutenberg' ); ?></p>
-                <table class="form-table" role="presentation">
-                    <tbody>
-                    <tr>
-                        <th scope="row"><?php esc_html_e( 'Conversion Logging', 'elementor-to-gutenberg' ); ?></th>
-                        <td>
-                            <label>
-                                <input type="checkbox" name="etg_logging_settings[enabled]" value="1" <?php checked( self::is_logging_enabled() ); ?> />
-                                <?php esc_html_e( 'Enable conversion logging', 'elementor-to-gutenberg' ); ?>
-                            </label>
-                            <p class="description">
-                                <?php
-                                printf(
-                                    wp_kses(
-                                        /* translators: %s: URL to Conversion Log page */
-                                        __( 'When enabled, each conversion records which widgets were converted, unsupported, or produced empty output. View the results in the <a href="%s">Conversion Log</a>. The log keeps the last 300 entries and does not affect conversion speed.', 'elementor-to-gutenberg' ),
-                                        array( 'a' => array( 'href' => array() ) )
-                                    ),
-                                    esc_url( admin_url( 'admin.php?page=etg-conversion-log' ) )
-                                );
-                                ?>
-                            </p>
-                        </td>
-                    </tr>
-                    </tbody>
-                </table>
+                <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+                    <?php wp_nonce_field( 'etg_save_settings' ); ?>
+                    <input type="hidden" name="action" value="etg_save_settings" />
 
-                <hr />
-                <h2><?php esc_html_e( 'Claude AI', 'elementor-to-gutenberg' ); ?></h2>
-                <p>
-                    <?php esc_html_e( 'Configure the Anthropic Claude API key used for automated AI page improvement.', 'elementor-to-gutenberg' ); ?>
-                    <a href="https://console.anthropic.com/" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Purchase Claude API key', 'elementor-to-gutenberg' ); ?></a>
-                </p>
-                <table class="form-table" role="presentation">
-                    <tbody>
-                    <tr>
-                        <th scope="row">
-                            <label for="etg_claude_api_key"><?php esc_html_e( 'Claude API Key', 'elementor-to-gutenberg' ); ?></label>
-                        </th>
-                        <td>
-                            <input type="password" id="etg_claude_api_key" name="etg_claude_settings[api_key]" value="<?php echo esc_attr( $claude_api_key ); ?>" class="regular-text" />
-                            <?php if ( '' !== $claude_api_key ) : ?>
-                                <span style="color:#46b450;font-weight:600;"><?php esc_html_e( 'Configured', 'elementor-to-gutenberg' ); ?></span>
-                            <?php else : ?>
-                                <span style="color:#b32d2e;"><?php esc_html_e( 'Not configured', 'elementor-to-gutenberg' ); ?></span>
-                            <?php endif; ?>
-                            <p class="description"><?php esc_html_e( 'Your Anthropic API key. Required for the "Improve with AI" automated workflow.', 'elementor-to-gutenberg' ); ?></p>
-                        </td>
-                    </tr>
-                    </tbody>
-                </table>
+                    <div class="pgs-stack" style="gap:var(--gap-section);">
 
-                <?php submit_button( esc_html__( 'Save Settings', 'elementor-to-gutenberg' ) ); ?>
-            </form>
+                        <div class="pgs-card">
+                            <div class="pgs-card__header">
+                                <div>
+                                    <div class="pgs-card__eyebrow"><?php esc_html_e( 'Output', 'elementor-to-gutenberg' ); ?></div>
+                                    <div class="pgs-card__title"><?php esc_html_e( 'Layout Settings', 'elementor-to-gutenberg' ); ?></div>
+                                </div>
+                            </div>
+                            <div class="pgs-card__body">
+                                <div class="pgs-setrow">
+                                    <div class="pgs-setrow__meta">
+                                        <label class="pgs-setrow__label" for="etg_section_content_width"><?php esc_html_e( 'Section content width', 'elementor-to-gutenberg' ); ?></label>
+                                        <div class="pgs-setrow__desc"><?php esc_html_e( 'Controls the content width applied to converted top-level Elementor sections. Match this to your Elementor kit\'s container width so converted pages render at the same width as the originals. Typical values: 1140, 1200, 1024. Clamped to 320–2560.', 'elementor-to-gutenberg' ); ?></div>
+                                    </div>
+                                    <div class="pgs-setrow__control">
+                                        <div class="pgs-field">
+                                            <div class="pgs-input">
+                                                <input class="pgs-input__el" type="number" id="etg_section_content_width" name="etg_layout_settings[section_content_width]" value="<?php echo esc_attr( (string) $current_width ); ?>" min="320" max="2560" step="10" />
+                                                <span class="pgs-input__affix">px</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pgs-card">
+                            <div class="pgs-card__header">
+                                <div>
+                                    <div class="pgs-card__eyebrow"><?php esc_html_e( 'Defaults', 'elementor-to-gutenberg' ); ?></div>
+                                    <div class="pgs-card__title"><?php esc_html_e( 'Conversion Preferences', 'elementor-to-gutenberg' ); ?></div>
+                                </div>
+                            </div>
+                            <div class="pgs-card__body">
+                                <div class="pgs-setrow">
+                                    <div class="pgs-setrow__meta">
+                                        <div class="pgs-setrow__label"><?php esc_html_e( 'Metadata', 'elementor-to-gutenberg' ); ?></div>
+                                        <div class="pgs-setrow__desc"><?php esc_html_e( 'When enabled, every converted page automatically copies post meta fields and the featured image from the source Elementor page. When disabled, the wizard skips this step entirely.', 'elementor-to-gutenberg' ); ?></div>
+                                    </div>
+                                    <div class="pgs-setrow__control">
+                                        <label class="pgs-check">
+                                            <input type="checkbox" class="pgs-check__input" name="etg_conversion_preferences[copy_meta_and_featured_image]" value="1" <?php checked( $copy_meta_enabled ); ?> />
+                                            <span class="pgs-check__box" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
+                                            <span class="pgs-check__text"><span class="pgs-check__label"><?php esc_html_e( 'Copy metadata and featured image', 'elementor-to-gutenberg' ); ?></span></span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pgs-card">
+                            <div class="pgs-card__header">
+                                <div>
+                                    <div class="pgs-card__eyebrow"><?php esc_html_e( 'Visibility', 'elementor-to-gutenberg' ); ?></div>
+                                    <div class="pgs-card__title"><?php esc_html_e( 'Logging', 'elementor-to-gutenberg' ); ?></div>
+                                </div>
+                            </div>
+                            <div class="pgs-card__body">
+                                <div class="pgs-setrow">
+                                    <div class="pgs-setrow__meta">
+                                        <div class="pgs-setrow__label"><?php esc_html_e( 'Conversion logging', 'elementor-to-gutenberg' ); ?></div>
+                                        <div class="pgs-setrow__desc">
+                                            <?php
+                                            printf(
+                                                wp_kses(
+                                                    /* translators: %s: URL to Conversion Log page */
+                                                    __( 'When enabled, each conversion records which widgets were converted, unsupported, or produced empty output. View the results in the <a href="%s">Conversion Log</a>. The log keeps the last 300 entries and does not affect conversion speed.', 'elementor-to-gutenberg' ),
+                                                    array( 'a' => array( 'href' => array() ) )
+                                                ),
+                                                esc_url( admin_url( 'admin.php?page=etg-conversion-log' ) )
+                                            );
+                                            ?>
+                                        </div>
+                                    </div>
+                                    <div class="pgs-setrow__control">
+                                        <label class="pgs-switch">
+                                            <input type="checkbox" role="switch" class="pgs-switch__input" name="etg_logging_settings[enabled]" value="1" <?php checked( self::is_logging_enabled() ); ?> />
+                                            <span class="pgs-switch__track" aria-hidden="true"></span>
+                                            <span class="pgs-switch__text"><span class="pgs-switch__label"><?php esc_html_e( 'Enable conversion logging', 'elementor-to-gutenberg' ); ?></span></span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pgs-card">
+                            <div class="pgs-card__header">
+                                <div>
+                                    <div class="pgs-card__eyebrow"><?php esc_html_e( 'Integration', 'elementor-to-gutenberg' ); ?></div>
+                                    <div class="pgs-card__title"><?php esc_html_e( 'Claude AI', 'elementor-to-gutenberg' ); ?></div>
+                                </div>
+                            </div>
+                            <div class="pgs-card__body">
+                                <div class="pgs-setrow">
+                                    <div class="pgs-setrow__meta">
+                                        <label class="pgs-setrow__label" for="etg_claude_api_key"><?php esc_html_e( 'Claude API Key', 'elementor-to-gutenberg' ); ?></label>
+                                        <div class="pgs-setrow__desc">
+                                            <?php esc_html_e( 'Your Anthropic API key. Required for the "Improve with AI" automated workflow.', 'elementor-to-gutenberg' ); ?>
+                                            <a href="https://console.anthropic.com/" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Purchase Claude API key', 'elementor-to-gutenberg' ); ?></a>
+                                        </div>
+                                    </div>
+                                    <div class="pgs-setrow__control">
+                                        <div class="pgs-field">
+                                            <div class="pgs-input pgs-input--mono">
+                                                <input class="pgs-input__el" type="password" id="etg_claude_api_key" name="etg_claude_settings[api_key]" value="<?php echo esc_attr( $claude_api_key ); ?>" autocomplete="off" />
+                                                <span class="pgs-input__affix">
+                                                    <?php if ( '' !== $claude_api_key ) : ?>
+                                                        <span class="pgs-pill pgs-pill--success"><span class="pgs-pill__icon"><i data-icon="check"></i></span><?php esc_html_e( 'Configured', 'elementor-to-gutenberg' ); ?></span>
+                                                    <?php else : ?>
+                                                        <span class="pgs-pill pgs-pill--neutral"><?php esc_html_e( 'Not configured', 'elementor-to-gutenberg' ); ?></span>
+                                                    <?php endif; ?>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pgs-actions-end">
+                            <button type="submit" class="pgs-btn pgs-btn--primary pgs-btn--md"><span class="pgs-btn__icon"><i data-icon="save"></i></span><span><?php esc_html_e( 'Save Settings', 'elementor-to-gutenberg' ); ?></span></button>
+                        </div>
+
+                    </div>
+                </form>
+            </div>
+
+        </div>
         </div>
 		<?php
 	}

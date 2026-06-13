@@ -66,6 +66,19 @@ class AI_Enhancement_Admin {
 		);
 	}
 
+	/**
+	 * Asset cache-busting version: file mtime while debugging, plugin version otherwise.
+	 *
+	 * @param string $rel Plugin-relative asset path.
+	 */
+	private static function asset_ver( string $rel ): string {
+		$path = GUTENBERG_PLUGIN_DIR_PATH . '/' . ltrim( $rel, '/' );
+		if ( defined( 'GUTENBERG_PLUGIN_DEBUG' ) && GUTENBERG_PLUGIN_DEBUG && file_exists( $path ) ) {
+			return (string) filemtime( $path );
+		}
+		return GUTENBERG_PLUGIN_VERSION;
+	}
+
 	public function enqueue_assets(): void {
 		if ( empty( $_GET['page'] ) || self::MENU_SLUG !== sanitize_key( wp_unslash( $_GET['page'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			return;
@@ -75,14 +88,22 @@ class AI_Enhancement_Admin {
 			'ele2gb-batch-wizard',
 			GUTENBERG_PLUGIN_CSS_DIR_URL . '/batch-wizard.css',
 			array(),
-			GUTENBERG_PLUGIN_VERSION
+			self::asset_ver( 'assets/css/batch-wizard.css' )
+		);
+
+		wp_enqueue_script(
+			'ele2gb-pgs-icons',
+			GUTENBERG_PLUGIN_JS_DIR_URL . '/pgs-icons.js',
+			array(),
+			self::asset_ver( 'assets/js/pgs-icons.js' ),
+			true
 		);
 
 		wp_enqueue_script(
 			'etg-ai-enhancement',
 			GUTENBERG_PLUGIN_JS_DIR_URL . '/ai-enhancement.js',
-			array(),
-			GUTENBERG_PLUGIN_VERSION,
+			array( 'ele2gb-pgs-icons' ),
+			self::asset_ver( 'assets/js/ai-enhancement.js' ),
 			true
 		);
 
@@ -111,10 +132,24 @@ class AI_Enhancement_Admin {
 
 		$has_pages = ! empty( $this->get_converted_pages() );
 		?>
-		<div class="wrap ele2gb-wizard-wrap">
-			<h1><?php esc_html_e( 'AI Enhancement', 'elementor-to-gutenberg' ); ?></h1>
+		<div class="wrap pgs ele2gb-wizard-wrap">
+			<header class="pgs-pluginhead">
+				<span class="pgs-pluginhead__brand"><span class="pgs-pluginhead__name"><?php esc_html_e( 'Migration from Elementor to Gutenberg', 'elementor-to-gutenberg' ); ?></span></span>
+			</header>
+			<hr class="wp-header-end" style="margin:0;border:0;">
 			<?php if ( ! $has_pages ) : ?>
-				<p><?php esc_html_e( 'No converted pages found. Use the Conversion Wizard to convert Elementor pages first.', 'elementor-to-gutenberg' ); ?></p>
+				<div class="pgs-col">
+					<div class="pgs-pagetitle">
+						<div>
+							<h1><?php esc_html_e( 'AI Enhancement', 'elementor-to-gutenberg' ); ?></h1>
+							<p><?php esc_html_e( 'Refine converted pages until they visually match the original.', 'elementor-to-gutenberg' ); ?></p>
+						</div>
+					</div>
+					<div class="pgs-banner pgs-banner--neutral" role="status">
+						<span class="pgs-banner__icon"><i data-icon="info"></i></span>
+						<div class="pgs-banner__body"><span class="pgs-banner__text"><?php esc_html_e( 'No converted pages found. Use the Conversion Wizard to convert Elementor pages first.', 'elementor-to-gutenberg' ); ?></span></div>
+					</div>
+				</div>
 			<?php else : ?>
 				<div id="etg-ai-enhancement-app"></div>
 			<?php endif; ?>

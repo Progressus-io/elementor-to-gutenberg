@@ -215,18 +215,21 @@ class Batch_Convert_Wizard {
 			return;
 		}
 
+		$css_path = GUTENBERG_PLUGIN_DIR_PATH . '/assets/css/batch-wizard.css';
+		$js_path  = GUTENBERG_PLUGIN_DIR_PATH . '/assets/js/batch-convert-wizard.js';
+
 		wp_enqueue_style(
 			'ele2gb-batch-wizard',
 			plugins_url( 'assets/css/batch-wizard.css', GUTENBERG_PLUGIN_MAIN_FILE ),
 			array(),
-			GUTENBERG_PLUGIN_VERSION
+			GUTENBERG_PLUGIN_DEBUG && file_exists( $css_path ) ? (string) filemtime( $css_path ) : GUTENBERG_PLUGIN_VERSION
 		);
 
 		wp_enqueue_script(
 			'ele2gb-batch-wizard',
 			plugins_url( 'assets/js/batch-convert-wizard.js', GUTENBERG_PLUGIN_MAIN_FILE ),
 			array(),
-			GUTENBERG_PLUGIN_VERSION,
+			GUTENBERG_PLUGIN_DEBUG && file_exists( $js_path ) ? (string) filemtime( $js_path ) : GUTENBERG_PLUGIN_VERSION,
 			true
 		);
 
@@ -265,6 +268,12 @@ class Batch_Convert_Wizard {
 		}
 
 		?>
+		<div class="wrap pgs" style="margin-bottom:0;">
+			<header class="pgs-pluginhead">
+				<span class="pgs-pluginhead__brand"><span class="pgs-pluginhead__name"><?php esc_html_e( 'Migration from Elementor to Gutenberg', 'elementor-to-gutenberg' ); ?></span></span>
+			</header>
+			<hr class="wp-header-end" style="margin:0;border:0;">
+		</div>
 		<div class="wrap ele2gb-wizard-wrap">
 			<h1 class="wp-heading-inline"><?php esc_html_e( 'Gutenberg Conversion Wizard', 'elementor-to-gutenberg' ); ?></h1>
 			<p class="description"><?php esc_html_e( 'Convert Elementor pages to Gutenberg blocks.', 'elementor-to-gutenberg' ); ?></p>
