@@ -120,18 +120,21 @@ class AI_Improvement_Admin {
 			return;
 		}
 
+		$css_path = GUTENBERG_PLUGIN_DIR_PATH . '/assets/css/ai-improve.css';
+		$js_path  = GUTENBERG_PLUGIN_DIR_PATH . '/assets/js/ai-improve.js';
+
 		wp_enqueue_style(
 			'ele2gb-ai-improve',
 			plugins_url( 'assets/css/ai-improve.css', GUTENBERG_PLUGIN_MAIN_FILE ),
 			array(),
-			GUTENBERG_PLUGIN_VERSION
+			GUTENBERG_PLUGIN_DEBUG && file_exists( $css_path ) ? (string) filemtime( $css_path ) : GUTENBERG_PLUGIN_VERSION
 		);
 
 		wp_enqueue_script(
 			'ele2gb-ai-improve',
 			plugins_url( 'assets/js/ai-improve.js', GUTENBERG_PLUGIN_MAIN_FILE ),
 			array(),
-			GUTENBERG_PLUGIN_VERSION,
+			GUTENBERG_PLUGIN_DEBUG && file_exists( $js_path ) ? (string) filemtime( $js_path ) : GUTENBERG_PLUGIN_VERSION,
 			true
 		);
 
