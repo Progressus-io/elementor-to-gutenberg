@@ -1,11 +1,11 @@
 <?php
 
-namespace Progressus\Gutenberg\Admin\Widget;
+namespace Progressus\MigrateElementorToGutenberg\Admin\Widget;
 
-use Progressus\Gutenberg\Admin\Admin_Settings;
-use Progressus\Gutenberg\Admin\Helper\Block_Builder;
-use Progressus\Gutenberg\Admin\Helper\WooCommerce_Style_Builder;
-use Progressus\Gutenberg\Admin\Widget_Handler_Interface;
+use Progressus\MigrateElementorToGutenberg\Admin\Admin_Settings;
+use Progressus\MigrateElementorToGutenberg\Admin\Helper\Block_Builder;
+use Progressus\MigrateElementorToGutenberg\Admin\Helper\WooCommerce_Style_Builder;
+use Progressus\MigrateElementorToGutenberg\Admin\Widget_Handler_Interface;
 
 defined( 'ABSPATH' ) || exit;
 

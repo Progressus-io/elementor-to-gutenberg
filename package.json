@@ -1,5 +1,5 @@
 {
-	"name": "gutenberg-plugin",
+	"name": "migrate-elementor-to-gutenberg",
 	"version": "1.0.0",
 	"description": "",
 	"main": "build/index.js",

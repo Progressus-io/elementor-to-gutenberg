@@ -1,7 +1,7 @@
 /**
  * Automatically bump the version of the plugin.
  *
- * @package Progressus\Gutenberg
+ * @package Progressus\MigrateElementorToGutenberg
  */
 
 const fs       = require( 'fs' );
@@ -49,4 +49,4 @@ function bumpPluginVersion( path ) {
 	fs.writeFileSync( path, fileContent );
 }
 
-bumpPluginVersion( './gutenberg-plugin.php' );
+bumpPluginVersion( './migrate-elementor-to-gutenberg.php' );

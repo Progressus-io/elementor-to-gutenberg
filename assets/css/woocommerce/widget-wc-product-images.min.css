@@ -1,9 +1,9 @@
-:where([class*="etg-page-"] [class*="etg-widget-"])
+:where([class*="metg-page-"] [class*="metg-widget-"])
 .woocommerce div.product .woocommerce-product-gallery__trigger + .woocommerce-product-gallery__wrapper{
     overflow:hidden
 }
 
-:where([class*="etg-page-"] [class*="etg-widget-"])
+:where([class*="metg-page-"] [class*="metg-widget-"])
 .woocommerce div.product :is(
   .woocommerce-product-gallery,
   .wc-block-product

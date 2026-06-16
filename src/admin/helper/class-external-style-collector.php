@@ -1,6 +1,6 @@
 <?php
 
-namespace Progressus\Gutenberg\Admin\Helper;
+namespace Progressus\MigrateElementorToGutenberg\Admin\Helper;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -193,7 +193,7 @@ class External_Style_Collector {
 
 		// Generate a stable-ish class per extracted set.
 		$fingerprint = md5( $block_slug . '|' . wp_json_encode( $extracted ) );
-		$class       = 'etg-ext-' . substr( $fingerprint, 0, 10 );
+		$class       = 'metg-ext-' . substr( $fingerprint, 0, 10 );
 
 		$attrs['className'] = $this->append_class( isset( $attrs['className'] ) ? (string) $attrs['className'] : '', $class );
 
@@ -223,7 +223,7 @@ class External_Style_Collector {
 		}
 
 		$fingerprint = md5( $block_slug . '|' . wp_json_encode( $declarations ) );
-		$class       = 'etg-ext-' . substr( $fingerprint, 0, 10 );
+		$class       = 'metg-ext-' . substr( $fingerprint, 0, 10 );
 
 		$this->add_rule( '.' . $class, $declarations );
 		$this->inventory['externalized'][] = array(

@@ -2,13 +2,13 @@
 /**
  * Widget handler for Elementor posts widget.
  *
- * @package Progressus\Gutenberg
+ * @package Progressus\MigrateElementorToGutenberg
  */
 
-namespace Progressus\Gutenberg\Admin\Widget;
+namespace Progressus\MigrateElementorToGutenberg\Admin\Widget;
 
-use Progressus\Gutenberg\Admin\Helper\Block_Builder;
-use Progressus\Gutenberg\Admin\Widget_Handler_Interface;
+use Progressus\MigrateElementorToGutenberg\Admin\Helper\Block_Builder;
+use Progressus\MigrateElementorToGutenberg\Admin\Widget_Handler_Interface;
 
 defined( 'ABSPATH' ) || exit;
 

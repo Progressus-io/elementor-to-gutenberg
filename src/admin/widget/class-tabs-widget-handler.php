@@ -1,10 +1,10 @@
 <?php
 
-namespace Progressus\Gutenberg\Admin\Widget;
+namespace Progressus\MigrateElementorToGutenberg\Admin\Widget;
 
 defined( 'ABSPATH' ) || exit;
 
-use Progressus\Gutenberg\Admin\Widget_Handler_Interface;
+use Progressus\MigrateElementorToGutenberg\Admin\Widget_Handler_Interface;
 use function esc_attr;
 use function wp_strip_all_tags;
 

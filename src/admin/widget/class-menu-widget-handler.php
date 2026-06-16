@@ -2,15 +2,15 @@
 /**
  * Menu Widget Handler
  *
- * @package Progressus\Gutenberg
+ * @package Progressus\MigrateElementorToGutenberg
  */
 
-namespace Progressus\Gutenberg\Admin\Widget;
+namespace Progressus\MigrateElementorToGutenberg\Admin\Widget;
 
 defined( 'ABSPATH' ) || exit;
 
-use Progressus\Gutenberg\Admin\Widget_Handler_Interface;
-use Progressus\Gutenberg\Admin\Helper\Style_Parser;
+use Progressus\MigrateElementorToGutenberg\Admin\Widget_Handler_Interface;
+use Progressus\MigrateElementorToGutenberg\Admin\Helper\Style_Parser;
 
 /**
  * Widget handler for Elementor nav-menu widget.
@@ -97,7 +97,7 @@ class Menu_Widget_Handler implements Widget_Handler_Interface {
 					'post_type'      => 'wp_navigation',
 					'post_status'    => 'any',
 					// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
-					'meta_key'       => 'etg_source_menu_term_id',
+					'meta_key'       => 'metg_source_menu_term_id',
 					// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
 					'meta_value'     => $menu_object->term_id,
 					'posts_per_page' => 1,
@@ -119,7 +119,7 @@ class Menu_Widget_Handler implements Widget_Handler_Interface {
 		}
 
 		if ( ! $post_id && ! empty( $element_id ) ) {
-			$slug     = sanitize_title( 'etg-menu-' . $element_id );
+			$slug     = sanitize_title( 'metg-menu-' . $element_id );
 			$existing = get_page_by_path( $slug, OBJECT, 'wp_navigation' );
 			if ( $existing ) {
 				$post_id = (int) $existing->ID;
@@ -144,7 +144,7 @@ class Menu_Widget_Handler implements Widget_Handler_Interface {
 		);
 
 		if ( $menu_object ) {
-			update_post_meta( $post_id, 'etg_source_menu_term_id', $menu_object->term_id );
+			update_post_meta( $post_id, 'metg_source_menu_term_id', $menu_object->term_id );
 		}
 
 		return (int) $post_id;
@@ -169,10 +169,10 @@ class Menu_Widget_Handler implements Widget_Handler_Interface {
 		}
 
 		if ( ! empty( $element_id ) ) {
-			return 'ETG Menu ' . $element_id;
+			return 'Menu ' . $element_id;
 		}
 
-		return 'ETG Menu';
+		return 'Menu';
 	}
 
 	/**

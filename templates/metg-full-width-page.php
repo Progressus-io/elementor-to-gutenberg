@@ -4,14 +4,14 @@
  * Template Post Type: page
  *
  *
- * @package Progressus\Gutenberg
+ * @package Progressus\MigrateElementorToGutenberg
  */
 
 defined( 'ABSPATH' ) || exit;
 
 get_header();
 ?>
-<main id="content" class="site-main etg-full-width-page" role="main">
+<main id="content" class="site-main metg-full-width-page" role="main">
 	<?php
 	while ( have_posts() ) :
 		the_post();

@@ -2,19 +2,19 @@
 /**
  * Automated AI improvement admin workflow.
  *
- * @package Progressus\Gutenberg
+ * @package Progressus\MigrateElementorToGutenberg
  */
 
-namespace Progressus\Gutenberg\Admin;
+namespace Progressus\MigrateElementorToGutenberg\Admin;
 
 defined( 'ABSPATH' ) || exit;
 
-use Progressus\Gutenberg\Admin\Helper\AI_Prompt_Builder;
-use Progressus\Gutenberg\Admin\Helper\AI_Workspace_Repository;
-use Progressus\Gutenberg\Admin\Helper\External_CSS_Service;
-use Progressus\Gutenberg\Admin\Helper\AI_Remediation_Screenshot_Api_Service;
-use Progressus\Gutenberg\Admin\Helper\AI_Remediation_Screenshot_Meta_Service;
-use Progressus\Gutenberg\Admin\Helper\Claude_Api_Service;
+use Progressus\MigrateElementorToGutenberg\Admin\Helper\AI_Prompt_Builder;
+use Progressus\MigrateElementorToGutenberg\Admin\Helper\AI_Workspace_Repository;
+use Progressus\MigrateElementorToGutenberg\Admin\Helper\External_CSS_Service;
+use Progressus\MigrateElementorToGutenberg\Admin\Helper\AI_Remediation_Screenshot_Api_Service;
+use Progressus\MigrateElementorToGutenberg\Admin\Helper\AI_Remediation_Screenshot_Meta_Service;
+use Progressus\MigrateElementorToGutenberg\Admin\Helper\Claude_Api_Service;
 use WP_Error;
 use WP_Post;
 
@@ -63,11 +63,11 @@ use function wp_update_post;
 
 class AI_Improvement_Admin {
 
-	public const MENU_SLUG = 'ele2gb-ai-improvement';
+	public const MENU_SLUG = 'metg-ai-improvement';
 
-	private const NONCE_AUTO_IMPROVE   = 'ele2gb_ai_auto_improve';
-	private const NONCE_REFINE         = 'ele2gb_ai_refine';
-	private const NONCE_MOBILE_IMPROVE = 'ele2gb_ai_mobile_improve';
+	private const NONCE_AUTO_IMPROVE   = 'metg_ai_auto_improve';
+	private const NONCE_REFINE         = 'metg_ai_refine';
+	private const NONCE_MOBILE_IMPROVE = 'metg_ai_mobile_improve';
 
 	/**
 	 * Markers that wrap the AI mobile CSS block inside the external CSS file.
@@ -102,10 +102,10 @@ class AI_Improvement_Admin {
 	private function __construct() {
 		add_action( 'admin_menu', array( $this, 'register_menu' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
-		add_action( 'admin_post_ele2gb_ai_auto_improve', array( $this, 'handle_auto_improve' ) );
-		add_action( 'admin_post_ele2gb_ai_refine', array( $this, 'handle_refine' ) );
-		add_action( 'admin_post_ele2gb_ai_mobile_improve', array( $this, 'handle_mobile_improve' ) );
-		add_action( 'admin_post_ele2gb_ai_regenerate_screenshots', array( $this, 'handle_regenerate_screenshots' ) );
+		add_action( 'admin_post_metg_ai_auto_improve', array( $this, 'handle_auto_improve' ) );
+		add_action( 'admin_post_metg_ai_refine', array( $this, 'handle_refine' ) );
+		add_action( 'admin_post_metg_ai_mobile_improve', array( $this, 'handle_mobile_improve' ) );
+		add_action( 'admin_post_metg_ai_regenerate_screenshots', array( $this, 'handle_regenerate_screenshots' ) );
 	}
 
 	/**
@@ -120,21 +120,21 @@ class AI_Improvement_Admin {
 			return;
 		}
 
-		$css_path = GUTENBERG_PLUGIN_DIR_PATH . '/assets/css/ai-improve.css';
-		$js_path  = GUTENBERG_PLUGIN_DIR_PATH . '/assets/js/ai-improve.js';
+		$css_path = METG_DIR_PATH . '/assets/css/ai-improve.css';
+		$js_path  = METG_DIR_PATH . '/assets/js/ai-improve.js';
 
 		wp_enqueue_style(
-			'ele2gb-ai-improve',
-			plugins_url( 'assets/css/ai-improve.css', GUTENBERG_PLUGIN_MAIN_FILE ),
+			'metg-ai-improve',
+			plugins_url( 'assets/css/ai-improve.css', METG_MAIN_FILE ),
 			array(),
-			GUTENBERG_PLUGIN_DEBUG && file_exists( $css_path ) ? (string) filemtime( $css_path ) : GUTENBERG_PLUGIN_VERSION
+			METG_DEBUG && file_exists( $css_path ) ? (string) filemtime( $css_path ) : METG_VERSION
 		);
 
 		wp_enqueue_script(
-			'ele2gb-ai-improve',
-			plugins_url( 'assets/js/ai-improve.js', GUTENBERG_PLUGIN_MAIN_FILE ),
+			'metg-ai-improve',
+			plugins_url( 'assets/js/ai-improve.js', METG_MAIN_FILE ),
 			array(),
-			GUTENBERG_PLUGIN_DEBUG && file_exists( $js_path ) ? (string) filemtime( $js_path ) : GUTENBERG_PLUGIN_VERSION,
+			METG_DEBUG && file_exists( $js_path ) ? (string) filemtime( $js_path ) : METG_VERSION,
 			true
 		);
 
@@ -142,32 +142,32 @@ class AI_Improvement_Admin {
 		$source_id_asset = isset( $_GET['source_id'] ) ? absint( wp_unslash( $_GET['source_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
 		wp_localize_script(
-			'ele2gb-ai-improve',
-			'ele2gbAiImprove',
+			'metg-ai-improve',
+			'metgAiImprove',
 			array(
-				'processingLabel'     => __( 'Processing…', 'elementor-to-gutenberg' ),
-				'improvingLabel'      => __( 'Improving with AI…', 'elementor-to-gutenberg' ),
-				'refiningLabel'       => __( 'Refining with AI…', 'elementor-to-gutenberg' ),
-				'mobileLabel'         => __( 'Improving mobile with AI…', 'elementor-to-gutenberg' ),
+				'processingLabel'     => __( 'Processing…', 'migrate-elementor-to-gutenberg' ),
+				'improvingLabel'      => __( 'Improving with AI…', 'migrate-elementor-to-gutenberg' ),
+				'refiningLabel'       => __( 'Refining with AI…', 'migrate-elementor-to-gutenberg' ),
+				'mobileLabel'         => __( 'Improving mobile with AI…', 'migrate-elementor-to-gutenberg' ),
 				'ajaxUrl'             => admin_url( 'admin-ajax.php' ),
 				'feedbackNonce'       => wp_create_nonce( AI_Enhancement_Admin::FEEDBACK_NONCE ),
 				'targetId'            => $target_id_asset,
 				'sourceId'            => $source_id_asset,
-				'feedbackTitle'       => __( 'How did AI Enhancement go?', 'elementor-to-gutenberg' ),
-				'feedbackIssue'       => __( 'Issue type', 'elementor-to-gutenberg' ),
-				'feedbackIssueDetail' => __( 'Describe the issue', 'elementor-to-gutenberg' ),
-				'feedbackNote'        => __( 'Additional notes', 'elementor-to-gutenberg' ),
-				'feedbackConsent'     => __( 'I consent to sending this anonymised AI enhancement report to the plugin developer for quality improvement. No passwords, API keys, or user data are included.', 'elementor-to-gutenberg' ),
-				'feedbackSubmit'      => __( 'Send Feedback', 'elementor-to-gutenberg' ),
-				'feedbackCancel'      => __( 'Cancel', 'elementor-to-gutenberg' ),
-				'feedbackSending'     => __( 'Sending…', 'elementor-to-gutenberg' ),
-				'feedbackSuccess'     => __( 'Thank you! Feedback submitted.', 'elementor-to-gutenberg' ),
-				'feedbackNoIssue'     => __( 'No issue', 'elementor-to-gutenberg' ),
-				'feedbackLayout'      => __( 'Layout issues after AI', 'elementor-to-gutenberg' ),
-				'feedbackMissing'     => __( 'Wrong or missing content', 'elementor-to-gutenberg' ),
-				'feedbackCss'         => __( 'CSS / styling problems', 'elementor-to-gutenberg' ),
-				'feedbackQuality'     => __( 'AI output quality', 'elementor-to-gutenberg' ),
-				'feedbackOther'       => __( 'Other', 'elementor-to-gutenberg' ),
+				'feedbackTitle'       => __( 'How did AI Enhancement go?', 'migrate-elementor-to-gutenberg' ),
+				'feedbackIssue'       => __( 'Issue type', 'migrate-elementor-to-gutenberg' ),
+				'feedbackIssueDetail' => __( 'Describe the issue', 'migrate-elementor-to-gutenberg' ),
+				'feedbackNote'        => __( 'Additional notes', 'migrate-elementor-to-gutenberg' ),
+				'feedbackConsent'     => __( 'I consent to sending this anonymised AI enhancement report to the plugin developer for quality improvement. No passwords, API keys, or user data are included.', 'migrate-elementor-to-gutenberg' ),
+				'feedbackSubmit'      => __( 'Send Feedback', 'migrate-elementor-to-gutenberg' ),
+				'feedbackCancel'      => __( 'Cancel', 'migrate-elementor-to-gutenberg' ),
+				'feedbackSending'     => __( 'Sending…', 'migrate-elementor-to-gutenberg' ),
+				'feedbackSuccess'     => __( 'Thank you! Feedback submitted.', 'migrate-elementor-to-gutenberg' ),
+				'feedbackNoIssue'     => __( 'No issue', 'migrate-elementor-to-gutenberg' ),
+				'feedbackLayout'      => __( 'Layout issues after AI', 'migrate-elementor-to-gutenberg' ),
+				'feedbackMissing'     => __( 'Wrong or missing content', 'migrate-elementor-to-gutenberg' ),
+				'feedbackCss'         => __( 'CSS / styling problems', 'migrate-elementor-to-gutenberg' ),
+				'feedbackQuality'     => __( 'AI output quality', 'migrate-elementor-to-gutenberg' ),
+				'feedbackOther'       => __( 'Other', 'migrate-elementor-to-gutenberg' ),
 			)
 		);
 	}
@@ -181,8 +181,8 @@ class AI_Improvement_Admin {
 		// listing it in the sidebar would just be noise.
 		add_submenu_page(
 			null,
-			esc_html__( 'Improve Converted Page with AI', 'elementor-to-gutenberg' ),
-			esc_html__( 'Improve Converted Page with AI', 'elementor-to-gutenberg' ),
+			esc_html__( 'Improve Converted Page with AI', 'migrate-elementor-to-gutenberg' ),
+			esc_html__( 'Improve Converted Page with AI', 'migrate-elementor-to-gutenberg' ),
 			'edit_pages',
 			self::MENU_SLUG,
 			array( $this, 'render_page' )
@@ -208,41 +208,41 @@ class AI_Improvement_Admin {
 	 */
 	public function render_page(): void {
 		if ( ! current_user_can( 'edit_pages' ) ) {
-			wp_die( esc_html__( 'You do not have permission to access this page.', 'elementor-to-gutenberg' ) );
+			wp_die( esc_html__( 'You do not have permission to access this page.', 'migrate-elementor-to-gutenberg' ) );
 		}
 
 		$target_id = isset( $_GET['target_id'] ) ? absint( wp_unslash( $_GET['target_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$source_id = isset( $_GET['source_id'] ) ? absint( wp_unslash( $_GET['source_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
 		if ( $target_id <= 0 ) {
-			wp_die( esc_html__( 'Missing converted Gutenberg page ID.', 'elementor-to-gutenberg' ) );
+			wp_die( esc_html__( 'Missing converted Gutenberg page ID.', 'migrate-elementor-to-gutenberg' ) );
 		}
 
 		$target_post = get_post( $target_id );
 		if ( ! $target_post instanceof WP_Post ) {
-			wp_die( esc_html__( 'Converted Gutenberg page not found.', 'elementor-to-gutenberg' ) );
+			wp_die( esc_html__( 'Converted Gutenberg page not found.', 'migrate-elementor-to-gutenberg' ) );
 		}
 
 		if ( ! current_user_can( 'edit_post', $target_id ) ) {
-			wp_die( esc_html__( 'You do not have permission to edit this page.', 'elementor-to-gutenberg' ) );
+			wp_die( esc_html__( 'You do not have permission to edit this page.', 'migrate-elementor-to-gutenberg' ) );
 		}
 
 		if ( $source_id <= 0 ) {
-			$source_id = (int) get_post_meta( $target_id, '_ele2gb_source_id', true );
+			$source_id = (int) get_post_meta( $target_id, '_metg_source_id', true );
 		}
 
 		if ( $source_id <= 0 ) {
-			wp_die( esc_html__( 'Source Elementor page ID could not be resolved.', 'elementor-to-gutenberg' ) );
+			wp_die( esc_html__( 'Source Elementor page ID could not be resolved.', 'migrate-elementor-to-gutenberg' ) );
 		}
 
-		$stored_source_id = (int) get_post_meta( $target_id, '_ele2gb_source_id', true );
+		$stored_source_id = (int) get_post_meta( $target_id, '_metg_source_id', true );
 		if ( $stored_source_id > 0 && $stored_source_id !== $source_id ) {
-			wp_die( esc_html__( 'The selected source and target page mapping is invalid.', 'elementor-to-gutenberg' ) );
+			wp_die( esc_html__( 'The selected source and target page mapping is invalid.', 'migrate-elementor-to-gutenberg' ) );
 		}
 
 		$source_post = get_post( $source_id );
 		if ( ! $source_post instanceof WP_Post ) {
-			wp_die( esc_html__( 'Source Elementor page not found.', 'elementor-to-gutenberg' ) );
+			wp_die( esc_html__( 'Source Elementor page not found.', 'migrate-elementor-to-gutenberg' ) );
 		}
 
 		$gutenberg_content = (string) get_post_field( 'post_content', $target_id );
@@ -292,7 +292,7 @@ class AI_Improvement_Admin {
 		);
 		AI_Workspace_Repository::save( $target_id, $workspace_to_save );
 
-		$notice_code = isset( $_GET['ele2gb_ai_notice'] ) ? sanitize_text_field( wp_unslash( $_GET['ele2gb_ai_notice'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$notice_code = isset( $_GET['metg_ai_notice'] ) ? sanitize_text_field( wp_unslash( $_GET['metg_ai_notice'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$this->render_notice( $notice_code, $target_id );
 		$this->render_form( $target_post, $source_post, AI_Workspace_Repository::get( $target_id ) );
 	}
@@ -302,7 +302,7 @@ class AI_Improvement_Admin {
 	 */
 	public function handle_auto_improve(): void {
 		if ( ! current_user_can( 'edit_pages' ) ) {
-			wp_die( esc_html__( 'You do not have permission to perform this action.', 'elementor-to-gutenberg' ) );
+			wp_die( esc_html__( 'You do not have permission to perform this action.', 'migrate-elementor-to-gutenberg' ) );
 		}
 
 		check_admin_referer( self::NONCE_AUTO_IMPROVE );
@@ -311,14 +311,14 @@ class AI_Improvement_Admin {
 		$source_id = isset( $_POST['source_id'] ) ? absint( wp_unslash( $_POST['source_id'] ) ) : 0;
 
 		if ( $target_id <= 0 || $source_id <= 0 ) {
-			wp_die( esc_html__( 'Source or target page is missing.', 'elementor-to-gutenberg' ) );
+			wp_die( esc_html__( 'Source or target page is missing.', 'migrate-elementor-to-gutenberg' ) );
 		}
 
 		if ( ! current_user_can( 'edit_post', $target_id ) ) {
-			wp_die( esc_html__( 'You do not have permission to edit this page.', 'elementor-to-gutenberg' ) );
+			wp_die( esc_html__( 'You do not have permission to edit this page.', 'migrate-elementor-to-gutenberg' ) );
 		}
 
-		$stored_source_id = (int) get_post_meta( $target_id, '_ele2gb_source_id', true );
+		$stored_source_id = (int) get_post_meta( $target_id, '_metg_source_id', true );
 		if ( $stored_source_id > 0 && $stored_source_id !== $source_id ) {
 			$this->redirect_with_notice( $source_id, $target_id, 'invalid_mapping' );
 		}
@@ -328,7 +328,7 @@ class AI_Improvement_Admin {
 		if ( ! $result['success'] ) {
 			$notice = $result['notice'] ?? 'ai_failed';
 			// Store the concrete reason so the redirect target can show "why".
-			set_transient( 'ele2gb_ai_error_' . $target_id, $result['error'], 60 );
+			set_transient( 'metg_ai_error_' . $target_id, $result['error'], 60 );
 			$this->redirect_with_notice( $source_id, $target_id, $notice );
 		}
 
@@ -369,7 +369,7 @@ class AI_Improvement_Admin {
 			return $failure(
 				sprintf(
 					/* translators: %s: screenshot error details */
-					__( 'Screenshots could not be generated, so AI enhancement was not run: %s', 'elementor-to-gutenberg' ),
+					__( 'Screenshots could not be generated, so AI enhancement was not run: %s', 'migrate-elementor-to-gutenberg' ),
 					$screenshot_result['error']
 				),
 				'screenshot_failed'
@@ -441,7 +441,7 @@ class AI_Improvement_Admin {
 				)
 			);
 			return $failure(
-				__( 'No valid Gutenberg content could be parsed from the AI response.', 'elementor-to-gutenberg' ),
+				__( 'No valid Gutenberg content could be parsed from the AI response.', 'migrate-elementor-to-gutenberg' ),
 				'ai_parse_failed'
 			);
 		}
@@ -489,7 +489,7 @@ class AI_Improvement_Admin {
 		$workspace['updated_at']             = current_time( 'mysql' );
 		AI_Workspace_Repository::save( $target_id, $workspace );
 
-		update_post_meta( $target_id, '_ele2gb_last_ai_improved', current_time( 'mysql' ) );
+		update_post_meta( $target_id, '_metg_last_ai_improved', current_time( 'mysql' ) );
 
 		return array(
 			'success' => true,
@@ -505,7 +505,7 @@ class AI_Improvement_Admin {
 	 */
 	private static function log_improvement( array $data ): void {
 		$upload_dir = wp_upload_dir();
-		$log_file   = trailingslashit( $upload_dir['basedir'] ) . 'ele2gb-claude-api.log';
+		$log_file   = trailingslashit( $upload_dir['basedir'] ) . 'metg-claude-api.log';
 
 		$entry = array_merge(
 			array(
@@ -545,7 +545,7 @@ class AI_Improvement_Admin {
 
 		// Maintenance mode: the whole site returns the maintenance screen.
 		if ( file_exists( (string) ABSPATH . '.maintenance' ) || ( defined( 'WP_MAINTENANCE_MODE' ) && WP_MAINTENANCE_MODE ) ) {
-			return $deny( __( 'The website is in maintenance mode, so the screenshot service cannot load it. Disable maintenance mode and try again.', 'elementor-to-gutenberg' ) );
+			return $deny( __( 'The website is in maintenance mode, so the screenshot service cannot load it. Disable maintenance mode and try again.', 'migrate-elementor-to-gutenberg' ) );
 		}
 
 		$is_library = 'elementor_library' === get_post_type( $source_id );
@@ -556,16 +556,16 @@ class AI_Improvement_Admin {
 		} else {
 			// Publish / password checks only apply to standalone converted pages.
 			if ( 'publish' !== (string) get_post_status( $target_id ) ) {
-				return $deny( __( 'The converted page is not published yet. Publish it so the screenshot service can load it, then try again.', 'elementor-to-gutenberg' ) );
+				return $deny( __( 'The converted page is not published yet. Publish it so the screenshot service can load it, then try again.', 'migrate-elementor-to-gutenberg' ) );
 			}
 			if ( '' !== (string) get_post_field( 'post_password', $target_id ) ) {
-				return $deny( __( 'The converted page is password-protected. Remove the password so the screenshot service can load it, then try again.', 'elementor-to-gutenberg' ) );
+				return $deny( __( 'The converted page is password-protected. Remove the password so the screenshot service can load it, then try again.', 'migrate-elementor-to-gutenberg' ) );
 			}
 			$page_url = (string) get_permalink( $target_id );
 		}
 
 		if ( '' === $page_url ) {
-			return $deny( __( 'The public URL of the converted page could not be resolved.', 'elementor-to-gutenberg' ) );
+			return $deny( __( 'The public URL of the converted page could not be resolved.', 'migrate-elementor-to-gutenberg' ) );
 		}
 
 		$host = (string) wp_parse_url( $page_url, PHP_URL_HOST );
@@ -573,7 +573,7 @@ class AI_Improvement_Admin {
 			return $deny(
 				sprintf(
 					/* translators: %s: site hostname (e.g. localhost) */
-					__( 'This site (%s) is only reachable on your local network, so the remote screenshot service cannot open it. AI Enhancement needs a publicly accessible URL — run it on a live or staging site.', 'elementor-to-gutenberg' ),
+					__( 'This site (%s) is only reachable on your local network, so the remote screenshot service cannot open it. AI Enhancement needs a publicly accessible URL — run it on a live or staging site.', 'migrate-elementor-to-gutenberg' ),
 					$host
 				)
 			);
@@ -585,7 +585,7 @@ class AI_Improvement_Admin {
 				'timeout'     => 15,
 				'redirection' => 3,
 				'sslverify'   => true,
-				'headers'     => array( 'User-Agent' => 'ETG-AI-Enhancement/1.0' ),
+				'headers'     => array( 'User-Agent' => 'METG-AI-Enhancement/1.0' ),
 			)
 		);
 
@@ -595,7 +595,7 @@ class AI_Improvement_Admin {
 				return $deny(
 					sprintf(
 						/* translators: 1: page URL, 2: HTTP status code */
-						__( 'The converted page (%1$s) returned HTTP status %2$d, so the screenshot service cannot load it. Check that the page is public and not behind login or HTTP authentication.', 'elementor-to-gutenberg' ),
+						__( 'The converted page (%1$s) returned HTTP status %2$d, so the screenshot service cannot load it. Check that the page is public and not behind login or HTTP authentication.', 'migrate-elementor-to-gutenberg' ),
 						$page_url,
 						$code
 					)
@@ -650,7 +650,7 @@ class AI_Improvement_Admin {
 	 */
 	public function handle_refine(): void {
 		if ( ! current_user_can( 'edit_pages' ) ) {
-			wp_die( esc_html__( 'You do not have permission to perform this action.', 'elementor-to-gutenberg' ) );
+			wp_die( esc_html__( 'You do not have permission to perform this action.', 'migrate-elementor-to-gutenberg' ) );
 		}
 
 		check_admin_referer( self::NONCE_REFINE );
@@ -660,14 +660,14 @@ class AI_Improvement_Admin {
 		$focus_instruction = isset( $_POST['focus_instruction'] ) ? sanitize_textarea_field( wp_unslash( $_POST['focus_instruction'] ) ) : '';
 
 		if ( $target_id <= 0 || $source_id <= 0 ) {
-			wp_die( esc_html__( 'Source or target page is missing.', 'elementor-to-gutenberg' ) );
+			wp_die( esc_html__( 'Source or target page is missing.', 'migrate-elementor-to-gutenberg' ) );
 		}
 
 		if ( ! current_user_can( 'edit_post', $target_id ) ) {
-			wp_die( esc_html__( 'You do not have permission to edit this page.', 'elementor-to-gutenberg' ) );
+			wp_die( esc_html__( 'You do not have permission to edit this page.', 'migrate-elementor-to-gutenberg' ) );
 		}
 
-		$stored_source_id = (int) get_post_meta( $target_id, '_ele2gb_source_id', true );
+		$stored_source_id = (int) get_post_meta( $target_id, '_metg_source_id', true );
 		if ( $stored_source_id > 0 && $stored_source_id !== $source_id ) {
 			$this->redirect_with_notice( $source_id, $target_id, 'invalid_mapping' );
 		}
@@ -676,7 +676,7 @@ class AI_Improvement_Admin {
 
 		if ( ! $result['success'] ) {
 			$notice = $result['notice'] ?? 'ai_failed';
-			set_transient( 'ele2gb_ai_error_' . $target_id, $result['error'], 60 );
+			set_transient( 'metg_ai_error_' . $target_id, $result['error'], 60 );
 			$this->redirect_with_notice( $source_id, $target_id, $notice );
 		}
 
@@ -717,7 +717,7 @@ class AI_Improvement_Admin {
 			return $failure(
 				sprintf(
 					/* translators: %s: screenshot error details */
-					__( 'Screenshots could not be generated, so AI refinement was not run: %s', 'elementor-to-gutenberg' ),
+					__( 'Screenshots could not be generated, so AI refinement was not run: %s', 'migrate-elementor-to-gutenberg' ),
 					$screenshot_result['error']
 				),
 				'screenshot_failed'
@@ -795,7 +795,7 @@ class AI_Improvement_Admin {
 				)
 			);
 			return $failure(
-				__( 'No valid Gutenberg content could be parsed from the AI refinement response.', 'elementor-to-gutenberg' ),
+				__( 'No valid Gutenberg content could be parsed from the AI refinement response.', 'migrate-elementor-to-gutenberg' ),
 				'ai_parse_failed'
 			);
 		}
@@ -836,7 +836,7 @@ class AI_Improvement_Admin {
 		$workspace['updated_at']             = current_time( 'mysql' );
 		AI_Workspace_Repository::save( $target_id, $workspace );
 
-		update_post_meta( $target_id, '_ele2gb_last_ai_improved', current_time( 'mysql' ) );
+		update_post_meta( $target_id, '_metg_last_ai_improved', current_time( 'mysql' ) );
 
 		return array(
 			'success' => true,
@@ -855,7 +855,7 @@ class AI_Improvement_Admin {
 	 */
 	public function handle_mobile_improve(): void {
 		if ( ! current_user_can( 'edit_pages' ) ) {
-			wp_die( esc_html__( 'You do not have permission to perform this action.', 'elementor-to-gutenberg' ) );
+			wp_die( esc_html__( 'You do not have permission to perform this action.', 'migrate-elementor-to-gutenberg' ) );
 		}
 
 		check_admin_referer( self::NONCE_MOBILE_IMPROVE );
@@ -864,14 +864,14 @@ class AI_Improvement_Admin {
 		$source_id = isset( $_POST['source_id'] ) ? absint( wp_unslash( $_POST['source_id'] ) ) : 0;
 
 		if ( $target_id <= 0 || $source_id <= 0 ) {
-			wp_die( esc_html__( 'Source or target page is missing.', 'elementor-to-gutenberg' ) );
+			wp_die( esc_html__( 'Source or target page is missing.', 'migrate-elementor-to-gutenberg' ) );
 		}
 
 		if ( ! current_user_can( 'edit_post', $target_id ) ) {
-			wp_die( esc_html__( 'You do not have permission to edit this page.', 'elementor-to-gutenberg' ) );
+			wp_die( esc_html__( 'You do not have permission to edit this page.', 'migrate-elementor-to-gutenberg' ) );
 		}
 
-		$stored_source_id = (int) get_post_meta( $target_id, '_ele2gb_source_id', true );
+		$stored_source_id = (int) get_post_meta( $target_id, '_metg_source_id', true );
 		if ( $stored_source_id > 0 && $stored_source_id !== $source_id ) {
 			$this->redirect_with_notice( $source_id, $target_id, 'invalid_mapping' );
 		}
@@ -880,7 +880,7 @@ class AI_Improvement_Admin {
 
 		if ( ! $result['success'] ) {
 			$notice = $result['notice'] ?? 'mobile_failed';
-			set_transient( 'ele2gb_ai_error_' . $target_id, $result['error'], 60 );
+			set_transient( 'metg_ai_error_' . $target_id, $result['error'], 60 );
 			$this->redirect_with_notice( $source_id, $target_id, $notice );
 		}
 
@@ -920,7 +920,7 @@ class AI_Improvement_Admin {
 			return $failure(
 				sprintf(
 					/* translators: %s: screenshot error details */
-					__( 'Screenshots could not be generated, so mobile AI enhancement was not run: %s', 'elementor-to-gutenberg' ),
+					__( 'Screenshots could not be generated, so mobile AI enhancement was not run: %s', 'migrate-elementor-to-gutenberg' ),
 					$screenshot_result['error']
 				)
 			);
@@ -1002,7 +1002,7 @@ class AI_Improvement_Admin {
 			External_CSS_Service::register_global_css_post( $target_id );
 		}
 
-		update_post_meta( $target_id, '_ele2gb_last_ai_mobile_improved', current_time( 'mysql' ) );
+		update_post_meta( $target_id, '_metg_last_ai_mobile_improved', current_time( 'mysql' ) );
 
 		return array(
 			'success' => true,
@@ -1046,7 +1046,7 @@ class AI_Improvement_Admin {
 	/**
 	 * Correct the CSS namespace if Claude used the target ID instead of the source ID.
 	 *
-	 * The Gutenberg page HTML wrapper always uses etg-page-{source_id} as its class,
+	 * The Gutenberg page HTML wrapper always uses metg-page-{source_id} as its class,
 	 * so all CSS selectors must target that class. Claude sometimes uses the target ID
 	 * instead. This method replaces any wrong occurrences as a guaranteed safety net.
 	 *
@@ -1061,8 +1061,8 @@ class AI_Improvement_Admin {
 		}
 
 		return str_replace(
-			'etg-page-' . $target_id,
-			'etg-page-' . $source_id,
+			'metg-page-' . $target_id,
+			'metg-page-' . $source_id,
 			$css
 		);
 	}
@@ -1094,20 +1094,20 @@ class AI_Improvement_Admin {
 	 */
 	public function handle_regenerate_screenshots(): void {
 		if ( ! current_user_can( 'edit_pages' ) ) {
-			wp_die( esc_html__( 'You do not have permission to perform this action.', 'elementor-to-gutenberg' ) );
+			wp_die( esc_html__( 'You do not have permission to perform this action.', 'migrate-elementor-to-gutenberg' ) );
 		}
 
 		$target_id = isset( $_POST['target_id'] ) ? absint( wp_unslash( $_POST['target_id'] ) ) : 0;
 		$source_id = isset( $_POST['source_id'] ) ? absint( wp_unslash( $_POST['source_id'] ) ) : 0;
 
-		check_admin_referer( 'ele2gb_ai_regenerate_screenshots_' . $target_id );
+		check_admin_referer( 'metg_ai_regenerate_screenshots_' . $target_id );
 
 		if ( $target_id <= 0 || $source_id <= 0 ) {
-			wp_die( esc_html__( 'Source or target page is missing.', 'elementor-to-gutenberg' ) );
+			wp_die( esc_html__( 'Source or target page is missing.', 'migrate-elementor-to-gutenberg' ) );
 		}
 
 		if ( ! current_user_can( 'edit_post', $target_id ) ) {
-			wp_die( esc_html__( 'You do not have permission to edit this page.', 'elementor-to-gutenberg' ) );
+			wp_die( esc_html__( 'You do not have permission to edit this page.', 'migrate-elementor-to-gutenberg' ) );
 		}
 
 		$result = AI_Remediation_Screenshot_Meta_Service::generate_and_store( $source_id, $target_id, true );
@@ -1121,10 +1121,10 @@ class AI_Improvement_Admin {
 	private function redirect_with_notice( int $source_id, int $target_id, string $notice_code ): void {
 		$url = add_query_arg(
 			array(
-				'page'             => self::MENU_SLUG,
-				'source_id'        => $source_id,
-				'target_id'        => $target_id,
-				'ele2gb_ai_notice' => $notice_code,
+				'page'           => self::MENU_SLUG,
+				'source_id'      => $source_id,
+				'target_id'      => $target_id,
+				'metg_ai_notice' => $notice_code,
 			),
 			admin_url( 'admin.php' )
 		);
@@ -1146,22 +1146,22 @@ class AI_Improvement_Admin {
 
 		// Failure codes that carry a detailed "why" message in a transient.
 		$detail_prefixes = array(
-			'ai_failed'         => esc_html__( 'Claude API call failed', 'elementor-to-gutenberg' ),
-			'mobile_failed'     => esc_html__( 'Mobile improvement failed', 'elementor-to-gutenberg' ),
-			'page_inaccessible' => esc_html__( 'AI enhancement was not run because this page is not accessible', 'elementor-to-gutenberg' ),
-			'screenshot_failed' => esc_html__( 'AI enhancement was not run because screenshots could not be generated', 'elementor-to-gutenberg' ),
+			'ai_failed'         => esc_html__( 'Claude API call failed', 'migrate-elementor-to-gutenberg' ),
+			'mobile_failed'     => esc_html__( 'Mobile improvement failed', 'migrate-elementor-to-gutenberg' ),
+			'page_inaccessible' => esc_html__( 'AI enhancement was not run because this page is not accessible', 'migrate-elementor-to-gutenberg' ),
+			'screenshot_failed' => esc_html__( 'AI enhancement was not run because screenshots could not be generated', 'migrate-elementor-to-gutenberg' ),
 		);
 
 		if ( isset( $detail_prefixes[ $notice_code ] ) ) {
 			$ai_error = '';
 			if ( $target_id > 0 ) {
-				$ai_error = (string) get_transient( 'ele2gb_ai_error_' . $target_id );
-				delete_transient( 'ele2gb_ai_error_' . $target_id );
+				$ai_error = (string) get_transient( 'metg_ai_error_' . $target_id );
+				delete_transient( 'metg_ai_error_' . $target_id );
 			}
 			$prefix = $detail_prefixes[ $notice_code ];
 			$msg    = '' !== $ai_error
 				/* translators: 1: failure prefix, 2: detailed reason for the failure */
-				? sprintf( esc_html__( '%1$s: %2$s', 'elementor-to-gutenberg' ), $prefix, esc_html( $ai_error ) )
+				? sprintf( esc_html__( '%1$s: %2$s', 'migrate-elementor-to-gutenberg' ), $prefix, esc_html( $ai_error ) )
 				: $prefix . '.';
 			?>
 			<div class="notice notice-error is-dismissible"><p><?php echo esc_html( $msg ); ?></p></div>
@@ -1170,17 +1170,17 @@ class AI_Improvement_Admin {
 		}
 
 		$messages = array(
-			'updated'                 => array( 'success', esc_html__( 'Page updated and AI CSS appended successfully.', 'elementor-to-gutenberg' ) ),
-			'missing_gutenberg'       => array( 'error', esc_html__( 'Gutenberg result is required before updating.', 'elementor-to-gutenberg' ) ),
-			'css_append_failed'       => array( 'error', esc_html__( 'Could not append CSS because the external CSS file for this page could not be resolved.', 'elementor-to-gutenberg' ) ),
-			'update_failed'           => array( 'error', esc_html__( 'Failed to update Gutenberg page content.', 'elementor-to-gutenberg' ) ),
-			'invalid_mapping'         => array( 'error', esc_html__( 'Source and target mapping validation failed.', 'elementor-to-gutenberg' ) ),
-			'screenshots_regenerated' => array( 'success', esc_html__( 'Screenshots regenerated successfully.', 'elementor-to-gutenberg' ) ),
-			'screenshots_failed'      => array( 'error', esc_html__( 'Screenshot regeneration failed. Check the screenshot service settings and connectivity.', 'elementor-to-gutenberg' ) ),
-			'ai_parse_failed'         => array( 'error', esc_html__( 'Claude returned a response but no valid Gutenberg content could be parsed.', 'elementor-to-gutenberg' ) ),
-			'refined'                 => array( 'success', esc_html__( 'Page refined successfully. Fresh screenshots were captured before this run.', 'elementor-to-gutenberg' ) ),
-			'mobile_improved'         => array( 'success', esc_html__( 'Mobile CSS improved successfully. Desktop styles were not modified.', 'elementor-to-gutenberg' ) ),
-			'mobile_failed'           => array( 'error', esc_html__( 'Mobile improvement failed. Check the screenshot service and Claude API settings.', 'elementor-to-gutenberg' ) ),
+			'updated'                 => array( 'success', esc_html__( 'Page updated and AI CSS appended successfully.', 'migrate-elementor-to-gutenberg' ) ),
+			'missing_gutenberg'       => array( 'error', esc_html__( 'Gutenberg result is required before updating.', 'migrate-elementor-to-gutenberg' ) ),
+			'css_append_failed'       => array( 'error', esc_html__( 'Could not append CSS because the external CSS file for this page could not be resolved.', 'migrate-elementor-to-gutenberg' ) ),
+			'update_failed'           => array( 'error', esc_html__( 'Failed to update Gutenberg page content.', 'migrate-elementor-to-gutenberg' ) ),
+			'invalid_mapping'         => array( 'error', esc_html__( 'Source and target mapping validation failed.', 'migrate-elementor-to-gutenberg' ) ),
+			'screenshots_regenerated' => array( 'success', esc_html__( 'Screenshots regenerated successfully.', 'migrate-elementor-to-gutenberg' ) ),
+			'screenshots_failed'      => array( 'error', esc_html__( 'Screenshot regeneration failed. Check the screenshot service settings and connectivity.', 'migrate-elementor-to-gutenberg' ) ),
+			'ai_parse_failed'         => array( 'error', esc_html__( 'Claude returned a response but no valid Gutenberg content could be parsed.', 'migrate-elementor-to-gutenberg' ) ),
+			'refined'                 => array( 'success', esc_html__( 'Page refined successfully. Fresh screenshots were captured before this run.', 'migrate-elementor-to-gutenberg' ) ),
+			'mobile_improved'         => array( 'success', esc_html__( 'Mobile CSS improved successfully. Desktop styles were not modified.', 'migrate-elementor-to-gutenberg' ) ),
+			'mobile_failed'           => array( 'error', esc_html__( 'Mobile improvement failed. Check the screenshot service and Claude API settings.', 'migrate-elementor-to-gutenberg' ) ),
 		);
 
 		if ( ! isset( $messages[ $notice_code ] ) ) {
@@ -1214,15 +1214,15 @@ class AI_Improvement_Admin {
 		$screenshot_status       = AI_Remediation_Screenshot_Meta_Service::get_status( $target_id );
 		$screenshot_generated_at = (string) get_post_meta( $target_id, AI_Remediation_Screenshot_Meta_Service::META_GENERATED_AT, true );
 		$service_configured      = '' !== AI_Remediation_Screenshot_Api_Service::get_endpoint_url();
-		$last_improved           = (string) get_post_meta( $target_id, '_ele2gb_last_ai_improved', true );
-		$last_mobile_improved    = (string) get_post_meta( $target_id, '_ele2gb_last_ai_mobile_improved', true );
+		$last_improved           = (string) get_post_meta( $target_id, '_metg_last_ai_improved', true );
+		$last_mobile_improved    = (string) get_post_meta( $target_id, '_metg_last_ai_mobile_improved', true );
 		$has_mobile_shots        = ! empty( $elementor_mobile_shots ) && ! empty( $gutenberg_mobile_shots );
 
 		$pill_map = array(
-			AI_Remediation_Screenshot_Meta_Service::STATUS_SUCCESS       => array( 'success', esc_html__( 'Generated', 'elementor-to-gutenberg' ) ),
-			AI_Remediation_Screenshot_Meta_Service::STATUS_FAILED        => array( 'error', esc_html__( 'Failed', 'elementor-to-gutenberg' ) ),
-			AI_Remediation_Screenshot_Meta_Service::STATUS_PENDING       => array( 'pending', esc_html__( 'Pending', 'elementor-to-gutenberg' ) ),
-			AI_Remediation_Screenshot_Meta_Service::STATUS_NOT_GENERATED => array( 'neutral', esc_html__( 'Not generated', 'elementor-to-gutenberg' ) ),
+			AI_Remediation_Screenshot_Meta_Service::STATUS_SUCCESS       => array( 'success', esc_html__( 'Generated', 'migrate-elementor-to-gutenberg' ) ),
+			AI_Remediation_Screenshot_Meta_Service::STATUS_FAILED        => array( 'error', esc_html__( 'Failed', 'migrate-elementor-to-gutenberg' ) ),
+			AI_Remediation_Screenshot_Meta_Service::STATUS_PENDING       => array( 'pending', esc_html__( 'Pending', 'migrate-elementor-to-gutenberg' ) ),
+			AI_Remediation_Screenshot_Meta_Service::STATUS_NOT_GENERATED => array( 'neutral', esc_html__( 'Not generated', 'migrate-elementor-to-gutenberg' ) ),
 		);
 		$pill     = isset( $pill_map[ $screenshot_status ] ) ? $pill_map[ $screenshot_status ] : array( 'neutral', esc_html( $screenshot_status ) );
 
@@ -1233,279 +1233,279 @@ class AI_Improvement_Admin {
 		$target_prev_url = \get_permalink( $target_id );
 
 		$suggestions = array(
-			__( 'Fix hero section spacing and alignment', 'elementor-to-gutenberg' ),
-			__( 'Match typography — font sizes and weights', 'elementor-to-gutenberg' ),
-			__( 'Improve button styles and colors', 'elementor-to-gutenberg' ),
-			__( 'Fix colors and contrast', 'elementor-to-gutenberg' ),
-			__( 'Fix image sizing and alignment', 'elementor-to-gutenberg' ),
-			__( 'Fix section padding and spacing', 'elementor-to-gutenberg' ),
-			__( 'Improve heading styles', 'elementor-to-gutenberg' ),
-			__( 'Fix navigation menu styling', 'elementor-to-gutenberg' ),
+			__( 'Fix hero section spacing and alignment', 'migrate-elementor-to-gutenberg' ),
+			__( 'Match typography — font sizes and weights', 'migrate-elementor-to-gutenberg' ),
+			__( 'Improve button styles and colors', 'migrate-elementor-to-gutenberg' ),
+			__( 'Fix colors and contrast', 'migrate-elementor-to-gutenberg' ),
+			__( 'Fix image sizing and alignment', 'migrate-elementor-to-gutenberg' ),
+			__( 'Fix section padding and spacing', 'migrate-elementor-to-gutenberg' ),
+			__( 'Improve heading styles', 'migrate-elementor-to-gutenberg' ),
+			__( 'Fix navigation menu styling', 'migrate-elementor-to-gutenberg' ),
 		);
 
 		?>
-		<div class="etg-ai-page">
+		<div class="metg-ai-page">
 
-			<div class="etg-ai-header">
-				<div class="etg-ai-header-nav">
-					<a href="<?php echo esc_url( $enhancement_url ); ?>" class="etg-ai-back-link">&#8592; <?php esc_html_e( 'Back to AI Enhancement', 'elementor-to-gutenberg' ); ?></a>
+			<div class="metg-ai-header">
+				<div class="metg-ai-header-nav">
+					<a href="<?php echo esc_url( $enhancement_url ); ?>" class="metg-ai-back-link">&#8592; <?php esc_html_e( 'Back to AI Enhancement', 'migrate-elementor-to-gutenberg' ); ?></a>
 				</div>
-				<div class="etg-ai-header-main">
-					<div class="etg-ai-header-title">
-						<h1><?php esc_html_e( 'AI Enhancement', 'elementor-to-gutenberg' ); ?></h1>
-						<div class="etg-ai-header-path">
+				<div class="metg-ai-header-main">
+					<div class="metg-ai-header-title">
+						<h1><?php esc_html_e( 'AI Enhancement', 'migrate-elementor-to-gutenberg' ); ?></h1>
+						<div class="metg-ai-header-path">
 							<span><?php echo esc_html( $source_title ); ?></span>
-							<span class="etg-ai-arrow">&#8594;</span>
+							<span class="metg-ai-arrow">&#8594;</span>
 							<span><?php echo esc_html( $target_title ); ?></span>
 						</div>
 					</div>
-					<div class="etg-ai-header-actions">
+					<div class="metg-ai-header-actions">
 						<?php if ( $source_prev_url ) : ?>
-							<a href="<?php echo esc_url( $source_prev_url ); ?>" target="_blank" rel="noopener" class="button"><?php esc_html_e( 'View Source &#8599;', 'elementor-to-gutenberg' ); ?></a>
+							<a href="<?php echo esc_url( $source_prev_url ); ?>" target="_blank" rel="noopener" class="button"><?php esc_html_e( 'View Source &#8599;', 'migrate-elementor-to-gutenberg' ); ?></a>
 						<?php endif; ?>
 						<?php if ( $target_prev_url ) : ?>
-							<a href="<?php echo esc_url( $target_prev_url ); ?>" target="_blank" rel="noopener" class="button"><?php esc_html_e( 'Preview &#8599;', 'elementor-to-gutenberg' ); ?></a>
+							<a href="<?php echo esc_url( $target_prev_url ); ?>" target="_blank" rel="noopener" class="button"><?php esc_html_e( 'Preview &#8599;', 'migrate-elementor-to-gutenberg' ); ?></a>
 						<?php endif; ?>
 						<?php if ( '' !== $last_improved ) : ?>
-							<button type="button" id="etg-ai-feedback-btn" class="button"><?php esc_html_e( 'Send Feedback', 'elementor-to-gutenberg' ); ?></button>
+							<button type="button" id="metg-ai-feedback-btn" class="button"><?php esc_html_e( 'Send Feedback', 'migrate-elementor-to-gutenberg' ); ?></button>
 						<?php endif; ?>
-						<a href="<?php echo esc_url( $target_edit_url ); ?>" class="button button-primary"><?php esc_html_e( 'Edit in Gutenberg', 'elementor-to-gutenberg' ); ?></a>
+						<a href="<?php echo esc_url( $target_edit_url ); ?>" class="button button-primary"><?php esc_html_e( 'Edit in Gutenberg', 'migrate-elementor-to-gutenberg' ); ?></a>
 					</div>
 				</div>
 			</div>
 
-			<div class="etg-ai-layout">
+			<div class="metg-ai-layout">
 
-				<div class="etg-ai-main">
+				<div class="metg-ai-main">
 
-					<div class="etg-ai-card">
-						<div class="etg-ai-card-header">
-							<h2><?php esc_html_e( 'Screenshots', 'elementor-to-gutenberg' ); ?></h2>
-							<span class="etg-status-pill etg-status-pill--<?php echo esc_attr( $pill[0] ); ?>"><?php echo esc_html( $pill[1] ); ?></span>
-							<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="etg-inline-form">
-								<?php wp_nonce_field( 'ele2gb_ai_regenerate_screenshots_' . $target_id ); ?>
-								<input type="hidden" name="action" value="ele2gb_ai_regenerate_screenshots" />
+					<div class="metg-ai-card">
+						<div class="metg-ai-card-header">
+							<h2><?php esc_html_e( 'Screenshots', 'migrate-elementor-to-gutenberg' ); ?></h2>
+							<span class="metg-status-pill metg-status-pill--<?php echo esc_attr( $pill[0] ); ?>"><?php echo esc_html( $pill[1] ); ?></span>
+							<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="metg-inline-form">
+								<?php wp_nonce_field( 'metg_ai_regenerate_screenshots_' . $target_id ); ?>
+								<input type="hidden" name="action" value="metg_ai_regenerate_screenshots" />
 								<input type="hidden" name="target_id" value="<?php echo esc_attr( (string) $target_id ); ?>" />
 								<input type="hidden" name="source_id" value="<?php echo esc_attr( (string) $source_id ); ?>" />
-								<button type="submit" class="button button-small"><?php esc_html_e( 'Regenerate', 'elementor-to-gutenberg' ); ?></button>
+								<button type="submit" class="button button-small"><?php esc_html_e( 'Regenerate', 'migrate-elementor-to-gutenberg' ); ?></button>
 							</form>
 						</div>
 
-						<div class="etg-ai-tabs" role="tablist">
-							<button type="button" class="etg-ai-tab etg-ai-tab--active" role="tab" data-tab="desktop" aria-selected="true"><?php esc_html_e( 'Desktop', 'elementor-to-gutenberg' ); ?></button>
-							<button type="button" class="etg-ai-tab" role="tab" data-tab="mobile" aria-selected="false"><?php esc_html_e( 'Mobile', 'elementor-to-gutenberg' ); ?></button>
+						<div class="metg-ai-tabs" role="tablist">
+							<button type="button" class="metg-ai-tab metg-ai-tab--active" role="tab" data-tab="desktop" aria-selected="true"><?php esc_html_e( 'Desktop', 'migrate-elementor-to-gutenberg' ); ?></button>
+							<button type="button" class="metg-ai-tab" role="tab" data-tab="mobile" aria-selected="false"><?php esc_html_e( 'Mobile', 'migrate-elementor-to-gutenberg' ); ?></button>
 						</div>
 
-						<div class="etg-ai-tab-panel" data-panel="desktop">
-							<div class="etg-ai-compare-grid">
-								<div class="etg-compare-side">
-									<div class="etg-compare-label"><?php esc_html_e( 'Elementor (Original)', 'elementor-to-gutenberg' ); ?></div>
+						<div class="metg-ai-tab-panel" data-panel="desktop">
+							<div class="metg-ai-compare-grid">
+								<div class="metg-compare-side">
+									<div class="metg-compare-label"><?php esc_html_e( 'Elementor (Original)', 'migrate-elementor-to-gutenberg' ); ?></div>
 									<?php
 									$d_ele_urls  = array_values( array_filter( $elementor_shots, 'is_string' ) );
 									$d_ele_first = ! empty( $d_ele_urls ) ? $d_ele_urls[0] : '';
 									if ( $d_ele_first ) :
 										?>
-										<div class="etg-screenshot-thumb-wrap" data-urls="<?php echo esc_attr( wp_json_encode( $d_ele_urls ) ); ?>">
-											<img class="etg-screenshot-thumb" src="<?php echo esc_url( $d_ele_first ); ?>" alt="" loading="lazy" />
-											<button type="button" class="etg-screenshot-zoom-btn" aria-label="<?php esc_attr_e( 'View full screenshot', 'elementor-to-gutenberg' ); ?>">&#x2922;</button>
+										<div class="metg-screenshot-thumb-wrap" data-urls="<?php echo esc_attr( wp_json_encode( $d_ele_urls ) ); ?>">
+											<img class="metg-screenshot-thumb" src="<?php echo esc_url( $d_ele_first ); ?>" alt="" loading="lazy" />
+											<button type="button" class="metg-screenshot-zoom-btn" aria-label="<?php esc_attr_e( 'View full screenshot', 'migrate-elementor-to-gutenberg' ); ?>">&#x2922;</button>
 										</div>
 									<?php else : ?>
-										<div class="etg-screenshot-empty"><?php esc_html_e( 'No desktop screenshot yet', 'elementor-to-gutenberg' ); ?></div>
+										<div class="metg-screenshot-empty"><?php esc_html_e( 'No desktop screenshot yet', 'migrate-elementor-to-gutenberg' ); ?></div>
 									<?php endif; ?>
 								</div>
-								<div class="etg-compare-side">
-									<div class="etg-compare-label"><?php esc_html_e( 'Gutenberg (Converted)', 'elementor-to-gutenberg' ); ?></div>
+								<div class="metg-compare-side">
+									<div class="metg-compare-label"><?php esc_html_e( 'Gutenberg (Converted)', 'migrate-elementor-to-gutenberg' ); ?></div>
 									<?php
 									$d_gb_urls  = array_values( array_filter( $gutenberg_shots, 'is_string' ) );
 									$d_gb_first = ! empty( $d_gb_urls ) ? $d_gb_urls[0] : '';
 									if ( $d_gb_first ) :
 										?>
-										<div class="etg-screenshot-thumb-wrap" data-urls="<?php echo esc_attr( wp_json_encode( $d_gb_urls ) ); ?>">
-											<img class="etg-screenshot-thumb" src="<?php echo esc_url( $d_gb_first ); ?>" alt="" loading="lazy" />
-											<button type="button" class="etg-screenshot-zoom-btn" aria-label="<?php esc_attr_e( 'View full screenshot', 'elementor-to-gutenberg' ); ?>">&#x2922;</button>
+										<div class="metg-screenshot-thumb-wrap" data-urls="<?php echo esc_attr( wp_json_encode( $d_gb_urls ) ); ?>">
+											<img class="metg-screenshot-thumb" src="<?php echo esc_url( $d_gb_first ); ?>" alt="" loading="lazy" />
+											<button type="button" class="metg-screenshot-zoom-btn" aria-label="<?php esc_attr_e( 'View full screenshot', 'migrate-elementor-to-gutenberg' ); ?>">&#x2922;</button>
 										</div>
 									<?php else : ?>
-										<div class="etg-screenshot-empty"><?php esc_html_e( 'No desktop screenshot yet', 'elementor-to-gutenberg' ); ?></div>
+										<div class="metg-screenshot-empty"><?php esc_html_e( 'No desktop screenshot yet', 'migrate-elementor-to-gutenberg' ); ?></div>
 									<?php endif; ?>
 								</div>
 							</div>
 						</div>
 
-						<div class="etg-ai-tab-panel" data-panel="mobile" hidden>
-							<div class="etg-ai-compare-grid">
-								<div class="etg-compare-side">
-									<div class="etg-compare-label"><?php esc_html_e( 'Elementor Mobile', 'elementor-to-gutenberg' ); ?></div>
+						<div class="metg-ai-tab-panel" data-panel="mobile" hidden>
+							<div class="metg-ai-compare-grid">
+								<div class="metg-compare-side">
+									<div class="metg-compare-label"><?php esc_html_e( 'Elementor Mobile', 'migrate-elementor-to-gutenberg' ); ?></div>
 									<?php
 									$m_ele_urls  = array_values( array_filter( $elementor_mobile_shots, 'is_string' ) );
 									$m_ele_first = ! empty( $m_ele_urls ) ? $m_ele_urls[0] : '';
 									if ( $m_ele_first ) :
 										?>
-										<div class="etg-screenshot-thumb-wrap" data-urls="<?php echo esc_attr( wp_json_encode( $m_ele_urls ) ); ?>">
-											<img class="etg-screenshot-thumb" src="<?php echo esc_url( $m_ele_first ); ?>" alt="" loading="lazy" />
-											<button type="button" class="etg-screenshot-zoom-btn" aria-label="<?php esc_attr_e( 'View full screenshot', 'elementor-to-gutenberg' ); ?>">&#x2922;</button>
+										<div class="metg-screenshot-thumb-wrap" data-urls="<?php echo esc_attr( wp_json_encode( $m_ele_urls ) ); ?>">
+											<img class="metg-screenshot-thumb" src="<?php echo esc_url( $m_ele_first ); ?>" alt="" loading="lazy" />
+											<button type="button" class="metg-screenshot-zoom-btn" aria-label="<?php esc_attr_e( 'View full screenshot', 'migrate-elementor-to-gutenberg' ); ?>">&#x2922;</button>
 										</div>
 									<?php else : ?>
-										<div class="etg-screenshot-empty"><?php esc_html_e( 'No mobile screenshot yet', 'elementor-to-gutenberg' ); ?></div>
+										<div class="metg-screenshot-empty"><?php esc_html_e( 'No mobile screenshot yet', 'migrate-elementor-to-gutenberg' ); ?></div>
 									<?php endif; ?>
 								</div>
-								<div class="etg-compare-side">
-									<div class="etg-compare-label"><?php esc_html_e( 'Gutenberg Mobile', 'elementor-to-gutenberg' ); ?></div>
+								<div class="metg-compare-side">
+									<div class="metg-compare-label"><?php esc_html_e( 'Gutenberg Mobile', 'migrate-elementor-to-gutenberg' ); ?></div>
 									<?php
 									$m_gb_urls  = array_values( array_filter( $gutenberg_mobile_shots, 'is_string' ) );
 									$m_gb_first = ! empty( $m_gb_urls ) ? $m_gb_urls[0] : '';
 									if ( $m_gb_first ) :
 										?>
-										<div class="etg-screenshot-thumb-wrap" data-urls="<?php echo esc_attr( wp_json_encode( $m_gb_urls ) ); ?>">
-											<img class="etg-screenshot-thumb" src="<?php echo esc_url( $m_gb_first ); ?>" alt="" loading="lazy" />
-											<button type="button" class="etg-screenshot-zoom-btn" aria-label="<?php esc_attr_e( 'View full screenshot', 'elementor-to-gutenberg' ); ?>">&#x2922;</button>
+										<div class="metg-screenshot-thumb-wrap" data-urls="<?php echo esc_attr( wp_json_encode( $m_gb_urls ) ); ?>">
+											<img class="metg-screenshot-thumb" src="<?php echo esc_url( $m_gb_first ); ?>" alt="" loading="lazy" />
+											<button type="button" class="metg-screenshot-zoom-btn" aria-label="<?php esc_attr_e( 'View full screenshot', 'migrate-elementor-to-gutenberg' ); ?>">&#x2922;</button>
 										</div>
 									<?php else : ?>
-										<div class="etg-screenshot-empty"><?php esc_html_e( 'No mobile screenshot yet', 'elementor-to-gutenberg' ); ?></div>
+										<div class="metg-screenshot-empty"><?php esc_html_e( 'No mobile screenshot yet', 'migrate-elementor-to-gutenberg' ); ?></div>
 									<?php endif; ?>
 								</div>
 							</div>
 						</div>
 
 						<?php if ( '' !== $screenshot_generated_at || ! $service_configured ) : ?>
-						<div class="etg-ai-card-footer">
+						<div class="metg-ai-card-footer">
 							<?php if ( '' !== $screenshot_generated_at ) : ?>
 								<?php
 								/* translators: %s: date/time screenshots were captured */
-								printf( esc_html__( 'Last captured: %s', 'elementor-to-gutenberg' ), esc_html( $screenshot_generated_at ) );
+								printf( esc_html__( 'Last captured: %s', 'migrate-elementor-to-gutenberg' ), esc_html( $screenshot_generated_at ) );
 								?>
 							<?php endif; ?>
 							<?php if ( ! $service_configured ) : ?>
-								<span class="etg-warning-inline"><?php esc_html_e( 'Screenshot service not configured — see Settings.', 'elementor-to-gutenberg' ); ?></span>
+								<span class="metg-warning-inline"><?php esc_html_e( 'Screenshot service not configured — see Settings.', 'migrate-elementor-to-gutenberg' ); ?></span>
 							<?php endif; ?>
 						</div>
 						<?php endif; ?>
 					</div>
 
-					<div class="etg-ai-card">
+					<div class="metg-ai-card">
 						<?php if ( '' === $last_improved ) : ?>
-							<div class="etg-ai-card-header">
-								<h2><?php esc_html_e( 'AI Improvement', 'elementor-to-gutenberg' ); ?></h2>
-								<span class="etg-status-pill etg-status-pill--neutral"><?php esc_html_e( 'Not yet run', 'elementor-to-gutenberg' ); ?></span>
+							<div class="metg-ai-card-header">
+								<h2><?php esc_html_e( 'AI Improvement', 'migrate-elementor-to-gutenberg' ); ?></h2>
+								<span class="metg-status-pill metg-status-pill--neutral"><?php esc_html_e( 'Not yet run', 'migrate-elementor-to-gutenberg' ); ?></span>
 							</div>
-							<div class="etg-ai-card-body">
-								<p class="etg-card-desc"><?php esc_html_e( 'Analyse and improve the converted page using AI. The page content and CSS will be updated automatically.', 'elementor-to-gutenberg' ); ?></p>
-								<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="ele2gb-ai-improve-form">
+							<div class="metg-ai-card-body">
+								<p class="metg-card-desc"><?php esc_html_e( 'Analyse and improve the converted page using AI. The page content and CSS will be updated automatically.', 'migrate-elementor-to-gutenberg' ); ?></p>
+								<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="metg-ai-improve-form">
 									<?php wp_nonce_field( self::NONCE_AUTO_IMPROVE ); ?>
-									<input type="hidden" name="action" value="ele2gb_ai_auto_improve" />
+									<input type="hidden" name="action" value="metg_ai_auto_improve" />
 									<input type="hidden" name="target_id" value="<?php echo esc_attr( (string) $target_id ); ?>" />
 									<input type="hidden" name="source_id" value="<?php echo esc_attr( (string) $source_id ); ?>" />
-									<?php submit_button( esc_html__( 'Improve with AI', 'elementor-to-gutenberg' ), 'primary', 'ele2gb_auto_improve_submit', false ); ?>
+									<?php submit_button( esc_html__( 'Improve with AI', 'migrate-elementor-to-gutenberg' ), 'primary', 'metg_auto_improve_submit', false ); ?>
 								</form>
 							</div>
 						<?php else : ?>
-							<div class="etg-ai-card-header">
-								<h2><?php esc_html_e( 'Refine with AI', 'elementor-to-gutenberg' ); ?></h2>
-								<span class="etg-status-pill etg-status-pill--success"><?php esc_html_e( 'Improved', 'elementor-to-gutenberg' ); ?></span>
+							<div class="metg-ai-card-header">
+								<h2><?php esc_html_e( 'Refine with AI', 'migrate-elementor-to-gutenberg' ); ?></h2>
+								<span class="metg-status-pill metg-status-pill--success"><?php esc_html_e( 'Improved', 'migrate-elementor-to-gutenberg' ); ?></span>
 							</div>
-							<div class="etg-ai-card-body">
-								<p class="etg-card-desc"><?php esc_html_e( 'Tell AI exactly what to focus on. Fresh screenshots are captured automatically before each run.', 'elementor-to-gutenberg' ); ?></p>
-								<div class="ele2gb-refine-suggestions">
-									<span class="ele2gb-refine-suggestions-label"><?php esc_html_e( 'Quick suggestions:', 'elementor-to-gutenberg' ); ?></span>
+							<div class="metg-ai-card-body">
+								<p class="metg-card-desc"><?php esc_html_e( 'Tell AI exactly what to focus on. Fresh screenshots are captured automatically before each run.', 'migrate-elementor-to-gutenberg' ); ?></p>
+								<div class="metg-refine-suggestions">
+									<span class="metg-refine-suggestions-label"><?php esc_html_e( 'Quick suggestions:', 'migrate-elementor-to-gutenberg' ); ?></span>
 									<?php foreach ( $suggestions as $suggestion ) : ?>
-										<button type="button" class="ele2gb-suggestion-chip" data-suggestion="<?php echo esc_attr( $suggestion ); ?>"><?php echo esc_html( $suggestion ); ?></button>
+										<button type="button" class="metg-suggestion-chip" data-suggestion="<?php echo esc_attr( $suggestion ); ?>"><?php echo esc_html( $suggestion ); ?></button>
 									<?php endforeach; ?>
 								</div>
-								<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="ele2gb-ai-refine-form">
+								<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="metg-ai-refine-form">
 									<?php wp_nonce_field( self::NONCE_REFINE ); ?>
-									<input type="hidden" name="action" value="ele2gb_ai_refine" />
+									<input type="hidden" name="action" value="metg_ai_refine" />
 									<input type="hidden" name="target_id" value="<?php echo esc_attr( (string) $target_id ); ?>" />
 									<input type="hidden" name="source_id" value="<?php echo esc_attr( (string) $source_id ); ?>" />
 									<textarea
 										name="focus_instruction"
-										id="ele2gb-focus-instruction"
+										id="metg-focus-instruction"
 										rows="4"
-										placeholder="<?php echo esc_attr__( 'Describe what needs fixing, e.g. "The hero section spacing is too tight and the heading font is too small"', 'elementor-to-gutenberg' ); ?>"
-										class="etg-refine-textarea"
+										placeholder="<?php echo esc_attr__( 'Describe what needs fixing, e.g. "The hero section spacing is too tight and the heading font is too small"', 'migrate-elementor-to-gutenberg' ); ?>"
+										class="metg-refine-textarea"
 									></textarea>
-									<?php submit_button( esc_html__( 'Refine with AI', 'elementor-to-gutenberg' ), 'primary', 'ele2gb_refine_submit', false ); ?>
+									<?php submit_button( esc_html__( 'Refine with AI', 'migrate-elementor-to-gutenberg' ), 'primary', 'metg_refine_submit', false ); ?>
 								</form>
 							</div>
 						<?php endif; ?>
 					</div>
 
-					<div class="etg-ai-card">
-						<div class="etg-ai-card-header">
-							<h2><?php esc_html_e( 'Mobile Optimisation', 'elementor-to-gutenberg' ); ?></h2>
+					<div class="metg-ai-card">
+						<div class="metg-ai-card-header">
+							<h2><?php esc_html_e( 'Mobile Optimisation', 'migrate-elementor-to-gutenberg' ); ?></h2>
 							<?php if ( '' !== $last_mobile_improved ) : ?>
-								<span class="etg-status-pill etg-status-pill--success"><?php esc_html_e( 'Improved', 'elementor-to-gutenberg' ); ?></span>
+								<span class="metg-status-pill metg-status-pill--success"><?php esc_html_e( 'Improved', 'migrate-elementor-to-gutenberg' ); ?></span>
 							<?php else : ?>
-								<span class="etg-status-pill etg-status-pill--neutral"><?php esc_html_e( 'Not yet run', 'elementor-to-gutenberg' ); ?></span>
+								<span class="metg-status-pill metg-status-pill--neutral"><?php esc_html_e( 'Not yet run', 'migrate-elementor-to-gutenberg' ); ?></span>
 							<?php endif; ?>
 						</div>
-						<div class="etg-ai-card-body">
-							<p class="etg-card-desc"><?php esc_html_e( 'Compares mobile screenshots and generates @media query CSS. Desktop styles and block content are not modified.', 'elementor-to-gutenberg' ); ?></p>
+						<div class="metg-ai-card-body">
+							<p class="metg-card-desc"><?php esc_html_e( 'Compares mobile screenshots and generates @media query CSS. Desktop styles and block content are not modified.', 'migrate-elementor-to-gutenberg' ); ?></p>
 							<?php if ( ! $has_mobile_shots ) : ?>
-								<div class="etg-notice etg-notice--warning">
-									<?php esc_html_e( 'Mobile screenshots are missing — click Regenerate in the Screenshots card above before running this pass.', 'elementor-to-gutenberg' ); ?>
+								<div class="metg-notice metg-notice--warning">
+									<?php esc_html_e( 'Mobile screenshots are missing — click Regenerate in the Screenshots card above before running this pass.', 'migrate-elementor-to-gutenberg' ); ?>
 								</div>
 							<?php endif; ?>
-							<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="ele2gb-ai-mobile-improve-form">
+							<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="metg-ai-mobile-improve-form">
 								<?php wp_nonce_field( self::NONCE_MOBILE_IMPROVE ); ?>
-								<input type="hidden" name="action" value="ele2gb_ai_mobile_improve" />
+								<input type="hidden" name="action" value="metg_ai_mobile_improve" />
 								<input type="hidden" name="target_id" value="<?php echo esc_attr( (string) $target_id ); ?>" />
 								<input type="hidden" name="source_id" value="<?php echo esc_attr( (string) $source_id ); ?>" />
-								<?php submit_button( esc_html__( 'Improve Mobile with AI', 'elementor-to-gutenberg' ), 'secondary', 'ele2gb_mobile_improve_submit', false ); ?>
+								<?php submit_button( esc_html__( 'Improve Mobile with AI', 'migrate-elementor-to-gutenberg' ), 'secondary', 'metg_mobile_improve_submit', false ); ?>
 							</form>
 						</div>
 					</div>
 
 				</div>
 
-				<aside class="etg-ai-sidebar">
+				<aside class="metg-ai-sidebar">
 
-					<div class="etg-ai-card">
-						<div class="etg-ai-card-header">
-							<h2><?php esc_html_e( 'Page Details', 'elementor-to-gutenberg' ); ?></h2>
+					<div class="metg-ai-card">
+						<div class="metg-ai-card-header">
+							<h2><?php esc_html_e( 'Page Details', 'migrate-elementor-to-gutenberg' ); ?></h2>
 						</div>
-						<div class="etg-ai-card-body">
-							<dl class="etg-ai-dl">
-								<dt><?php esc_html_e( 'Source (Elementor)', 'elementor-to-gutenberg' ); ?></dt>
+						<div class="metg-ai-card-body">
+							<dl class="metg-ai-dl">
+								<dt><?php esc_html_e( 'Source (Elementor)', 'migrate-elementor-to-gutenberg' ); ?></dt>
 								<dd>
 									<a href="<?php echo esc_url( $source_edit_url ); ?>"><?php echo esc_html( $source_title ); ?></a>
 									<?php if ( $source_prev_url ) : ?>
-										<a href="<?php echo esc_url( $source_prev_url ); ?>" target="_blank" rel="noopener" class="etg-ext-link" title="<?php esc_attr_e( 'Preview', 'elementor-to-gutenberg' ); ?>">&#8599;</a>
+										<a href="<?php echo esc_url( $source_prev_url ); ?>" target="_blank" rel="noopener" class="metg-ext-link" title="<?php esc_attr_e( 'Preview', 'migrate-elementor-to-gutenberg' ); ?>">&#8599;</a>
 									<?php endif; ?>
 								</dd>
-								<dt><?php esc_html_e( 'Target (Gutenberg)', 'elementor-to-gutenberg' ); ?></dt>
+								<dt><?php esc_html_e( 'Target (Gutenberg)', 'migrate-elementor-to-gutenberg' ); ?></dt>
 								<dd>
 									<a href="<?php echo esc_url( $target_edit_url ); ?>"><?php echo esc_html( $target_title ); ?></a>
 									<?php if ( $target_prev_url ) : ?>
-										<a href="<?php echo esc_url( $target_prev_url ); ?>" target="_blank" rel="noopener" class="etg-ext-link" title="<?php esc_attr_e( 'Preview', 'elementor-to-gutenberg' ); ?>">&#8599;</a>
+										<a href="<?php echo esc_url( $target_prev_url ); ?>" target="_blank" rel="noopener" class="metg-ext-link" title="<?php esc_attr_e( 'Preview', 'migrate-elementor-to-gutenberg' ); ?>">&#8599;</a>
 									<?php endif; ?>
 								</dd>
-								<dt><?php esc_html_e( 'Source ID', 'elementor-to-gutenberg' ); ?></dt>
+								<dt><?php esc_html_e( 'Source ID', 'migrate-elementor-to-gutenberg' ); ?></dt>
 								<dd><?php echo esc_html( (string) $source_id ); ?></dd>
-								<dt><?php esc_html_e( 'Target ID', 'elementor-to-gutenberg' ); ?></dt>
+								<dt><?php esc_html_e( 'Target ID', 'migrate-elementor-to-gutenberg' ); ?></dt>
 								<dd><?php echo esc_html( (string) $target_id ); ?></dd>
 							</dl>
 						</div>
 					</div>
 
-					<div class="etg-ai-card">
-						<div class="etg-ai-card-header">
-							<h2><?php esc_html_e( 'AI Status', 'elementor-to-gutenberg' ); ?></h2>
+					<div class="metg-ai-card">
+						<div class="metg-ai-card-header">
+							<h2><?php esc_html_e( 'AI Status', 'migrate-elementor-to-gutenberg' ); ?></h2>
 						</div>
-						<div class="etg-ai-card-body">
-							<dl class="etg-ai-dl">
-								<dt><?php esc_html_e( 'Desktop', 'elementor-to-gutenberg' ); ?></dt>
+						<div class="metg-ai-card-body">
+							<dl class="metg-ai-dl">
+								<dt><?php esc_html_e( 'Desktop', 'migrate-elementor-to-gutenberg' ); ?></dt>
 								<dd>
 									<?php if ( '' !== $last_improved ) : ?>
 										<?php echo esc_html( $last_improved ); ?>
 									<?php else : ?>
-										<span class="etg-muted"><?php esc_html_e( 'Not yet run', 'elementor-to-gutenberg' ); ?></span>
+										<span class="metg-muted"><?php esc_html_e( 'Not yet run', 'migrate-elementor-to-gutenberg' ); ?></span>
 									<?php endif; ?>
 								</dd>
-								<dt><?php esc_html_e( 'Mobile', 'elementor-to-gutenberg' ); ?></dt>
+								<dt><?php esc_html_e( 'Mobile', 'migrate-elementor-to-gutenberg' ); ?></dt>
 								<dd>
 									<?php if ( '' !== $last_mobile_improved ) : ?>
 										<?php echo esc_html( $last_mobile_improved ); ?>
 									<?php else : ?>
-										<span class="etg-muted"><?php esc_html_e( 'Not yet run', 'elementor-to-gutenberg' ); ?></span>
+										<span class="metg-muted"><?php esc_html_e( 'Not yet run', 'migrate-elementor-to-gutenberg' ); ?></span>
 									<?php endif; ?>
 								</dd>
 							</dl>
@@ -1516,26 +1516,26 @@ class AI_Improvement_Admin {
 
 			</div>
 
-			<div id="etg-lightbox" class="etg-lightbox" hidden role="dialog" aria-modal="true" aria-label="<?php esc_attr_e( 'Screenshot viewer', 'elementor-to-gutenberg' ); ?>">
-				<div class="etg-lightbox-overlay" id="etg-lightbox-overlay"></div>
-				<div class="etg-lightbox-panel">
-					<div class="etg-lightbox-toolbar">
-						<a id="etg-lightbox-open" href="#" target="_blank" rel="noopener" class="etg-lightbox-open-link"><?php esc_html_e( 'Open full image &#8599;', 'elementor-to-gutenberg' ); ?></a>
-						<button type="button" id="etg-lightbox-close" class="etg-lightbox-close" aria-label="<?php esc_attr_e( 'Close', 'elementor-to-gutenberg' ); ?>">&#x2715;</button>
+			<div id="metg-lightbox" class="metg-lightbox" hidden role="dialog" aria-modal="true" aria-label="<?php esc_attr_e( 'Screenshot viewer', 'migrate-elementor-to-gutenberg' ); ?>">
+				<div class="metg-lightbox-overlay" id="metg-lightbox-overlay"></div>
+				<div class="metg-lightbox-panel">
+					<div class="metg-lightbox-toolbar">
+						<a id="metg-lightbox-open" href="#" target="_blank" rel="noopener" class="metg-lightbox-open-link"><?php esc_html_e( 'Open full image &#8599;', 'migrate-elementor-to-gutenberg' ); ?></a>
+						<button type="button" id="metg-lightbox-close" class="metg-lightbox-close" aria-label="<?php esc_attr_e( 'Close', 'migrate-elementor-to-gutenberg' ); ?>">&#x2715;</button>
 					</div>
-					<div id="etg-lightbox-images" class="etg-lightbox-images"></div>
+					<div id="metg-lightbox-images" class="metg-lightbox-images"></div>
 				</div>
 			</div>
 
-			<div id="ele2gb-ai-loader" hidden>
-				<div class="ele2gb-ai-loader-card">
-					<svg class="ele2gb-ai-loader-spinner" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+			<div id="metg-ai-loader" hidden>
+				<div class="metg-ai-loader-card">
+					<svg class="metg-ai-loader-spinner" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
 						<circle class="track" cx="22" cy="22" r="20" fill="none" stroke="#2271b1" stroke-width="3" />
 						<circle class="arc"   cx="22" cy="22" r="20" fill="none" stroke="#2271b1" stroke-width="3" />
 					</svg>
 					<div>
-						<strong class="ele2gb-ai-loader-title"><?php esc_html_e( 'Improving with AI&#8230;', 'elementor-to-gutenberg' ); ?></strong>
-						<span class="ele2gb-ai-loader-message"><?php esc_html_e( 'Analysing page structure and generating improvements. This may take up to 2 minutes.', 'elementor-to-gutenberg' ); ?></span>
+						<strong class="metg-ai-loader-title"><?php esc_html_e( 'Improving with AI&#8230;', 'migrate-elementor-to-gutenberg' ); ?></strong>
+						<span class="metg-ai-loader-message"><?php esc_html_e( 'Analysing page structure and generating improvements. This may take up to 2 minutes.', 'migrate-elementor-to-gutenberg' ); ?></span>
 					</div>
 				</div>
 			</div>

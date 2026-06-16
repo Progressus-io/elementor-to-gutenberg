@@ -7,10 +7,10 @@
  * array of chunk URLs (one element for single-screen pages, multiple for pages
  * that exceed the service's 7500 px chunk limit).
  *
- * @package Progressus\Gutenberg
+ * @package Progressus\MigrateElementorToGutenberg
  */
 
-namespace Progressus\Gutenberg\Admin\Helper;
+namespace Progressus\MigrateElementorToGutenberg\Admin\Helper;
 
 use function current_time;
 use function get_option;
@@ -38,21 +38,21 @@ defined( 'ABSPATH' ) || exit;
  * Screenshot data is keyed to the converted (target) page ID.
  *
  * Meta keys (each stores a JSON-encoded string[]):
- *   _etg_ai_elementor_screenshot_url         – Elementor source page (desktop)
- *   _etg_ai_gutenberg_screenshot_url         – Converted Gutenberg page (desktop)
- *   _etg_ai_elementor_screenshot_mobile_url  – Elementor source page (mobile)
- *   _etg_ai_gutenberg_screenshot_mobile_url  – Converted Gutenberg page (mobile)
- *   _etg_ai_screenshot_status                – Generation status constant
- *   _etg_ai_screenshot_generated_at          – Timestamp of last generation attempt
+ *   _metg_ai_elementor_screenshot_url         – Elementor source page (desktop)
+ *   _metg_ai_gutenberg_screenshot_url         – Converted Gutenberg page (desktop)
+ *   _metg_ai_elementor_screenshot_mobile_url  – Elementor source page (mobile)
+ *   _metg_ai_gutenberg_screenshot_mobile_url  – Converted Gutenberg page (mobile)
+ *   _metg_ai_screenshot_status                – Generation status constant
+ *   _metg_ai_screenshot_generated_at          – Timestamp of last generation attempt
  */
 class AI_Remediation_Screenshot_Meta_Service {
 
-	const META_ELEMENTOR_URL        = '_etg_ai_elementor_screenshot_url';
-	const META_GUTENBERG_URL        = '_etg_ai_gutenberg_screenshot_url';
-	const META_ELEMENTOR_MOBILE_URL = '_etg_ai_elementor_screenshot_mobile_url';
-	const META_GUTENBERG_MOBILE_URL = '_etg_ai_gutenberg_screenshot_mobile_url';
-	const META_STATUS               = '_etg_ai_screenshot_status';
-	const META_GENERATED_AT         = '_etg_ai_screenshot_generated_at';
+	const META_ELEMENTOR_URL        = '_metg_ai_elementor_screenshot_url';
+	const META_GUTENBERG_URL        = '_metg_ai_gutenberg_screenshot_url';
+	const META_ELEMENTOR_MOBILE_URL = '_metg_ai_elementor_screenshot_mobile_url';
+	const META_GUTENBERG_MOBILE_URL = '_metg_ai_gutenberg_screenshot_mobile_url';
+	const META_STATUS               = '_metg_ai_screenshot_status';
+	const META_GENERATED_AT         = '_metg_ai_screenshot_generated_at';
 
 	const STATUS_SUCCESS       = 'success';
 	const STATUS_FAILED        = 'failed';
@@ -191,7 +191,7 @@ class AI_Remediation_Screenshot_Meta_Service {
 			self::save_status( $target_id, self::STATUS_FAILED );
 			return array(
 				'success' => false,
-				'error'   => __( 'Could not resolve public URLs for the source or target page.', 'elementor-to-gutenberg' ),
+				'error'   => __( 'Could not resolve public URLs for the source or target page.', 'migrate-elementor-to-gutenberg' ),
 			);
 		}
 
@@ -282,7 +282,7 @@ class AI_Remediation_Screenshot_Meta_Service {
 	 * @return string Public permalink of the preview page, or home_url('/') on failure.
 	 */
 	private static function get_or_create_preview_page_url(): string {
-		$option_key = '_etg_hf_preview_page_id';
+		$option_key = '_metg_hf_preview_page_id';
 		$page_id    = (int) get_option( $option_key, 0 );
 
 		if ( $page_id > 0 && 'publish' === get_post_status( $page_id ) ) {
@@ -291,7 +291,7 @@ class AI_Remediation_Screenshot_Meta_Service {
 
 		$new_id = wp_insert_post(
 			array(
-				'post_title'   => 'ETG Header & Footer Preview',
+				'post_title'   => 'Header & Footer Preview',
 				'post_content' => '<!-- wp:paragraph --><p>This page is used by the Elementor to Gutenberg plugin to preview header and footer templates.</p><!-- /wp:paragraph -->',
 				'post_status'  => 'publish',
 				'post_type'    => 'page',

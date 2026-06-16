@@ -4,10 +4,10 @@
 /**
  * Sends a feedback manifest to the ETG Feedback Receiver.
  *
- * @package Progressus\Gutenberg
+ * @package Progressus\MigrateElementorToGutenberg
  */
 
-namespace Progressus\Gutenberg\Admin;
+namespace Progressus\MigrateElementorToGutenberg\Admin;
 
 use WP_Error;
 
@@ -16,19 +16,19 @@ defined( 'ABSPATH' ) || exit;
 /**
  * Handles the HTTP POST to the hardcoded receiver endpoint.
  * Authentication uses a per-site client_id + client_secret pair that is
- * auto-generated on first use and stored in the etg_feedback_client WP option.
+ * auto-generated on first use and stored in the metg_feedback_client WP option.
  */
 class Feedback_Sender {
 
 	/**
 	 * Hardcoded receiver endpoint — never changeable by site admins.
 	 */
-	const RECEIVER_URL = 'https://etgm.lvendr.com/wp-json/etg-feedback/v1/submit';
+	const RECEIVER_URL = 'https://etgm.lvendr.com/wp-json/metg-feedback/v1/submit';
 
 	/**
 	 * WP option key that stores the auto-generated client credentials.
 	 */
-	const OPTION_CREDENTIALS = 'etg_feedback_client';
+	const OPTION_CREDENTIALS = 'metg_feedback_client';
 
 	/**
 	 * Send the manifest array to the receiver.
@@ -42,7 +42,7 @@ class Feedback_Sender {
 
 		$json = wp_json_encode( $manifest );
 		if ( false === $json ) {
-			return new WP_Error( 'etg_feedback_encode', 'Failed to encode manifest as JSON.' );
+			return new WP_Error( 'metg_feedback_encode', 'Failed to encode manifest as JSON.' );
 		}
 
 		$response = wp_remote_post(
@@ -74,7 +74,7 @@ class Feedback_Sender {
 		$message = self::message_for_code( $code, $decoded );
 
 		return new WP_Error(
-			'etg_feedback_receiver_error',
+			'metg_feedback_receiver_error',
 			$message,
 			array( 'http_code' => $code )
 		);

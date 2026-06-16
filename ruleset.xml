@@ -6,6 +6,16 @@
     <rule ref="WordPress-Docs" />
     <rule ref="WooCommerce-Core" />
 
+	<!-- Canonical text domain for the i18n sniff after the rename. -->
+	<rule ref="WordPress.WP.I18n">
+		<properties>
+			<property name="text_domain" type="array">
+				<element value="migrate-elementor-to-gutenberg"/>
+				<element value="default"/>
+			</property>
+		</properties>
+	</rule>
+
 	<rule ref="WordPress.PHP.DiscouragedPHPFunctions">
 		<!-- From "Extra": The create_function group is excluded as WP core still supports PHP 5.2 and 5.2 does not support anonymous functions. -->
 		<!-- From "VIP": The obfuscation group is excluded as there are plenty of legitimate uses for the base64 functions. -->

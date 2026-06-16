@@ -1,41 +1,42 @@
 <?php
 /**
- * The main class of the Mighty Kids plugin.
+ * The main class of the Migrate Elementor to Gutenberg plugin.
  *
- * @package Progressus\Gutenberg
+ * @package Progressus\MigrateElementorToGutenberg
  */
 
-namespace Progressus\Gutenberg;
+namespace Progressus\MigrateElementorToGutenberg;
 
 defined( 'ABSPATH' ) || exit;
 
-use Progressus\Gutenberg\Admin\Admin_Settings;
-use Progressus\Gutenberg\Admin\AI_Enhancement_Admin;
-use Progressus\Gutenberg\Admin\AI_Improvement_Admin;
-use Progressus\Gutenberg\Admin\Batch_Convert_Wizard;
-use Progressus\Gutenberg\Admin\Conversion_Log_Admin;
-use Progressus\Gutenberg\Admin\Helper\External_CSS_Service;
-use Progressus\Gutenberg\Admin\Helper\Elementor_Fonts_Service;
-use Progressus\Gutenberg\Admin\Helper\Style_Parser;
+use Progressus\MigrateElementorToGutenberg\Admin\Admin_Settings;
+use Progressus\MigrateElementorToGutenberg\Admin\AI_Enhancement_Admin;
+use Progressus\MigrateElementorToGutenberg\Admin\AI_Improvement_Admin;
+use Progressus\MigrateElementorToGutenberg\Admin\Batch_Convert_Wizard;
+use Progressus\MigrateElementorToGutenberg\Admin\Conversion_Log_Admin;
+use Progressus\MigrateElementorToGutenberg\Admin\Data_Migration;
+use Progressus\MigrateElementorToGutenberg\Admin\Helper\External_CSS_Service;
+use Progressus\MigrateElementorToGutenberg\Admin\Helper\Elementor_Fonts_Service;
+use Progressus\MigrateElementorToGutenberg\Admin\Helper\Style_Parser;
 
 /**
  * Class Gutenberg
  *
- * @package Progressus\Gutenberg
+ * @package Progressus\MigrateElementorToGutenberg
  */
 class Gutenberg {
-	public const FULL_WIDTH_TEMPLATE_ID = 'progressus-etg//full-width-page';
+	public const FULL_WIDTH_TEMPLATE_ID = 'progressus-metg//full-width-page';
 
 	/**
 	 * Slug used as the value of `_wp_page_template` for converted pages on
-	 * classic themes. Matches the file name of templates/etg-full-width-page.php.
+	 * classic themes. Matches the file name of templates/metg-full-width-page.php.
 	 */
-	public const FULL_WIDTH_PAGE_TEMPLATE_SLUG = 'templates/etg-full-width-page.php';
+	public const FULL_WIDTH_PAGE_TEMPLATE_SLUG = 'templates/metg-full-width-page.php';
 
 	/**
 	 * CSS handle for the global stylesheet that styles the template.
 	 */
-	public const FULL_WIDTH_CSS_HANDLE = 'etg-full-width-page';
+	public const FULL_WIDTH_CSS_HANDLE = 'metg-full-width-page';
 
 
 	/**
@@ -58,8 +59,8 @@ class Gutenberg {
 	 */
 	public function __construct() {
 		add_action( 'init', array( $this, 'load_plugin' ), 0 );
-		add_action( 'gutenberg_plugin_activated', array( $this, 'activation_hooks' ) );
-		add_action( 'gutenberg_plugin_deactivated', array( $this, 'deactivation_hooks' ) );
+		add_action( 'metg_activated', array( $this, 'activation_hooks' ) );
+		add_action( 'metg_deactivated', array( $this, 'deactivation_hooks' ) );
 		add_action( 'init', array( $this, 'register_blocks' ) );
 
 		add_filter( 'theme_page_templates', array( $this, 'register_classic_page_template' ), 10, 4 );
@@ -90,7 +91,7 @@ class Gutenberg {
 			return $templates;
 		}
 
-		$templates[ self::FULL_WIDTH_PAGE_TEMPLATE_SLUG ] = __( 'ETG Full Width Page', 'elementor-to-gutenberg' );
+		$templates[ self::FULL_WIDTH_PAGE_TEMPLATE_SLUG ] = __( 'Full Width Page', 'migrate-elementor-to-gutenberg' );
 
 		return $templates;
 	}
@@ -113,7 +114,7 @@ class Gutenberg {
 			return $template;
 		}
 
-		$plugin_template = trailingslashit( GUTENBERG_PLUGIN_DIR_PATH ) . self::FULL_WIDTH_PAGE_TEMPLATE_SLUG;
+		$plugin_template = trailingslashit( METG_DIR_PATH ) . self::FULL_WIDTH_PAGE_TEMPLATE_SLUG;
 		if ( file_exists( $plugin_template ) ) {
 			return $plugin_template;
 		}
@@ -138,7 +139,7 @@ class Gutenberg {
 		}
 
 		if ( $this->is_full_width_template_active( get_queried_object_id() ) ) {
-			$classes[] = 'etg-full-width-page-active';
+			$classes[] = 'metg-full-width-page-active';
 		}
 
 		return $classes;
@@ -159,14 +160,14 @@ class Gutenberg {
 
 		wp_enqueue_style(
 			self::FULL_WIDTH_CSS_HANDLE,
-			trailingslashit( GUTENBERG_PLUGIN_DIR_URL ) . 'assets/css/etg-full-width-page.css',
+			trailingslashit( METG_DIR_URL ) . 'assets/css/metg-full-width-page.css',
 			array(),
-			defined( 'GUTENBERG_PLUGIN_VERSION' ) ? GUTENBERG_PLUGIN_VERSION : null
+			defined( 'METG_VERSION' ) ? METG_VERSION : null
 		);
 	}
 
 	/**
-	 * True when the given page is using the ETG Full Width Page template
+	 * True when the given page is using the Full Width Page template
 	 * (either the classic-theme PHP template or the block-theme registered
 	 * template).
 	 *
@@ -207,7 +208,7 @@ class Gutenberg {
 	 */
 	public function register_blocks() {
 		// auto-register all blocks inside build/blocks:
-		$blocks_dir = GUTENBERG_PLUGIN_DIR_PATH . '/build/blocks';
+		$blocks_dir = METG_DIR_PATH . '/build/blocks';
 		foreach ( glob( $blocks_dir . '/*', GLOB_ONLYDIR ) as $block_dir ) {
 			register_block_type( $block_dir );
 		}
@@ -269,10 +270,10 @@ class Gutenberg {
 	 */
 	public function enqueue_editor_assets(): void {
 		wp_enqueue_style(
-			'gutenberg-plugin-layout-fixes',
-			GUTENBERG_PLUGIN_DIR_URL . '/assets/css/layout-fixes.css',
+			'metg-layout-fixes',
+			METG_DIR_URL . '/assets/css/layout-fixes.css',
 			array(),
-			GUTENBERG_PLUGIN_VERSION
+			METG_VERSION
 		);
 
 		$this->enqueue_converted_post_fonts( $this->detect_editor_post_id() );
@@ -284,16 +285,16 @@ class Gutenberg {
 	public function fontawesome_icon_block_enqueue_fontawesome() {
 		wp_enqueue_style(
 			'font-awesome-custom',
-			GUTENBERG_PLUGIN_DIR_URL . '/assets/vendor/fontawesome/css/all.min.css',
+			METG_DIR_URL . '/assets/vendor/fontawesome/css/all.min.css',
 			array(),
 			'6.5.0'
 		);
 
 		wp_enqueue_style(
-			'gutenberg-plugin-layout-fixes-admin',
-			GUTENBERG_PLUGIN_DIR_URL . '/assets/css/layout-fixes.css',
+			'metg-layout-fixes-admin',
+			METG_DIR_URL . '/assets/css/layout-fixes.css',
 			array(),
-			GUTENBERG_PLUGIN_VERSION
+			METG_VERSION
 		);
 	}
 
@@ -303,24 +304,27 @@ class Gutenberg {
 	public function enqueue_scripts(): void {
 		wp_enqueue_style(
 			'font-awesome-custom',
-			GUTENBERG_PLUGIN_DIR_URL . '/assets/vendor/fontawesome/css/all.min.css',
+			METG_DIR_URL . '/assets/vendor/fontawesome/css/all.min.css',
 			array(),
 			'6.5.0'
 		);
 
 		wp_enqueue_style(
-			'gutenberg-plugin-layout-fixes',
-			GUTENBERG_PLUGIN_DIR_URL . '/assets/css/layout-fixes.css',
+			'metg-layout-fixes',
+			METG_DIR_URL . '/assets/css/layout-fixes.css',
 			array(),
-			GUTENBERG_PLUGIN_VERSION
+			METG_VERSION
 		);
 
 		wp_enqueue_script(
-			'gutenberg-plugin-scripts',
-			GUTENBERG_PLUGIN_DIR_URL . '/assets/js/scripts.js',
+			'metg-scripts',
+			METG_DIR_URL . '/assets/js/scripts.js',
 			array( 'jquery' ),
-			GUTENBERG_PLUGIN_VERSION,
-			true
+			METG_VERSION,
+			array(
+				'in_footer' => true,
+				'strategy'  => 'defer',
+			)
 		);
 
 		if ( has_block( 'progressus/icon' ) ) {
@@ -330,14 +334,14 @@ class Gutenberg {
 		if ( has_block( 'progressus/testimonials' ) ) {
 			wp_enqueue_style(
 				'swiper-css',
-				GUTENBERG_PLUGIN_DIR_URL . '/assets/vendor/swiper/swiper-bundle.min.css',
+				METG_DIR_URL . '/assets/vendor/swiper/swiper-bundle.min.css',
 				array(),
 				'11.0.0'
 			);
 
 			wp_enqueue_script(
 				'swiper-js',
-				GUTENBERG_PLUGIN_DIR_URL . '/assets/vendor/swiper/swiper-bundle.min.js',
+				METG_DIR_URL . '/assets/vendor/swiper/swiper-bundle.min.js',
 				array(),
 				'11.0.0',
 				true
@@ -349,7 +353,7 @@ class Gutenberg {
 		// Enqueue form submission script if form block is present
 		if ( has_block( 'progressus/form' ) ) {
 			wp_localize_script(
-				'gutenberg-plugin-scripts',
+				'metg-scripts',
 				'progressusFormData',
 				array(
 					'ajaxUrl' => admin_url( 'admin-ajax.php' ),
@@ -385,12 +389,12 @@ class Gutenberg {
 			return;
 		}
 
-		$handle = 'etg-google-fonts-' . md5( $url );
+		$handle = 'metg-google-fonts-' . md5( $url );
 		if ( isset( $this->enqueued_font_handles[ $handle ] ) ) {
 			return;
 		}
 
-		wp_enqueue_style( $handle, $url, array(), GUTENBERG_PLUGIN_VERSION );
+		wp_enqueue_style( $handle, $url, array(), METG_VERSION );
 		$this->enqueued_font_handles[ $handle ] = true;
 	}
 
@@ -446,6 +450,7 @@ class Gutenberg {
 	 * Initialize the plugin.
 	 */
 	public function init(): void {
+		Data_Migration::maybe_run();
 		$this->register_full_width_page_template();
 		Admin_Settings::instance();
 		Batch_Convert_Wizard::instance();
@@ -473,13 +478,13 @@ class Gutenberg {
 		register_block_template(
 			self::FULL_WIDTH_TEMPLATE_ID,
 			array(
-				'title'       => __( 'ETG Full Width Page', 'elementor-to-gutenberg' ),
-				'description' => __( 'Template for converted full width pages that keeps the active theme header and footer without forcing constrained page layout.', 'elementor-to-gutenberg' ),
+				'title'       => __( 'Full Width Page', 'migrate-elementor-to-gutenberg' ),
+				'description' => __( 'Template for converted full width pages that keeps the active theme header and footer without forcing constrained page layout.', 'migrate-elementor-to-gutenberg' ),
 				'post_types'  => array( 'page' ),
 				'content'     => sprintf(
 					'<!-- wp:template-part {"slug":"header","theme":"%1$s","tagName":"header"} /-->' . "\n\n" .
-					'<!-- wp:group {"tagName":"main","className":"etg-full-width-page"} -->' . "\n" .
-					'<main class="wp-block-group etg-full-width-page"><!-- wp:post-content /--></main>' . "\n" .
+					'<!-- wp:group {"tagName":"main","className":"metg-full-width-page"} -->' . "\n" .
+					'<main class="wp-block-group metg-full-width-page"><!-- wp:post-content /--></main>' . "\n" .
 					'<!-- /wp:group -->' . "\n\n" .
 					'<!-- wp:template-part {"slug":"footer","theme":"%1$s","tagName":"footer"} /-->',
 					get_stylesheet()
@@ -496,7 +501,7 @@ class Gutenberg {
 		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'progressus_form_nonce' ) ) {
 			wp_send_json_error(
 				array(
-					'message' => __( 'Security verification failed.', 'elementor-to-gutenberg' ),
+					'message' => __( 'Security verification failed.', 'migrate-elementor-to-gutenberg' ),
 				)
 			);
 		}
@@ -517,16 +522,16 @@ class Gutenberg {
 
 		// Prepare email content
 		/* translators: %s: name of the form submitted */
-		$subject = sprintf( __( 'New Form Submission: %s', 'elementor-to-gutenberg' ), $form_name );
+		$subject = sprintf( __( 'New Form Submission: %s', 'migrate-elementor-to-gutenberg' ), $form_name );
 		/* translators: %s: name of the WordPress site */
-		$message = sprintf( __( "You have received a new form submission from %s:\n\n", 'elementor-to-gutenberg' ), get_bloginfo( 'name' ) );
+		$message = sprintf( __( "You have received a new form submission from %s:\n\n", 'migrate-elementor-to-gutenberg' ), get_bloginfo( 'name' ) );
 
 		foreach ( $form_data as $field => $value ) {
 			$message .= sprintf( "%s: %s\n", ucfirst( str_replace( array( '_', '-' ), ' ', $field ) ), $value );
 		}
 
 		/* translators: %s: date and time of form submission */
-		$message .= sprintf( "\n\n" . __( 'Submitted at: %s', 'elementor-to-gutenberg' ), current_time( 'mysql' ) );
+		$message .= sprintf( "\n\n" . __( 'Submitted at: %s', 'migrate-elementor-to-gutenberg' ), current_time( 'mysql' ) );
 
 		// Set email headers
 		$headers = array( 'Content-Type: text/plain; charset=UTF-8' );
@@ -537,13 +542,13 @@ class Gutenberg {
 		if ( $email_sent ) {
 			wp_send_json_success(
 				array(
-					'message' => __( 'Your submission was successful. We will get back to you soon!', 'elementor-to-gutenberg' ),
+					'message' => __( 'Your submission was successful. We will get back to you soon!', 'migrate-elementor-to-gutenberg' ),
 				)
 			);
 		} else {
 			wp_send_json_error(
 				array(
-					'message' => __( 'Your submission failed because of an error. Please try again.', 'elementor-to-gutenberg' ),
+					'message' => __( 'Your submission failed because of an error. Please try again.', 'migrate-elementor-to-gutenberg' ),
 				)
 			);
 		}
@@ -585,13 +590,13 @@ class Gutenberg {
 			return;
 		}
 
-		$base_url = plugins_url( 'assets/css/woocommerce/', GUTENBERG_PLUGIN_FILE );
+		$base_url = plugins_url( 'assets/css/woocommerce/', METG_FILE );
 		foreach ( $required_handles as $handle => $file ) {
 			wp_enqueue_style(
 				$handle,
 				$base_url . $file,
 				array(),
-				GUTENBERG_PLUGIN_VERSION
+				METG_VERSION
 			);
 		}
 	}
@@ -606,7 +611,7 @@ class Gutenberg {
 	private function get_required_woocommerce_style_handles( string $content ): array {
 
 		$required      = array();
-		$handle_prefix = 'gutenberg-plugin-wc-';
+		$handle_prefix = 'metg-wc-';
 
 		if ( has_block( 'woocommerce/product-button', get_the_ID() )
 			|| has_block( 'woocommerce/add-to-cart-form', get_the_ID() )

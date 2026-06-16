@@ -2,14 +2,14 @@
 /**
  * Widget handler for Elementor icon list widget.
  *
- * @package Progressus\Gutenberg
+ * @package Progressus\MigrateElementorToGutenberg
  */
 
-namespace Progressus\Gutenberg\Admin\Widget;
+namespace Progressus\MigrateElementorToGutenberg\Admin\Widget;
 
-use Progressus\Gutenberg\Admin\Widget_Handler_Interface;
-use Progressus\Gutenberg\Admin\Helper\Style_Parser;
-use Progressus\Gutenberg\Admin\Helper\Alignment_Helper;
+use Progressus\MigrateElementorToGutenberg\Admin\Widget_Handler_Interface;
+use Progressus\MigrateElementorToGutenberg\Admin\Helper\Style_Parser;
+use Progressus\MigrateElementorToGutenberg\Admin\Helper\Alignment_Helper;
 
 use function esc_attr;
 use function esc_html;

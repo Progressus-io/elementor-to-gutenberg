@@ -2,12 +2,12 @@
 ( function ( window, document ) {
 	'use strict';
 
-	if ( ! window.ele2gbBatchWizard ) {
+	if ( ! window.metgBatchWizard ) {
 		return;
 	}
 
-	const data = window.ele2gbBatchWizard;
-	const root = document.getElementById( 'ele2gb-batch-convert-root' );
+	const data = window.metgBatchWizard;
+	const root = document.getElementById( 'metg-batch-convert-root' );
 	if ( ! root ) {
 		return;
 	}
@@ -15,20 +15,20 @@
 	const STATUS_BADGES = {
 		converted: {
 			labelKey: 'statusConverted',
-			className: 'ele2gb-status-converted',
+			className: 'metg-status-converted',
 		},
 		not_converted: {
 			labelKey: 'statusNotConverted',
-			className: 'ele2gb-status-not_converted',
+			className: 'metg-status-not_converted',
 		},
 		partial: {
 			labelKey: 'statusPartial',
-			className: 'ele2gb-status-partial',
+			className: 'metg-status-partial',
 		},
-		error: { labelKey: 'statusError', className: 'ele2gb-status-error' },
+		error: { labelKey: 'statusError', className: 'metg-status-error' },
 		skipped: {
 			labelKey: 'statusSkipped',
-			className: 'ele2gb-status-skipped',
+			className: 'metg-status-skipped',
 		},
 	};
 
@@ -589,7 +589,7 @@
 			}
 			this.stopPolling();
 			const poll = () => {
-				this.request( 'ele2gb_poll_job', { jobId: this.state.job.id } )
+				this.request( 'metg_poll_job', { jobId: this.state.job.id } )
 					.then( ( response ) => {
 						if ( response && response.job ) {
 							this.state.job = response.job;
@@ -637,7 +637,7 @@
 
 			this.stopPolling();
 
-			this.request( 'ele2gb_cancel_job', { jobId: this.state.job.id } )
+			this.request( 'metg_cancel_job', { jobId: this.state.job.id } )
 				.then( ( response ) => {
 					// If PHP returns the cancelled job, keep it for display; otherwise clear.
 					if ( response && response.job ) {
@@ -749,7 +749,7 @@
 			payload.defaultHeader = this.state.defaultHeaderId || 0;
 			payload.defaultFooter = this.state.defaultFooterId || 0;
 
-			this.request( 'ele2gb_start_job', payload )
+			this.request( 'metg_start_job', payload )
 				.then( ( response ) => {
 					if ( response && response.job ) {
 						this.state.job = response.job;
@@ -805,7 +805,7 @@
 			this.render();
 
 			this.state.isSubmitting = true;
-			this.request( 'ele2gb_start_job', payload )
+			this.request( 'metg_start_job', payload )
 				.then( ( response ) => {
 					if ( response && response.job ) {
 						this.state.job = response.job;
@@ -828,7 +828,7 @@
 
 		refreshPages() {
 			this.state.refreshing = true;
-			this.request( 'ele2gb_pages', {} )
+			this.request( 'metg_pages', {} )
 				.then( ( response ) => {
 					if ( response && Array.isArray( response.pages ) ) {
 						this.pages = response.pages;
@@ -878,14 +878,14 @@
 		}
 
 		renderHeader() {
-			const header = createElement( 'div', 'ele2gb-wizard-header' );
+			const header = createElement( 'div', 'metg-wizard-header' );
 			const steps = this.getStepSequence();
 			const currentIndex = Math.max(
 				0,
 				steps.indexOf( this.state.currentStep )
 			);
 
-			const stepper = createElement( 'div', 'ele2gb-stepper' );
+			const stepper = createElement( 'div', 'metg-stepper' );
 			const svgNS = 'http://www.w3.org/2000/svg';
 
 			steps.forEach( ( step, i ) => {
@@ -898,13 +898,13 @@
 
 				const item = createElement(
 					'div',
-					'ele2gb-stepper-item' + stateClass
+					'metg-stepper-item' + stateClass
 				);
 
-				const circle = createElement( 'div', 'ele2gb-stepper-circle' );
+				const circle = createElement( 'div', 'metg-stepper-circle' );
 				if ( i < currentIndex ) {
 					const checkSvg = document.createElementNS( svgNS, 'svg' );
-					checkSvg.setAttribute( 'class', 'ele2gb-stepper-check' );
+					checkSvg.setAttribute( 'class', 'metg-stepper-check' );
 					checkSvg.setAttribute( 'viewBox', '0 0 20 20' );
 					checkSvg.setAttribute( 'fill', 'currentColor' );
 					checkSvg.setAttribute( 'aria-hidden', 'true' );
@@ -923,7 +923,7 @@
 				item.appendChild(
 					createElement(
 						'span',
-						'ele2gb-stepper-label',
+						'metg-stepper-label',
 						this.getStepShortLabel( step )
 					)
 				);
@@ -939,7 +939,7 @@
 				return null;
 			}
 			const className =
-				'ele2gb-alert ele2gb-alert-' + this.state.notice.type;
+				'metg-alert metg-alert-' + this.state.notice.type;
 			return createElement( 'div', className, this.state.notice.message );
 		}
 
@@ -948,12 +948,12 @@
 			container.appendChild(
 				createElement(
 					'h2',
-					'ele2gb-wizard-step-title',
+					'metg-wizard-step-title',
 					this.strings.modeTitle || 'Choose Mode'
 				)
 			);
 
-			const grid = createElement( 'div', 'ele2gb-mode-grid' );
+			const grid = createElement( 'div', 'metg-mode-grid' );
 			const modes = [
 				{
 					key: 'auto',
@@ -974,7 +974,7 @@
 			const svgNS = 'http://www.w3.org/2000/svg';
 
 			const makeIcon = function ( pathD ) {
-				const wrap = createElement( 'div', 'ele2gb-mode-card-icon' );
+				const wrap = createElement( 'div', 'metg-mode-card-icon' );
 				const svg = document.createElementNS( svgNS, 'svg' );
 				svg.setAttribute( 'viewBox', '0 0 24 24' );
 				svg.setAttribute( 'fill', 'none' );
@@ -993,14 +993,14 @@
 			modes.forEach( ( mode ) => {
 				const card = createElement(
 					'label',
-					'ele2gb-mode-card' +
+					'metg-mode-card' +
 						( this.state.modeSelection === mode.key
 							? ' is-active'
 							: '' )
 				);
 				const input = document.createElement( 'input' );
 				input.type = 'radio';
-				input.name = 'ele2gb-mode';
+				input.name = 'metg-mode';
 				input.value = mode.key;
 				input.checked = this.state.modeSelection === mode.key;
 				input.className = 'screen-reader-text';
@@ -1027,7 +1027,7 @@
 				const subtext = this.strings[ subtextKey ];
 				if ( subtext ) {
 					card.appendChild(
-						createElement( 'p', 'ele2gb-mode-subtext', subtext )
+						createElement( 'p', 'metg-mode-subtext', subtext )
 					);
 				}
 
@@ -1056,7 +1056,7 @@
 					card.appendChild(
 						createElement(
 							'small',
-							'ele2gb-mode-context-line',
+							'metg-mode-context-line',
 							contextLine
 						)
 					);
@@ -1066,7 +1066,7 @@
 
 			container.appendChild( grid );
 
-			const buttons = createElement( 'div', 'ele2gb-wizard-buttons' );
+			const buttons = createElement( 'div', 'metg-wizard-buttons' );
 			const continueBtn = createButton(
 				this.strings.continue || 'Continue',
 				'button button-primary'
@@ -1107,7 +1107,7 @@
 				return null;
 			}
 
-			const wrapper = createElement( 'div', 'ele2gb-theme-warning-list' );
+			const wrapper = createElement( 'div', 'metg-theme-warning-list' );
 			warnings.forEach( ( warning ) => {
 				const message =
 					warning.message ||
@@ -1117,7 +1117,7 @@
 				wrapper.appendChild(
 					createElement(
 						'div',
-						'ele2gb-alert ele2gb-alert-warning',
+						'metg-alert metg-alert-warning',
 						message + details
 					)
 				);
@@ -1143,12 +1143,12 @@
 				!! theme.isActive || theme.slug === this.getCurrentThemeSlug();
 			const isInstalled = theme.isInstalled !== false;
 			const cardClass =
-				'ele2gb-theme-browser-card' +
+				'metg-theme-browser-card' +
 				( isSelected ? ' is-selected' : '' ) +
-				( isActive ? ' ele2gb-theme-card--current' : '' );
+				( isActive ? ' metg-theme-card--current' : '' );
 			const card = createElement( 'article', cardClass );
 
-			const preview = createElement( 'div', 'ele2gb-theme-card-preview' );
+			const preview = createElement( 'div', 'metg-theme-card-preview' );
 			if ( theme.screenshot ) {
 				const image = document.createElement( 'img' );
 				image.src = theme.screenshot;
@@ -1158,13 +1158,13 @@
 				preview.appendChild(
 					createElement(
 						'div',
-						'ele2gb-theme-card-no-preview',
+						'metg-theme-card-no-preview',
 						theme.name || theme.slug
 					)
 				);
 			}
 
-			const actions = createElement( 'div', 'ele2gb-theme-card-actions' );
+			const actions = createElement( 'div', 'metg-theme-card-actions' );
 			let buttonLabel;
 			if ( isActive ) {
 				buttonLabel = this.strings.themeActionActive || 'Active';
@@ -1188,15 +1188,15 @@
 			preview.appendChild( actions );
 			card.appendChild( preview );
 
-			const body = createElement( 'div', 'ele2gb-theme-card-body' );
+			const body = createElement( 'div', 'metg-theme-card-body' );
 			const titleRow = createElement(
 				'div',
-				'ele2gb-theme-card-title-row'
+				'metg-theme-card-title-row'
 			);
 			titleRow.appendChild(
 				createElement(
 					'h3',
-					'ele2gb-theme-card-title',
+					'metg-theme-card-title',
 					theme.name || theme.slug
 				)
 			);
@@ -1211,15 +1211,15 @@
 					this.strings.themeStatusNotInstalled || 'Not installed';
 			}
 			titleRow.appendChild(
-				createElement( 'span', 'ele2gb-theme-status-pill', statusText )
+				createElement( 'span', 'metg-theme-status-pill', statusText )
 			);
 			body.appendChild( titleRow );
 
-			const labels = createElement( 'div', 'ele2gb-theme-card-labels' );
+			const labels = createElement( 'div', 'metg-theme-card-labels' );
 			labels.appendChild(
 				createElement(
 					'span',
-					'ele2gb-theme-chip',
+					'metg-theme-chip',
 					this.strings.themeBlockLabel || 'Block theme'
 				)
 			);
@@ -1227,7 +1227,7 @@
 				labels.appendChild(
 					createElement(
 						'span',
-						'ele2gb-theme-chip ele2gb-theme-chip-selected',
+						'metg-theme-chip metg-theme-chip-selected',
 						this.strings.themeSelected || 'Selected'
 					)
 				);
@@ -1236,7 +1236,7 @@
 
 			const selector = document.createElement( 'input' );
 			selector.type = 'radio';
-			selector.name = 'ele2gb-theme-choice';
+			selector.name = 'metg-theme-choice';
 			selector.value = theme.slug;
 			selector.checked = isSelected;
 			selector.className = 'screen-reader-text';
@@ -1265,7 +1265,7 @@
 			container.appendChild(
 				createElement(
 					'h2',
-					'ele2gb-wizard-step-title',
+					'metg-wizard-step-title',
 					this.strings.themeStepTitle || 'Theme compatibility'
 				)
 			);
@@ -1273,7 +1273,7 @@
 				container.appendChild(
 					createElement(
 						'p',
-						'ele2gb-step-description',
+						'metg-step-description',
 						this.strings.themeStepDesc
 					)
 				);
@@ -1288,13 +1288,13 @@
 				container.appendChild(
 					createElement(
 						'p',
-						'ele2gb-step-description',
+						'metg-step-description',
 						this.strings.themeCompatibilityNote
 					)
 				);
 			}
 
-			const browser = createElement( 'div', 'ele2gb-theme-browser-grid' );
+			const browser = createElement( 'div', 'metg-theme-browser-grid' );
 			const currentTheme = {
 				slug: this.getCurrentThemeSlug(),
 				name: this.getCurrentThemeName(),
@@ -1331,7 +1331,7 @@
 				container.appendChild(
 					createElement(
 						'div',
-						'ele2gb-alert ele2gb-alert-warning ele2gb-theme-change-warning',
+						'metg-alert metg-alert-warning metg-theme-change-warning',
 						this.strings.themeChangeWarning
 					)
 				);
@@ -1354,18 +1354,18 @@
 			container.appendChild(
 				createElement(
 					'p',
-					'ele2gb-theme-selected-summary',
+					'metg-theme-selected-summary',
 					selectedSummary
 				)
 			);
 
 			const cssPanel = createElement(
 				'div',
-				'ele2gb-theme-options-panel'
+				'metg-theme-options-panel'
 			);
 			if ( this.willChangeTheme() && this.state.mode === 'custom' ) {
 				const cssWrapper = document.createElement( 'label' );
-				cssWrapper.className = 'ele2gb-inline-toggle';
+				cssWrapper.className = 'metg-inline-toggle';
 				const checkbox = document.createElement( 'input' );
 				checkbox.type = 'checkbox';
 				checkbox.checked = this.state.copyCustomCss;
@@ -1387,7 +1387,7 @@
 				cssPanel.appendChild(
 					createElement(
 						'p',
-						'ele2gb-step-description',
+						'metg-step-description',
 						this.strings.copyAdditionalCss ||
 							'Copy Additional CSS from the current theme'
 					)
@@ -1397,7 +1397,7 @@
 				container.appendChild( cssPanel );
 			}
 
-			const buttons = createElement( 'div', 'ele2gb-wizard-buttons' );
+			const buttons = createElement( 'div', 'metg-wizard-buttons' );
 			const backBtn = createButton(
 				this.strings.back || 'Back',
 				'button button-secondary'
@@ -1421,7 +1421,7 @@
 			container.appendChild(
 				createElement(
 					'h2',
-					'ele2gb-wizard-step-title',
+					'metg-wizard-step-title',
 					this.strings.selectPagesTitle || 'Select Pages'
 				)
 			);
@@ -1437,7 +1437,7 @@
 				return container;
 			}
 
-			const toolbar = createElement( 'div', 'ele2gb-select-toolbar' );
+			const toolbar = createElement( 'div', 'metg-select-toolbar' );
 
 			const searchInput = document.createElement( 'input' );
 			searchInput.type = 'text';
@@ -1488,14 +1488,14 @@
 
 			const bulkActions = createElement(
 				'div',
-				'ele2gb-select-bulk-actions'
+				'metg-select-bulk-actions'
 			);
 			const selectedCount = this.state.selectedPageIds.size;
 			if ( selectedCount > 0 ) {
 				bulkActions.appendChild(
 					createElement(
 						'span',
-						'ele2gb-selection-chip',
+						'metg-selection-chip',
 						formatString(
 							this.strings.selectionChip || '%1$d selected',
 							selectedCount
@@ -1534,13 +1534,13 @@
 			if ( this.postTypes.length > 1 ) {
 				const masterRow = createElement(
 					'div',
-					'ele2gb-master-select-row'
+					'metg-master-select-row'
 				);
 				const masterLabel = document.createElement( 'label' );
-				masterLabel.className = 'ele2gb-master-select-label';
+				masterLabel.className = 'metg-master-select-label';
 				const masterCheckbox = document.createElement( 'input' );
 				masterCheckbox.type = 'checkbox';
-				masterCheckbox.className = 'ele2gb-master-select-checkbox';
+				masterCheckbox.className = 'metg-master-select-checkbox';
 				const allPageIds = this.pages.map( ( p ) => p.id );
 				masterCheckbox.checked =
 					allPageIds.length > 0 &&
@@ -1569,13 +1569,13 @@
 				masterRow.appendChild( masterLabel );
 				container.appendChild( masterRow );
 
-				const tabStrip = createElement( 'div', 'ele2gb-tab-strip' );
+				const tabStrip = createElement( 'div', 'metg-tab-strip' );
 				const tabCountTpl = this.strings.tabCountLabel || '%1$s (%2$d)';
 				this.postTypes.forEach( ( pt ) => {
 					const tab = document.createElement( 'button' );
 					tab.type = 'button';
 					tab.className =
-						'ele2gb-tab' +
+						'metg-tab' +
 						( this.state.activeTab === pt.slug
 							? ' is-active'
 							: '' );
@@ -1597,10 +1597,10 @@
 				container.appendChild( tabStrip );
 			}
 
-			const tableWrapper = createElement( 'div', 'ele2gb-table-wrapper' );
+			const tableWrapper = createElement( 'div', 'metg-table-wrapper' );
 			const table = createElement(
 				'table',
-				'ele2gb-wizard-table widefat fixed striped'
+				'metg-wizard-table widefat fixed striped'
 			);
 			const thead = document.createElement( 'thead' );
 			const headRow = document.createElement( 'tr' );
@@ -1671,7 +1671,7 @@
 					STATUS_BADGES.not_converted;
 				const badge = createElement(
 					'span',
-					'ele2gb-status-badge ' +
+					'metg-status-badge ' +
 						( badgeInfo ? badgeInfo.className : '' )
 				);
 				badge.textContent = this.getPageStatusLabel(
@@ -1685,7 +1685,7 @@
 				tr.appendChild( lastTd );
 
 				const compatTd = document.createElement( 'td' );
-				compatTd.className = 'ele2gb-compat-cell';
+				compatTd.className = 'metg-compat-cell';
 				const warnings = page.warnings || {};
 				const unsupported = warnings.unsupportedWidgets || {};
 				const unsupTypes = Object.keys( unsupported );
@@ -1696,7 +1696,7 @@
 				if ( hasAnyWarning ) {
 					const trigger = document.createElement( 'button' );
 					trigger.type = 'button';
-					trigger.className = 'ele2gb-compat-trigger';
+					trigger.className = 'metg-compat-trigger';
 					trigger.setAttribute(
 						'aria-label',
 						this.strings.compatShowDetails ||
@@ -1709,7 +1709,7 @@
 						);
 						const unsupportedBadge = createElement(
 							'span',
-							'ele2gb-warn-badge ele2gb-warn-badge--unsupported'
+							'metg-warn-badge metg-warn-badge--unsupported'
 						);
 						unsupportedBadge.textContent = '⚠ ' + totalCount;
 						trigger.appendChild( unsupportedBadge );
@@ -1717,7 +1717,7 @@
 					if ( warnings.hasDynamic ) {
 						const dynamicBadge = createElement(
 							'span',
-							'ele2gb-warn-badge ele2gb-warn-badge--dynamic'
+							'metg-warn-badge metg-warn-badge--dynamic'
 						);
 						dynamicBadge.textContent = '◎';
 						trigger.appendChild( dynamicBadge );
@@ -1725,7 +1725,7 @@
 					if ( warnings.hasAnimation ) {
 						const animationBadge = createElement(
 							'span',
-							'ele2gb-warn-badge ele2gb-warn-badge--animation'
+							'metg-warn-badge metg-warn-badge--animation'
 						);
 						animationBadge.textContent = '✶';
 						trigger.appendChild( animationBadge );
@@ -1760,18 +1760,18 @@
 			if ( this.shouldShowSkipConvertedOption() ) {
 				const skipWrapper = createElement(
 					'div',
-					'ele2gb-skip-converted-wrapper'
+					'metg-skip-converted-wrapper'
 				);
 				const skipCheckbox = document.createElement( 'input' );
 				skipCheckbox.type = 'checkbox';
 				skipCheckbox.checked = this.state.skipConverted;
-				skipCheckbox.id = 'ele2gb-skip-converted';
+				skipCheckbox.id = 'metg-skip-converted';
 				skipCheckbox.addEventListener( 'change', () => {
 					this.state.skipConverted = skipCheckbox.checked;
 					this.render();
 				} );
 				const skipLabel = document.createElement( 'label' );
-				skipLabel.htmlFor = 'ele2gb-skip-converted';
+				skipLabel.htmlFor = 'metg-skip-converted';
 				skipLabel.textContent =
 					this.strings.skipConverted ||
 					'Skip pages that were already converted';
@@ -1780,7 +1780,7 @@
 				container.appendChild( skipWrapper );
 			}
 
-			const buttons = createElement( 'div', 'ele2gb-wizard-buttons' );
+			const buttons = createElement( 'div', 'metg-wizard-buttons' );
 			const backBtn = createButton(
 				this.strings.back || 'Back',
 				'button button-secondary'
@@ -1812,7 +1812,7 @@
 		}
 
 		renderTemplatesGroup( type, label ) {
-			const container = createElement( 'div', 'ele2gb-template-group' );
+			const container = createElement( 'div', 'metg-template-group' );
 			if ( label ) {
 				container.appendChild( createElement( 'h3', null, label ) );
 			}
@@ -1835,15 +1835,15 @@
 						: this.strings.noFootersFound ||
 						  'No footer templates detected.';
 				container.appendChild(
-					createElement( 'p', 'ele2gb-step-description', noneMessage )
+					createElement( 'p', 'metg-step-description', noneMessage )
 				);
 				return container;
 			}
 
-			const tableWrapper = createElement( 'div', 'ele2gb-table-wrapper' );
+			const tableWrapper = createElement( 'div', 'metg-table-wrapper' );
 			const table = createElement(
 				'table',
-				'ele2gb-wizard-table widefat fixed striped'
+				'metg-wizard-table widefat fixed striped'
 			);
 			const thead = document.createElement( 'thead' );
 			const headRow = document.createElement( 'tr' );
@@ -1882,7 +1882,7 @@
 				const titleTd = document.createElement( 'td' );
 				const titleWrapper = createElement(
 					'div',
-					'ele2gb-template-title',
+					'metg-template-title',
 					template.title
 				);
 				titleTd.appendChild( titleWrapper );
@@ -1903,7 +1903,7 @@
 					titleTd.appendChild(
 						createElement(
 							'div',
-							'ele2gb-template-meta',
+							'metg-template-meta',
 							metaParts.join( ' · ' )
 						)
 					);
@@ -1912,7 +1912,7 @@
 					titleTd.appendChild(
 						createElement(
 							'span',
-							'ele2gb-template-flag',
+							'metg-template-flag',
 							this.strings.likelyGlobal || 'Likely global'
 						)
 					);
@@ -1928,7 +1928,7 @@
 					: this.strings.statusUnknown || 'Unknown';
 				const badge = createElement(
 					'span',
-					'ele2gb-status-badge ' +
+					'metg-status-badge ' +
 						( badgeInfo ? badgeInfo.className : '' ),
 					badgeLabel
 				);
@@ -1937,7 +1937,7 @@
 					statusTd.appendChild(
 						createElement(
 							'div',
-							'ele2gb-template-message',
+							'metg-template-message',
 							template.lastResultMessage
 						)
 					);
@@ -1957,7 +1957,7 @@
 
 			const defaultWrapper = createElement(
 				'div',
-				'ele2gb-default-selection'
+				'metg-default-selection'
 			);
 			const labelText =
 				type === 'header'
@@ -1966,10 +1966,10 @@
 					: this.strings.defaultFooterLabel ||
 					  'Default footer after conversion';
 			defaultWrapper.appendChild(
-				createElement( 'p', 'ele2gb-step-description', labelText )
+				createElement( 'p', 'metg-step-description', labelText )
 			);
 
-			const options = createElement( 'div', 'ele2gb-default-options' );
+			const options = createElement( 'div', 'metg-default-options' );
 			const selectedTemplates = templates.filter( ( template ) =>
 				selectedSet.has( Number( template.id ) )
 			);
@@ -1981,8 +1981,8 @@
 					input.type = 'radio';
 					input.name =
 						type === 'header'
-							? 'ele2gb-default-header'
-							: 'ele2gb-default-footer';
+							? 'metg-default-header'
+							: 'metg-default-footer';
 					input.value = id;
 					input.checked = defaultId === id;
 					input.addEventListener( 'change', () => {
@@ -2002,7 +2002,7 @@
 						: this.strings.noFootersSelected ||
 						  'No footers selected for conversion.';
 				options.appendChild(
-					createElement( 'p', 'ele2gb-step-description', message )
+					createElement( 'p', 'metg-step-description', message )
 				);
 			}
 
@@ -2017,7 +2017,7 @@
 			container.appendChild(
 				createElement(
 					'h2',
-					'ele2gb-wizard-step-title',
+					'metg-wizard-step-title',
 					this.strings.headerFooterStepTitle ||
 						'Header & Footer Templates'
 				)
@@ -2025,12 +2025,12 @@
 
 			const headerSection = createElement(
 				'div',
-				'ele2gb-template-section ele2gb-template-section--header'
+				'metg-template-section metg-template-section--header'
 			);
 			headerSection.appendChild(
 				createElement(
 					'p',
-					'ele2gb-template-section-heading',
+					'metg-template-section-heading',
 					this.strings.headersLabel || 'Headers'
 				)
 			);
@@ -2040,17 +2040,17 @@
 			container.appendChild( headerSection );
 
 			container.appendChild(
-				createElement( 'hr', 'ele2gb-template-section-divider' )
+				createElement( 'hr', 'metg-template-section-divider' )
 			);
 
 			const footerSection = createElement(
 				'div',
-				'ele2gb-template-section ele2gb-template-section--footer'
+				'metg-template-section metg-template-section--footer'
 			);
 			footerSection.appendChild(
 				createElement(
 					'p',
-					'ele2gb-template-section-heading',
+					'metg-template-section-heading',
 					this.strings.footersLabel || 'Footers'
 				)
 			);
@@ -2059,7 +2059,7 @@
 			);
 			container.appendChild( footerSection );
 
-			const buttons = createElement( 'div', 'ele2gb-wizard-buttons' );
+			const buttons = createElement( 'div', 'metg-wizard-buttons' );
 			const backBtn = createButton(
 				this.strings.back || 'Back',
 				'button button-secondary'
@@ -2089,7 +2089,7 @@
 			if ( totalPages <= 1 ) {
 				return null;
 			}
-			const pagination = createElement( 'div', 'ele2gb-pagination' );
+			const pagination = createElement( 'div', 'metg-pagination' );
 			const prev = createButton( '‹', 'button button-secondary' );
 			prev.disabled = this.state.tablePage <= 1;
 			prev.addEventListener( 'click', () => {
@@ -2203,7 +2203,7 @@
 			container.appendChild(
 				createElement(
 					'h2',
-					'ele2gb-wizard-step-title',
+					'metg-wizard-step-title',
 					this.strings.conflictsTitle || 'Resolve Conflicts'
 				)
 			);
@@ -2214,7 +2214,7 @@
 				count
 			);
 			container.appendChild(
-				createElement( 'p', 'ele2gb-step-description', summary )
+				createElement( 'p', 'metg-step-description', summary )
 			);
 
 			const options = [
@@ -2241,12 +2241,12 @@
 				this.state.conflictPolicy = 'overwrite';
 			}
 
-			const wrapper = createElement( 'div', 'ele2gb-conflict-options' );
+			const wrapper = createElement( 'div', 'metg-conflict-options' );
 			options.forEach( ( option ) => {
 				const label = document.createElement( 'label' );
 				const input = document.createElement( 'input' );
 				input.type = 'radio';
-				input.name = 'ele2gb-conflict-policy';
+				input.name = 'metg-conflict-policy';
 				input.value = option.key;
 				input.checked = this.state.conflictPolicy === option.key;
 				input.addEventListener( 'change', () => {
@@ -2260,7 +2260,7 @@
 			} );
 			container.appendChild( wrapper );
 
-			const buttons = createElement( 'div', 'ele2gb-wizard-buttons' );
+			const buttons = createElement( 'div', 'metg-wizard-buttons' );
 			const backBtn = createButton(
 				this.strings.back || 'Back',
 				'button button-secondary'
@@ -2280,33 +2280,33 @@
 		}
 
 		buildReviewStatTile( value, label ) {
-			const tile = createElement( 'div', 'ele2gb-review-stat' );
+			const tile = createElement( 'div', 'metg-review-stat' );
 			tile.appendChild(
 				createElement(
 					'div',
-					'ele2gb-review-stat-value',
+					'metg-review-stat-value',
 					String( value )
 				)
 			);
 			tile.appendChild(
-				createElement( 'div', 'ele2gb-review-stat-label', label )
+				createElement( 'div', 'metg-review-stat-label', label )
 			);
 			return tile;
 		}
 
 		buildReviewSection( title, editStep, bodyBuilder ) {
-			const section = createElement( 'div', 'ele2gb-review-section' );
+			const section = createElement( 'div', 'metg-review-section' );
 			const header = createElement(
 				'div',
-				'ele2gb-review-section-header'
+				'metg-review-section-header'
 			);
 			header.appendChild(
-				createElement( 'h3', 'ele2gb-review-section-title', title )
+				createElement( 'h3', 'metg-review-section-title', title )
 			);
 			if ( editStep ) {
 				const edit = document.createElement( 'a' );
 				edit.href = '#';
-				edit.className = 'ele2gb-review-section-edit';
+				edit.className = 'metg-review-section-edit';
 				edit.textContent = this.strings.editSection || 'Edit';
 				edit.addEventListener( 'click', ( e ) => {
 					e.preventDefault();
@@ -2315,7 +2315,7 @@
 				header.appendChild( edit );
 			}
 			section.appendChild( header );
-			const body = createElement( 'div', 'ele2gb-review-section-body' );
+			const body = createElement( 'div', 'metg-review-section-body' );
 			bodyBuilder( body );
 			section.appendChild( body );
 			return section;
@@ -2326,14 +2326,14 @@
 			container.appendChild(
 				createElement(
 					'h2',
-					'ele2gb-wizard-step-title',
+					'metg-wizard-step-title',
 					this.strings.reviewTitle || 'Review & Confirm'
 				)
 			);
 			container.appendChild(
 				createElement(
 					'p',
-					'ele2gb-step-description',
+					'metg-step-description',
 					this.strings.reviewDesc ||
 						'Double-check the plan below before starting. You can edit any section from here.'
 				)
@@ -2355,10 +2355,10 @@
 			const headerCount = this.state.selectedHeaderIds.size;
 			const footerCount = this.state.selectedFooterIds.size;
 
-			const dashboard = createElement( 'div', 'ele2gb-review-dashboard' );
+			const dashboard = createElement( 'div', 'metg-review-dashboard' );
 
 			// Stat tiles row
-			const stats = createElement( 'div', 'ele2gb-review-stats' );
+			const stats = createElement( 'div', 'metg-review-stats' );
 			stats.appendChild(
 				this.buildReviewStatTile(
 					convertCount,
@@ -2560,9 +2560,9 @@
 			container.appendChild( dashboard );
 
 			// Safety note
-			const safety = createElement( 'div', 'ele2gb-safety-note' );
+			const safety = createElement( 'div', 'metg-safety-note' );
 			safety.appendChild(
-				createElement( 'span', 'ele2gb-safety-note-icon', '\u{1F6E1}' )
+				createElement( 'span', 'metg-safety-note-icon', '\u{1F6E1}' )
 			);
 			safety.appendChild(
 				createElement(
@@ -2574,7 +2574,7 @@
 			);
 			container.appendChild( safety );
 
-			const buttons = createElement( 'div', 'ele2gb-wizard-buttons' );
+			const buttons = createElement( 'div', 'metg-wizard-buttons' );
 			const backBtn = createButton(
 				this.strings.back || 'Back',
 				'button button-secondary'
@@ -2582,14 +2582,14 @@
 			backBtn.addEventListener( 'click', () => this.goToPrevious() );
 			const buttonsLeft = createElement(
 				'div',
-				'ele2gb-wizard-buttons-left'
+				'metg-wizard-buttons-left'
 			);
 			buttonsLeft.appendChild( backBtn );
 			buttons.appendChild( buttonsLeft );
 
 			const buttonsRight = createElement(
 				'div',
-				'ele2gb-wizard-buttons-right'
+				'metg-wizard-buttons-right'
 			);
 			const startBtn = createButton(
 				this.strings.startConversion || 'Start Conversion',
@@ -2613,7 +2613,7 @@
 			container.appendChild(
 				createElement(
 					'h2',
-					'ele2gb-wizard-step-title',
+					'metg-wizard-step-title',
 					this.strings.progressTitle || 'Progress & Results'
 				)
 			);
@@ -2633,7 +2633,7 @@
 				container.appendChild(
 					createElement(
 						'div',
-						'ele2gb-alert ele2gb-alert-info',
+						'metg-alert metg-alert-info',
 						this.strings.resumeJob ||
 							'Resuming an active conversion job.'
 					)
@@ -2648,7 +2648,7 @@
 			const job = this.state.job;
 			const progressBar = createElement(
 				'div',
-				'ele2gb-progress-bar ele2gb-progress-bar-large'
+				'metg-progress-bar metg-progress-bar-large'
 			);
 			const percent = job.total
 				? Math.min(
@@ -2661,7 +2661,7 @@
 			progressBar.appendChild( bar );
 			container.appendChild( progressBar );
 
-			const summary = createElement( 'div', 'ele2gb-progress-summary' );
+			const summary = createElement( 'div', 'metg-progress-summary' );
 			const successCount =
 				job.counts && job.counts.success ? job.counts.success : 0;
 			const skippedCount =
@@ -2672,18 +2672,18 @@
 			const makeTile = function ( value, label, modifier ) {
 				const tile = createElement(
 					'div',
-					'ele2gb-stat-tile' +
-						( modifier ? ' ele2gb-stat-tile--' + modifier : '' )
+					'metg-stat-tile' +
+						( modifier ? ' metg-stat-tile--' + modifier : '' )
 				);
 				tile.appendChild(
 					createElement(
 						'div',
-						'ele2gb-stat-tile-value',
+						'metg-stat-tile-value',
 						String( value )
 					)
 				);
 				tile.appendChild(
-					createElement( 'div', 'ele2gb-stat-tile-label', label )
+					createElement( 'div', 'metg-stat-tile-label', label )
 				);
 				return tile;
 			};
@@ -2721,7 +2721,7 @@
 			if ( job.status === 'completed' && this.config.feedbackEnabled ) {
 				const fbRunRow = createElement(
 					'div',
-					'ele2gb-feedback-run-row'
+					'metg-feedback-run-row'
 				);
 				const fbRunBtn = this.buildActionPill( {
 					variant: 'feedback',
@@ -2760,7 +2760,7 @@
 				message = this.strings.jobRunning || 'Conversion in progress…';
 			}
 			container.appendChild(
-				createElement( 'p', 'ele2gb-step-description', message )
+				createElement( 'p', 'metg-step-description', message )
 			);
 
 			const resultsTable = this.renderResultsTable();
@@ -2768,7 +2768,7 @@
 				container.appendChild( resultsTable );
 			}
 
-			const actions = createElement( 'div', 'ele2gb-results-actions' );
+			const actions = createElement( 'div', 'metg-results-actions' );
 			if ( job.status !== 'completed' ) {
 				const cancelBtn = createButton(
 					this.strings.cancel || 'Cancel',
@@ -2819,7 +2819,7 @@
 				? document.createElement( 'a' )
 				: document.createElement( 'button' );
 			el.className =
-				'ele2gb-action-pill ele2gb-action-pill--' +
+				'metg-action-pill metg-action-pill--' +
 				( opts.variant || 'default' );
 			if ( opts.href ) {
 				el.href = opts.href;
@@ -2838,7 +2838,7 @@
 			}
 			if ( opts.iconPath ) {
 				const svg = document.createElementNS( svgNS, 'svg' );
-				svg.setAttribute( 'class', 'ele2gb-action-pill-icon' );
+				svg.setAttribute( 'class', 'metg-action-pill-icon' );
 				svg.setAttribute( 'viewBox', '0 0 24 24' );
 				svg.setAttribute( 'fill', 'none' );
 				svg.setAttribute( 'stroke', 'currentColor' );
@@ -2863,7 +2863,7 @@
 				el.appendChild(
 					createElement(
 						'span',
-						'ele2gb-action-pill-label',
+						'metg-action-pill-label',
 						opts.label
 					)
 				);
@@ -2874,9 +2874,9 @@
 		buildResultsTable( results ) {
 			const wrapper = createElement(
 				'div',
-				'ele2gb-results-table ele2gb-table-wrapper'
+				'metg-results-table metg-table-wrapper'
 			);
-			const table = createElement( 'table', 'ele2gb-wizard-table' );
+			const table = createElement( 'table', 'metg-wizard-table' );
 			const thead = document.createElement( 'thead' );
 			const headRow = document.createElement( 'tr' );
 			// Checkbox column for multi-item feedback selection
@@ -2957,7 +2957,7 @@
 					titleTd.appendChild(
 						createElement(
 							'div',
-							'ele2gb-result-meta',
+							'metg-result-meta',
 							metaParts.join( ' · ' )
 						)
 					);
@@ -2975,7 +2975,7 @@
 					STATUS_BADGES.not_converted;
 				const badge = createElement(
 					'span',
-					'ele2gb-status-badge ' + badgeInfo.className,
+					'metg-status-badge ' + badgeInfo.className,
 					this.strings[ resultConfig.labelKey ] || result.status
 				);
 				statusTd.appendChild( badge );
@@ -2998,7 +2998,7 @@
 				actionsTd.className = 'actions';
 				const actionGroup = createElement(
 					'div',
-					'ele2gb-action-group'
+					'metg-action-group'
 				);
 
 				if ( result.viewUrl ) {
@@ -3090,7 +3090,7 @@
 			const successes = results.filter( function ( r ) {
 				return r.status === 'success' || r.status === 'skipped';
 			} );
-			const container = createElement( 'div', 'ele2gb-results-sections' );
+			const container = createElement( 'div', 'metg-results-sections' );
 
 			// Multi-item feedback selection bar — shown when any checkboxes are checked
 			const checkedCount = this.state.feedbackCheckedIds.size;
@@ -3101,7 +3101,7 @@
 			) {
 				const bar = createElement(
 					'div',
-					'ele2gb-feedback-selection-bar'
+					'metg-feedback-selection-bar'
 				);
 				const selLabel = formatString(
 					this.strings.feedbackButtonSelected ||
@@ -3110,7 +3110,7 @@
 				);
 				const selBtn = createButton(
 					selLabel,
-					'button button-primary ele2gb-feedback-sel-btn'
+					'button button-primary metg-feedback-sel-btn'
 				);
 				selBtn.addEventListener( 'click', () => {
 					const ids = Array.from( this.state.feedbackCheckedIds );
@@ -3119,7 +3119,7 @@
 				bar.appendChild( selBtn );
 				const clearBtn = document.createElement( 'button' );
 				clearBtn.type = 'button';
-				clearBtn.className = 'button-link ele2gb-feedback-clear-btn';
+				clearBtn.className = 'button-link metg-feedback-clear-btn';
 				clearBtn.textContent =
 					this.strings.clearSelection || 'Clear selection';
 				clearBtn.addEventListener( 'click', () => {
@@ -3134,7 +3134,7 @@
 				container.appendChild(
 					createElement(
 						'h3',
-						'ele2gb-results-section-title ele2gb-results-section-title--error',
+						'metg-results-section-title metg-results-section-title--error',
 						this.strings.resultsNeedsAttention || 'Needs attention'
 					)
 				);
@@ -3144,7 +3144,7 @@
 				container.appendChild(
 					createElement(
 						'h3',
-						'ele2gb-results-section-title ele2gb-results-section-title--success',
+						'metg-results-section-title metg-results-section-title--success',
 						this.strings.resultsCompleted ||
 							'Completed successfully'
 					)
@@ -3170,7 +3170,7 @@
 			const jobId = String( job.id || '' );
 
 			const overlay = document.createElement( 'div' );
-			overlay.id = 'ele2gb-feedback-overlay';
+			overlay.id = 'metg-feedback-overlay';
 			overlay.style.cssText =
 				'position:fixed;top:0;left:0;right:0;bottom:0;z-index:100000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.55);padding:20px;box-sizing:border-box;';
 
@@ -3345,7 +3345,7 @@
 				errSpan.textContent = '';
 
 				const fd = new FormData();
-				fd.append( 'action', 'etg_submit_feedback' );
+				fd.append( 'action', 'metg_submit_feedback' );
 				fd.append( 'nonce', self.config.feedbackNonce );
 				fd.append( 'job_id', jobId );
 				fd.append( 'consent_given', 'true' );
@@ -3427,7 +3427,7 @@
 			}
 
 			const overlay = document.createElement( 'div' );
-			overlay.id = 'ele2gb-feedback-overlay';
+			overlay.id = 'metg-feedback-overlay';
 			overlay.style.cssText =
 				'position:fixed;top:0;left:0;right:0;bottom:0;z-index:100000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.55);padding:20px;box-sizing:border-box;';
 
@@ -3538,7 +3538,7 @@
 				errSpan.textContent = '';
 
 				const fd = new FormData();
-				fd.append( 'action', 'etg_submit_feedback' );
+				fd.append( 'action', 'metg_submit_feedback' );
 				fd.append( 'nonce', self.config.feedbackNonce );
 				fd.append( 'job_id', jobId || '' );
 				fd.append( 'consent_given', 'true' );
@@ -3697,7 +3697,7 @@
 			);
 
 			const formData = new FormData();
-			formData.append( 'action', 'ele2gb_ai_improve_single' );
+			formData.append( 'action', 'metg_ai_improve_single' );
 			formData.append( 'nonce', this.config.aiImproveNonce );
 			formData.append( 'source_id', String( page.sourceId ) );
 			formData.append( 'target_id', String( page.targetId ) );
@@ -3740,7 +3740,7 @@
 
 			// Overlay — inline styles guarantee visibility regardless of CSS load order
 			const overlay = document.createElement( 'div' );
-			overlay.id = 'ele2gb-bulk-ai-overlay';
+			overlay.id = 'metg-bulk-ai-overlay';
 			overlay.style.cssText = [
 				'position:fixed',
 				'top:0',
@@ -3773,7 +3773,7 @@
 			// Spinner SVG — uses CSS class for animation only
 			const svgNS = 'http://www.w3.org/2000/svg';
 			const svg = document.createElementNS( svgNS, 'svg' );
-			svg.setAttribute( 'class', 'ele2gb-bulk-ai-overlay-spinner' );
+			svg.setAttribute( 'class', 'metg-bulk-ai-overlay-spinner' );
 			svg.setAttribute( 'viewBox', '0 0 44 44' );
 			svg.setAttribute( 'aria-hidden', 'true' );
 			svg.style.cssText = 'width:64px;height:64px;flex-shrink:0;';
@@ -3884,7 +3884,7 @@
 
 		hideAiOverlay() {
 			const existing = document.getElementById(
-				'ele2gb-bulk-ai-overlay'
+				'metg-bulk-ai-overlay'
 			);
 			if ( existing ) {
 				try {
@@ -3926,12 +3926,12 @@
 
 		renderAiImproveStep() {
 			const ai = this.state.aiImprove;
-			const container = createElement( 'div', 'ele2gb-ai-improve-step' );
+			const container = createElement( 'div', 'metg-ai-improve-step' );
 
 			container.appendChild(
 				createElement(
 					'h2',
-					'ele2gb-wizard-step-title',
+					'metg-wizard-step-title',
 					this.strings.aiImproveTitle || 'AI Improvement'
 				)
 			);
@@ -3944,16 +3944,16 @@
 
 				const panel = createElement(
 					'div',
-					'ele2gb-ai-readiness-panel'
+					'metg-ai-readiness-panel'
 				);
 				const panelHeader = createElement(
 					'div',
-					'ele2gb-ai-readiness-header'
+					'metg-ai-readiness-header'
 				);
 				panelHeader.appendChild(
 					createElement(
 						'h3',
-						'ele2gb-ai-readiness-title',
+						'metg-ai-readiness-title',
 						this.strings.aiReadinessTitle || 'Pre-flight checklist'
 					)
 				);
@@ -3961,7 +3961,7 @@
 					panelHeader.appendChild(
 						createElement(
 							'span',
-							'ele2gb-ai-readiness-all-ready',
+							'metg-ai-readiness-all-ready',
 							this.strings.aiReadinessAllReady ||
 								'\u2713 Ready to start'
 						)
@@ -3972,11 +3972,11 @@
 				const makeRow = function ( ok, label ) {
 					const row = createElement(
 						'div',
-						'ele2gb-ai-readiness-row'
+						'metg-ai-readiness-row'
 					);
 					const icon = createElement(
 						'div',
-						'ele2gb-ai-readiness-icon ele2gb-ai-readiness-icon--' +
+						'metg-ai-readiness-icon metg-ai-readiness-icon--' +
 							( ok ? 'ok' : 'error' ),
 						ok ? '\u2713' : '\u00D7'
 					);
@@ -3984,7 +3984,7 @@
 					row.appendChild(
 						createElement(
 							'span',
-							'ele2gb-ai-readiness-status' +
+							'metg-ai-readiness-status' +
 								( ok ? '' : ' is-invalid' ),
 							label
 						)
@@ -3994,11 +3994,11 @@
 				const makeInfoRow = function ( label ) {
 					const row = createElement(
 						'div',
-						'ele2gb-ai-readiness-row'
+						'metg-ai-readiness-row'
 					);
 					const icon = createElement(
 						'div',
-						'ele2gb-ai-readiness-icon ele2gb-ai-readiness-icon--info',
+						'metg-ai-readiness-icon metg-ai-readiness-icon--info',
 						'i'
 					);
 					row.appendChild( icon );
@@ -4040,7 +4040,7 @@
 				if ( ! apiConfigured ) {
 					const apiAlert = createElement(
 						'div',
-						'ele2gb-alert ele2gb-alert-error'
+						'metg-alert metg-alert-error'
 					);
 					apiAlert.appendChild(
 						document.createTextNode(
@@ -4058,14 +4058,14 @@
 
 				const warning = createElement(
 					'div',
-					'ele2gb-ai-warning-notice'
+					'metg-ai-warning-notice'
 				);
 				const icon = createElement(
 					'span',
-					'ele2gb-ai-warning-icon',
+					'metg-ai-warning-icon',
 					'\u26A0'
 				);
-				const text = createElement( 'div', 'ele2gb-ai-warning-text' );
+				const text = createElement( 'div', 'metg-ai-warning-text' );
 				text.appendChild(
 					createElement(
 						'strong',
@@ -4091,7 +4091,7 @@
 				container.appendChild(
 					createElement(
 						'p',
-						'ele2gb-step-description',
+						'metg-step-description',
 						this.strings.aiImproveNone ||
 							'No successfully converted items found in this session.'
 					)
@@ -4117,14 +4117,14 @@
 
 				const progressHeader = createElement(
 					'div',
-					'ele2gb-ai-progress-header'
+					'metg-ai-progress-header'
 				);
 
 				// Bar + label row
-				const barRow = createElement( 'div', 'ele2gb-ai-bar-row' );
+				const barRow = createElement( 'div', 'metg-ai-bar-row' );
 				const bar = createElement(
 					'div',
-					'ele2gb-progress-bar ele2gb-progress-bar-large'
+					'metg-progress-bar metg-progress-bar-large'
 				);
 				const fill = document.createElement( 'span' );
 				fill.style.width = pct + '%';
@@ -4132,14 +4132,14 @@
 				barRow.appendChild( bar );
 				const label = createElement(
 					'span',
-					'ele2gb-ai-bar-label',
+					'metg-ai-bar-label',
 					settled + ' / ' + total
 				);
 				barRow.appendChild( label );
 				progressHeader.appendChild( barRow );
 
 				// Stat chips
-				const chips = createElement( 'div', 'ele2gb-ai-chips' );
+				const chips = createElement( 'div', 'metg-ai-chips' );
 				const chipData = [
 					{
 						count: done,
@@ -4165,7 +4165,7 @@
 				chipData.forEach( ( { count, label: chipLabel, cls } ) => {
 					const chip = createElement(
 						'span',
-						'ele2gb-ai-chip ' + cls
+						'metg-ai-chip ' + cls
 					);
 					chip.appendChild(
 						createElement( 'strong', null, String( count ) )
@@ -4182,7 +4182,7 @@
 					progressHeader.appendChild(
 						createElement(
 							'p',
-							'ele2gb-ai-paused-notice',
+							'metg-ai-paused-notice',
 							this.strings.aiImprovePaused ||
 								'Paused — review the failed item below, then choose Skip or Retry to continue.'
 						)
@@ -4195,11 +4195,11 @@
 			// ── Items table ──────────────────────────────────────────────────
 			const tableWrapper = createElement(
 				'div',
-				'ele2gb-results-table ele2gb-table-wrapper'
+				'metg-results-table metg-table-wrapper'
 			);
 			const table = createElement(
 				'table',
-				'ele2gb-wizard-table ele2gb-ai-table'
+				'metg-wizard-table metg-ai-table'
 			);
 			const thead = document.createElement( 'thead' );
 			const headRow = document.createElement( 'tr' );
@@ -4219,17 +4219,17 @@
 			const tbody = document.createElement( 'tbody' );
 			ai.pages.forEach( ( page, i ) => {
 				const tr = document.createElement( 'tr' );
-				tr.className = 'ele2gb-ai-row ele2gb-ai-row--' + page.status;
+				tr.className = 'metg-ai-row metg-ai-row--' + page.status;
 
 				// Title — strike-through when skipped
 				const titleTd = document.createElement( 'td' );
-				titleTd.className = 'ele2gb-ai-title-cell';
+				titleTd.className = 'metg-ai-title-cell';
 				titleTd.textContent = page.title;
 				tr.appendChild( titleTd );
 
 				// Type
 				const typeTd = document.createElement( 'td' );
-				typeTd.className = 'ele2gb-ai-type-cell';
+				typeTd.className = 'metg-ai-type-cell';
 				typeTd.textContent = page.type
 					? page.type.charAt( 0 ).toUpperCase() + page.type.slice( 1 )
 					: '';
@@ -4237,7 +4237,7 @@
 
 				// Status
 				const statusTd = document.createElement( 'td' );
-				statusTd.className = 'status ele2gb-ai-status-cell';
+				statusTd.className = 'status metg-ai-status-cell';
 
 				if ( page.status === 'pending' ) {
 					statusTd.appendChild(
@@ -4249,7 +4249,7 @@
 				} else if ( page.status === 'processing' ) {
 					const wrapper = createElement(
 						'span',
-						'ele2gb-ai-processing'
+						'metg-ai-processing'
 					);
 					wrapper.appendChild( this.makeRowSpinner() );
 					wrapper.appendChild(
@@ -4278,7 +4278,7 @@
 						statusTd.appendChild(
 							createElement(
 								'p',
-								'ele2gb-ai-error-msg',
+								'metg-ai-error-msg',
 								page.error
 							)
 						);
@@ -4295,7 +4295,7 @@
 
 				// Actions — Skip / Retry only on failed rows
 				const actionsTd = document.createElement( 'td' );
-				actionsTd.className = 'actions ele2gb-ai-actions-cell';
+				actionsTd.className = 'actions metg-ai-actions-cell';
 				if ( page.status === 'failed' ) {
 					const skipBtn = createButton(
 						this.strings.skip || 'Skip',
@@ -4336,10 +4336,10 @@
 				const allGood = failed === 0;
 				const summary = createElement(
 					'div',
-					'ele2gb-ai-completion ' +
+					'metg-ai-completion ' +
 						( allGood
-							? 'ele2gb-ai-completion--success'
-							: 'ele2gb-ai-completion--partial' )
+							? 'metg-ai-completion--success'
+							: 'metg-ai-completion--partial' )
 				);
 				summary.appendChild(
 					createElement(
@@ -4354,7 +4354,7 @@
 				);
 				const detail = createElement(
 					'span',
-					'ele2gb-ai-completion-detail',
+					'metg-ai-completion-detail',
 					' ' +
 						done +
 						' done · ' +
@@ -4368,7 +4368,7 @@
 			}
 
 			// ── Bottom actions ───────────────────────────────────────────────
-			const actions = createElement( 'div', 'ele2gb-results-actions' );
+			const actions = createElement( 'div', 'metg-results-actions' );
 			if ( ! ai.started ) {
 				const startBtn = createButton(
 					this.strings.aiImproveStart || 'Start AI Improvement',
@@ -4404,15 +4404,15 @@
 
 		makeAiStatusBadge( status, label ) {
 			const map = {
-				pending: 'ele2gb-status-not_converted',
-				processing: 'ele2gb-status-not_converted',
-				done: 'ele2gb-status-converted',
-				failed: 'ele2gb-status-error',
-				skipped: 'ele2gb-status-skipped',
+				pending: 'metg-status-not_converted',
+				processing: 'metg-status-not_converted',
+				done: 'metg-status-converted',
+				failed: 'metg-status-error',
+				skipped: 'metg-status-skipped',
 			};
 			return createElement(
 				'span',
-				'ele2gb-status-badge ' + ( map[ status ] || '' ),
+				'metg-status-badge ' + ( map[ status ] || '' ),
 				label
 			);
 		}
@@ -4420,7 +4420,7 @@
 		makeRowSpinner() {
 			const svgNS = 'http://www.w3.org/2000/svg';
 			const svg = document.createElementNS( svgNS, 'svg' );
-			svg.setAttribute( 'class', 'ele2gb-row-spinner' );
+			svg.setAttribute( 'class', 'metg-row-spinner' );
 			svg.setAttribute( 'viewBox', '0 0 24 24' );
 			svg.setAttribute( 'aria-hidden', 'true' );
 
@@ -4518,18 +4518,18 @@
 
 		buildWarningPopover( page ) {
 			const warnings = page.warnings || {};
-			const pop = createElement( 'div', 'ele2gb-warn-popover' );
+			const pop = createElement( 'div', 'metg-warn-popover' );
 
 			// Header
-			const hdr = createElement( 'div', 'ele2gb-warn-popover-header' );
+			const hdr = createElement( 'div', 'metg-warn-popover-header' );
 			const hTitle = createElement(
 				'span',
-				'ele2gb-warn-popover-title',
+				'metg-warn-popover-title',
 				this.strings.compatPopoverTitle || 'Compatibility Notes'
 			);
 			const closeBtn = document.createElement( 'button' );
 			closeBtn.type = 'button';
-			closeBtn.className = 'ele2gb-warn-popover-close';
+			closeBtn.className = 'metg-warn-popover-close';
 			closeBtn.setAttribute( 'aria-label', 'Close' );
 			closeBtn.textContent = '×';
 			closeBtn.addEventListener( 'click', () =>
@@ -4542,12 +4542,12 @@
 			// Page name
 			const pageName = createElement(
 				'div',
-				'ele2gb-warn-popover-page',
+				'metg-warn-popover-page',
 				page.title
 			);
 			pop.appendChild( pageName );
 
-			const body = createElement( 'div', 'ele2gb-warn-popover-body' );
+			const body = createElement( 'div', 'metg-warn-popover-body' );
 			let first = true;
 
 			// Unsupported widgets section
@@ -4556,17 +4556,17 @@
 			if ( unsupTypes.length > 0 ) {
 				if ( ! first ) {
 					body.appendChild(
-						createElement( 'hr', 'ele2gb-warn-popover-divider' )
+						createElement( 'hr', 'metg-warn-popover-divider' )
 					);
 				}
 				first = false;
 				const sec = createElement(
 					'div',
-					'ele2gb-warn-popover-section'
+					'metg-warn-popover-section'
 				);
 				const sTitle = createElement(
 					'div',
-					'ele2gb-warn-popover-section-title ele2gb-warn-popover-section-title--error'
+					'metg-warn-popover-section-title metg-warn-popover-section-title--error'
 				);
 				sTitle.textContent =
 					'⚠ ' +
@@ -4575,22 +4575,22 @@
 				sec.appendChild( sTitle );
 				const desc = createElement(
 					'p',
-					'ele2gb-warn-popover-desc',
+					'metg-warn-popover-desc',
 					this.strings.warnDescUnsupported ||
 						'These widgets will become placeholder blocks after conversion.'
 				);
 				sec.appendChild( desc );
-				const list = createElement( 'ul', 'ele2gb-warn-popover-list' );
+				const list = createElement( 'ul', 'metg-warn-popover-list' );
 				unsupTypes.forEach( ( type ) => {
 					const li = document.createElement( 'li' );
-					li.className = 'ele2gb-warn-popover-list-item';
+					li.className = 'metg-warn-popover-list-item';
 					const code = document.createElement( 'code' );
 					code.textContent = type;
 					li.appendChild( code );
 					li.appendChild(
 						createElement(
 							'span',
-							'ele2gb-warn-popover-count',
+							'metg-warn-popover-count',
 							'×' + unsupported[ type ]
 						)
 					);
@@ -4604,17 +4604,17 @@
 			if ( warnings.hasDynamic ) {
 				if ( ! first ) {
 					body.appendChild(
-						createElement( 'hr', 'ele2gb-warn-popover-divider' )
+						createElement( 'hr', 'metg-warn-popover-divider' )
 					);
 				}
 				first = false;
 				const sec = createElement(
 					'div',
-					'ele2gb-warn-popover-section'
+					'metg-warn-popover-section'
 				);
 				const sTitle = createElement(
 					'div',
-					'ele2gb-warn-popover-section-title ele2gb-warn-popover-section-title--info'
+					'metg-warn-popover-section-title metg-warn-popover-section-title--info'
 				);
 				sTitle.textContent =
 					'◎ ' +
@@ -4623,7 +4623,7 @@
 				sec.appendChild(
 					createElement(
 						'p',
-						'ele2gb-warn-popover-desc',
+						'metg-warn-popover-desc',
 						this.strings.warnDescDynamic ||
 							'This page uses Elementor dynamic tags. Connections to external data will be lost — manual reconnection in Gutenberg is needed.'
 					)
@@ -4635,16 +4635,16 @@
 			if ( warnings.hasAnimation ) {
 				if ( ! first ) {
 					body.appendChild(
-						createElement( 'hr', 'ele2gb-warn-popover-divider' )
+						createElement( 'hr', 'metg-warn-popover-divider' )
 					);
 				}
 				const sec = createElement(
 					'div',
-					'ele2gb-warn-popover-section'
+					'metg-warn-popover-section'
 				);
 				const sTitle = createElement(
 					'div',
-					'ele2gb-warn-popover-section-title ele2gb-warn-popover-section-title--warning'
+					'metg-warn-popover-section-title metg-warn-popover-section-title--warning'
 				);
 				sTitle.textContent =
 					'✶ ' + ( this.strings.warnTitleAnimation || 'Animations' );
@@ -4652,7 +4652,7 @@
 				sec.appendChild(
 					createElement(
 						'p',
-						'ele2gb-warn-popover-desc',
+						'metg-warn-popover-desc',
 						this.strings.warnDescAnimation ||
 							'Entrance animations will not carry over to Gutenberg and must be re-applied manually.'
 					)

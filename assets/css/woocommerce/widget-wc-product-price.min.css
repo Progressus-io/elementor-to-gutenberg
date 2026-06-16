@@ -1,4 +1,4 @@
-:where([class*="etg-page-"] [class*="etg-widget-"]).elementor-product-price-block-yes
+:where([class*="metg-page-"] [class*="metg-widget-"]).elementor-product-price-block-yes
 :is(
   .wp-block-woocommerce-product-price .price,
   .wc-block-components-product-price.price,
@@ -6,7 +6,7 @@
   .wc-block-product__price,
   .price
 ) del,
-:where([class*="etg-page-"] [class*="etg-widget-"]).elementor-product-price-block-yes
+:where([class*="metg-page-"] [class*="metg-widget-"]).elementor-product-price-block-yes
 :is(
   .wp-block-woocommerce-product-price .price,
   .wc-block-components-product-price.price,

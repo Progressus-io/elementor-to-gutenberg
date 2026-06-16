@@ -1,4 +1,4 @@
-:where([class*="etg-page-"] [class*="etg-widget-"])
+:where([class*="metg-page-"] [class*="metg-widget-"])
 :not(.elementor-show-heading-yes)
 :is(
   .woocommerce-tabs .woocommerce-Tabs-panel--additional_information

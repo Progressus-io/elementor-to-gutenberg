@@ -121,7 +121,7 @@
 	}
 
 	EtgAiEnhancement.prototype.init = function () {
-		this.root = document.getElementById( 'etg-ai-enhancement-app' );
+		this.root = document.getElementById( 'metg-ai-enhancement-app' );
 		if ( ! this.root ) {
 			return;
 		}
@@ -217,7 +217,7 @@
 		// Hidden no-API banner
 		if ( ! this.config.aiConfigured ) {
 			const notice = cel( 'div', 'pgs-banner pgs-banner--warning' );
-			notice.id = 'etg-no-api-notice';
+			notice.id = 'metg-no-api-notice';
 			notice.style.display = 'none';
 			notice.setAttribute( 'role', 'status' );
 			const ic = cel( 'span', 'pgs-banner__icon' );
@@ -277,7 +277,7 @@
 			'view-secondary'
 		);
 		bulkAiBtn.className = 'pgs-btn pgs-btn--subtle pgs-btn--sm';
-		bulkAiBtn.id = 'etg-bulk-enhance-btn';
+		bulkAiBtn.id = 'metg-bulk-enhance-btn';
 		bulkAiBtn.disabled = true;
 		bulkAiBtn.addEventListener( 'click', function () {
 			self.onBulkEnhanceClick();
@@ -295,7 +295,7 @@
 		const thCb = cel( 'th' );
 		thCb.style.width = '38px';
 		const masterCheck = pgsCheck();
-		masterCheck.input.id = 'etg-select-all';
+		masterCheck.input.id = 'metg-select-all';
 		masterCheck.input.addEventListener( 'change', function ( e ) {
 			self.onSelectAll( e.target.checked );
 		} );
@@ -410,7 +410,7 @@
 					'ai'
 				);
 				noKeyBtn.addEventListener( 'click', function () {
-					const n = document.getElementById( 'etg-no-api-notice' );
+					const n = document.getElementById( 'metg-no-api-notice' );
 					if ( n ) {
 						n.style.display = 'flex';
 						n.scrollIntoView( {
@@ -440,7 +440,7 @@
 		this.state.selected.clear();
 		document
 			.querySelectorAll(
-				'#etg-ai-enhancement-app input[type=checkbox][data-page-id]'
+				'#metg-ai-enhancement-app input[type=checkbox][data-page-id]'
 			)
 			.forEach( function ( cb ) {
 				cb.checked = checked;
@@ -459,7 +459,7 @@
 		this.state.selected.clear();
 		document
 			.querySelectorAll(
-				'#etg-ai-enhancement-app input[type=checkbox][data-page-id]'
+				'#metg-ai-enhancement-app input[type=checkbox][data-page-id]'
 			)
 			.forEach( function ( cb ) {
 				if ( cb.checked ) {
@@ -472,7 +472,7 @@
 	EtgAiEnhancement.prototype.updateBulkButtons = function () {
 		const count = this.state.selected.size;
 
-		const aiBtn = document.getElementById( 'etg-bulk-enhance-btn' );
+		const aiBtn = document.getElementById( 'metg-bulk-enhance-btn' );
 		if ( aiBtn ) {
 			aiBtn.disabled = count === 0;
 			const aiLbl = aiBtn.querySelector( '.pgs-btn__label' );
@@ -494,7 +494,7 @@
 
 	EtgAiEnhancement.prototype.onBulkEnhanceClick = function () {
 		if ( ! this.config.aiConfigured ) {
-			const notice = document.getElementById( 'etg-no-api-notice' );
+			const notice = document.getElementById( 'metg-no-api-notice' );
 			if ( notice ) {
 				notice.style.display = 'flex';
 				notice.scrollIntoView( {
@@ -574,7 +574,7 @@
 		);
 
 		const fd = new FormData();
-		fd.append( 'action', 'ele2gb_ai_improve_single' );
+		fd.append( 'action', 'metg_ai_improve_single' );
 		fd.append( 'nonce', this.config.aiImproveNonce );
 		fd.append( 'source_id', String( page.sourceId ) );
 		fd.append( 'target_id', String( page.targetId ) );
@@ -1138,17 +1138,17 @@
 	) {
 		this.hideOverlay();
 
-		if ( ! document.getElementById( 'etg-spin-style' ) ) {
+		if ( ! document.getElementById( 'metg-spin-style' ) ) {
 			const style = document.createElement( 'style' );
-			style.id = 'etg-spin-style';
+			style.id = 'metg-spin-style';
 			style.textContent =
-				'@keyframes etg-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}';
+				'@keyframes metg-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}';
 			document.head.appendChild( style );
 		}
 
 		const accentColor = '#4f44dd';
 		const overlay = document.createElement( 'div' );
-		overlay.id = 'ele2gb-bulk-ai-overlay';
+		overlay.id = 'metg-bulk-ai-overlay';
 		overlay.style.cssText =
 			'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(12,16,24,0.55);z-index:999999;display:flex;align-items:center;justify-content:center;font-family:"Hanken Grotesk",system-ui,sans-serif;';
 
@@ -1164,7 +1164,7 @@
 		svg.setAttribute( 'height', '48' );
 		svg.setAttribute( 'viewBox', '0 0 24 24' );
 		svg.setAttribute( 'fill', 'none' );
-		svg.style.cssText = 'animation:etg-spin 1s linear infinite;';
+		svg.style.cssText = 'animation:metg-spin 1s linear infinite;';
 		const circle = document.createElementNS( svgNS, 'circle' );
 		circle.setAttribute( 'cx', '12' );
 		circle.setAttribute( 'cy', '12' );
@@ -1242,7 +1242,7 @@
 	};
 
 	EtgAiEnhancement.prototype.hideOverlay = function () {
-		const overlay = document.getElementById( 'ele2gb-bulk-ai-overlay' );
+		const overlay = document.getElementById( 'metg-bulk-ai-overlay' );
 		if ( ! overlay ) {
 			return;
 		}
@@ -1296,7 +1296,7 @@
 	};
 
 	EtgAiEnhancement.prototype.makeRowSpinner = function () {
-		const wrap = cel( 'span', 'ele2gb-row-spinner' );
+		const wrap = cel( 'span', 'metg-row-spinner' );
 		const svgNS = 'http://www.w3.org/2000/svg';
 		const svg = document.createElementNS( svgNS, 'svg' );
 		svg.setAttribute( 'width', '16' );
@@ -1304,7 +1304,7 @@
 		svg.setAttribute( 'viewBox', '0 0 24 24' );
 		svg.setAttribute( 'fill', 'none' );
 		svg.style.cssText =
-			'animation:etg-spin 1s linear infinite;vertical-align:middle;';
+			'animation:metg-spin 1s linear infinite;vertical-align:middle;';
 		const c = document.createElementNS( svgNS, 'circle' );
 		c.setAttribute( 'cx', '12' );
 		c.setAttribute( 'cy', '12' );
@@ -1332,7 +1332,7 @@
 		const str = this.strings;
 
 		const overlay = document.createElement( 'div' );
-		overlay.id = 'etg-ae-feedback-overlay';
+		overlay.id = 'metg-ae-feedback-overlay';
 		overlay.style.cssText =
 			'position:fixed;top:0;left:0;right:0;bottom:0;z-index:100000;display:flex;align-items:center;justify-content:center;background:rgba(12,16,24,0.55);padding:20px;box-sizing:border-box;font-family:"Hanken Grotesk",system-ui,sans-serif;';
 
@@ -1490,7 +1490,7 @@
 			errSpan.textContent = '';
 
 			const fd = new FormData();
-			fd.append( 'action', 'etg_submit_ai_enhancement_feedback' );
+			fd.append( 'action', 'metg_submit_ai_enhancement_feedback' );
 			fd.append( 'nonce', self.config.feedbackNonce );
 			fd.append( 'target_id', String( targetId ) );
 			fd.append( 'source_id', String( sourceId || 0 ) );

@@ -9,7 +9,7 @@
     "svg"
   ],
   "version": "1.0.0",
-  "textdomain": "gutenberg",
+  "textdomain": "migrate-elementor-to-gutenberg",
   "editorStyle": "file:./index.css",
   "style": "file:./style-index.css",
   "viewScript": "file:./view.js",

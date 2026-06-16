@@ -14,10 +14,10 @@
  *  - Sensitive values are redacted before writing.
  *  - Uses wp_json_encode(), wp_mkdir_p(), wp_upload_dir() throughout.
  *
- * @package Progressus\Gutenberg
+ * @package Progressus\MigrateElementorToGutenberg
  */
 
-namespace Progressus\Gutenberg\Admin;
+namespace Progressus\MigrateElementorToGutenberg\Admin;
 
 use function gmdate;
 use function hash;
@@ -98,10 +98,10 @@ class Diagnostic_Logger {
 
 	/**
 	 * Generate a stable run identifier.
-	 * Format: etg_YYYYMMDD_HHMMSS_<6-char hex>
+	 * Format: metg_YYYYMMDD_HHMMSS_<6-char hex>
 	 */
 	public static function generate_run_id(): string {
-		return 'etg_' . gmdate( 'Ymd_His' ) . '_' . substr( md5( uniqid( '', true ) ), 0, 6 );
+		return 'metg_' . gmdate( 'Ymd_His' ) . '_' . substr( md5( uniqid( '', true ) ), 0, 6 );
 	}
 
 	/**
@@ -109,7 +109,7 @@ class Diagnostic_Logger {
 	 */
 	public static function log_path(): string {
 		$upload = wp_upload_dir( null, false );
-		return $upload['basedir'] . '/ele2gb/conversion-log.jsonl';
+		return $upload['basedir'] . '/metg/conversion-log.jsonl';
 	}
 
 	/** Log a run_start event. */

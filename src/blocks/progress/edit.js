@@ -68,18 +68,18 @@ export default function Edit( { attributes, setAttributes } ) {
 				<PanelBody
 					title={ __(
 						'Progress Bar Settings',
-						'progressus-gutenberg'
+						'migrate-elementor-to-gutenberg'
 					) }
 				>
 					<TextControl
-						label={ __( 'Title', 'progressus-gutenberg' ) }
+						label={ __( 'Title', 'migrate-elementor-to-gutenberg' ) }
 						value={ title }
 						onChange={ ( value ) =>
 							setAttributes( { title: value } )
 						}
 					/>
 					<RangeControl
-						label={ __( 'Percentage', 'progressus-gutenberg' ) }
+						label={ __( 'Percentage', 'migrate-elementor-to-gutenberg' ) }
 						value={ percentage }
 						onChange={ ( value ) =>
 							setAttributes( { percentage: value } )
@@ -88,7 +88,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						max={ 100 }
 					/>
 					<TextControl
-						label={ __( 'Inner Text', 'progressus-gutenberg' ) }
+						label={ __( 'Inner Text', 'migrate-elementor-to-gutenberg' ) }
 						value={ innerText }
 						onChange={ ( value ) =>
 							setAttributes( { innerText: value } )
@@ -97,7 +97,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					<ToggleControl
 						label={ __(
 							'Show Percentage',
-							'progressus-gutenberg'
+							'migrate-elementor-to-gutenberg'
 						) }
 						checked={ showPercentage }
 						onChange={ ( value ) =>
@@ -105,14 +105,14 @@ export default function Edit( { attributes, setAttributes } ) {
 						}
 					/>
 					<ToggleControl
-						label={ __( 'Show Title', 'progressus-gutenberg' ) }
+						label={ __( 'Show Title', 'migrate-elementor-to-gutenberg' ) }
 						checked={ showTitle }
 						onChange={ ( value ) =>
 							setAttributes( { showTitle: value } )
 						}
 					/>
 					<RangeControl
-						label={ __( 'Title Size', 'progressus-gutenberg' ) }
+						label={ __( 'Title Size', 'migrate-elementor-to-gutenberg' ) }
 						value={ titleSize }
 						onChange={ ( value ) =>
 							setAttributes( { titleSize: value } )
@@ -121,7 +121,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						max={ 50 }
 					/>
 					<RangeControl
-						label={ __( 'Bar Height', 'progressus-gutenberg' ) }
+						label={ __( 'Bar Height', 'migrate-elementor-to-gutenberg' ) }
 						value={ barHeight }
 						onChange={ ( value ) =>
 							setAttributes( { barHeight: value } )
@@ -130,7 +130,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						max={ 50 }
 					/>
 					<RangeControl
-						label={ __( 'Border Radius', 'progressus-gutenberg' ) }
+						label={ __( 'Border Radius', 'migrate-elementor-to-gutenberg' ) }
 						value={ borderRadius }
 						onChange={ ( value ) =>
 							setAttributes( { borderRadius: value } )
@@ -143,7 +143,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						<label>
 							{ __(
 								'Progress Text Color',
-								'progressus-gutenberg'
+								'migrate-elementor-to-gutenberg'
 							) }
 						</label>
 						<ColorPicker
@@ -155,7 +155,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						/>
 					</div>
 					<RangeControl
-						label={ __( 'Bar Color', 'progressus-gutenberg' ) }
+						label={ __( 'Bar Color', 'migrate-elementor-to-gutenberg' ) }
 						value={ barColor }
 						onChange={ ( value ) =>
 							setAttributes( { barColor: value } )
@@ -165,7 +165,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					<div>
 						{ /* eslint-disable-next-line jsx-a11y/label-has-associated-control */ }
 						<label>
-							{ __( 'Bar Color', 'progressus-gutenberg' ) }
+							{ __( 'Bar Color', 'migrate-elementor-to-gutenberg' ) }
 						</label>
 						<ColorPicker
 							color={ barColor }
@@ -178,7 +178,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					<div>
 						{ /* eslint-disable-next-line jsx-a11y/label-has-associated-control */ }
 						<label>
-							{ __( 'Background Color', 'progressus-gutenberg' ) }
+							{ __( 'Background Color', 'migrate-elementor-to-gutenberg' ) }
 						</label>
 						<ColorPicker
 							color={ backgroundColor }
@@ -191,7 +191,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					<div>
 						{ /* eslint-disable-next-line jsx-a11y/label-has-associated-control */ }
 						<label>
-							{ __( 'Title Color', 'progressus-gutenberg' ) }
+							{ __( 'Title Color', 'migrate-elementor-to-gutenberg' ) }
 						</label>
 						<ColorPicker
 							color={ titleColor }
