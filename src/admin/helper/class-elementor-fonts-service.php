@@ -2,10 +2,10 @@
 /**
  * Elementor font utilities.
  *
- * @package Progressus\Gutenberg
+ * @package Progressus\MigrateElementorToGutenberg
  */
 
-namespace Progressus\Gutenberg\Admin\Helper;
+namespace Progressus\MigrateElementorToGutenberg\Admin\Helper;
 
 use function get_option;
 use function get_post_meta;
@@ -22,7 +22,7 @@ class Elementor_Fonts_Service {
 	/**
 	 * Option name for cached font requirements.
 	 */
-	private const OPTION_NAME = 'progressus_gutenberg_font_requirements';
+	private const OPTION_NAME = 'metg_font_requirements';
 
 	/**
 	 * Register font requirements from widget settings.
@@ -148,17 +148,17 @@ class Elementor_Fonts_Service {
 			return '';
 		}
 
-		$fonts = get_post_meta( $post_id, '_etg_used_fonts', true );
+		$fonts = get_post_meta( $post_id, '_metg_used_fonts', true );
 		if ( ! is_array( $fonts ) || empty( $fonts ) ) {
 			return '';
 		}
 
-		$stored_hash = (string) get_post_meta( $post_id, '_etg_used_fonts_hash', true );
+		$stored_hash = (string) get_post_meta( $post_id, '_metg_used_fonts_hash', true );
 		if ( '' === $stored_hash ) {
 			$stored_hash = md5( (string) wp_json_encode( $fonts ) );
 		}
 
-		$cache_key = 'etg_fonts_url_' . $post_id . '_' . md5( $stored_hash . '|' . self::get_alias_map_version() );
+		$cache_key = 'metg_fonts_url_' . $post_id . '_' . md5( $stored_hash . '|' . self::get_alias_map_version() );
 		$cached    = get_transient( $cache_key );
 		if ( is_string( $cached ) ) {
 			return $cached;
@@ -352,7 +352,7 @@ class Elementor_Fonts_Service {
 	 * @return array<string, string>
 	 */
 	private static function get_font_alias_map(): array {
-		$raw = get_option( 'etg_font_alias_map', '' );
+		$raw = get_option( 'metg_font_alias_map', '' );
 		if ( ! is_string( $raw ) || '' === trim( $raw ) ) {
 			return array();
 		}
@@ -403,12 +403,12 @@ class Elementor_Fonts_Service {
 	 * @return string
 	 */
 	private static function get_alias_map_version(): string {
-		$version = get_option( 'etg_font_alias_map_version', '' );
+		$version = get_option( 'metg_font_alias_map_version', '' );
 		if ( is_string( $version ) && '' !== trim( $version ) ) {
 			return trim( $version );
 		}
 
-		$map = get_option( 'etg_font_alias_map', '' );
+		$map = get_option( 'metg_font_alias_map', '' );
 		return md5( is_string( $map ) ? $map : '' );
 	}
 

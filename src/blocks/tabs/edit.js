@@ -130,22 +130,22 @@ const Edit = ( { attributes, setAttributes } ) => {
 		<>
 			<InspectorControls>
 				<PanelBody
-					title={ __( 'Settings', 'progressus-gutenberg' ) }
+					title={ __( 'Settings', 'migrate-elementor-to-gutenberg' ) }
 					initialOpen={ true }
 				>
 					<SelectControl
-						label={ __( 'Tab Style', 'progressus-gutenberg' ) }
+						label={ __( 'Tab Style', 'migrate-elementor-to-gutenberg' ) }
 						value={ tabStyle }
 						options={ [
 							{
 								label: __(
 									'Horizontal',
-									'progressus-gutenberg'
+									'migrate-elementor-to-gutenberg'
 								),
 								value: 'horizontal',
 							},
 							{
-								label: __( 'Vertical', 'progressus-gutenberg' ),
+								label: __( 'Vertical', 'migrate-elementor-to-gutenberg' ),
 								value: 'vertical',
 							},
 						] }
@@ -156,7 +156,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 				</PanelBody>
 
 				<PanelColorSettings
-					title={ __( 'Background Colors', 'progressus-gutenberg' ) }
+					title={ __( 'Background Colors', 'migrate-elementor-to-gutenberg' ) }
 					initialOpen={ false }
 					colorSettings={ [
 						{
@@ -165,7 +165,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 								setAttributes( { tabColor: color } ),
 							label: __(
 								'Tab Background',
-								'progressus-gutenberg'
+								'migrate-elementor-to-gutenberg'
 							),
 						},
 						{
@@ -174,7 +174,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 								setAttributes( { activeTabColor: color } ),
 							label: __(
 								'Active Tab Background',
-								'progressus-gutenberg'
+								'migrate-elementor-to-gutenberg'
 							),
 						},
 						{
@@ -185,21 +185,21 @@ const Edit = ( { attributes, setAttributes } ) => {
 								} ),
 							label: __(
 								'Content Background',
-								'progressus-gutenberg'
+								'migrate-elementor-to-gutenberg'
 							),
 						},
 					] }
 				/>
 
 				<PanelColorSettings
-					title={ __( 'Text Colors', 'progressus-gutenberg' ) }
+					title={ __( 'Text Colors', 'migrate-elementor-to-gutenberg' ) }
 					initialOpen={ false }
 					colorSettings={ [
 						{
 							value: tabTextColor,
 							onChange: ( color ) =>
 								setAttributes( { tabTextColor: color } ),
-							label: __( 'Tab Text', 'progressus-gutenberg' ),
+							label: __( 'Tab Text', 'migrate-elementor-to-gutenberg' ),
 						},
 						{
 							value: activeTabTextColor,
@@ -207,20 +207,20 @@ const Edit = ( { attributes, setAttributes } ) => {
 								setAttributes( { activeTabTextColor: color } ),
 							label: __(
 								'Active Tab Text',
-								'progressus-gutenberg'
+								'migrate-elementor-to-gutenberg'
 							),
 						},
 						{
 							value: contentTextColor,
 							onChange: ( color ) =>
 								setAttributes( { contentTextColor: color } ),
-							label: __( 'Content Text', 'progressus-gutenberg' ),
+							label: __( 'Content Text', 'migrate-elementor-to-gutenberg' ),
 						},
 					] }
 				/>
 
 				<PanelBody
-					title={ __( 'Typography', 'progressus-gutenberg' ) }
+					title={ __( 'Typography', 'migrate-elementor-to-gutenberg' ) }
 					initialOpen={ false }
 				>
 					<div style={ { marginBottom: '20px' } }>
@@ -232,7 +232,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 								color: '#1e1e1e',
 							} }
 						>
-							{ __( 'Tab Typography', 'progressus-gutenberg' ) }
+							{ __( 'Tab Typography', 'migrate-elementor-to-gutenberg' ) }
 						</h3>
 
 						<FontSizePicker
@@ -251,7 +251,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						<TextControl
 							label={ __(
 								'Font Family',
-								'progressus-gutenberg'
+								'migrate-elementor-to-gutenberg'
 							) }
 							value={ tabTypography.fontFamily }
 							onChange={ ( value ) =>
@@ -264,7 +264,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 							}
 							placeholder={ __(
 								'Default',
-								'progressus-gutenberg'
+								'migrate-elementor-to-gutenberg'
 							) }
 							__nextHasNoMarginBottom
 						/>
@@ -272,26 +272,26 @@ const Edit = ( { attributes, setAttributes } ) => {
 						<SelectControl
 							label={ __(
 								'Font Weight',
-								'progressus-gutenberg'
+								'migrate-elementor-to-gutenberg'
 							) }
 							value={ tabTypography.fontWeight }
 							options={ [
 								{
 									label: __(
 										'Default',
-										'progressus-gutenberg'
+										'migrate-elementor-to-gutenberg'
 									),
 									value: '',
 								},
 								{
 									label: __(
 										'Normal',
-										'progressus-gutenberg'
+										'migrate-elementor-to-gutenberg'
 									),
 									value: 'normal',
 								},
 								{
-									label: __( 'Bold', 'progressus-gutenberg' ),
+									label: __( 'Bold', 'migrate-elementor-to-gutenberg' ),
 									value: 'bold',
 								},
 								{ label: '100', value: '100' },
@@ -318,7 +318,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						<RangeControl
 							label={ __(
 								'Line Height',
-								'progressus-gutenberg'
+								'migrate-elementor-to-gutenberg'
 							) }
 							value={ tabTypography.lineHeight }
 							onChange={ ( value ) =>
@@ -347,7 +347,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						>
 							{ __(
 								'Content Typography',
-								'progressus-gutenberg'
+								'migrate-elementor-to-gutenberg'
 							) }
 						</h3>
 
@@ -367,7 +367,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						<TextControl
 							label={ __(
 								'Font Family',
-								'progressus-gutenberg'
+								'migrate-elementor-to-gutenberg'
 							) }
 							value={ contentTypography.fontFamily }
 							onChange={ ( value ) =>
@@ -380,7 +380,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 							}
 							placeholder={ __(
 								'Default',
-								'progressus-gutenberg'
+								'migrate-elementor-to-gutenberg'
 							) }
 							__nextHasNoMarginBottom
 						/>
@@ -388,26 +388,26 @@ const Edit = ( { attributes, setAttributes } ) => {
 						<SelectControl
 							label={ __(
 								'Font Weight',
-								'progressus-gutenberg'
+								'migrate-elementor-to-gutenberg'
 							) }
 							value={ contentTypography.fontWeight }
 							options={ [
 								{
 									label: __(
 										'Default',
-										'progressus-gutenberg'
+										'migrate-elementor-to-gutenberg'
 									),
 									value: '',
 								},
 								{
 									label: __(
 										'Normal',
-										'progressus-gutenberg'
+										'migrate-elementor-to-gutenberg'
 									),
 									value: 'normal',
 								},
 								{
-									label: __( 'Bold', 'progressus-gutenberg' ),
+									label: __( 'Bold', 'migrate-elementor-to-gutenberg' ),
 									value: 'bold',
 								},
 								{ label: '100', value: '100' },
@@ -434,7 +434,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						<RangeControl
 							label={ __(
 								'Line Height',
-								'progressus-gutenberg'
+								'migrate-elementor-to-gutenberg'
 							) }
 							value={ contentTypography.lineHeight }
 							onChange={ ( value ) =>
@@ -454,11 +454,11 @@ const Edit = ( { attributes, setAttributes } ) => {
 				</PanelBody>
 
 				<PanelBody
-					title={ __( 'Border', 'progressus-gutenberg' ) }
+					title={ __( 'Border', 'migrate-elementor-to-gutenberg' ) }
 					initialOpen={ false }
 				>
 					<BorderControl
-						label={ __( 'Border', 'progressus-gutenberg' ) }
+						label={ __( 'Border', 'migrate-elementor-to-gutenberg' ) }
 						value={ {
 							color: borderColor,
 							style: borderStyle,
@@ -475,7 +475,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					/>
 
 					<RangeControl
-						label={ __( 'Border Radius', 'progressus-gutenberg' ) }
+						label={ __( 'Border Radius', 'migrate-elementor-to-gutenberg' ) }
 						value={ borderRadius }
 						onChange={ ( value ) =>
 							setAttributes( { borderRadius: value } )
@@ -487,11 +487,11 @@ const Edit = ( { attributes, setAttributes } ) => {
 				</PanelBody>
 
 				<PanelBody
-					title={ __( 'Dimensions', 'progressus-gutenberg' ) }
+					title={ __( 'Dimensions', 'migrate-elementor-to-gutenberg' ) }
 					initialOpen={ false }
 				>
 					<BoxControl
-						label={ __( 'Tab Padding', 'progressus-gutenberg' ) }
+						label={ __( 'Tab Padding', 'migrate-elementor-to-gutenberg' ) }
 						values={ {
 							top: tabsPadding.top + 'px',
 							right: tabsPadding.right + 'px',
@@ -514,7 +514,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					<BoxControl
 						label={ __(
 							'Content Padding',
-							'progressus-gutenberg'
+							'migrate-elementor-to-gutenberg'
 						) }
 						values={ {
 							top: contentPadding.top + 'px',
@@ -536,7 +536,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					/>
 
 					<BoxControl
-						label={ __( 'Tab Margin', 'progressus-gutenberg' ) }
+						label={ __( 'Tab Margin', 'migrate-elementor-to-gutenberg' ) }
 						values={ {
 							top: tabsMargin.top + 'px',
 							right: tabsMargin.right + 'px',
@@ -557,7 +557,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					/>
 
 					<BoxControl
-						label={ __( 'Content Margin', 'progressus-gutenberg' ) }
+						label={ __( 'Content Margin', 'migrate-elementor-to-gutenberg' ) }
 						values={ {
 							top: contentMargin.top + 'px',
 							right: contentMargin.right + 'px',
@@ -579,7 +579,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 				</PanelBody>
 
 				<PanelBody
-					title={ __( 'Content', 'progressus-gutenberg' ) }
+					title={ __( 'Content', 'migrate-elementor-to-gutenberg' ) }
 					initialOpen={ false }
 				>
 					<div style={ { marginBottom: '16px' } }>
@@ -588,7 +588,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 							onClick={ addTab }
 							style={ { width: '100%' } }
 						>
-							{ __( 'Add Tab', 'progressus-gutenberg' ) }
+							{ __( 'Add Tab', 'migrate-elementor-to-gutenberg' ) }
 						</Button>
 					</div>
 
@@ -620,7 +620,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 										color: '#1e1e1e',
 									} }
 								>
-									{ __( 'Tab', 'progressus-gutenberg' ) }{ ' ' }
+									{ __( 'Tab', 'migrate-elementor-to-gutenberg' ) }{ ' ' }
 									{ index + 1 }
 									{ index === activeTab && (
 										<span
@@ -632,7 +632,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 											(
 											{ __(
 												'Active',
-												'progressus-gutenberg'
+												'migrate-elementor-to-gutenberg'
 											) }
 											)
 										</span>
@@ -645,12 +645,12 @@ const Edit = ( { attributes, setAttributes } ) => {
 									onClick={ () => removeTab( index ) }
 									disabled={ tabs.length <= 1 }
 								>
-									{ __( 'Remove', 'progressus-gutenberg' ) }
+									{ __( 'Remove', 'migrate-elementor-to-gutenberg' ) }
 								</Button>
 							</div>
 
 							<TextControl
-								label={ __( 'Title', 'progressus-gutenberg' ) }
+								label={ __( 'Title', 'migrate-elementor-to-gutenberg' ) }
 								value={ tab.title }
 								onChange={ ( value ) =>
 									updateTab( index, 'title', value )
@@ -661,7 +661,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 							<TextareaControl
 								label={ __(
 									'Content',
-									'progressus-gutenberg'
+									'migrate-elementor-to-gutenberg'
 								) }
 								value={ tab.content }
 								onChange={ ( value ) =>
@@ -679,7 +679,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 				<ToolbarGroup>
 					<ToolbarButton
 						icon="admin-page"
-						label={ __( 'Add Tab', 'progressus-gutenberg' ) }
+						label={ __( 'Add Tab', 'migrate-elementor-to-gutenberg' ) }
 						onClick={ addTab }
 					/>
 				</ToolbarGroup>

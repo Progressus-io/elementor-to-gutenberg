@@ -64,7 +64,7 @@
       "default": "#ffffff"
     }
   },
-  "textdomain": "progressus-gutenberg",
+  "textdomain": "migrate-elementor-to-gutenberg",
   "editorScript": "file:./index.js",
   "style": "file:./style-index.css",
   "viewScript": "file:./view.js"

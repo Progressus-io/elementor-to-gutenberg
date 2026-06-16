@@ -2,10 +2,10 @@
 /**
  * Manual AI prompt builder for converted pages.
  *
- * @package Progressus\Gutenberg
+ * @package Progressus\MigrateElementorToGutenberg
  */
 
-namespace Progressus\Gutenberg\Admin\Helper;
+namespace Progressus\MigrateElementorToGutenberg\Admin\Helper;
 
 use function wp_json_encode;
 
@@ -28,7 +28,7 @@ class AI_Prompt_Builder {
 		$current_css       = isset( $context['current_css'] ) ? trim( (string) $context['current_css'] ) : '';
 		$template_type     = isset( $context['template_type'] ) ? trim( (string) $context['template_type'] ) : '';
 
-		$css_namespace = 'etg-page-' . $source_id;
+		$css_namespace = 'metg-page-' . $source_id;
 
 		$sections = array();
 
@@ -67,7 +67,7 @@ class AI_Prompt_Builder {
 		$focus_instruction = isset( $context['focus_instruction'] ) ? trim( (string) $context['focus_instruction'] ) : '';
 		$template_type     = isset( $context['template_type'] ) ? trim( (string) $context['template_type'] ) : '';
 
-		$css_namespace = 'etg-page-' . $source_id;
+		$css_namespace = 'metg-page-' . $source_id;
 
 		$focus_line = '' !== $focus_instruction
 			? $focus_instruction
@@ -110,7 +110,7 @@ class AI_Prompt_Builder {
 		$current_css       = isset( $context['current_css'] ) ? trim( (string) $context['current_css'] ) : '';
 		$template_type     = isset( $context['template_type'] ) ? trim( (string) $context['template_type'] ) : '';
 
-		$css_namespace = 'etg-page-' . $source_id;
+		$css_namespace = 'metg-page-' . $source_id;
 
 		$sections = array();
 

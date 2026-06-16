@@ -1,6 +1,6 @@
 <?php
 
-namespace Progressus\Gutenberg\Admin\Widget;
+namespace Progressus\MigrateElementorToGutenberg\Admin\Widget;
 
 use function is_array;
 use function wp_json_encode;
@@ -158,9 +158,9 @@ trait Woo_Block_Serializer_Trait {
 			$id = 'unknown';
 		}
 
-		$widget_class = 'etg-widget-' . $id;
-		$specific     = 'etg-' . $widget_prefix . '-' . $id;
-		$combined     = trim( 'etg-widget ' . $widget_class . ' ' . $specific );
+		$widget_class = 'metg-widget-' . $id;
+		$specific     = 'metg-' . $widget_prefix . '-' . $id;
+		$combined     = trim( 'metg-widget ' . $widget_class . ' ' . $specific );
 
 		return array(
 			'widget_class' => $widget_class,

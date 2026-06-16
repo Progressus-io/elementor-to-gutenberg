@@ -142,6 +142,6 @@
       "default": ""
     }
   },
-  "textdomain": "progressus-gutenberg",
+  "textdomain": "migrate-elementor-to-gutenberg",
   "editorStyle": "file:./index.css"
 }

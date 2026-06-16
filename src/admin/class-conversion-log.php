@@ -4,10 +4,10 @@
 /**
  * Widget-level conversion log collector for a single page conversion.
  *
- * @package Progressus\Gutenberg
+ * @package Progressus\MigrateElementorToGutenberg
  */
 
-namespace Progressus\Gutenberg\Admin;
+namespace Progressus\MigrateElementorToGutenberg\Admin;
 
 defined( 'ABSPATH' ) || exit;
 

@@ -2,12 +2,12 @@
 /**
  * Helper for parsing Elementor elements recursively into Gutenberg blocks.
  *
- * @package Progressus\Gutenberg
+ * @package Progressus\MigrateElementorToGutenberg
  */
 
-namespace Progressus\Gutenberg\Admin\Helper;
+namespace Progressus\MigrateElementorToGutenberg\Admin\Helper;
 
-use Progressus\Gutenberg\Admin\Widget_Handler_Factory;
+use Progressus\MigrateElementorToGutenberg\Admin\Widget_Handler_Factory;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -53,7 +53,7 @@ class Elementor_Elements_Parser {
 			} else {
 				$block_content .= sprintf(
 					'<!-- wp:paragraph -->%s<!-- /wp:paragraph -->' . "\n",
-					esc_html__( 'Unknown element', 'elementor-to-gutenberg' )
+					esc_html__( 'Unknown element', 'migrate-elementor-to-gutenberg' )
 				);
 			}
 		}

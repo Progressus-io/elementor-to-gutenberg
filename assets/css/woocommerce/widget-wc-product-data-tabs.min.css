@@ -1,20 +1,20 @@
-:where([class*="etg-page-"] [class*="etg-widget-"])
+:where([class*="metg-page-"] [class*="metg-widget-"])
 .woocommerce div.product ul.tabs:before{
     border-bottom:0;
     content:none
 }
 
-:where([class*="etg-page-"] [class*="etg-widget-"])
+:where([class*="metg-page-"] [class*="metg-widget-"])
 .woocommerce div.product ul.tabs{
     margin:0
 }
 
-:where([class*="etg-page-"] [class*="etg-widget-"])
+:where([class*="metg-page-"] [class*="metg-widget-"])
 .woocommerce div.product ul.tabs li{
     padding:0
 }
 
-:where([class*="etg-page-"] [class*="etg-widget-"])
+:where([class*="metg-page-"] [class*="metg-widget-"])
 .woocommerce div.product .woocommerce-tabs .panel{
     border-top:1px solid #d3ced2;
     padding:20px

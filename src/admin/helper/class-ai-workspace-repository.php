@@ -2,10 +2,10 @@
 /**
  * Storage for manual AI improvement workspace.
  *
- * @package Progressus\Gutenberg
+ * @package Progressus\MigrateElementorToGutenberg
  */
 
-namespace Progressus\Gutenberg\Admin\Helper;
+namespace Progressus\MigrateElementorToGutenberg\Admin\Helper;
 
 use function current_time;
 use function get_post_meta;
@@ -15,7 +15,7 @@ defined( 'ABSPATH' ) || exit;
 
 class AI_Workspace_Repository {
 
-	const META_KEY = '_ele2gb_ai_workspace';
+	const META_KEY = '_metg_ai_workspace';
 
 	/**
 	 * Load workspace data by target page id.

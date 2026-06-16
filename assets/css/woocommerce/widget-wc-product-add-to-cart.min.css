@@ -1,4 +1,4 @@
-:where([class*="etg-page-"] [class*="etg-widget-"])
+:where([class*="metg-page-"] [class*="metg-widget-"])
 :is(
   .woocommerce div.product,
   div.wc-block-add-to-cart-form
@@ -6,12 +6,12 @@
     margin:0
 }
 
-:where([class*="etg-page-"] [class*="etg-widget-"])
+:where([class*="metg-page-"] [class*="metg-widget-"])
 :is(
   .woocommerce div.product,
   div.wc-block-add-to-cart-form
 ) form.cart.variations_form .woocommerce-variation-add-to-cart,
-:where([class*="etg-page-"] [class*="etg-widget-"])
+:where([class*="metg-page-"] [class*="metg-widget-"])
 :is(
   .woocommerce div.product,
   div.wc-block-add-to-cart-form

@@ -1,10 +1,10 @@
 <?php
 /**
  * Widget Handler Interface
- * @package Progressus\Gutenberg
+ * @package Progressus\MigrateElementorToGutenberg
  */
 
-namespace Progressus\Gutenberg\Admin;
+namespace Progressus\MigrateElementorToGutenberg\Admin;
 
 defined( 'ABSPATH' ) || exit;
 

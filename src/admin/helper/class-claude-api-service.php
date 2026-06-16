@@ -4,10 +4,10 @@
  *
  * Sends prompts to the Anthropic Claude API and parses the response.
  *
- * @package Progressus\Gutenberg
+ * @package Progressus\MigrateElementorToGutenberg
  */
 
-namespace Progressus\Gutenberg\Admin\Helper;
+namespace Progressus\MigrateElementorToGutenberg\Admin\Helper;
 
 use function get_option;
 use function is_wp_error;
@@ -350,7 +350,7 @@ STRICT RULES:
 6. Fix spacing, typography, alignment, and responsive behavior to match the Elementor original as closely as possible.
 7. If no CSS changes are needed, output CSS_RESULT: with an empty body.
 8. Output the full Gutenberg content — never truncate or abbreviate it.
-9. CRITICAL — CSS scoping: The PAGE CONTEXT includes a "CSS Namespace" class (e.g. .etg-page-97). You MUST use that exact class as the root selector for ALL CSS rules. Never use the Target Gutenberg page ID in any CSS class name.
+9. CRITICAL — CSS scoping: The PAGE CONTEXT includes a "CSS Namespace" class (e.g. .metg-page-97). You MUST use that exact class as the root selector for ALL CSS rules. Never use the Target Gutenberg page ID in any CSS class name.
 10. NEVER use <!-- wp:html --> blocks. All content MUST use proper Gutenberg blocks (wp:group, wp:columns, wp:column, wp:heading, wp:paragraph, wp:buttons, wp:button, wp:image, wp:separator, wp:list, wp:navigation, wp:site-logo, etc.). Preserve the block structure from GUTENBERG_CONTENT — add CSS classes or modify block attributes, but never replace blocks with raw HTML. The output must remain fully editable in the WordPress Block Editor.
 11. Put all visual styling in CSS_RESULT using the CSS Namespace. Do not use inline styles in the Gutenberg HTML unless the original GUTENBERG_CONTENT already had them for block-level attributes (padding, margin, background-color).
 
@@ -398,7 +398,7 @@ STRICT RULES:
 7. Do NOT modify anything outside the page content — site header and footer are out of scope.
 8. If no CSS changes are needed, output CSS_RESULT: followed by the existing CSS unchanged.
 9. Output the full Gutenberg content — never truncate or abbreviate it.
-10. CRITICAL — CSS scoping: use the "CSS Namespace" class from PAGE CONTEXT (e.g. .etg-page-97) as the root selector for ALL CSS rules. Never use the Target Gutenberg page ID in any CSS class name.
+10. CRITICAL — CSS scoping: use the "CSS Namespace" class from PAGE CONTEXT (e.g. .metg-page-97) as the root selector for ALL CSS rules. Never use the Target Gutenberg page ID in any CSS class name.
 11. NEVER use <!-- wp:html --> blocks. All content MUST use proper Gutenberg blocks (wp:group, wp:columns, wp:column, wp:heading, wp:paragraph, wp:buttons, wp:button, wp:image, wp:separator, wp:list, wp:navigation, wp:site-logo, etc.). Preserve the block structure from GUTENBERG_CONTENT — add CSS classes or modify block attributes, but never replace blocks with raw HTML. The output must remain fully editable in the WordPress Block Editor.
 12. Put all visual styling in CSS_RESULT using the CSS Namespace. Do not use inline styles in the Gutenberg HTML unless the original GUTENBERG_CONTENT already had them for block-level attributes (padding, margin, background-color).
 
@@ -435,20 +435,20 @@ STRICT RULES:
 3. EVERY rule you output MUST be wrapped in an `@media` query that only matches mobile (e.g. `@media (max-width: 781px) { ... }` or `@media (max-width: 600px) { ... }`). NEVER output any rule that applies on desktop.
 4. Do NOT modify or duplicate existing desktop CSS rules. Only ADD mobile-scoped overrides.
 5. Do NOT propose changes to the Gutenberg post_content. The block structure is fixed for this pass.
-6. Use the "CSS Namespace" class from PAGE CONTEXT (e.g. .etg-page-97) as the root selector for ALL CSS rules. Never use the Target Gutenberg page ID in any CSS class name.
+6. Use the "CSS Namespace" class from PAGE CONTEXT (e.g. .metg-page-97) as the root selector for ALL CSS rules. Never use the Target Gutenberg page ID in any CSS class name.
 7. If no mobile changes are needed, output an empty CSS_RESULT body.
 8. Do NOT include `<style>` tags, HTML, or markdown — plain CSS only.
 
 REQUIRED OUTPUT FORMAT (exactly this structure, no deviations):
 CSS_RESULT:
 @media (max-width: 781px) {
-  .etg-page-XX .some-block { ... }
+  .metg-page-XX .some-block { ... }
 }
 SYSTEM;
 	}
 
 	/**
-	 * Append a structured log entry to wp-content/ele2gb-claude-api.log.
+	 * Append a structured log entry to wp-content/metg-claude-api.log.
 	 *
 	 * Used for both api_request and api_response events. Each entry is one JSON
 	 * object followed by a blank separator line so the file is easy to tail/grep.
@@ -457,7 +457,7 @@ SYSTEM;
 	 */
 	private static function log_entry( array $data ): void {
 		$upload_dir = wp_upload_dir();
-		$log_file   = trailingslashit( $upload_dir['basedir'] ) . 'ele2gb-claude-api.log';
+		$log_file   = trailingslashit( $upload_dir['basedir'] ) . 'metg-claude-api.log';
 
 		$entry = array_merge(
 			array(
@@ -483,7 +483,7 @@ SYSTEM;
 	 * @return string
 	 */
 	public static function get_api_key(): string {
-		$settings = get_option( 'etg_claude_settings', array() );
+		$settings = get_option( 'metg_claude_settings', array() );
 		$settings = is_array( $settings ) ? $settings : array();
 		return sanitize_text_field( $settings['api_key'] ?? '' );
 	}

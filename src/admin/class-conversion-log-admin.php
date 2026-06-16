@@ -4,10 +4,10 @@
 /**
  * Conversion Log admin UI page.
  *
- * @package Progressus\Gutenberg
+ * @package Progressus\MigrateElementorToGutenberg
  */
 
-namespace Progressus\Gutenberg\Admin;
+namespace Progressus\MigrateElementorToGutenberg\Admin;
 
 use function add_submenu_page;
 use function admin_url;
@@ -38,8 +38,8 @@ defined( 'ABSPATH' ) || exit;
  */
 class Conversion_Log_Admin {
 
-	const MENU_SLUG    = 'etg-conversion-log';
-	const OPTION_LOG   = 'etg_conversion_log';
+	const MENU_SLUG    = 'metg-conversion-log';
+	const OPTION_LOG   = 'metg_conversion_log';
 	const MAX_ENTRIES  = 300;
 
 	/** Max JSONL lines shown in the log viewer on the page. */
@@ -56,7 +56,7 @@ class Conversion_Log_Admin {
 
 	public function __construct() {
 		add_action( 'admin_menu', array( $this, 'register_menu' ) );
-		add_action( 'admin_post_etg_clear_conversion_log', array( $this, 'handle_clear_log' ) );
+		add_action( 'admin_post_metg_clear_conversion_log', array( $this, 'handle_clear_log' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 	}
 
@@ -71,21 +71,21 @@ class Conversion_Log_Admin {
 			return;
 		}
 
-		$css_path   = GUTENBERG_PLUGIN_DIR_PATH . '/assets/css/batch-wizard.css';
-		$icons_path = GUTENBERG_PLUGIN_DIR_PATH . '/assets/js/pgs-icons.js';
+		$css_path   = METG_DIR_PATH . '/assets/css/batch-wizard.css';
+		$icons_path = METG_DIR_PATH . '/assets/js/pgs-icons.js';
 
 		wp_enqueue_style(
-			'ele2gb-pgs-admin',
-			plugins_url( 'assets/css/batch-wizard.css', GUTENBERG_PLUGIN_MAIN_FILE ),
+			'metg-pgs-admin',
+			plugins_url( 'assets/css/batch-wizard.css', METG_MAIN_FILE ),
 			array(),
-			GUTENBERG_PLUGIN_DEBUG && file_exists( $css_path ) ? (string) filemtime( $css_path ) : GUTENBERG_PLUGIN_VERSION
+			METG_DEBUG && file_exists( $css_path ) ? (string) filemtime( $css_path ) : METG_VERSION
 		);
 
 		wp_enqueue_script(
-			'ele2gb-pgs-icons',
-			plugins_url( 'assets/js/pgs-icons.js', GUTENBERG_PLUGIN_MAIN_FILE ),
+			'metg-pgs-icons',
+			plugins_url( 'assets/js/pgs-icons.js', METG_MAIN_FILE ),
 			array(),
-			GUTENBERG_PLUGIN_DEBUG && file_exists( $icons_path ) ? (string) filemtime( $icons_path ) : GUTENBERG_PLUGIN_VERSION,
+			METG_DEBUG && file_exists( $icons_path ) ? (string) filemtime( $icons_path ) : METG_VERSION,
 			true
 		);
 	}
@@ -93,8 +93,8 @@ class Conversion_Log_Admin {
 	public function register_menu(): void {
 		add_submenu_page(
 			'gutenberg-settings',
-			esc_html__( 'Conversion Log', 'elementor-to-gutenberg' ),
-			esc_html__( 'Conversion Log', 'elementor-to-gutenberg' ),
+			esc_html__( 'Conversion Log', 'migrate-elementor-to-gutenberg' ),
+			esc_html__( 'Conversion Log', 'migrate-elementor-to-gutenberg' ),
 			'manage_options',
 			self::MENU_SLUG,
 			array( $this, 'render_page' )
@@ -104,9 +104,9 @@ class Conversion_Log_Admin {
 	/** Clear both the DB log and the text log file, then redirect back. */
 	public function handle_clear_log(): void {
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( esc_html__( 'Unauthorized.', 'elementor-to-gutenberg' ) );
+			wp_die( esc_html__( 'Unauthorized.', 'migrate-elementor-to-gutenberg' ) );
 		}
-		check_admin_referer( 'etg_clear_conversion_log' );
+		check_admin_referer( 'metg_clear_conversion_log' );
 
 		delete_option( self::OPTION_LOG );
 
@@ -126,7 +126,7 @@ class Conversion_Log_Admin {
 			add_query_arg(
 				array(
 					'page'        => self::MENU_SLUG,
-					'etg_cleared' => '1',
+					'metg_cleared' => '1',
 				),
 				admin_url( 'admin.php' )
 			)
@@ -178,7 +178,7 @@ class Conversion_Log_Admin {
 
 		$filter     = isset( $_GET['status'] ) ? sanitize_key( (string) $_GET['status'] ) : 'all'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$logging_on = Admin_Settings::is_logging_enabled();
-		$cleared    = isset( $_GET['etg_cleared'] ) && '1' === $_GET['etg_cleared']; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$cleared    = isset( $_GET['metg_cleared'] ) && '1' === $_GET['metg_cleared']; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
 		// Summary counts (computed before filter is applied).
 		$total_count = count( $log );
@@ -240,23 +240,23 @@ class Conversion_Log_Admin {
 		<div class="pgs-screen" data-screen-label="Conversion Log">
 
 			<header class="pgs-pluginhead">
-				<span class="pgs-pluginhead__brand"><span class="pgs-pluginhead__name"><?php esc_html_e( 'Migration from Elementor to Gutenberg', 'elementor-to-gutenberg' ); ?></span></span>
+				<span class="pgs-pluginhead__brand"><span class="pgs-pluginhead__name"><?php esc_html_e( 'Migrate Elementor to Gutenberg', 'migrate-elementor-to-gutenberg' ); ?></span></span>
 			</header>
 			<hr class="wp-header-end" style="margin:0;border:0;">
 
 			<div class="pgs-col">
 				<div class="pgs-pagetitle">
 					<div>
-						<h1><?php esc_html_e( 'Conversion Log', 'elementor-to-gutenberg' ); ?></h1>
-						<p><?php esc_html_e( 'Every widget conversion is recorded here — converted, skipped, or unsupported.', 'elementor-to-gutenberg' ); ?></p>
+						<h1><?php esc_html_e( 'Conversion Log', 'migrate-elementor-to-gutenberg' ); ?></h1>
+						<p><?php esc_html_e( 'Every widget conversion is recorded here — converted, skipped, or unsupported.', 'migrate-elementor-to-gutenberg' ); ?></p>
 					</div>
 					<?php if ( $total_count > 0 || $jsonl_log_exists ) : ?>
 						<div class="pgs-pagetitle__actions">
 							<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>"
-								  onsubmit="return confirm('<?php echo esc_js( __( 'Clear all log entries? This cannot be undone.', 'elementor-to-gutenberg' ) ); ?>');">
-								<?php wp_nonce_field( 'etg_clear_conversion_log' ); ?>
-								<input type="hidden" name="action" value="etg_clear_conversion_log" />
-								<button type="submit" class="pgs-btn pgs-btn--secondary pgs-btn--sm"><span class="pgs-btn__icon"><i data-icon="trash-2"></i></span><span><?php esc_html_e( 'Clear All Logs', 'elementor-to-gutenberg' ); ?></span></button>
+								  onsubmit="return confirm('<?php echo esc_js( __( 'Clear all log entries? This cannot be undone.', 'migrate-elementor-to-gutenberg' ) ); ?>');">
+								<?php wp_nonce_field( 'metg_clear_conversion_log' ); ?>
+								<input type="hidden" name="action" value="metg_clear_conversion_log" />
+								<button type="submit" class="pgs-btn pgs-btn--secondary pgs-btn--sm"><span class="pgs-btn__icon"><i data-icon="trash-2"></i></span><span><?php esc_html_e( 'Clear All Logs', 'migrate-elementor-to-gutenberg' ); ?></span></button>
 							</form>
 						</div>
 					<?php endif; ?>
@@ -265,7 +265,7 @@ class Conversion_Log_Admin {
 				<?php if ( $cleared ) : ?>
 					<div class="pgs-banner pgs-banner--success" role="status">
 						<span class="pgs-banner__icon"><i data-icon="check-circle-2"></i></span>
-						<div class="pgs-banner__body"><span class="pgs-banner__text"><?php esc_html_e( 'Conversion log cleared.', 'elementor-to-gutenberg' ); ?></span></div>
+						<div class="pgs-banner__body"><span class="pgs-banner__text"><?php esc_html_e( 'Conversion log cleared.', 'migrate-elementor-to-gutenberg' ); ?></span></div>
 					</div>
 				<?php endif; ?>
 
@@ -277,7 +277,7 @@ class Conversion_Log_Admin {
 							printf(
 								wp_kses(
 									/* translators: %s: URL to Settings page */
-									__( 'Conversion logging is <strong>disabled</strong>. Enable it in <a href="%s">Settings</a> to start capturing conversion events.', 'elementor-to-gutenberg' ),
+									__( 'Conversion logging is <strong>disabled</strong>. Enable it in <a href="%s">Settings</a> to start capturing conversion events.', 'migrate-elementor-to-gutenberg' ),
 									array(
 										'strong' => array(),
 										'a'      => array( 'href' => array() ),
@@ -294,11 +294,11 @@ class Conversion_Log_Admin {
 				<div class="pgs-grid5">
 					<?php
 					$cards = array(
-						array( 'label' => __( 'Total',   'elementor-to-gutenberg' ), 'count' => $total_count, 'filter' => 'all',     'variant' => '',                              'icon' => '' ),
-						array( 'label' => __( 'Success', 'elementor-to-gutenberg' ), 'count' => $cnt_success, 'filter' => 'success', 'variant' => 'pgs-stat--tinted pgs-stat--success', 'icon' => 'check-circle-2' ),
-						array( 'label' => __( 'Partial', 'elementor-to-gutenberg' ), 'count' => $cnt_partial, 'filter' => 'partial', 'variant' => 'pgs-stat--tinted pgs-stat--warning', 'icon' => 'alert-triangle' ),
-						array( 'label' => __( 'Errors',  'elementor-to-gutenberg' ), 'count' => $cnt_error,   'filter' => 'error',   'variant' => '',                              'icon' => '' ),
-						array( 'label' => __( 'Skipped', 'elementor-to-gutenberg' ), 'count' => $cnt_skipped, 'filter' => 'skipped', 'variant' => '',                              'icon' => '' ),
+						array( 'label' => __( 'Total',   'migrate-elementor-to-gutenberg' ), 'count' => $total_count, 'filter' => 'all',     'variant' => '',                              'icon' => '' ),
+						array( 'label' => __( 'Success', 'migrate-elementor-to-gutenberg' ), 'count' => $cnt_success, 'filter' => 'success', 'variant' => 'pgs-stat--tinted pgs-stat--success', 'icon' => 'check-circle-2' ),
+						array( 'label' => __( 'Partial', 'migrate-elementor-to-gutenberg' ), 'count' => $cnt_partial, 'filter' => 'partial', 'variant' => 'pgs-stat--tinted pgs-stat--warning', 'icon' => 'alert-triangle' ),
+						array( 'label' => __( 'Errors',  'migrate-elementor-to-gutenberg' ), 'count' => $cnt_error,   'filter' => 'error',   'variant' => '',                              'icon' => '' ),
+						array( 'label' => __( 'Skipped', 'migrate-elementor-to-gutenberg' ), 'count' => $cnt_skipped, 'filter' => 'skipped', 'variant' => '',                              'icon' => '' ),
 					);
 					foreach ( $cards as $card ) :
 						$active = ( $filter === $card['filter'] );
@@ -326,11 +326,11 @@ class Conversion_Log_Admin {
 						<div class="pgs-card__body" style="text-align:center;padding:48px 24px;">
 							<?php if ( 'all' === $filter ) : ?>
 								<p class="pgs-muted" style="font-size:var(--text-md);">
-									<?php esc_html_e( 'No conversion events recorded yet. Run a conversion to see results here.', 'elementor-to-gutenberg' ); ?>
+									<?php esc_html_e( 'No conversion events recorded yet. Run a conversion to see results here.', 'migrate-elementor-to-gutenberg' ); ?>
 								</p>
 							<?php else : ?>
 								<p class="pgs-muted" style="font-size:var(--text-md);">
-									<?php esc_html_e( 'No entries match this filter.', 'elementor-to-gutenberg' ); ?>
+									<?php esc_html_e( 'No entries match this filter.', 'migrate-elementor-to-gutenberg' ); ?>
 								</p>
 							<?php endif; ?>
 						</div>
@@ -341,13 +341,13 @@ class Conversion_Log_Admin {
 						<table class="pgs-table pgs-table--log">
 							<thead>
 								<tr>
-									<th><?php esc_html_e( 'Page / template', 'elementor-to-gutenberg' ); ?></th>
-									<th><?php esc_html_e( 'Type', 'elementor-to-gutenberg' ); ?></th>
-									<th><?php esc_html_e( 'Status', 'elementor-to-gutenberg' ); ?></th>
-									<th><?php esc_html_e( 'Widgets', 'elementor-to-gutenberg' ); ?></th>
-									<th><?php esc_html_e( 'Issues', 'elementor-to-gutenberg' ); ?></th>
-									<th><?php esc_html_e( 'Duration', 'elementor-to-gutenberg' ); ?></th>
-									<th><?php esc_html_e( 'Date', 'elementor-to-gutenberg' ); ?></th>
+									<th><?php esc_html_e( 'Page / template', 'migrate-elementor-to-gutenberg' ); ?></th>
+									<th><?php esc_html_e( 'Type', 'migrate-elementor-to-gutenberg' ); ?></th>
+									<th><?php esc_html_e( 'Status', 'migrate-elementor-to-gutenberg' ); ?></th>
+									<th><?php esc_html_e( 'Widgets', 'migrate-elementor-to-gutenberg' ); ?></th>
+									<th><?php esc_html_e( 'Issues', 'migrate-elementor-to-gutenberg' ); ?></th>
+									<th><?php esc_html_e( 'Duration', 'migrate-elementor-to-gutenberg' ); ?></th>
+									<th><?php esc_html_e( 'Date', 'migrate-elementor-to-gutenberg' ); ?></th>
 								</tr>
 							</thead>
 							<tbody>
@@ -381,7 +381,7 @@ class Conversion_Log_Admin {
 										$post_title = get_the_title( $post_id );
 									}
 									if ( '' === $post_title ) {
-										$post_title = esc_html__( '(unknown)', 'elementor-to-gutenberg' );
+										$post_title = esc_html__( '(unknown)', 'migrate-elementor-to-gutenberg' );
 									}
 
 									$target_id  = (int) ( $entry['target_id'] ?? 0 );
@@ -398,7 +398,7 @@ class Conversion_Log_Admin {
 										<?php endif; ?>
 										<?php if ( $target_id > 0 && $tgt_link ) : ?>
 											<div class="pgs-table__meta">
-												<?php esc_html_e( 'Target:', 'elementor-to-gutenberg' ); ?>
+												<?php esc_html_e( 'Target:', 'migrate-elementor-to-gutenberg' ); ?>
 												<a href="<?php echo esc_url( (string) $tgt_link ); ?>">#<?php echo $target_id; ?></a>
 											</div>
 										<?php endif; ?>
@@ -410,7 +410,7 @@ class Conversion_Log_Admin {
 									<td style="min-width:140px;">
 										<?php if ( $total_w > 0 ) : ?>
 											<div class="pgs-progress pgs-progress--sm"><div class="pgs-progress__track"><div class="pgs-progress__fill<?php echo $is_partial ? ' pgs-progress__fill--warning' : ''; ?>" style="width:<?php echo $pct; ?>%;"></div></div></div>
-											<div class="pgs-table__count"><?php printf( esc_html__( '%1$d / %2$d', 'elementor-to-gutenberg' ), $converted_w, $total_w ); ?></div>
+											<div class="pgs-table__count"><?php printf( esc_html__( '%1$d / %2$d', 'migrate-elementor-to-gutenberg' ), $converted_w, $total_w ); ?></div>
 										<?php else : ?>
 											<span class="pgs-table__muted">—</span>
 										<?php endif; ?>
@@ -422,7 +422,7 @@ class Conversion_Log_Admin {
 													<i data-icon="alert-triangle"></i>
 													<?php
 													$nt = count( $unsp_types );
-													printf( esc_html( _n( '%d unsupported type', '%d unsupported types', $nt, 'elementor-to-gutenberg' ) ), $nt );
+													printf( esc_html( _n( '%d unsupported type', '%d unsupported types', $nt, 'migrate-elementor-to-gutenberg' ) ), $nt );
 													?>
 												</summary>
 												<ul style="margin:6px 0 0 16px;padding:0;font-size:var(--text-xs);color:var(--text-muted);list-style:disc;">
@@ -433,15 +433,15 @@ class Conversion_Log_Admin {
 											</details>
 											<?php if ( $empty_w > 0 ) : ?>
 												<div class="pgs-table__meta">
-													<?php printf( esc_html( _n( '+%d empty output', '+%d empty outputs', $empty_w, 'elementor-to-gutenberg' ) ), $empty_w ); ?>
+													<?php printf( esc_html( _n( '+%d empty output', '+%d empty outputs', $empty_w, 'migrate-elementor-to-gutenberg' ) ), $empty_w ); ?>
 												</div>
 											<?php endif; ?>
 										<?php elseif ( $empty_w > 0 ) : ?>
 											<span class="pgs-issue">
-												<i data-icon="info"></i> <?php printf( esc_html( _n( '%d empty output', '%d empty outputs', $empty_w, 'elementor-to-gutenberg' ) ), $empty_w ); ?>
+												<i data-icon="info"></i> <?php printf( esc_html( _n( '%d empty output', '%d empty outputs', $empty_w, 'migrate-elementor-to-gutenberg' ) ), $empty_w ); ?>
 											</span>
 										<?php else : ?>
-											<span class="pgs-issue pgs-issue--ok"><i data-icon="check"></i> <?php esc_html_e( 'None', 'elementor-to-gutenberg' ); ?></span>
+											<span class="pgs-issue pgs-issue--ok"><i data-icon="check"></i> <?php esc_html_e( 'None', 'migrate-elementor-to-gutenberg' ); ?></span>
 										<?php endif; ?>
 									</td>
 									<td class="pgs-table__muted"><?php echo esc_html( $dur_str ); ?></td>
@@ -453,7 +453,7 @@ class Conversion_Log_Admin {
 						<div class="pgs-table__foot">
 							<?php
 							printf(
-								esc_html__( 'Showing %1$d entries. Log retains the last %2$d entries; oldest are discarded automatically.', 'elementor-to-gutenberg' ),
+								esc_html__( 'Showing %1$d entries. Log retains the last %2$d entries; oldest are discarded automatically.', 'migrate-elementor-to-gutenberg' ),
 								count( $log ),
 								self::MAX_ENTRIES
 							);
@@ -466,32 +466,32 @@ class Conversion_Log_Admin {
 				<div class="pgs-card">
 					<div class="pgs-card__header">
 						<div>
-							<div class="pgs-card__eyebrow"><?php esc_html_e( 'Machine-readable', 'elementor-to-gutenberg' ); ?></div>
-							<div class="pgs-card__title"><?php esc_html_e( 'Diagnostic Log (JSONL)', 'elementor-to-gutenberg' ); ?></div>
+							<div class="pgs-card__eyebrow"><?php esc_html_e( 'Machine-readable', 'migrate-elementor-to-gutenberg' ); ?></div>
+							<div class="pgs-card__title"><?php esc_html_e( 'Diagnostic Log (JSONL)', 'migrate-elementor-to-gutenberg' ); ?></div>
 						</div>
 					</div>
 					<div class="pgs-card__body">
 						<p class="pgs-muted" style="margin-bottom:12px;">
-							<?php esc_html_e( 'Structured machine-readable log. Every conversion run appends JSON events — one per line. Attach this file to a feedback report or import it into the Feedback Hub for AI analysis.', 'elementor-to-gutenberg' ); ?>
+							<?php esc_html_e( 'Structured machine-readable log. Every conversion run appends JSON events — one per line. Attach this file to a feedback report or import it into the Feedback Hub for AI analysis.', 'migrate-elementor-to-gutenberg' ); ?>
 						</p>
 
 						<div class="pgs-muted" style="margin-bottom:12px;line-height:var(--leading-relaxed);">
 							<div>
-								<strong><?php esc_html_e( 'File path:', 'elementor-to-gutenberg' ); ?></strong>
+								<strong><?php esc_html_e( 'File path:', 'migrate-elementor-to-gutenberg' ); ?></strong>
 								<code style="background:var(--surface-sunken);padding:3px 6px;border-radius:var(--radius-xs);user-select:all;cursor:text;"><?php echo esc_html( $jsonl_log_path ); ?></code>
 							</div>
 							<div>
-								<strong><?php esc_html_e( 'File size:', 'elementor-to-gutenberg' ); ?></strong>
+								<strong><?php esc_html_e( 'File size:', 'migrate-elementor-to-gutenberg' ); ?></strong>
 								<?php
 								if ( $jsonl_log_exists && $jsonl_log_size > 0 ) {
 									echo esc_html( size_format( $jsonl_log_size ) );
 									// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_exists
 									if ( file_exists( $jsonl_log_path . '.1' ) ) {
 										echo ' &nbsp;';
-										esc_html_e( '(rotated backup: .jsonl.1 also present)', 'elementor-to-gutenberg' );
+										esc_html_e( '(rotated backup: .jsonl.1 also present)', 'migrate-elementor-to-gutenberg' );
 									}
 								} else {
-									esc_html_e( 'File not yet created — run a conversion first.', 'elementor-to-gutenberg' );
+									esc_html_e( 'File not yet created — run a conversion first.', 'migrate-elementor-to-gutenberg' );
 								}
 								?>
 							</div>
@@ -501,29 +501,29 @@ class Conversion_Log_Admin {
 							<div class="pgs-code">
 								<div class="pgs-code__bar">
 									<span class="pgs-code__name"><i data-icon="braces"></i>conversion-log.jsonl</span>
-									<button type="button" class="pgs-code__copy" id="etg-jsonl-copy"><i data-icon="copy"></i><span><?php esc_html_e( 'Copy', 'elementor-to-gutenberg' ); ?></span></button>
+									<button type="button" class="pgs-code__copy" id="metg-jsonl-copy"><i data-icon="copy"></i><span><?php esc_html_e( 'Copy', 'migrate-elementor-to-gutenberg' ); ?></span></button>
 								</div>
-								<pre class="pgs-code__pre" id="etg-jsonl-log" style="--_maxh:340px;"><?php echo esc_html( implode( "\n", $jsonl_log_lines ) ); ?></pre>
+								<pre class="pgs-code__pre" id="metg-jsonl-log" style="--_maxh:340px;"><?php echo esc_html( implode( "\n", $jsonl_log_lines ) ); ?></pre>
 							</div>
 							<p class="pgs-muted" style="margin-top:10px;">
 								<?php
 								printf(
-									esc_html__( 'Showing last %1$d events. The file rotates automatically at 5 MB — the previous file is kept as .jsonl.1.', 'elementor-to-gutenberg' ),
+									esc_html__( 'Showing last %1$d events. The file rotates automatically at 5 MB — the previous file is kept as .jsonl.1.', 'migrate-elementor-to-gutenberg' ),
 									count( $jsonl_log_lines )
 								);
 								?>
 							</p>
 							<script>
 							(function(){
-								var pre = document.getElementById('etg-jsonl-log');
-								var btn = document.getElementById('etg-jsonl-copy');
+								var pre = document.getElementById('metg-jsonl-log');
+								var btn = document.getElementById('metg-jsonl-copy');
 								if (!pre || !btn) return;
 								var label = btn.querySelector('span');
 								btn.addEventListener('click', function(){
 									var text = pre.textContent;
 									var done = function(){
-										if (label) { label.textContent = '<?php echo esc_js( __( 'Copied', 'elementor-to-gutenberg' ) ); ?>'; }
-										setTimeout(function(){ if (label) { label.textContent = '<?php echo esc_js( __( 'Copy', 'elementor-to-gutenberg' ) ); ?>'; } }, 1500);
+										if (label) { label.textContent = '<?php echo esc_js( __( 'Copied', 'migrate-elementor-to-gutenberg' ) ); ?>'; }
+										setTimeout(function(){ if (label) { label.textContent = '<?php echo esc_js( __( 'Copy', 'migrate-elementor-to-gutenberg' ) ); ?>'; } }, 1500);
 									};
 									if (navigator.clipboard && navigator.clipboard.writeText) {
 										navigator.clipboard.writeText(text).then(done, done);
@@ -535,7 +535,7 @@ class Conversion_Log_Admin {
 							</script>
 						<?php elseif ( $logging_on ) : ?>
 							<p class="pgs-muted" style="font-style:italic;">
-								<?php esc_html_e( 'No diagnostic log events yet. Run a conversion and refresh this page.', 'elementor-to-gutenberg' ); ?>
+								<?php esc_html_e( 'No diagnostic log events yet. Run a conversion and refresh this page.', 'migrate-elementor-to-gutenberg' ); ?>
 							</p>
 						<?php endif; ?>
 					</div>

@@ -138,45 +138,45 @@ const Edit = ( { attributes, setAttributes } ) => {
 		<>
 			<InspectorControls>
 				<PanelBody
-					title={ __( 'Layout Settings', 'progressus-gutenberg' ) }
+					title={ __( 'Layout Settings', 'migrate-elementor-to-gutenberg' ) }
 					initialOpen={ true }
 				>
 					<SelectControl
-						label={ __( 'Layout', 'progressus-gutenberg' ) }
+						label={ __( 'Layout', 'migrate-elementor-to-gutenberg' ) }
 						value={ layout }
 						options={ [
 							{
 								label: __(
 									'Image Above',
-									'progressus-gutenberg'
+									'migrate-elementor-to-gutenberg'
 								),
 								value: 'image_above',
 							},
 							{
 								label: __(
 									'Image Inline',
-									'progressus-gutenberg'
+									'migrate-elementor-to-gutenberg'
 								),
 								value: 'image_inline',
 							},
 							{
 								label: __(
 									'Image Stacked',
-									'progressus-gutenberg'
+									'migrate-elementor-to-gutenberg'
 								),
 								value: 'image_stacked',
 							},
 							{
 								label: __(
 									'Image Left',
-									'progressus-gutenberg'
+									'migrate-elementor-to-gutenberg'
 								),
 								value: 'image_left',
 							},
 							{
 								label: __(
 									'Image Right',
-									'progressus-gutenberg'
+									'migrate-elementor-to-gutenberg'
 								),
 								value: 'image_right',
 							},
@@ -186,19 +186,19 @@ const Edit = ( { attributes, setAttributes } ) => {
 						}
 					/>
 					<SelectControl
-						label={ __( 'Alignment', 'progressus-gutenberg' ) }
+						label={ __( 'Alignment', 'migrate-elementor-to-gutenberg' ) }
 						value={ alignment }
 						options={ [
 							{
-								label: __( 'Left', 'progressus-gutenberg' ),
+								label: __( 'Left', 'migrate-elementor-to-gutenberg' ),
 								value: 'left',
 							},
 							{
-								label: __( 'Center', 'progressus-gutenberg' ),
+								label: __( 'Center', 'migrate-elementor-to-gutenberg' ),
 								value: 'center',
 							},
 							{
-								label: __( 'Right', 'progressus-gutenberg' ),
+								label: __( 'Right', 'migrate-elementor-to-gutenberg' ),
 								value: 'right',
 							},
 						] }
@@ -209,7 +209,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					<RangeControl
 						label={ __(
 							'Slides Per View',
-							'progressus-gutenberg'
+							'migrate-elementor-to-gutenberg'
 						) }
 						value={ slidesPerView }
 						onChange={ ( value ) =>
@@ -221,7 +221,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					<RangeControl
 						label={ __(
 							'Slides To Scroll',
-							'progressus-gutenberg'
+							'migrate-elementor-to-gutenberg'
 						) }
 						value={ slidesToScroll }
 						onChange={ ( value ) =>
@@ -231,7 +231,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						max={ 6 }
 					/>
 					<RangeControl
-						label={ __( 'Width (%)', 'progressus-gutenberg' ) }
+						label={ __( 'Width (%)', 'migrate-elementor-to-gutenberg' ) }
 						value={ width }
 						onChange={ ( value ) =>
 							setAttributes( { width: value } )
@@ -240,7 +240,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						max={ 100 }
 					/>
 					<RangeControl
-						label={ __( 'Space Between', 'progressus-gutenberg' ) }
+						label={ __( 'Space Between', 'migrate-elementor-to-gutenberg' ) }
 						value={ spaceBetween }
 						onChange={ ( value ) =>
 							setAttributes( { spaceBetween: value } )
@@ -251,18 +251,18 @@ const Edit = ( { attributes, setAttributes } ) => {
 				</PanelBody>
 
 				<PanelBody
-					title={ __( 'Slide Style', 'progressus-gutenberg' ) }
+					title={ __( 'Slide Style', 'migrate-elementor-to-gutenberg' ) }
 					initialOpen={ false }
 				>
 					<BoxControl
-						label={ __( 'Border Size', 'progressus-gutenberg' ) }
+						label={ __( 'Border Size', 'migrate-elementor-to-gutenberg' ) }
 						values={ slideBorderSize }
 						onChange={ ( value ) =>
 							setAttributes( { slideBorderSize: value } )
 						}
 					/>
 					<RangeControl
-						label={ __( 'Border Radius', 'progressus-gutenberg' ) }
+						label={ __( 'Border Radius', 'migrate-elementor-to-gutenberg' ) }
 						value={ slideBorderRadius }
 						onChange={ ( value ) =>
 							setAttributes( { slideBorderRadius: value } )
@@ -271,7 +271,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						max={ 100 }
 					/>
 					<BoxControl
-						label={ __( 'Slide Padding', 'progressus-gutenberg' ) }
+						label={ __( 'Slide Padding', 'migrate-elementor-to-gutenberg' ) }
 						values={ slidePadding }
 						onChange={ ( value ) =>
 							setAttributes( { slidePadding: value } )
@@ -280,7 +280,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 				</PanelBody>
 
 				<PanelColorSettings
-					title={ __( 'Slide Colors', 'progressus-gutenberg' ) }
+					title={ __( 'Slide Colors', 'migrate-elementor-to-gutenberg' ) }
 					colorSettings={ [
 						{
 							value: slideBackgroundColor,
@@ -290,24 +290,24 @@ const Edit = ( { attributes, setAttributes } ) => {
 								} ),
 							label: __(
 								'Background Color',
-								'progressus-gutenberg'
+								'migrate-elementor-to-gutenberg'
 							),
 						},
 						{
 							value: slideBorderColor,
 							onChange: ( value ) =>
 								setAttributes( { slideBorderColor: value } ),
-							label: __( 'Border Color', 'progressus-gutenberg' ),
+							label: __( 'Border Color', 'migrate-elementor-to-gutenberg' ),
 						},
 					] }
 				/>
 
 				<PanelBody
-					title={ __( 'Content Style', 'progressus-gutenberg' ) }
+					title={ __( 'Content Style', 'migrate-elementor-to-gutenberg' ) }
 					initialOpen={ false }
 				>
 					<RangeControl
-						label={ __( 'Content Gap', 'progressus-gutenberg' ) }
+						label={ __( 'Content Gap', 'migrate-elementor-to-gutenberg' ) }
 						value={ contentGap }
 						onChange={ ( value ) =>
 							setAttributes( { contentGap: value } )
@@ -316,7 +316,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						max={ 100 }
 					/>
 					<RangeControl
-						label={ __( 'Font Size', 'progressus-gutenberg' ) }
+						label={ __( 'Font Size', 'migrate-elementor-to-gutenberg' ) }
 						value={ contentTypography.fontSize }
 						onChange={ ( value ) =>
 							setAttributes( {
@@ -330,7 +330,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						max={ 50 }
 					/>
 					<SelectControl
-						label={ __( 'Font Weight', 'progressus-gutenberg' ) }
+						label={ __( 'Font Weight', 'migrate-elementor-to-gutenberg' ) }
 						value={ contentTypography.fontWeight }
 						options={ [
 							{ label: 'Normal', value: 'normal' },
@@ -351,7 +351,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						}
 					/>
 					<TextControl
-						label={ __( 'Font Family', 'progressus-gutenberg' ) }
+						label={ __( 'Font Family', 'migrate-elementor-to-gutenberg' ) }
 						value={ contentTypography.fontFamily }
 						onChange={ ( value ) =>
 							setAttributes( {
@@ -363,7 +363,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						}
 					/>
 					<RangeControl
-						label={ __( 'Line Height', 'progressus-gutenberg' ) }
+						label={ __( 'Line Height', 'migrate-elementor-to-gutenberg' ) }
 						value={ contentTypography.lineHeight }
 						onChange={ ( value ) =>
 							setAttributes( {
@@ -378,7 +378,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						step={ 1 }
 					/>
 					<RangeControl
-						label={ __( 'Letter Spacing', 'progressus-gutenberg' ) }
+						label={ __( 'Letter Spacing', 'migrate-elementor-to-gutenberg' ) }
 						value={ contentTypography.letterSpacing }
 						onChange={ ( value ) =>
 							setAttributes( {
@@ -393,7 +393,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						step={ 0.1 }
 					/>
 					<RangeControl
-						label={ __( 'Word Spacing', 'progressus-gutenberg' ) }
+						label={ __( 'Word Spacing', 'migrate-elementor-to-gutenberg' ) }
 						value={ contentTypography.wordSpacing }
 						onChange={ ( value ) =>
 							setAttributes( {
@@ -410,7 +410,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 				</PanelBody>
 
 				<PanelColorSettings
-					title={ __( 'Content Colors', 'progressus-gutenberg' ) }
+					title={ __( 'Content Colors', 'migrate-elementor-to-gutenberg' ) }
 					colorSettings={ [
 						{
 							value: contentColor,
@@ -418,30 +418,30 @@ const Edit = ( { attributes, setAttributes } ) => {
 								setAttributes( { contentColor: value } ),
 							label: __(
 								'Content Color',
-								'progressus-gutenberg'
+								'migrate-elementor-to-gutenberg'
 							),
 						},
 						{
 							value: nameColor,
 							onChange: ( value ) =>
 								setAttributes( { nameColor: value } ),
-							label: __( 'Name Color', 'progressus-gutenberg' ),
+							label: __( 'Name Color', 'migrate-elementor-to-gutenberg' ),
 						},
 						{
 							value: titleColor,
 							onChange: ( value ) =>
 								setAttributes( { titleColor: value } ),
-							label: __( 'Title Color', 'progressus-gutenberg' ),
+							label: __( 'Title Color', 'migrate-elementor-to-gutenberg' ),
 						},
 					] }
 				/>
 
 				<PanelBody
-					title={ __( 'Image Settings', 'progressus-gutenberg' ) }
+					title={ __( 'Image Settings', 'migrate-elementor-to-gutenberg' ) }
 					initialOpen={ false }
 				>
 					<RangeControl
-						label={ __( 'Image Size', 'progressus-gutenberg' ) }
+						label={ __( 'Image Size', 'migrate-elementor-to-gutenberg' ) }
 						value={ imageSize }
 						onChange={ ( value ) =>
 							setAttributes( { imageSize: value } )
@@ -450,7 +450,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						max={ 200 }
 					/>
 					<RangeControl
-						label={ __( 'Image Gap', 'progressus-gutenberg' ) }
+						label={ __( 'Image Gap', 'migrate-elementor-to-gutenberg' ) }
 						value={ imageGap }
 						onChange={ ( value ) =>
 							setAttributes( { imageGap: value } )
@@ -461,7 +461,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					<RangeControl
 						label={ __(
 							'Image Border Radius (%)',
-							'progressus-gutenberg'
+							'migrate-elementor-to-gutenberg'
 						) }
 						value={ imageBorderRadius }
 						onChange={ ( value ) =>
@@ -473,11 +473,11 @@ const Edit = ( { attributes, setAttributes } ) => {
 				</PanelBody>
 
 				<PanelBody
-					title={ __( 'Navigation', 'progressus-gutenberg' ) }
+					title={ __( 'Navigation', 'migrate-elementor-to-gutenberg' ) }
 					initialOpen={ false }
 				>
 					<RangeControl
-						label={ __( 'Arrows Size', 'progressus-gutenberg' ) }
+						label={ __( 'Arrows Size', 'migrate-elementor-to-gutenberg' ) }
 						value={ arrowsSize }
 						onChange={ ( value ) =>
 							setAttributes( { arrowsSize: value } )
@@ -486,7 +486,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						max={ 50 }
 					/>
 					<RangeControl
-						label={ __( 'Pagination Gap', 'progressus-gutenberg' ) }
+						label={ __( 'Pagination Gap', 'migrate-elementor-to-gutenberg' ) }
 						value={ paginationGap }
 						onChange={ ( value ) =>
 							setAttributes( { paginationGap: value } )
@@ -497,7 +497,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					<RangeControl
 						label={ __(
 							'Pagination Size',
-							'progressus-gutenberg'
+							'migrate-elementor-to-gutenberg'
 						) }
 						value={ paginationSize }
 						onChange={ ( value ) =>
@@ -509,13 +509,13 @@ const Edit = ( { attributes, setAttributes } ) => {
 				</PanelBody>
 
 				<PanelColorSettings
-					title={ __( 'Navigation Colors', 'progressus-gutenberg' ) }
+					title={ __( 'Navigation Colors', 'migrate-elementor-to-gutenberg' ) }
 					colorSettings={ [
 						{
 							value: arrowsColor,
 							onChange: ( value ) =>
 								setAttributes( { arrowsColor: value } ),
-							label: __( 'Arrows Color', 'progressus-gutenberg' ),
+							label: __( 'Arrows Color', 'migrate-elementor-to-gutenberg' ),
 						},
 						{
 							value: paginationColorInactive,
@@ -525,25 +525,25 @@ const Edit = ( { attributes, setAttributes } ) => {
 								} ),
 							label: __(
 								'Pagination Color',
-								'progressus-gutenberg'
+								'migrate-elementor-to-gutenberg'
 							),
 						},
 					] }
 				/>
 
 				<PanelBody
-					title={ __( 'Spacing', 'progressus-gutenberg' ) }
+					title={ __( 'Spacing', 'migrate-elementor-to-gutenberg' ) }
 					initialOpen={ false }
 				>
 					<BoxControl
-						label={ __( 'Margin', 'progressus-gutenberg' ) }
+						label={ __( 'Margin', 'migrate-elementor-to-gutenberg' ) }
 						values={ _margin }
 						onChange={ ( value ) =>
 							setAttributes( { _margin: value } )
 						}
 					/>
 					<BoxControl
-						label={ __( 'Padding', 'progressus-gutenberg' ) }
+						label={ __( 'Padding', 'migrate-elementor-to-gutenberg' ) }
 						values={ _padding }
 						onChange={ ( value ) =>
 							setAttributes( { _padding: value } )
@@ -554,14 +554,14 @@ const Edit = ( { attributes, setAttributes } ) => {
 
 			<InspectorAdvancedControls>
 				<TextControl
-					label={ __( 'Custom ID', 'progressus-gutenberg' ) }
+					label={ __( 'Custom ID', 'migrate-elementor-to-gutenberg' ) }
 					value={ customId }
 					onChange={ ( value ) =>
 						setAttributes( { customId: value } )
 					}
 				/>
 				<TextControl
-					label={ __( 'Custom Class', 'progressus-gutenberg' ) }
+					label={ __( 'Custom Class', 'migrate-elementor-to-gutenberg' ) }
 					value={ customClass }
 					onChange={ ( value ) =>
 						setAttributes( { customClass: value } )
@@ -692,7 +692,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 										>
 											{ __(
 												'Edit',
-												'progressus-gutenberg'
+												'migrate-elementor-to-gutenberg'
 											) }
 										</Button>
 										<Button
@@ -704,7 +704,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 										>
 											{ __(
 												'Remove',
-												'progressus-gutenberg'
+												'migrate-elementor-to-gutenberg'
 											) }
 										</Button>
 									</div>
@@ -714,7 +714,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					</div>
 
 					<Button isPrimary onClick={ addSlide }>
-						{ __( 'Add Testimonial', 'progressus-gutenberg' ) }
+						{ __( 'Add Testimonial', 'migrate-elementor-to-gutenberg' ) }
 					</Button>
 
 					{ slides[ editingSlide ] && (
@@ -722,13 +722,13 @@ const Edit = ( { attributes, setAttributes } ) => {
 							<h3>
 								{ __(
 									'Edit Testimonial',
-									'progressus-gutenberg'
+									'migrate-elementor-to-gutenberg'
 								) }
 							</h3>
 							<TextareaControl
 								label={ __(
 									'Content',
-									'progressus-gutenberg'
+									'migrate-elementor-to-gutenberg'
 								) }
 								value={ slides[ editingSlide ].content }
 								onChange={ ( value ) =>
@@ -740,14 +740,14 @@ const Edit = ( { attributes, setAttributes } ) => {
 								}
 							/>
 							<TextControl
-								label={ __( 'Name', 'progressus-gutenberg' ) }
+								label={ __( 'Name', 'migrate-elementor-to-gutenberg' ) }
 								value={ slides[ editingSlide ].name }
 								onChange={ ( value ) =>
 									updateSlide( editingSlide, 'name', value )
 								}
 							/>
 							<TextControl
-								label={ __( 'Title', 'progressus-gutenberg' ) }
+								label={ __( 'Title', 'migrate-elementor-to-gutenberg' ) }
 								value={ slides[ editingSlide ].title }
 								onChange={ ( value ) =>
 									updateSlide( editingSlide, 'title', value )
@@ -777,11 +777,11 @@ const Edit = ( { attributes, setAttributes } ) => {
 											{ slides[ editingSlide ].imageUrl
 												? __(
 														'Change Image',
-														'progressus-gutenberg'
+														'migrate-elementor-to-gutenberg'
 												  )
 												: __(
 														'Select Image',
-														'progressus-gutenberg'
+														'migrate-elementor-to-gutenberg'
 												  ) }
 										</Button>
 									) }

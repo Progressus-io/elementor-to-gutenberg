@@ -2,10 +2,10 @@
 /**
  * Utility class for parsing styles and attributes.
  *
- * @package Progressus\Gutenberg
+ * @package Progressus\MigrateElementorToGutenberg
  */
 
-namespace Progressus\Gutenberg\Admin\Helper;
+namespace Progressus\MigrateElementorToGutenberg\Admin\Helper;
 
 use Elementor\Plugin;
 use function sanitize_html_class;
@@ -164,7 +164,7 @@ class Style_Parser {
 			return '';
 		}
 
-		return 'etg-el-' . $id;
+		return 'metg-el-' . $id;
 	}
 
 	/**
@@ -203,7 +203,7 @@ class Style_Parser {
 	}
 
 	/**
-	 * Build a combined widget className string of "etg-el-{id} {author_classes}".
+	 * Build a combined widget className string of "metg-el-{id} {author_classes}".
 	 *
 	 * Widget handlers that build their own className string can call this
 	 * instead of `get_element_unique_class()` to also include the author's

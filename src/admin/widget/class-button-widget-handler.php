@@ -2,18 +2,18 @@
 /**
  * Widget handler for Elementor button widget.
  *
- * @package Progressus\Gutenberg
+ * @package Progressus\MigrateElementorToGutenberg
  */
 
-namespace Progressus\Gutenberg\Admin\Widget;
+namespace Progressus\MigrateElementorToGutenberg\Admin\Widget;
 
-use Progressus\Gutenberg\Admin\Helper\Alignment_Helper;
-use Progressus\Gutenberg\Admin\Helper\Block_Builder;
-use Progressus\Gutenberg\Admin\Helper\Html_Attribute_Builder;
-use Progressus\Gutenberg\Admin\Helper\Icon_Parser;
-use Progressus\Gutenberg\Admin\Helper\Style_Parser;
-use Progressus\Gutenberg\Admin\Helper\Style_Normalizer;
-use Progressus\Gutenberg\Admin\Widget_Handler_Interface;
+use Progressus\MigrateElementorToGutenberg\Admin\Helper\Alignment_Helper;
+use Progressus\MigrateElementorToGutenberg\Admin\Helper\Block_Builder;
+use Progressus\MigrateElementorToGutenberg\Admin\Helper\Html_Attribute_Builder;
+use Progressus\MigrateElementorToGutenberg\Admin\Helper\Icon_Parser;
+use Progressus\MigrateElementorToGutenberg\Admin\Helper\Style_Parser;
+use Progressus\MigrateElementorToGutenberg\Admin\Helper\Style_Normalizer;
+use Progressus\MigrateElementorToGutenberg\Admin\Widget_Handler_Interface;
 
 use function esc_attr;
 use function esc_url;
@@ -186,10 +186,10 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 
 		$icon_html = '';
 		if ( '' !== $icon_data['class_name'] ) {
-			$icon_html = '<span class="etg-button-icon ' . esc_attr( $icon_data['class_name'] ) . '" aria-hidden="true"></span>';
+			$icon_html = '<span class="metg-button-icon ' . esc_attr( $icon_data['class_name'] ) . '" aria-hidden="true"></span>';
 			Style_Parser::save_custom_css( '/* icon class captured for ETG_EXTRA_ATTRS_MAP_V1 */' );
 		} elseif ( '' !== $icon_data['url'] ) {
-			$icon_html = '<span class="etg-button-icon"><img src="' . esc_url( $icon_data['url'] ) . '" alt="" aria-hidden="true" /></span>';
+			$icon_html = '<span class="metg-button-icon"><img src="' . esc_url( $icon_data['url'] ) . '" alt="" aria-hidden="true" /></span>';
 		}
 
 		// Normalize typography for core/button to avoid Gutenberg dropping/reshuffling values.

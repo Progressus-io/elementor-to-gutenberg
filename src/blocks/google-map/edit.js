@@ -11,10 +11,10 @@ import {
 import { Fragment, useState, useEffect, useRef } from '@wordpress/element';
 
 const mapTypes = [
-	{ label: __( 'Roadmap', 'elementor-to-gutenberg' ), value: 'roadmap' },
-	{ label: __( 'Satellite', 'elementor-to-gutenberg' ), value: 'satellite' },
-	{ label: __( 'Hybrid', 'elementor-to-gutenberg' ), value: 'hybrid' },
-	{ label: __( 'Terrain', 'elementor-to-gutenberg' ), value: 'terrain' },
+	{ label: __( 'Roadmap', 'migrate-elementor-to-gutenberg' ), value: 'roadmap' },
+	{ label: __( 'Satellite', 'migrate-elementor-to-gutenberg' ), value: 'satellite' },
+	{ label: __( 'Hybrid', 'migrate-elementor-to-gutenberg' ), value: 'hybrid' },
+	{ label: __( 'Terrain', 'migrate-elementor-to-gutenberg' ), value: 'terrain' },
 ];
 
 const Edit = ( { attributes, setAttributes } ) => {
@@ -325,28 +325,28 @@ const Edit = ( { attributes, setAttributes } ) => {
 		<Fragment>
 			<InspectorControls>
 				<PanelBody
-					title={ __( 'Map Settings', 'elementor-to-gutenberg' ) }
+					title={ __( 'Map Settings', 'migrate-elementor-to-gutenberg' ) }
 					initialOpen={ true }
 				>
 					<p style={ { marginTop: 0, marginBottom: 8 } }>
 						{ __(
 							"Set your Google Maps API Key in the plugin's Integrations Settings page.",
-							'elementor-to-gutenberg'
+							'migrate-elementor-to-gutenberg'
 						) }{ ' ' }
 						<a
 							href="/wp-admin/admin.php?page=gutenberg-settings"
 							target="_blank"
 							rel="noopener noreferrer"
 						>
-							{ __( 'Open Settings', 'elementor-to-gutenberg' ) }
+							{ __( 'Open Settings', 'migrate-elementor-to-gutenberg' ) }
 						</a>{ ' ' }
-						{ __( 'Create your key', 'elementor-to-gutenberg' ) }{ ' ' }
+						{ __( 'Create your key', 'migrate-elementor-to-gutenberg' ) }{ ' ' }
 						<a
 							href="https://developers.google.com/maps/documentation/embed/get-api-key"
 							target="_blank"
 							rel="noopener noreferrer"
 						>
-							{ __( 'here.', 'elementor-to-gutenberg' ) }
+							{ __( 'here.', 'migrate-elementor-to-gutenberg' ) }
 						</a>
 					</p>
 					<div style={ { marginBottom: 8 } }>
@@ -354,7 +354,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 							htmlFor="google-map-address-input"
 							className="components-base-control__label"
 						>
-							{ __( 'Address', 'elementor-to-gutenberg' ) }
+							{ __( 'Address', 'migrate-elementor-to-gutenberg' ) }
 						</label>
 						<input
 							id="google-map-address-input"
@@ -378,7 +378,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 							}
 							placeholder={ __(
 								'Start typing an address…',
-								'elementor-to-gutenberg'
+								'migrate-elementor-to-gutenberg'
 							) }
 							style={ { width: '100%' } }
 						/>
@@ -398,7 +398,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 									<div style={ { padding: 8 } }>
 										{ __(
 											'Searching…',
-											'elementor-to-gutenberg'
+											'migrate-elementor-to-gutenberg'
 										) }
 									</div>
 								) }
@@ -406,7 +406,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 									<div style={ { padding: 8 } }>
 										{ __(
 											'No suggestions',
-											'elementor-to-gutenberg'
+											'migrate-elementor-to-gutenberg'
 										) }
 									</div>
 								) }
@@ -439,7 +439,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					<TextControl
 						label={ __(
 							'Latitude (optional)',
-							'elementor-to-gutenberg'
+							'migrate-elementor-to-gutenberg'
 						) }
 						value={ locLat === null ? '' : String( locLat ) }
 						onChange={ ( value ) =>
@@ -451,7 +451,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					<TextControl
 						label={ __(
 							'Longitude (optional)',
-							'elementor-to-gutenberg'
+							'migrate-elementor-to-gutenberg'
 						) }
 						value={ locLng === null ? '' : String( locLng ) }
 						onChange={ ( value ) =>
@@ -461,7 +461,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						}
 					/>
 					<RangeControl
-						label={ __( 'Zoom', 'elementor-to-gutenberg' ) }
+						label={ __( 'Zoom', 'migrate-elementor-to-gutenberg' ) }
 						value={ zoom }
 						onChange={ ( value ) =>
 							setAttributes( { zoom: value } )
@@ -470,7 +470,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						max={ 20 }
 					/>
 					<RangeControl
-						label={ __( 'Height (px)', 'elementor-to-gutenberg' ) }
+						label={ __( 'Height (px)', 'migrate-elementor-to-gutenberg' ) }
 						value={ height }
 						onChange={ ( value ) =>
 							setAttributes( { height: value } )
@@ -480,7 +480,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					/>
 					{ /* Show Marker removed */ }
 					<SelectControl
-						label={ __( 'Map Type', 'elementor-to-gutenberg' ) }
+						label={ __( 'Map Type', 'migrate-elementor-to-gutenberg' ) }
 						value={ mapType }
 						options={ mapTypes }
 						onChange={ ( value ) =>
@@ -488,12 +488,12 @@ const Edit = ( { attributes, setAttributes } ) => {
 						}
 					/>
 					<PanelBody
-						title={ __( 'Dimensions', 'progressus-gutenberg' ) }
+						title={ __( 'Dimensions', 'migrate-elementor-to-gutenberg' ) }
 						initialOpen={ false }
 					>
 						{ /** Normalize values for BoxControl display: accept '2px' or numeric 2 */ }
 						<BoxControl
-							label={ __( 'Padding', 'progressus-gutenberg' ) }
+							label={ __( 'Padding', 'migrate-elementor-to-gutenberg' ) }
 							values={ {
 								top: valueToCss( padding.top ),
 								right: valueToCss( padding.right ),
@@ -527,7 +527,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						/>
 
 						<BoxControl
-							label={ __( 'Margin', 'progressus-gutenberg' ) }
+							label={ __( 'Margin', 'migrate-elementor-to-gutenberg' ) }
 							values={ {
 								top: valueToCss( margin.top ),
 								right: valueToCss( margin.right ),
@@ -583,7 +583,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 									src={ src }
 									title={ __(
 										'Google Map',
-										'elementor-to-gutenberg'
+										'migrate-elementor-to-gutenberg'
 									) }
 									style={ {
 										width: '100%',
@@ -598,7 +598,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 							<div>
 								{ __(
 									'Enter an address or coordinates to preview',
-									'elementor-to-gutenberg'
+									'migrate-elementor-to-gutenberg'
 								) }
 							</div>
 						);

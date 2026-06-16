@@ -2,10 +2,10 @@
 /**
  * Server-side rendering of the `progressus/tabs` block.
  *
- * @package Progressus\Gutenberg
+ * @package Progressus\MigrateElementorToGutenberg
  */
 
-namespace Progressus\Gutenberg\Blocks;
+namespace Progressus\MigrateElementorToGutenberg\Blocks;
 
 defined( 'ABSPATH' ) || exit;
 
