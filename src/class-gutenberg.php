@@ -321,7 +321,10 @@ class Gutenberg {
 			METG_DIR_URL . '/assets/js/scripts.js',
 			array( 'jquery' ),
 			METG_VERSION,
-			true
+			array(
+				'in_footer' => true,
+				'strategy'  => 'defer',
+			)
 		);
 
 		if ( has_block( 'progressus/icon' ) ) {

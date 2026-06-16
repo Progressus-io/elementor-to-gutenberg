@@ -27,11 +27,11 @@ use function get_option;
 use function glob;
 use function is_admin;
 use function is_dir;
-use function rename;
 use function str_replace;
 use function trailingslashit;
 use function update_option;
 use function wp_get_upload_dir;
+use function WP_Filesystem;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -191,10 +191,10 @@ class Data_Migration {
 		// strtr() does a single, non-overlapping pass (longest key wins), so the
 		// inserted `metg-*` values are never re-scanned by a shorter `etg-*` key.
 		$map = array(
-			'etg-page-'            => 'metg-page-',
-			'etg-widget-'          => 'metg-widget-',
-			'etg-full-width-page'  => 'metg-full-width-page',
-			'progressus-etg//'     => 'progressus-metg//',
+			'etg-page-'           => 'metg-page-',
+			'etg-widget-'         => 'metg-widget-',
+			'etg-full-width-page' => 'metg-full-width-page',
+			'progressus-etg//'    => 'progressus-metg//',
 		);
 
 		foreach ( $rows as $row ) {
@@ -221,21 +221,25 @@ class Data_Migration {
 	private static function migrate_external_css(): void {
 		$upload = wp_get_upload_dir();
 		if ( ! empty( $upload['basedir'] ) ) {
+			global $wp_filesystem;
+			if ( ! $wp_filesystem ) {
+				require_once ABSPATH . 'wp-admin/includes/file.php';
+				WP_Filesystem();
+			}
+
 			$base    = trailingslashit( (string) $upload['basedir'] );
 			$old_dir = $base . 'etg';
 			$new_dir = $base . 'metg';
 
-			if ( is_dir( $old_dir ) && ! is_dir( $new_dir ) ) {
-				// phpcs:ignore WordPress.PHP.NoSilentErrors.Discouraged
-				@rename( $old_dir, $new_dir );
+			if ( $wp_filesystem && is_dir( $old_dir ) && ! is_dir( $new_dir ) ) {
+				$wp_filesystem->move( $old_dir, $new_dir );
 			}
 
-			if ( is_dir( $new_dir ) ) {
+			if ( $wp_filesystem && is_dir( $new_dir ) ) {
 				foreach ( (array) glob( $new_dir . '/etg-page-*.css' ) as $old_file ) {
 					$new_file = $new_dir . '/' . str_replace( 'etg-page-', 'metg-page-', basename( $old_file ) );
 					if ( ! file_exists( $new_file ) ) {
-						// phpcs:ignore WordPress.PHP.NoSilentErrors.Discouraged
-						@rename( $old_file, $new_file );
+						$wp_filesystem->move( $old_file, $new_file );
 					}
 				}
 			}

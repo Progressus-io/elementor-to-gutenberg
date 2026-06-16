@@ -1121,9 +1121,9 @@ class AI_Improvement_Admin {
 	private function redirect_with_notice( int $source_id, int $target_id, string $notice_code ): void {
 		$url = add_query_arg(
 			array(
-				'page'             => self::MENU_SLUG,
-				'source_id'        => $source_id,
-				'target_id'        => $target_id,
+				'page'           => self::MENU_SLUG,
+				'source_id'      => $source_id,
+				'target_id'      => $target_id,
 				'metg_ai_notice' => $notice_code,
 			),
 			admin_url( 'admin.php' )
