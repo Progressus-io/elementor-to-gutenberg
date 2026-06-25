@@ -4,10 +4,10 @@
 /**
  * Assembles the feedback manifest from the job transient and available post meta.
  *
- * @package Progressus\MigrateElementorToGutenberg
+ * @package Progressus\BlockShift
  */
 
-namespace Progressus\MigrateElementorToGutenberg\Admin;
+namespace Progressus\BlockShift\Admin;
 
 defined( 'ABSPATH' ) || exit;
 

@@ -2,10 +2,10 @@
 /**
  * Normalize style arrays and drop unsupported defaults.
  *
- * @package Progressus\MigrateElementorToGutenberg
+ * @package Progressus\BlockShift
  */
 
-namespace Progressus\MigrateElementorToGutenberg\Admin\Helper;
+namespace Progressus\BlockShift\Admin\Helper;
 
 defined( 'ABSPATH' ) || exit;
 

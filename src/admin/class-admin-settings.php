@@ -4,21 +4,21 @@
 /**
  * Main admin settings class for Elementor to Gutenberg conversion.
  *
- * @package Progressus\MigrateElementorToGutenberg
+ * @package Progressus\BlockShift
  */
 
-namespace Progressus\MigrateElementorToGutenberg\Admin;
+namespace Progressus\BlockShift\Admin;
 
-use Progressus\MigrateElementorToGutenberg\Admin\Helper\File_Upload_Service;
-use Progressus\MigrateElementorToGutenberg\Admin\Helper\Block_Builder;
-use Progressus\MigrateElementorToGutenberg\Admin\Layout\Container_Classifier;
-use Progressus\MigrateElementorToGutenberg\Admin\Helper\Style_Parser;
-use Progressus\MigrateElementorToGutenberg\Admin\Helper\Alignment_Helper;
-use Progressus\MigrateElementorToGutenberg\Admin\Helper\External_CSS_Service;
-use Progressus\MigrateElementorToGutenberg\Admin\Helper\External_Style_Collector;
-use Progressus\MigrateElementorToGutenberg\Admin\Helper\AI_Remediation_Screenshot_Api_Service;
-use Progressus\MigrateElementorToGutenberg\Admin\Conversion_Log;
-use Progressus\MigrateElementorToGutenberg\Admin\Conversion_Log_Admin;
+use Progressus\BlockShift\Admin\Helper\File_Upload_Service;
+use Progressus\BlockShift\Admin\Helper\Block_Builder;
+use Progressus\BlockShift\Admin\Layout\Container_Classifier;
+use Progressus\BlockShift\Admin\Helper\Style_Parser;
+use Progressus\BlockShift\Admin\Helper\Alignment_Helper;
+use Progressus\BlockShift\Admin\Helper\External_CSS_Service;
+use Progressus\BlockShift\Admin\Helper\External_Style_Collector;
+use Progressus\BlockShift\Admin\Helper\AI_Remediation_Screenshot_Api_Service;
+use Progressus\BlockShift\Admin\Conversion_Log;
+use Progressus\BlockShift\Admin\Conversion_Log_Admin;
 
 use function esc_html;
 use function esc_html__;
@@ -373,7 +373,7 @@ class Admin_Settings {
 			return;
 		}
 
-		$slug = \Progressus\MigrateElementorToGutenberg\Gutenberg::FULL_WIDTH_PAGE_TEMPLATE_SLUG;
+		$slug = \Progressus\BlockShift\Gutenberg::FULL_WIDTH_PAGE_TEMPLATE_SLUG;
 
 		update_post_meta( $target_id, '_wp_page_template', $slug );
 		delete_post_meta( $target_id, 'wp_template' );

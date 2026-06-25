@@ -2,12 +2,12 @@
 /**
  * AI Enhancement admin page.
  *
- * @package Progressus\MigrateElementorToGutenberg
+ * @package Progressus\BlockShift
  */
 
-namespace Progressus\MigrateElementorToGutenberg\Admin;
+namespace Progressus\BlockShift\Admin;
 
-use Progressus\MigrateElementorToGutenberg\Admin\Helper\Claude_Api_Service;
+use Progressus\BlockShift\Admin\Helper\Claude_Api_Service;
 
 use function add_action;
 use function add_submenu_page;

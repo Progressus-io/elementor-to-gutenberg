@@ -2,10 +2,10 @@
 /**
  * Server-side rendering of the `progressus/counter` block.
  *
- * @package Progressus\MigrateElementorToGutenberg
+ * @package Progressus\BlockShift
  */
 
-namespace Progressus\MigrateElementorToGutenberg\Blocks;
+namespace Progressus\BlockShift\Blocks;
 
 defined( 'ABSPATH' ) || exit;
 

@@ -11,12 +11,12 @@
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: blockshift-migrate-from-elementor
  *
- * @package Progressus\MigrateElementorToGutenberg
+ * @package Progressus\BlockShift
  */
 
-namespace Progressus\MigrateElementorToGutenberg;
+namespace Progressus\BlockShift;
 
-use Progressus\MigrateElementorToGutenberg\Gutenberg;
+use Progressus\BlockShift\Gutenberg;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.

@@ -1,10 +1,10 @@
 <?php
 
-namespace Progressus\MigrateElementorToGutenberg\Admin\Widget;
+namespace Progressus\BlockShift\Admin\Widget;
 
 defined( 'ABSPATH' ) || exit;
 
-use Progressus\MigrateElementorToGutenberg\Admin\Widget_Handler_Interface;
+use Progressus\BlockShift\Admin\Widget_Handler_Interface;
 use function esc_attr;
 use function wp_strip_all_tags;
 

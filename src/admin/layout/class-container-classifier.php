@@ -2,10 +2,10 @@
 /**
  * Decide which Gutenberg layout to use when rendering Elementor containers.
  *
- * @package Progressus\MigrateElementorToGutenberg
+ * @package Progressus\BlockShift
  */
 
-namespace Progressus\MigrateElementorToGutenberg\Admin\Layout;
+namespace Progressus\BlockShift\Admin\Layout;
 
 defined( 'ABSPATH' ) || exit;
 

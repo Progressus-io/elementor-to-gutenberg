@@ -2,19 +2,19 @@
 /**
  * Automated AI improvement admin workflow.
  *
- * @package Progressus\MigrateElementorToGutenberg
+ * @package Progressus\BlockShift
  */
 
-namespace Progressus\MigrateElementorToGutenberg\Admin;
+namespace Progressus\BlockShift\Admin;
 
 defined( 'ABSPATH' ) || exit;
 
-use Progressus\MigrateElementorToGutenberg\Admin\Helper\AI_Prompt_Builder;
-use Progressus\MigrateElementorToGutenberg\Admin\Helper\AI_Workspace_Repository;
-use Progressus\MigrateElementorToGutenberg\Admin\Helper\External_CSS_Service;
-use Progressus\MigrateElementorToGutenberg\Admin\Helper\AI_Remediation_Screenshot_Api_Service;
-use Progressus\MigrateElementorToGutenberg\Admin\Helper\AI_Remediation_Screenshot_Meta_Service;
-use Progressus\MigrateElementorToGutenberg\Admin\Helper\Claude_Api_Service;
+use Progressus\BlockShift\Admin\Helper\AI_Prompt_Builder;
+use Progressus\BlockShift\Admin\Helper\AI_Workspace_Repository;
+use Progressus\BlockShift\Admin\Helper\External_CSS_Service;
+use Progressus\BlockShift\Admin\Helper\AI_Remediation_Screenshot_Api_Service;
+use Progressus\BlockShift\Admin\Helper\AI_Remediation_Screenshot_Meta_Service;
+use Progressus\BlockShift\Admin\Helper\Claude_Api_Service;
 use WP_Error;
 use WP_Post;
 

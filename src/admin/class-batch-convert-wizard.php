@@ -2,26 +2,26 @@
 /**
  * Modern batch conversion wizard for Elementor to Gutenberg.
  *
- * @package Progressus\MigrateElementorToGutenberg
+ * @package Progressus\BlockShift
  */
 
-namespace Progressus\MigrateElementorToGutenberg\Admin;
+namespace Progressus\BlockShift\Admin;
 
 defined( 'ABSPATH' ) || exit;
 
-use Progressus\MigrateElementorToGutenberg\Admin\Admin_Settings;
-use Progressus\MigrateElementorToGutenberg\Admin\AI_Improvement_Admin;
-use Progressus\MigrateElementorToGutenberg\Admin\Conversion_Log_Admin;
-use Progressus\MigrateElementorToGutenberg\Admin\Diagnostic_Logger;
-use Progressus\MigrateElementorToGutenberg\Gutenberg;
+use Progressus\BlockShift\Admin\Admin_Settings;
+use Progressus\BlockShift\Admin\AI_Improvement_Admin;
+use Progressus\BlockShift\Admin\Conversion_Log_Admin;
+use Progressus\BlockShift\Admin\Diagnostic_Logger;
+use Progressus\BlockShift\Gutenberg;
 use WP_Error;
 use WP_Post;
 use WP_Query;
 
-use Progressus\MigrateElementorToGutenberg\Admin\Helper\AI_Remediation_Screenshot_Api_Service;
-use Progressus\MigrateElementorToGutenberg\Admin\Helper\AI_Remediation_Screenshot_Meta_Service;
-use Progressus\MigrateElementorToGutenberg\Admin\Helper\Claude_Api_Service;
-use Progressus\MigrateElementorToGutenberg\Admin\Helper\External_CSS_Service;
+use Progressus\BlockShift\Admin\Helper\AI_Remediation_Screenshot_Api_Service;
+use Progressus\BlockShift\Admin\Helper\AI_Remediation_Screenshot_Meta_Service;
+use Progressus\BlockShift\Admin\Helper\Claude_Api_Service;
+use Progressus\BlockShift\Admin\Helper\External_CSS_Service;
 
 use function absint;
 use function add_submenu_page;

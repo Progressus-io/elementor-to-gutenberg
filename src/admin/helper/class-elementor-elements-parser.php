@@ -2,12 +2,12 @@
 /**
  * Helper for parsing Elementor elements recursively into Gutenberg blocks.
  *
- * @package Progressus\MigrateElementorToGutenberg
+ * @package Progressus\BlockShift
  */
 
-namespace Progressus\MigrateElementorToGutenberg\Admin\Helper;
+namespace Progressus\BlockShift\Admin\Helper;
 
-use Progressus\MigrateElementorToGutenberg\Admin\Widget_Handler_Factory;
+use Progressus\BlockShift\Admin\Widget_Handler_Factory;
 
 defined( 'ABSPATH' ) || exit;
 

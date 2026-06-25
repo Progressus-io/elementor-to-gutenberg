@@ -14,10 +14,10 @@
  *  - Sensitive values are redacted before writing.
  *  - Uses wp_json_encode(), wp_mkdir_p(), wp_upload_dir() throughout.
  *
- * @package Progressus\MigrateElementorToGutenberg
+ * @package Progressus\BlockShift
  */
 
-namespace Progressus\MigrateElementorToGutenberg\Admin;
+namespace Progressus\BlockShift\Admin;
 
 use function gmdate;
 use function hash;

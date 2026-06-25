@@ -4,10 +4,10 @@
 /**
  * Sends a feedback manifest to the ETG Feedback Receiver.
  *
- * @package Progressus\MigrateElementorToGutenberg
+ * @package Progressus\BlockShift
  */
 
-namespace Progressus\MigrateElementorToGutenberg\Admin;
+namespace Progressus\BlockShift\Admin;
 
 use WP_Error;
 

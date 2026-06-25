@@ -13,7 +13,7 @@
 	},
 	"autoload": {
 		"psr-4": {
-			"Progressus\\MigrateElementorToGutenberg\\": "src/"
+			"Progressus\\BlockShift\\": "src/"
 		},
 		"classmap": [
 			"src/"

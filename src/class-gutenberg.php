@@ -2,27 +2,27 @@
 /**
  * The main class of the Migrate Off Elementor plugin.
  *
- * @package Progressus\MigrateElementorToGutenberg
+ * @package Progressus\BlockShift
  */
 
-namespace Progressus\MigrateElementorToGutenberg;
+namespace Progressus\BlockShift;
 
 defined( 'ABSPATH' ) || exit;
 
-use Progressus\MigrateElementorToGutenberg\Admin\Admin_Settings;
-use Progressus\MigrateElementorToGutenberg\Admin\AI_Enhancement_Admin;
-use Progressus\MigrateElementorToGutenberg\Admin\AI_Improvement_Admin;
-use Progressus\MigrateElementorToGutenberg\Admin\Batch_Convert_Wizard;
-use Progressus\MigrateElementorToGutenberg\Admin\Conversion_Log_Admin;
-use Progressus\MigrateElementorToGutenberg\Admin\Data_Migration;
-use Progressus\MigrateElementorToGutenberg\Admin\Helper\External_CSS_Service;
-use Progressus\MigrateElementorToGutenberg\Admin\Helper\Elementor_Fonts_Service;
-use Progressus\MigrateElementorToGutenberg\Admin\Helper\Style_Parser;
+use Progressus\BlockShift\Admin\Admin_Settings;
+use Progressus\BlockShift\Admin\AI_Enhancement_Admin;
+use Progressus\BlockShift\Admin\AI_Improvement_Admin;
+use Progressus\BlockShift\Admin\Batch_Convert_Wizard;
+use Progressus\BlockShift\Admin\Conversion_Log_Admin;
+use Progressus\BlockShift\Admin\Data_Migration;
+use Progressus\BlockShift\Admin\Helper\External_CSS_Service;
+use Progressus\BlockShift\Admin\Helper\Elementor_Fonts_Service;
+use Progressus\BlockShift\Admin\Helper\Style_Parser;
 
 /**
  * Class Gutenberg
  *
- * @package Progressus\MigrateElementorToGutenberg
+ * @package Progressus\BlockShift
  */
 class Gutenberg {
 	public const FULL_WIDTH_TEMPLATE_ID = 'progressus-metg//full-width-page';

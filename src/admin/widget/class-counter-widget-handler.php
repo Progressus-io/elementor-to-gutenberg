@@ -2,14 +2,14 @@
 /**
  * Widget handler for Elementor counter widget.
  *
- * @package Progressus\MigrateElementorToGutenberg
+ * @package Progressus\BlockShift
  */
 
-namespace Progressus\MigrateElementorToGutenberg\Admin\Widget;
+namespace Progressus\BlockShift\Admin\Widget;
 
-use Progressus\MigrateElementorToGutenberg\Admin\Helper\Alignment_Helper;
-use Progressus\MigrateElementorToGutenberg\Admin\Widget_Handler_Interface;
-use Progressus\MigrateElementorToGutenberg\Admin\Helper\Style_Parser;
+use Progressus\BlockShift\Admin\Helper\Alignment_Helper;
+use Progressus\BlockShift\Admin\Widget_Handler_Interface;
+use Progressus\BlockShift\Admin\Helper\Style_Parser;
 
 // @phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped
 // @phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedFunctionFound

@@ -16,10 +16,10 @@
  *
  * The whole pass is guarded by an option so it runs at most once per site.
  *
- * @package Progressus\MigrateElementorToGutenberg
+ * @package Progressus\BlockShift
  */
 
-namespace Progressus\MigrateElementorToGutenberg\Admin;
+namespace Progressus\BlockShift\Admin;
 
 use function add_option;
 use function current_user_can;

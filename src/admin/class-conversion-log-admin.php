@@ -4,10 +4,10 @@
 /**
  * Conversion Log admin UI page.
  *
- * @package Progressus\MigrateElementorToGutenberg
+ * @package Progressus\BlockShift
  */
 
-namespace Progressus\MigrateElementorToGutenberg\Admin;
+namespace Progressus\BlockShift\Admin;
 
 use function add_submenu_page;
 use function admin_url;

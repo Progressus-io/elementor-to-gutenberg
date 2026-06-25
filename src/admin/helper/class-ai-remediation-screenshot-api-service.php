@@ -5,10 +5,10 @@
  * Responsible for calling the configured external screenshot service,
  * validating the response, and returning a structured result.
  *
- * @package Progressus\MigrateElementorToGutenberg
+ * @package Progressus\BlockShift
  */
 
-namespace Progressus\MigrateElementorToGutenberg\Admin\Helper;
+namespace Progressus\BlockShift\Admin\Helper;
 
 use function esc_url_raw;
 use function filter_var;
