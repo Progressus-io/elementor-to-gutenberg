@@ -26,7 +26,7 @@ BlockShift – Migrate from Elementor is a professional migration tool that conv
 
 1. Upload the plugin folder to `/wp-content/plugins/`.
 2. Activate the plugin through the **Plugins** menu in WordPress.
-3. Navigate to **Elementor to Gutenberg** in the admin menu to begin migration.
+3. Navigate to **BlockShift – Migrate from Elementor** in the admin menu to begin migration.
 
 == Frequently Asked Questions ==
 
@@ -77,6 +77,14 @@ This service is provided by Google. Terms: https://policies.google.com/terms —
 If a converted page contains a map or video, the page embeds it from Google Maps (https://maps.google.com) or YouTube (https://www.youtube.com), the same way the original Elementor page did. These embeds load only when such a page is viewed.
 
 Provided by Google. Terms: https://policies.google.com/terms and https://www.youtube.com/t/terms — Privacy policy: https://policies.google.com/privacy
+
+= OpenStreetMap (Nominatim) =
+
+Used for address autocomplete when you edit a Map block in the block editor.
+
+While editing a Map block, as you type an address (3 or more characters), the plugin sends that address text to the OpenStreetMap Nominatim geocoding service (https://nominatim.openstreetmap.org) and displays matching location suggestions. This happens only in the admin editor, never on the public-facing site.
+
+This service is provided by the OpenStreetMap Foundation. Usage policy: https://operations.osmfoundation.org/policies/nominatim/ — Privacy policy: https://wiki.osmfoundation.org/wiki/Privacy_Policy
 
 == Changelog ==
 

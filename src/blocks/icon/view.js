@@ -74,7 +74,7 @@ document.addEventListener( 'DOMContentLoaded', function () {
 		// Check if FontAwesome is loaded
 		if (
 			window.FontAwesome ||
-			document.querySelector( 'link[href*="font-awesome"]' )
+			document.querySelector( 'link[href*="font-awesome"], link[href*="fontawesome"]' )
 		) {
 			icon.classList.add( 'fa-loaded' );
 		} else {
@@ -85,7 +85,7 @@ document.addEventListener( 'DOMContentLoaded', function () {
 			const checkFontAwesome = setInterval( function () {
 				if (
 					window.FontAwesome ||
-					document.querySelector( 'link[href*="font-awesome"]' )
+					document.querySelector( 'link[href*="font-awesome"], link[href*="fontawesome"]' )
 				) {
 					icon.style.opacity = '';
 					icon.classList.add( 'fa-loaded' );
@@ -167,7 +167,8 @@ window.addEventListener(
 		if (
 			e.target &&
 			e.target.href &&
-			e.target.href.includes( 'font-awesome' )
+			( e.target.href.includes( 'font-awesome' ) ||
+				e.target.href.includes( 'fontawesome' ) )
 		) {
 			// eslint-disable-next-line no-console
 			console.warn(
