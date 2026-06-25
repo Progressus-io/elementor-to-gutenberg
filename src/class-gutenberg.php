@@ -114,7 +114,7 @@ class Gutenberg {
 			return $template;
 		}
 
-		$plugin_template = trailingslashit( METG_DIR_PATH ) . self::FULL_WIDTH_PAGE_TEMPLATE_SLUG;
+		$plugin_template = trailingslashit( BLOCKSHIFT_DIR_PATH ) . self::FULL_WIDTH_PAGE_TEMPLATE_SLUG;
 		if ( file_exists( $plugin_template ) ) {
 			return $plugin_template;
 		}
@@ -160,9 +160,9 @@ class Gutenberg {
 
 		wp_enqueue_style(
 			self::FULL_WIDTH_CSS_HANDLE,
-			trailingslashit( METG_DIR_URL ) . 'assets/css/metg-full-width-page.css',
+			trailingslashit( BLOCKSHIFT_DIR_URL ) . 'assets/css/metg-full-width-page.css',
 			array(),
-			defined( 'METG_VERSION' ) ? METG_VERSION : null
+			defined( 'BLOCKSHIFT_VERSION' ) ? BLOCKSHIFT_VERSION : null
 		);
 	}
 
@@ -208,7 +208,7 @@ class Gutenberg {
 	 */
 	public function register_blocks() {
 		// auto-register all blocks inside build/blocks:
-		$blocks_dir = METG_DIR_PATH . '/build/blocks';
+		$blocks_dir = BLOCKSHIFT_DIR_PATH . '/build/blocks';
 		foreach ( glob( $blocks_dir . '/*', GLOB_ONLYDIR ) as $block_dir ) {
 			register_block_type( $block_dir );
 		}
@@ -271,9 +271,9 @@ class Gutenberg {
 	public function enqueue_editor_assets(): void {
 		wp_enqueue_style(
 			'metg-layout-fixes',
-			METG_DIR_URL . '/assets/css/layout-fixes.css',
+			BLOCKSHIFT_DIR_URL . '/assets/css/layout-fixes.css',
 			array(),
-			METG_VERSION
+			BLOCKSHIFT_VERSION
 		);
 
 		$this->enqueue_converted_post_fonts( $this->detect_editor_post_id() );
@@ -285,16 +285,16 @@ class Gutenberg {
 	public function fontawesome_icon_block_enqueue_fontawesome() {
 		wp_enqueue_style(
 			'font-awesome-custom',
-			METG_DIR_URL . '/assets/vendor/fontawesome/css/all.min.css',
+			BLOCKSHIFT_DIR_URL . '/assets/vendor/fontawesome/css/all.min.css',
 			array(),
 			'6.5.0'
 		);
 
 		wp_enqueue_style(
 			'metg-layout-fixes-admin',
-			METG_DIR_URL . '/assets/css/layout-fixes.css',
+			BLOCKSHIFT_DIR_URL . '/assets/css/layout-fixes.css',
 			array(),
-			METG_VERSION
+			BLOCKSHIFT_VERSION
 		);
 	}
 
@@ -304,23 +304,23 @@ class Gutenberg {
 	public function enqueue_scripts(): void {
 		wp_enqueue_style(
 			'font-awesome-custom',
-			METG_DIR_URL . '/assets/vendor/fontawesome/css/all.min.css',
+			BLOCKSHIFT_DIR_URL . '/assets/vendor/fontawesome/css/all.min.css',
 			array(),
 			'6.5.0'
 		);
 
 		wp_enqueue_style(
 			'metg-layout-fixes',
-			METG_DIR_URL . '/assets/css/layout-fixes.css',
+			BLOCKSHIFT_DIR_URL . '/assets/css/layout-fixes.css',
 			array(),
-			METG_VERSION
+			BLOCKSHIFT_VERSION
 		);
 
 		wp_enqueue_script(
 			'metg-scripts',
-			METG_DIR_URL . '/assets/js/scripts.js',
+			BLOCKSHIFT_DIR_URL . '/assets/js/scripts.js',
 			array( 'jquery' ),
-			METG_VERSION,
+			BLOCKSHIFT_VERSION,
 			array(
 				'in_footer' => true,
 				'strategy'  => 'defer',
@@ -334,14 +334,14 @@ class Gutenberg {
 		if ( has_block( 'progressus/testimonials' ) ) {
 			wp_enqueue_style(
 				'swiper-css',
-				METG_DIR_URL . '/assets/vendor/swiper/swiper-bundle.min.css',
+				BLOCKSHIFT_DIR_URL . '/assets/vendor/swiper/swiper-bundle.min.css',
 				array(),
 				'11.0.0'
 			);
 
 			wp_enqueue_script(
 				'swiper-js',
-				METG_DIR_URL . '/assets/vendor/swiper/swiper-bundle.min.js',
+				BLOCKSHIFT_DIR_URL . '/assets/vendor/swiper/swiper-bundle.min.js',
 				array(),
 				'11.0.0',
 				true
@@ -394,7 +394,7 @@ class Gutenberg {
 			return;
 		}
 
-		wp_enqueue_style( $handle, $url, array(), METG_VERSION );
+		wp_enqueue_style( $handle, $url, array(), BLOCKSHIFT_VERSION );
 		$this->enqueued_font_handles[ $handle ] = true;
 	}
 
@@ -590,13 +590,13 @@ class Gutenberg {
 			return;
 		}
 
-		$base_url = plugins_url( 'assets/css/woocommerce/', METG_FILE );
+		$base_url = plugins_url( 'assets/css/woocommerce/', BLOCKSHIFT_FILE );
 		foreach ( $required_handles as $handle => $file ) {
 			wp_enqueue_style(
 				$handle,
 				$base_url . $file,
 				array(),
-				METG_VERSION
+				BLOCKSHIFT_VERSION
 			);
 		}
 	}

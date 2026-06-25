@@ -215,21 +215,21 @@ class Batch_Convert_Wizard {
 			return;
 		}
 
-		$css_path = METG_DIR_PATH . '/assets/css/batch-wizard.css';
-		$js_path  = METG_DIR_PATH . '/assets/js/batch-convert-wizard.js';
+		$css_path = BLOCKSHIFT_DIR_PATH . '/assets/css/batch-wizard.css';
+		$js_path  = BLOCKSHIFT_DIR_PATH . '/assets/js/batch-convert-wizard.js';
 
 		wp_enqueue_style(
 			'metg-batch-wizard',
-			plugins_url( 'assets/css/batch-wizard.css', METG_MAIN_FILE ),
+			plugins_url( 'assets/css/batch-wizard.css', BLOCKSHIFT_MAIN_FILE ),
 			array(),
-			METG_DEBUG && file_exists( $css_path ) ? (string) filemtime( $css_path ) : METG_VERSION
+			BLOCKSHIFT_DEBUG && file_exists( $css_path ) ? (string) filemtime( $css_path ) : BLOCKSHIFT_VERSION
 		);
 
 		wp_enqueue_script(
 			'metg-batch-wizard',
-			plugins_url( 'assets/js/batch-convert-wizard.js', METG_MAIN_FILE ),
+			plugins_url( 'assets/js/batch-convert-wizard.js', BLOCKSHIFT_MAIN_FILE ),
 			array(),
-			METG_DEBUG && file_exists( $js_path ) ? (string) filemtime( $js_path ) : METG_VERSION,
+			BLOCKSHIFT_DEBUG && file_exists( $js_path ) ? (string) filemtime( $js_path ) : BLOCKSHIFT_VERSION,
 			true
 		);
 
@@ -518,7 +518,7 @@ class Batch_Convert_Wizard {
 				Diagnostic_Logger::log_run_start(
 					$run_id,
 					array(
-						'plugin_version'    => METG_VERSION,
+						'plugin_version'    => BLOCKSHIFT_VERSION,
 						'wordpress_version' => get_bloginfo( 'version' ),
 						'php_version'       => PHP_VERSION,
 						'active_theme'      => $_theme->get( 'Name' ),

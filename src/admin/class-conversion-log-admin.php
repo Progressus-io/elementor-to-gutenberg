@@ -71,31 +71,31 @@ class Conversion_Log_Admin {
 			return;
 		}
 
-		$css_path   = METG_DIR_PATH . '/assets/css/batch-wizard.css';
-		$icons_path = METG_DIR_PATH . '/assets/js/pgs-icons.js';
+		$css_path   = BLOCKSHIFT_DIR_PATH . '/assets/css/batch-wizard.css';
+		$icons_path = BLOCKSHIFT_DIR_PATH . '/assets/js/pgs-icons.js';
 
 		wp_enqueue_style(
 			'metg-pgs-admin',
-			plugins_url( 'assets/css/batch-wizard.css', METG_MAIN_FILE ),
+			plugins_url( 'assets/css/batch-wizard.css', BLOCKSHIFT_MAIN_FILE ),
 			array(),
-			METG_DEBUG && file_exists( $css_path ) ? (string) filemtime( $css_path ) : METG_VERSION
+			BLOCKSHIFT_DEBUG && file_exists( $css_path ) ? (string) filemtime( $css_path ) : BLOCKSHIFT_VERSION
 		);
 
 		wp_enqueue_script(
 			'metg-pgs-icons',
-			plugins_url( 'assets/js/pgs-icons.js', METG_MAIN_FILE ),
+			plugins_url( 'assets/js/pgs-icons.js', BLOCKSHIFT_MAIN_FILE ),
 			array(),
-			METG_DEBUG && file_exists( $icons_path ) ? (string) filemtime( $icons_path ) : METG_VERSION,
+			BLOCKSHIFT_DEBUG && file_exists( $icons_path ) ? (string) filemtime( $icons_path ) : BLOCKSHIFT_VERSION,
 			true
 		);
 
-		$log_js_path = METG_DIR_PATH . '/assets/js/conversion-log.js';
+		$log_js_path = BLOCKSHIFT_DIR_PATH . '/assets/js/conversion-log.js';
 
 		wp_enqueue_script(
 			'metg-conversion-log',
-			plugins_url( 'assets/js/conversion-log.js', METG_MAIN_FILE ),
+			plugins_url( 'assets/js/conversion-log.js', BLOCKSHIFT_MAIN_FILE ),
 			array(),
-			METG_DEBUG && file_exists( $log_js_path ) ? (string) filemtime( $log_js_path ) : METG_VERSION,
+			BLOCKSHIFT_DEBUG && file_exists( $log_js_path ) ? (string) filemtime( $log_js_path ) : BLOCKSHIFT_VERSION,
 			true
 		);
 

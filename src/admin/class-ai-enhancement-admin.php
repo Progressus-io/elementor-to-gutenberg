@@ -72,11 +72,11 @@ class AI_Enhancement_Admin {
 	 * @param string $rel Plugin-relative asset path.
 	 */
 	private static function asset_ver( string $rel ): string {
-		$path = METG_DIR_PATH . '/' . ltrim( $rel, '/' );
-		if ( defined( 'METG_DEBUG' ) && METG_DEBUG && file_exists( $path ) ) {
+		$path = BLOCKSHIFT_DIR_PATH . '/' . ltrim( $rel, '/' );
+		if ( defined( 'BLOCKSHIFT_DEBUG' ) && BLOCKSHIFT_DEBUG && file_exists( $path ) ) {
 			return (string) filemtime( $path );
 		}
-		return METG_VERSION;
+		return BLOCKSHIFT_VERSION;
 	}
 
 	public function enqueue_assets(): void {
@@ -86,14 +86,14 @@ class AI_Enhancement_Admin {
 
 		wp_enqueue_style(
 			'metg-batch-wizard',
-			METG_CSS_DIR_URL . '/batch-wizard.css',
+			BLOCKSHIFT_CSS_DIR_URL . '/batch-wizard.css',
 			array(),
 			self::asset_ver( 'assets/css/batch-wizard.css' )
 		);
 
 		wp_enqueue_script(
 			'metg-pgs-icons',
-			METG_JS_DIR_URL . '/pgs-icons.js',
+			BLOCKSHIFT_JS_DIR_URL . '/pgs-icons.js',
 			array(),
 			self::asset_ver( 'assets/js/pgs-icons.js' ),
 			true
@@ -101,7 +101,7 @@ class AI_Enhancement_Admin {
 
 		wp_enqueue_script(
 			'metg-ai-enhancement',
-			METG_JS_DIR_URL . '/ai-enhancement.js',
+			BLOCKSHIFT_JS_DIR_URL . '/ai-enhancement.js',
 			array( 'metg-pgs-icons' ),
 			self::asset_ver( 'assets/js/ai-enhancement.js' ),
 			true
@@ -314,7 +314,7 @@ class AI_Enhancement_Admin {
 			'site'           => array(
 				'site_url_hash'               => hash( 'sha256', (string) home_url() ),
 				'site_domain'                 => (string) wp_parse_url( home_url(), PHP_URL_HOST ),
-				'plugin_version'              => METG_VERSION,
+				'plugin_version'              => BLOCKSHIFT_VERSION,
 				'wordpress_version'           => get_bloginfo( 'version' ),
 				'php_version'                 => PHP_VERSION,
 				'active_theme'                => (string) $theme->get( 'Name' ),

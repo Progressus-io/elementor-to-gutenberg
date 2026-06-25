@@ -22,35 +22,35 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 
-if ( ! defined( 'METG_VERSION' ) ) {
-	define( 'METG_VERSION', '1.0.0' );
+if ( ! defined( 'BLOCKSHIFT_VERSION' ) ) {
+	define( 'BLOCKSHIFT_VERSION', '1.0.0' );
 }
-if ( ! defined( 'METG_DEBUG' ) ) {
-	define( 'METG_DEBUG', false );
+if ( ! defined( 'BLOCKSHIFT_DEBUG' ) ) {
+	define( 'BLOCKSHIFT_DEBUG', false );
 }
-if ( ! defined( 'METG_FILE' ) ) {
-	define( 'METG_FILE', __FILE__ );
+if ( ! defined( 'BLOCKSHIFT_FILE' ) ) {
+	define( 'BLOCKSHIFT_FILE', __FILE__ );
 }
-if ( ! defined( 'METG_MAIN_FILE' ) ) {
-	define( 'METG_MAIN_FILE', METG_FILE );
+if ( ! defined( 'BLOCKSHIFT_MAIN_FILE' ) ) {
+	define( 'BLOCKSHIFT_MAIN_FILE', BLOCKSHIFT_FILE );
 }
-if ( ! defined( 'METG_BASENAME' ) ) {
-	define( 'METG_BASENAME', plugin_basename( METG_FILE ) );
+if ( ! defined( 'BLOCKSHIFT_BASENAME' ) ) {
+	define( 'BLOCKSHIFT_BASENAME', plugin_basename( BLOCKSHIFT_FILE ) );
 }
-if ( ! defined( 'METG_DIR_PATH' ) ) {
-	define( 'METG_DIR_PATH', untrailingslashit( plugin_dir_path( METG_FILE ) ) );
+if ( ! defined( 'BLOCKSHIFT_DIR_PATH' ) ) {
+	define( 'BLOCKSHIFT_DIR_PATH', untrailingslashit( plugin_dir_path( BLOCKSHIFT_FILE ) ) );
 }
-if ( ! defined( 'METG_TEMPLATES_DIR_PATH' ) ) {
-	define( 'METG_TEMPLATES_DIR_PATH', untrailingslashit( plugin_dir_path( METG_FILE ) ) . '/templates/' );
+if ( ! defined( 'BLOCKSHIFT_TEMPLATES_DIR_PATH' ) ) {
+	define( 'BLOCKSHIFT_TEMPLATES_DIR_PATH', untrailingslashit( plugin_dir_path( BLOCKSHIFT_FILE ) ) . '/templates/' );
 }
-if ( ! defined( 'METG_DIR_URL' ) ) {
-	define( 'METG_DIR_URL', untrailingslashit( plugins_url( '/', METG_FILE ) ) );
+if ( ! defined( 'BLOCKSHIFT_DIR_URL' ) ) {
+	define( 'BLOCKSHIFT_DIR_URL', untrailingslashit( plugins_url( '/', BLOCKSHIFT_FILE ) ) );
 }
-if ( ! defined( 'METG_JS_DIR_URL' ) ) {
-	define( 'METG_JS_DIR_URL', untrailingslashit( plugins_url( '/assets/js/', METG_FILE ) ) );
+if ( ! defined( 'BLOCKSHIFT_JS_DIR_URL' ) ) {
+	define( 'BLOCKSHIFT_JS_DIR_URL', untrailingslashit( plugins_url( '/assets/js/', BLOCKSHIFT_FILE ) ) );
 }
-if ( ! defined( 'METG_CSS_DIR_URL' ) ) {
-	define( 'METG_CSS_DIR_URL', untrailingslashit( plugins_url( '/assets/css/', METG_FILE ) ) );
+if ( ! defined( 'BLOCKSHIFT_CSS_DIR_URL' ) ) {
+	define( 'BLOCKSHIFT_CSS_DIR_URL', untrailingslashit( plugins_url( '/assets/css/', BLOCKSHIFT_FILE ) ) );
 }
 
 register_activation_hook(

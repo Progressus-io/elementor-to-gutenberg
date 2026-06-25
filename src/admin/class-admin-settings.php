@@ -152,7 +152,7 @@ class Admin_Settings {
 	 */
 	public function __construct() {
 		add_action( 'admin_menu', array( $this, 'add_admin_menu' ) );
-		add_filter( 'plugin_action_links_' . METG_BASENAME, array( $this, 'add_plugin_action_links' ) );
+		add_filter( 'plugin_action_links_' . BLOCKSHIFT_BASENAME, array( $this, 'add_plugin_action_links' ) );
 		add_filter( 'page_row_actions', array( $this, 'metg_add_convert_button' ), 10, 2 );
 		add_action( 'admin_post_metg_convert_page', array( $this, 'metg_handle_convert_page' ) );
 		add_action( 'admin_post_metg_save_screenshot_settings', array( $this, 'save_screenshot_settings' ) );
@@ -170,21 +170,21 @@ class Admin_Settings {
 			return;
 		}
 
-		$css_path  = METG_DIR_PATH . '/assets/css/batch-wizard.css';
-		$icons_path = METG_DIR_PATH . '/assets/js/pgs-icons.js';
+		$css_path  = BLOCKSHIFT_DIR_PATH . '/assets/css/batch-wizard.css';
+		$icons_path = BLOCKSHIFT_DIR_PATH . '/assets/js/pgs-icons.js';
 
 		wp_enqueue_style(
 			'metg-pgs-admin',
-			plugins_url( 'assets/css/batch-wizard.css', METG_MAIN_FILE ),
+			plugins_url( 'assets/css/batch-wizard.css', BLOCKSHIFT_MAIN_FILE ),
 			array(),
-			METG_DEBUG && file_exists( $css_path ) ? (string) filemtime( $css_path ) : METG_VERSION
+			BLOCKSHIFT_DEBUG && file_exists( $css_path ) ? (string) filemtime( $css_path ) : BLOCKSHIFT_VERSION
 		);
 
 		wp_enqueue_script(
 			'metg-pgs-icons',
-			plugins_url( 'assets/js/pgs-icons.js', METG_MAIN_FILE ),
+			plugins_url( 'assets/js/pgs-icons.js', BLOCKSHIFT_MAIN_FILE ),
 			array(),
-			METG_DEBUG && file_exists( $icons_path ) ? (string) filemtime( $icons_path ) : METG_VERSION,
+			BLOCKSHIFT_DEBUG && file_exists( $icons_path ) ? (string) filemtime( $icons_path ) : BLOCKSHIFT_VERSION,
 			true
 		);
 	}

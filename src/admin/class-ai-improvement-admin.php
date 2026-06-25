@@ -120,21 +120,21 @@ class AI_Improvement_Admin {
 			return;
 		}
 
-		$css_path = METG_DIR_PATH . '/assets/css/ai-improve.css';
-		$js_path  = METG_DIR_PATH . '/assets/js/ai-improve.js';
+		$css_path = BLOCKSHIFT_DIR_PATH . '/assets/css/ai-improve.css';
+		$js_path  = BLOCKSHIFT_DIR_PATH . '/assets/js/ai-improve.js';
 
 		wp_enqueue_style(
 			'metg-ai-improve',
-			plugins_url( 'assets/css/ai-improve.css', METG_MAIN_FILE ),
+			plugins_url( 'assets/css/ai-improve.css', BLOCKSHIFT_MAIN_FILE ),
 			array(),
-			METG_DEBUG && file_exists( $css_path ) ? (string) filemtime( $css_path ) : METG_VERSION
+			BLOCKSHIFT_DEBUG && file_exists( $css_path ) ? (string) filemtime( $css_path ) : BLOCKSHIFT_VERSION
 		);
 
 		wp_enqueue_script(
 			'metg-ai-improve',
-			plugins_url( 'assets/js/ai-improve.js', METG_MAIN_FILE ),
+			plugins_url( 'assets/js/ai-improve.js', BLOCKSHIFT_MAIN_FILE ),
 			array(),
-			METG_DEBUG && file_exists( $js_path ) ? (string) filemtime( $js_path ) : METG_VERSION,
+			BLOCKSHIFT_DEBUG && file_exists( $js_path ) ? (string) filemtime( $js_path ) : BLOCKSHIFT_VERSION,
 			true
 		);
 
