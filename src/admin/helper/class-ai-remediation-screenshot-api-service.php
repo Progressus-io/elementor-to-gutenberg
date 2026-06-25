@@ -86,13 +86,13 @@ class AI_Remediation_Screenshot_Api_Service {
 
 		$endpoint = self::get_endpoint_url();
 		if ( '' === $endpoint ) {
-			$failure['error'] = __( 'Screenshot service URL is not configured.', 'migrate-elementor-to-gutenberg' );
+			$failure['error'] = __( 'Screenshot service URL is not configured.', 'migrate-off-elementor' );
 			return $failure;
 		}
 
 		$page_url = trim( $page_url );
 		if ( '' === $page_url || false === filter_var( $page_url, FILTER_VALIDATE_URL ) ) {
-			$failure['error'] = __( 'An invalid page URL was provided for the screenshot service.', 'migrate-elementor-to-gutenberg' );
+			$failure['error'] = __( 'An invalid page URL was provided for the screenshot service.', 'migrate-off-elementor' );
 			return $failure;
 		}
 
@@ -122,7 +122,7 @@ class AI_Remediation_Screenshot_Api_Service {
 		if ( 200 !== $http_code ) {
 			$failure['error'] = sprintf(
 				/* translators: %d: HTTP status code returned by the remote service */
-				__( 'Screenshot service returned HTTP status %d.', 'migrate-elementor-to-gutenberg' ),
+				__( 'Screenshot service returned HTTP status %d.', 'migrate-off-elementor' ),
 				$http_code
 			);
 			return $failure;
@@ -132,18 +132,18 @@ class AI_Remediation_Screenshot_Api_Service {
 		$data = json_decode( $body, true );
 
 		if ( ! is_array( $data ) ) {
-			$failure['error'] = __( 'Screenshot service returned invalid JSON.', 'migrate-elementor-to-gutenberg' );
+			$failure['error'] = __( 'Screenshot service returned invalid JSON.', 'migrate-off-elementor' );
 			return $failure;
 		}
 
 		if ( empty( $data['success'] ) ) {
-			$failure['error'] = __( 'Screenshot service reported a failure in the response.', 'migrate-elementor-to-gutenberg' );
+			$failure['error'] = __( 'Screenshot service reported a failure in the response.', 'migrate-off-elementor' );
 			return $failure;
 		}
 
 		// New chunked response: expects a "files" array.
 		if ( empty( $data['files'] ) || ! is_array( $data['files'] ) ) {
-			$failure['error'] = __( 'Screenshot service returned no files in the response.', 'migrate-elementor-to-gutenberg' );
+			$failure['error'] = __( 'Screenshot service returned no files in the response.', 'migrate-off-elementor' );
 			return $failure;
 		}
 
@@ -151,7 +151,7 @@ class AI_Remediation_Screenshot_Api_Service {
 		foreach ( $data['files'] as $file ) {
 			$url = isset( $file['file_url'] ) ? (string) $file['file_url'] : '';
 			if ( '' === $url || false === filter_var( $url, FILTER_VALIDATE_URL ) ) {
-				$failure['error'] = __( 'Screenshot service returned a missing or invalid file_url in one of the chunks.', 'migrate-elementor-to-gutenberg' );
+				$failure['error'] = __( 'Screenshot service returned a missing or invalid file_url in one of the chunks.', 'migrate-off-elementor' );
 				return $failure;
 			}
 			$file_urls[] = esc_url_raw( $url );

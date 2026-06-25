@@ -133,13 +133,13 @@ const Edit = ( { attributes, setAttributes } ) => {
 			<InspectorControls>
 				{ /* ── Content Panel ─────────────────────────────────── */ }
 				<PanelBody
-					title={ __( 'Content', 'migrate-elementor-to-gutenberg' ) }
+					title={ __( 'Content', 'migrate-off-elementor' ) }
 					initialOpen={ true }
 				>
 					<TextareaControl
 						label={ __(
 							'Quote / Testimonial',
-							'migrate-elementor-to-gutenberg'
+							'migrate-off-elementor'
 						) }
 						value={ content }
 						onChange={ ( val ) =>
@@ -148,29 +148,29 @@ const Edit = ( { attributes, setAttributes } ) => {
 						rows={ 4 }
 					/>
 					<TextControl
-						label={ __( 'Client Name', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Client Name', 'migrate-off-elementor' ) }
 						value={ name }
 						onChange={ ( val ) => setAttributes( { name: val } ) }
 					/>
 					<TextControl
-						label={ __( 'Job / Title', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Job / Title', 'migrate-off-elementor' ) }
 						value={ job }
 						onChange={ ( val ) => setAttributes( { job: val } ) }
 					/>
 					<SelectControl
-						label={ __( 'Alignment', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Alignment', 'migrate-off-elementor' ) }
 						value={ alignment }
 						options={ [
 							{
-								label: __( 'Left', 'migrate-elementor-to-gutenberg' ),
+								label: __( 'Left', 'migrate-off-elementor' ),
 								value: 'left',
 							},
 							{
-								label: __( 'Center', 'migrate-elementor-to-gutenberg' ),
+								label: __( 'Center', 'migrate-off-elementor' ),
 								value: 'center',
 							},
 							{
-								label: __( 'Right', 'migrate-elementor-to-gutenberg' ),
+								label: __( 'Right', 'migrate-off-elementor' ),
 								value: 'right',
 							},
 						] }
@@ -182,7 +182,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 
 				{ /* ── Avatar / Image Panel ───────────────────────────── */ }
 				<PanelBody
-					title={ __( 'Avatar Image', 'migrate-elementor-to-gutenberg' ) }
+					title={ __( 'Avatar Image', 'migrate-off-elementor' ) }
 					initialOpen={ false }
 				>
 					<MediaUploadCheck>
@@ -220,11 +220,11 @@ const Edit = ( { attributes, setAttributes } ) => {
 										{ imageUrl
 											? __(
 													'Replace Image',
-													'migrate-elementor-to-gutenberg'
+													'migrate-off-elementor'
 											  )
 											: __(
 													'Upload Image',
-													'migrate-elementor-to-gutenberg'
+													'migrate-off-elementor'
 											  ) }
 									</Button>
 									{ imageUrl && (
@@ -241,7 +241,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 										>
 											{ __(
 												'Remove',
-												'migrate-elementor-to-gutenberg'
+												'migrate-off-elementor'
 											) }
 										</Button>
 									) }
@@ -253,7 +253,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					<RangeControl
 						label={ __(
 							'Image Size (px)',
-							'migrate-elementor-to-gutenberg'
+							'migrate-off-elementor'
 						) }
 						value={ imageSize }
 						onChange={ ( val ) =>
@@ -264,7 +264,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					/>
 
 					<BoxControl
-						label={ __( 'Border Radius', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Border Radius', 'migrate-off-elementor' ) }
 						values={ trblToBoxControl( imageBorderRadius ) }
 						onChange={ ( nextVal ) =>
 							setAttributes( {
@@ -277,7 +277,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					/>
 
 					<BoxControl
-						label={ __( 'Border Width', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Border Width', 'migrate-off-elementor' ) }
 						values={ trblToBoxControl( imageBorderWidth ) }
 						onChange={ ( nextVal ) =>
 							setAttributes( {
@@ -290,7 +290,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					/>
 
 					<p style={ { fontWeight: 600, marginBottom: '8px' } }>
-						{ __( 'Border Color', 'migrate-elementor-to-gutenberg' ) }
+						{ __( 'Border Color', 'migrate-off-elementor' ) }
 					</p>
 					<ColorPicker
 						color={ imageBorderColor }
@@ -305,14 +305,14 @@ const Edit = ( { attributes, setAttributes } ) => {
 			{ /* ── Advanced Controls ──────────────────────────────────── */ }
 			<InspectorAdvancedControls>
 				<TextControl
-					label={ __( 'HTML Anchor (ID)', 'migrate-elementor-to-gutenberg' ) }
+					label={ __( 'HTML Anchor (ID)', 'migrate-off-elementor' ) }
 					value={ customId }
 					onChange={ ( val ) => setAttributes( { customId: val } ) }
 				/>
 				<TextControl
 					label={ __(
 						'Additional CSS Class(es)',
-						'migrate-elementor-to-gutenberg'
+						'migrate-off-elementor'
 					) }
 					value={ customClass }
 					onChange={ ( val ) =>

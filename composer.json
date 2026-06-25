@@ -1,5 +1,5 @@
 {
-	"name": "progressus/migrate-elementor-to-gutenberg",
+	"name": "progressus/migrate-off-elementor",
 	"license": "GPL-3.0",
 	"require-dev": {
 		"woocommerce/woocommerce-sniffs": "^1.0",

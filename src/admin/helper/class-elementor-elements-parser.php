@@ -53,7 +53,7 @@ class Elementor_Elements_Parser {
 			} else {
 				$block_content .= sprintf(
 					'<!-- wp:paragraph -->%s<!-- /wp:paragraph -->' . "\n",
-					esc_html__( 'Unknown element', 'migrate-elementor-to-gutenberg' )
+					esc_html__( 'Unknown element', 'migrate-off-elementor' )
 				);
 			}
 		}

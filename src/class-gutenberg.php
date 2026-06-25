@@ -1,6 +1,6 @@
 <?php
 /**
- * The main class of the Migrate Elementor to Gutenberg plugin.
+ * The main class of the Migrate Off Elementor plugin.
  *
  * @package Progressus\MigrateElementorToGutenberg
  */
@@ -91,7 +91,7 @@ class Gutenberg {
 			return $templates;
 		}
 
-		$templates[ self::FULL_WIDTH_PAGE_TEMPLATE_SLUG ] = __( 'Full Width Page', 'migrate-elementor-to-gutenberg' );
+		$templates[ self::FULL_WIDTH_PAGE_TEMPLATE_SLUG ] = __( 'Full Width Page', 'migrate-off-elementor' );
 
 		return $templates;
 	}
@@ -478,8 +478,8 @@ class Gutenberg {
 		register_block_template(
 			self::FULL_WIDTH_TEMPLATE_ID,
 			array(
-				'title'       => __( 'Full Width Page', 'migrate-elementor-to-gutenberg' ),
-				'description' => __( 'Template for converted full width pages that keeps the active theme header and footer without forcing constrained page layout.', 'migrate-elementor-to-gutenberg' ),
+				'title'       => __( 'Full Width Page', 'migrate-off-elementor' ),
+				'description' => __( 'Template for converted full width pages that keeps the active theme header and footer without forcing constrained page layout.', 'migrate-off-elementor' ),
 				'post_types'  => array( 'page' ),
 				'content'     => sprintf(
 					'<!-- wp:template-part {"slug":"header","theme":"%1$s","tagName":"header"} /-->' . "\n\n" .
@@ -501,7 +501,7 @@ class Gutenberg {
 		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'progressus_form_nonce' ) ) {
 			wp_send_json_error(
 				array(
-					'message' => __( 'Security verification failed.', 'migrate-elementor-to-gutenberg' ),
+					'message' => __( 'Security verification failed.', 'migrate-off-elementor' ),
 				)
 			);
 		}
@@ -522,16 +522,16 @@ class Gutenberg {
 
 		// Prepare email content
 		/* translators: %s: name of the form submitted */
-		$subject = sprintf( __( 'New Form Submission: %s', 'migrate-elementor-to-gutenberg' ), $form_name );
+		$subject = sprintf( __( 'New Form Submission: %s', 'migrate-off-elementor' ), $form_name );
 		/* translators: %s: name of the WordPress site */
-		$message = sprintf( __( "You have received a new form submission from %s:\n\n", 'migrate-elementor-to-gutenberg' ), get_bloginfo( 'name' ) );
+		$message = sprintf( __( "You have received a new form submission from %s:\n\n", 'migrate-off-elementor' ), get_bloginfo( 'name' ) );
 
 		foreach ( $form_data as $field => $value ) {
 			$message .= sprintf( "%s: %s\n", ucfirst( str_replace( array( '_', '-' ), ' ', $field ) ), $value );
 		}
 
 		/* translators: %s: date and time of form submission */
-		$message .= sprintf( "\n\n" . __( 'Submitted at: %s', 'migrate-elementor-to-gutenberg' ), current_time( 'mysql' ) );
+		$message .= sprintf( "\n\n" . __( 'Submitted at: %s', 'migrate-off-elementor' ), current_time( 'mysql' ) );
 
 		// Set email headers
 		$headers = array( 'Content-Type: text/plain; charset=UTF-8' );
@@ -542,13 +542,13 @@ class Gutenberg {
 		if ( $email_sent ) {
 			wp_send_json_success(
 				array(
-					'message' => __( 'Your submission was successful. We will get back to you soon!', 'migrate-elementor-to-gutenberg' ),
+					'message' => __( 'Your submission was successful. We will get back to you soon!', 'migrate-off-elementor' ),
 				)
 			);
 		} else {
 			wp_send_json_error(
 				array(
-					'message' => __( 'Your submission failed because of an error. Please try again.', 'migrate-elementor-to-gutenberg' ),
+					'message' => __( 'Your submission failed because of an error. Please try again.', 'migrate-off-elementor' ),
 				)
 			);
 		}

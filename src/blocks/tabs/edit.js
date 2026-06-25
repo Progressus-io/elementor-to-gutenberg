@@ -130,22 +130,22 @@ const Edit = ( { attributes, setAttributes } ) => {
 		<>
 			<InspectorControls>
 				<PanelBody
-					title={ __( 'Settings', 'migrate-elementor-to-gutenberg' ) }
+					title={ __( 'Settings', 'migrate-off-elementor' ) }
 					initialOpen={ true }
 				>
 					<SelectControl
-						label={ __( 'Tab Style', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Tab Style', 'migrate-off-elementor' ) }
 						value={ tabStyle }
 						options={ [
 							{
 								label: __(
 									'Horizontal',
-									'migrate-elementor-to-gutenberg'
+									'migrate-off-elementor'
 								),
 								value: 'horizontal',
 							},
 							{
-								label: __( 'Vertical', 'migrate-elementor-to-gutenberg' ),
+								label: __( 'Vertical', 'migrate-off-elementor' ),
 								value: 'vertical',
 							},
 						] }
@@ -156,7 +156,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 				</PanelBody>
 
 				<PanelColorSettings
-					title={ __( 'Background Colors', 'migrate-elementor-to-gutenberg' ) }
+					title={ __( 'Background Colors', 'migrate-off-elementor' ) }
 					initialOpen={ false }
 					colorSettings={ [
 						{
@@ -165,7 +165,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 								setAttributes( { tabColor: color } ),
 							label: __(
 								'Tab Background',
-								'migrate-elementor-to-gutenberg'
+								'migrate-off-elementor'
 							),
 						},
 						{
@@ -174,7 +174,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 								setAttributes( { activeTabColor: color } ),
 							label: __(
 								'Active Tab Background',
-								'migrate-elementor-to-gutenberg'
+								'migrate-off-elementor'
 							),
 						},
 						{
@@ -185,21 +185,21 @@ const Edit = ( { attributes, setAttributes } ) => {
 								} ),
 							label: __(
 								'Content Background',
-								'migrate-elementor-to-gutenberg'
+								'migrate-off-elementor'
 							),
 						},
 					] }
 				/>
 
 				<PanelColorSettings
-					title={ __( 'Text Colors', 'migrate-elementor-to-gutenberg' ) }
+					title={ __( 'Text Colors', 'migrate-off-elementor' ) }
 					initialOpen={ false }
 					colorSettings={ [
 						{
 							value: tabTextColor,
 							onChange: ( color ) =>
 								setAttributes( { tabTextColor: color } ),
-							label: __( 'Tab Text', 'migrate-elementor-to-gutenberg' ),
+							label: __( 'Tab Text', 'migrate-off-elementor' ),
 						},
 						{
 							value: activeTabTextColor,
@@ -207,20 +207,20 @@ const Edit = ( { attributes, setAttributes } ) => {
 								setAttributes( { activeTabTextColor: color } ),
 							label: __(
 								'Active Tab Text',
-								'migrate-elementor-to-gutenberg'
+								'migrate-off-elementor'
 							),
 						},
 						{
 							value: contentTextColor,
 							onChange: ( color ) =>
 								setAttributes( { contentTextColor: color } ),
-							label: __( 'Content Text', 'migrate-elementor-to-gutenberg' ),
+							label: __( 'Content Text', 'migrate-off-elementor' ),
 						},
 					] }
 				/>
 
 				<PanelBody
-					title={ __( 'Typography', 'migrate-elementor-to-gutenberg' ) }
+					title={ __( 'Typography', 'migrate-off-elementor' ) }
 					initialOpen={ false }
 				>
 					<div style={ { marginBottom: '20px' } }>
@@ -232,7 +232,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 								color: '#1e1e1e',
 							} }
 						>
-							{ __( 'Tab Typography', 'migrate-elementor-to-gutenberg' ) }
+							{ __( 'Tab Typography', 'migrate-off-elementor' ) }
 						</h3>
 
 						<FontSizePicker
@@ -251,7 +251,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						<TextControl
 							label={ __(
 								'Font Family',
-								'migrate-elementor-to-gutenberg'
+								'migrate-off-elementor'
 							) }
 							value={ tabTypography.fontFamily }
 							onChange={ ( value ) =>
@@ -264,7 +264,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 							}
 							placeholder={ __(
 								'Default',
-								'migrate-elementor-to-gutenberg'
+								'migrate-off-elementor'
 							) }
 							__nextHasNoMarginBottom
 						/>
@@ -272,26 +272,26 @@ const Edit = ( { attributes, setAttributes } ) => {
 						<SelectControl
 							label={ __(
 								'Font Weight',
-								'migrate-elementor-to-gutenberg'
+								'migrate-off-elementor'
 							) }
 							value={ tabTypography.fontWeight }
 							options={ [
 								{
 									label: __(
 										'Default',
-										'migrate-elementor-to-gutenberg'
+										'migrate-off-elementor'
 									),
 									value: '',
 								},
 								{
 									label: __(
 										'Normal',
-										'migrate-elementor-to-gutenberg'
+										'migrate-off-elementor'
 									),
 									value: 'normal',
 								},
 								{
-									label: __( 'Bold', 'migrate-elementor-to-gutenberg' ),
+									label: __( 'Bold', 'migrate-off-elementor' ),
 									value: 'bold',
 								},
 								{ label: '100', value: '100' },
@@ -318,7 +318,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						<RangeControl
 							label={ __(
 								'Line Height',
-								'migrate-elementor-to-gutenberg'
+								'migrate-off-elementor'
 							) }
 							value={ tabTypography.lineHeight }
 							onChange={ ( value ) =>
@@ -347,7 +347,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						>
 							{ __(
 								'Content Typography',
-								'migrate-elementor-to-gutenberg'
+								'migrate-off-elementor'
 							) }
 						</h3>
 
@@ -367,7 +367,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						<TextControl
 							label={ __(
 								'Font Family',
-								'migrate-elementor-to-gutenberg'
+								'migrate-off-elementor'
 							) }
 							value={ contentTypography.fontFamily }
 							onChange={ ( value ) =>
@@ -380,7 +380,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 							}
 							placeholder={ __(
 								'Default',
-								'migrate-elementor-to-gutenberg'
+								'migrate-off-elementor'
 							) }
 							__nextHasNoMarginBottom
 						/>
@@ -388,26 +388,26 @@ const Edit = ( { attributes, setAttributes } ) => {
 						<SelectControl
 							label={ __(
 								'Font Weight',
-								'migrate-elementor-to-gutenberg'
+								'migrate-off-elementor'
 							) }
 							value={ contentTypography.fontWeight }
 							options={ [
 								{
 									label: __(
 										'Default',
-										'migrate-elementor-to-gutenberg'
+										'migrate-off-elementor'
 									),
 									value: '',
 								},
 								{
 									label: __(
 										'Normal',
-										'migrate-elementor-to-gutenberg'
+										'migrate-off-elementor'
 									),
 									value: 'normal',
 								},
 								{
-									label: __( 'Bold', 'migrate-elementor-to-gutenberg' ),
+									label: __( 'Bold', 'migrate-off-elementor' ),
 									value: 'bold',
 								},
 								{ label: '100', value: '100' },
@@ -434,7 +434,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						<RangeControl
 							label={ __(
 								'Line Height',
-								'migrate-elementor-to-gutenberg'
+								'migrate-off-elementor'
 							) }
 							value={ contentTypography.lineHeight }
 							onChange={ ( value ) =>
@@ -454,11 +454,11 @@ const Edit = ( { attributes, setAttributes } ) => {
 				</PanelBody>
 
 				<PanelBody
-					title={ __( 'Border', 'migrate-elementor-to-gutenberg' ) }
+					title={ __( 'Border', 'migrate-off-elementor' ) }
 					initialOpen={ false }
 				>
 					<BorderControl
-						label={ __( 'Border', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Border', 'migrate-off-elementor' ) }
 						value={ {
 							color: borderColor,
 							style: borderStyle,
@@ -475,7 +475,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					/>
 
 					<RangeControl
-						label={ __( 'Border Radius', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Border Radius', 'migrate-off-elementor' ) }
 						value={ borderRadius }
 						onChange={ ( value ) =>
 							setAttributes( { borderRadius: value } )
@@ -487,11 +487,11 @@ const Edit = ( { attributes, setAttributes } ) => {
 				</PanelBody>
 
 				<PanelBody
-					title={ __( 'Dimensions', 'migrate-elementor-to-gutenberg' ) }
+					title={ __( 'Dimensions', 'migrate-off-elementor' ) }
 					initialOpen={ false }
 				>
 					<BoxControl
-						label={ __( 'Tab Padding', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Tab Padding', 'migrate-off-elementor' ) }
 						values={ {
 							top: tabsPadding.top + 'px',
 							right: tabsPadding.right + 'px',
@@ -514,7 +514,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					<BoxControl
 						label={ __(
 							'Content Padding',
-							'migrate-elementor-to-gutenberg'
+							'migrate-off-elementor'
 						) }
 						values={ {
 							top: contentPadding.top + 'px',
@@ -536,7 +536,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					/>
 
 					<BoxControl
-						label={ __( 'Tab Margin', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Tab Margin', 'migrate-off-elementor' ) }
 						values={ {
 							top: tabsMargin.top + 'px',
 							right: tabsMargin.right + 'px',
@@ -557,7 +557,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					/>
 
 					<BoxControl
-						label={ __( 'Content Margin', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Content Margin', 'migrate-off-elementor' ) }
 						values={ {
 							top: contentMargin.top + 'px',
 							right: contentMargin.right + 'px',
@@ -579,7 +579,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 				</PanelBody>
 
 				<PanelBody
-					title={ __( 'Content', 'migrate-elementor-to-gutenberg' ) }
+					title={ __( 'Content', 'migrate-off-elementor' ) }
 					initialOpen={ false }
 				>
 					<div style={ { marginBottom: '16px' } }>
@@ -588,7 +588,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 							onClick={ addTab }
 							style={ { width: '100%' } }
 						>
-							{ __( 'Add Tab', 'migrate-elementor-to-gutenberg' ) }
+							{ __( 'Add Tab', 'migrate-off-elementor' ) }
 						</Button>
 					</div>
 
@@ -620,7 +620,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 										color: '#1e1e1e',
 									} }
 								>
-									{ __( 'Tab', 'migrate-elementor-to-gutenberg' ) }{ ' ' }
+									{ __( 'Tab', 'migrate-off-elementor' ) }{ ' ' }
 									{ index + 1 }
 									{ index === activeTab && (
 										<span
@@ -632,7 +632,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 											(
 											{ __(
 												'Active',
-												'migrate-elementor-to-gutenberg'
+												'migrate-off-elementor'
 											) }
 											)
 										</span>
@@ -645,12 +645,12 @@ const Edit = ( { attributes, setAttributes } ) => {
 									onClick={ () => removeTab( index ) }
 									disabled={ tabs.length <= 1 }
 								>
-									{ __( 'Remove', 'migrate-elementor-to-gutenberg' ) }
+									{ __( 'Remove', 'migrate-off-elementor' ) }
 								</Button>
 							</div>
 
 							<TextControl
-								label={ __( 'Title', 'migrate-elementor-to-gutenberg' ) }
+								label={ __( 'Title', 'migrate-off-elementor' ) }
 								value={ tab.title }
 								onChange={ ( value ) =>
 									updateTab( index, 'title', value )
@@ -661,7 +661,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 							<TextareaControl
 								label={ __(
 									'Content',
-									'migrate-elementor-to-gutenberg'
+									'migrate-off-elementor'
 								) }
 								value={ tab.content }
 								onChange={ ( value ) =>
@@ -679,7 +679,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 				<ToolbarGroup>
 					<ToolbarButton
 						icon="admin-page"
-						label={ __( 'Add Tab', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Add Tab', 'migrate-off-elementor' ) }
 						onClick={ addTab }
 					/>
 				</ToolbarGroup>

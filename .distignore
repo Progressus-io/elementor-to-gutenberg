@@ -14,3 +14,6 @@ composer.lock
 phpcs.xml
 phpunit.xml
 webpack.config.js
+ruleset.xml
+version-bump.js
+README.md

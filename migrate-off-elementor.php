@@ -1,7 +1,6 @@
 <?php
 /**
- * Plugin Name: Migrate Elementor to Gutenberg
- * Plugin URI: https://progressus.io/
+ * Plugin Name: Migrate Off Elementor
  * Description: Professional migration tool to convert Elementor layouts into native Gutenberg blocks
  * Author: Progressus
  * Author URI: https://progressus.io/
@@ -10,7 +9,7 @@
  * Requires PHP: 7.4
  * License: GPLv2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain: migrate-elementor-to-gutenberg
+ * Text Domain: migrate-off-elementor
  *
  * @package Progressus\MigrateElementorToGutenberg
  */

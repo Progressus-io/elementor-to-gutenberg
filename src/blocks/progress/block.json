@@ -64,7 +64,7 @@
       "default": "#ffffff"
     }
   },
-  "textdomain": "migrate-elementor-to-gutenberg",
+  "textdomain": "migrate-off-elementor",
   "editorScript": "file:./index.js",
   "style": "file:./style-index.css",
   "viewScript": "file:./view.js"

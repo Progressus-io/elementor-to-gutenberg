@@ -95,30 +95,30 @@ const Edit = ( { attributes, setAttributes } ) => {
 		<>
 			<InspectorControls>
 				<PanelBody
-					title={ __( 'Form Settings', 'migrate-elementor-to-gutenberg' ) }
+					title={ __( 'Form Settings', 'migrate-off-elementor' ) }
 					initialOpen={ true }
 				>
 					<TextControl
-						label={ __( 'Form Name', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Form Name', 'migrate-off-elementor' ) }
 						value={ formName }
 						onChange={ ( value ) =>
 							setAttributes( { formName: value } )
 						}
 					/>
 					<SelectControl
-						label={ __( 'Input Size', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Input Size', 'migrate-off-elementor' ) }
 						value={ inputSize }
 						options={ [
 							{
-								label: __( 'Small', 'migrate-elementor-to-gutenberg' ),
+								label: __( 'Small', 'migrate-off-elementor' ),
 								value: 'sm',
 							},
 							{
-								label: __( 'Medium', 'migrate-elementor-to-gutenberg' ),
+								label: __( 'Medium', 'migrate-off-elementor' ),
 								value: 'md',
 							},
 							{
-								label: __( 'Large', 'migrate-elementor-to-gutenberg' ),
+								label: __( 'Large', 'migrate-off-elementor' ),
 								value: 'lg',
 							},
 						] }
@@ -127,7 +127,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						}
 					/>
 					<RangeControl
-						label={ __( 'Column Gap', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Column Gap', 'migrate-off-elementor' ) }
 						value={ columnGap }
 						onChange={ ( value ) =>
 							setAttributes( { columnGap: value } )
@@ -136,7 +136,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						max={ 100 }
 					/>
 					<RangeControl
-						label={ __( 'Row Gap', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Row Gap', 'migrate-off-elementor' ) }
 						value={ rowGap }
 						onChange={ ( value ) =>
 							setAttributes( { rowGap: value } )
@@ -147,11 +147,11 @@ const Edit = ( { attributes, setAttributes } ) => {
 				</PanelBody>
 
 				<PanelBody
-					title={ __( 'Label Style', 'migrate-elementor-to-gutenberg' ) }
+					title={ __( 'Label Style', 'migrate-off-elementor' ) }
 					initialOpen={ false }
 				>
 					<RangeControl
-						label={ __( 'Label Spacing', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Label Spacing', 'migrate-off-elementor' ) }
 						value={ labelSpacing }
 						onChange={ ( value ) =>
 							setAttributes( { labelSpacing: value } )
@@ -160,7 +160,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						max={ 50 }
 					/>
 					<TextControl
-						label={ __( 'Font Family', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Font Family', 'migrate-off-elementor' ) }
 						value={ labelTypography.fontFamily }
 						onChange={ ( value ) =>
 							setAttributes( {
@@ -172,15 +172,15 @@ const Edit = ( { attributes, setAttributes } ) => {
 						}
 					/>
 					<SelectControl
-						label={ __( 'Font Weight', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Font Weight', 'migrate-off-elementor' ) }
 						value={ labelTypography.fontWeight }
 						options={ [
 							{
-								label: __( 'Normal', 'migrate-elementor-to-gutenberg' ),
+								label: __( 'Normal', 'migrate-off-elementor' ),
 								value: 'normal',
 							},
 							{
-								label: __( 'Bold', 'migrate-elementor-to-gutenberg' ),
+								label: __( 'Bold', 'migrate-off-elementor' ),
 								value: 'bold',
 							},
 							{ label: '100', value: '100' },
@@ -205,7 +205,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					<RangeControl
 						label={ __(
 							'Letter Spacing (px)',
-							'migrate-elementor-to-gutenberg'
+							'migrate-off-elementor'
 						) }
 						value={ labelTypography.letterSpacing }
 						onChange={ ( value ) =>
@@ -223,7 +223,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					<RangeControl
 						label={ __(
 							'Word Spacing (px)',
-							'migrate-elementor-to-gutenberg'
+							'migrate-off-elementor'
 						) }
 						value={ labelTypography.wordSpacing }
 						onChange={ ( value ) =>
@@ -241,11 +241,11 @@ const Edit = ( { attributes, setAttributes } ) => {
 				</PanelBody>
 
 				<PanelBody
-					title={ __( 'Button Style', 'migrate-elementor-to-gutenberg' ) }
+					title={ __( 'Button Style', 'migrate-off-elementor' ) }
 					initialOpen={ false }
 				>
 					<TextControl
-						label={ __( 'Button Text', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Button Text', 'migrate-off-elementor' ) }
 						value={ buttonText }
 						onChange={ ( value ) =>
 							setAttributes( { buttonText: value } )
@@ -254,20 +254,20 @@ const Edit = ( { attributes, setAttributes } ) => {
 					<SelectControl
 						label={ __(
 							'Button Alignment',
-							'migrate-elementor-to-gutenberg'
+							'migrate-off-elementor'
 						) }
 						value={ buttonAlign }
 						options={ [
 							{
-								label: __( 'Start', 'migrate-elementor-to-gutenberg' ),
+								label: __( 'Start', 'migrate-off-elementor' ),
 								value: 'start',
 							},
 							{
-								label: __( 'Center', 'migrate-elementor-to-gutenberg' ),
+								label: __( 'Center', 'migrate-off-elementor' ),
 								value: 'center',
 							},
 							{
-								label: __( 'End', 'migrate-elementor-to-gutenberg' ),
+								label: __( 'End', 'migrate-off-elementor' ),
 								value: 'end',
 							},
 						] }
@@ -278,7 +278,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					<TextControl
 						label={ __(
 							'Background Color',
-							'migrate-elementor-to-gutenberg'
+							'migrate-off-elementor'
 						) }
 						value={ buttonBackgroundColor }
 						onChange={ ( value ) =>
@@ -287,7 +287,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						type="color"
 					/>
 					<TextControl
-						label={ __( 'Text Color', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Text Color', 'migrate-off-elementor' ) }
 						value={ buttonTextColor }
 						onChange={ ( value ) =>
 							setAttributes( { buttonTextColor: value } )
@@ -295,14 +295,14 @@ const Edit = ( { attributes, setAttributes } ) => {
 						type="color"
 					/>
 					<BoxControl
-						label={ __( 'Border Radius', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Border Radius', 'migrate-off-elementor' ) }
 						values={ buttonBorderRadius }
 						onChange={ ( value ) =>
 							setAttributes( { buttonBorderRadius: value } )
 						}
 					/>
 					<BoxControl
-						label={ __( 'Padding', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Padding', 'migrate-off-elementor' ) }
 						values={ buttonPadding }
 						onChange={ ( value ) =>
 							setAttributes( { buttonPadding: value } )
@@ -311,13 +311,13 @@ const Edit = ( { attributes, setAttributes } ) => {
 				</PanelBody>
 
 				<PanelBody
-					title={ __( 'Messages', 'migrate-elementor-to-gutenberg' ) }
+					title={ __( 'Messages', 'migrate-off-elementor' ) }
 					initialOpen={ false }
 				>
 					<TextControl
 						label={ __(
 							'Success Message',
-							'migrate-elementor-to-gutenberg'
+							'migrate-off-elementor'
 						) }
 						value={ successMessage }
 						onChange={ ( value ) =>
@@ -325,7 +325,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						}
 					/>
 					<TextControl
-						label={ __( 'Error Message', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Error Message', 'migrate-off-elementor' ) }
 						value={ errorMessage }
 						onChange={ ( value ) =>
 							setAttributes( { errorMessage: value } )
@@ -334,7 +334,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					<TextControl
 						label={ __(
 							'Required Field Message',
-							'migrate-elementor-to-gutenberg'
+							'migrate-off-elementor'
 						) }
 						value={ requiredFieldMessage }
 						onChange={ ( value ) =>
@@ -344,18 +344,18 @@ const Edit = ( { attributes, setAttributes } ) => {
 				</PanelBody>
 
 				<PanelBody
-					title={ __( 'Spacing', 'migrate-elementor-to-gutenberg' ) }
+					title={ __( 'Spacing', 'migrate-off-elementor' ) }
 					initialOpen={ false }
 				>
 					<BoxControl
-						label={ __( 'Margin', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Margin', 'migrate-off-elementor' ) }
 						values={ _margin }
 						onChange={ ( value ) =>
 							setAttributes( { _margin: value } )
 						}
 					/>
 					<BoxControl
-						label={ __( 'Padding', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Padding', 'migrate-off-elementor' ) }
 						values={ _padding }
 						onChange={ ( value ) =>
 							setAttributes( { _padding: value } )
@@ -364,7 +364,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 				</PanelBody>
 
 				<PanelBody
-					title={ __( 'Form Fields', 'migrate-elementor-to-gutenberg' ) }
+					title={ __( 'Form Fields', 'migrate-off-elementor' ) }
 					initialOpen={ true }
 				>
 					<div style={ { marginBottom: '16px' } }>
@@ -414,7 +414,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 										>
 											{ __(
 												'Edit',
-												'migrate-elementor-to-gutenberg'
+												'migrate-off-elementor'
 											) }
 										</Button>
 										<Button
@@ -426,7 +426,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 										>
 											{ __(
 												'Remove',
-												'migrate-elementor-to-gutenberg'
+												'migrate-off-elementor'
 											) }
 										</Button>
 									</div>
@@ -442,56 +442,56 @@ const Edit = ( { attributes, setAttributes } ) => {
 						onClick={ addField }
 						style={ { width: '100%' } }
 					>
-						{ __( 'Add Field', 'migrate-elementor-to-gutenberg' ) }
+						{ __( 'Add Field', 'migrate-off-elementor' ) }
 					</Button>
 				</PanelBody>
 
 				{ formFields[ editingField ] && (
 					<PanelBody
-						title={ __( 'Edit Field', 'migrate-elementor-to-gutenberg' ) }
+						title={ __( 'Edit Field', 'migrate-off-elementor' ) }
 						initialOpen={ true }
 					>
 						<TextControl
-							label={ __( 'Field ID', 'migrate-elementor-to-gutenberg' ) }
+							label={ __( 'Field ID', 'migrate-off-elementor' ) }
 							value={ formFields[ editingField ].customId }
 							onChange={ ( value ) =>
 								updateField( editingField, 'customId', value )
 							}
 						/>
 						<SelectControl
-							label={ __( 'Field Type', 'migrate-elementor-to-gutenberg' ) }
+							label={ __( 'Field Type', 'migrate-off-elementor' ) }
 							value={ formFields[ editingField ].fieldType }
 							options={ [
 								{
-									label: __( 'Text', 'migrate-elementor-to-gutenberg' ),
+									label: __( 'Text', 'migrate-off-elementor' ),
 									value: 'text',
 								},
 								{
 									label: __(
 										'Email',
-										'migrate-elementor-to-gutenberg'
+										'migrate-off-elementor'
 									),
 									value: 'email',
 								},
 								{
-									label: __( 'Tel', 'migrate-elementor-to-gutenberg' ),
+									label: __( 'Tel', 'migrate-off-elementor' ),
 									value: 'tel',
 								},
 								{
 									label: __(
 										'Number',
-										'migrate-elementor-to-gutenberg'
+										'migrate-off-elementor'
 									),
 									value: 'number',
 								},
 								{
-									label: __( 'URL', 'migrate-elementor-to-gutenberg' ),
+									label: __( 'URL', 'migrate-off-elementor' ),
 									value: 'url',
 								},
 								{
 									label: __(
 										'Textarea',
-										'migrate-elementor-to-gutenberg'
+										'migrate-off-elementor'
 									),
 									value: 'textarea',
 								},
@@ -503,7 +503,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						<TextControl
 							label={ __(
 								'Field Label',
-								'migrate-elementor-to-gutenberg'
+								'migrate-off-elementor'
 							) }
 							value={ formFields[ editingField ].fieldLabel }
 							onChange={ ( value ) =>
@@ -513,7 +513,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						<TextControl
 							label={ __(
 								'Placeholder',
-								'migrate-elementor-to-gutenberg'
+								'migrate-off-elementor'
 							) }
 							value={ formFields[ editingField ].placeholder }
 							onChange={ ( value ) =>
@@ -525,7 +525,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 							}
 						/>
 						<ToggleControl
-							label={ __( 'Required', 'migrate-elementor-to-gutenberg' ) }
+							label={ __( 'Required', 'migrate-off-elementor' ) }
 							checked={ formFields[ editingField ].required }
 							onChange={ ( value ) =>
 								updateField( editingField, 'required', value )
@@ -535,18 +535,18 @@ const Edit = ( { attributes, setAttributes } ) => {
 				) }
 
 				<PanelBody
-					title={ __( 'Advanced', 'migrate-elementor-to-gutenberg' ) }
+					title={ __( 'Advanced', 'migrate-off-elementor' ) }
 					initialOpen={ false }
 				>
 					<TextControl
-						label={ __( 'Custom ID', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Custom ID', 'migrate-off-elementor' ) }
 						value={ customId }
 						onChange={ ( value ) =>
 							setAttributes( { customId: value } )
 						}
 					/>
 					<TextControl
-						label={ __( 'Custom Class', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Custom Class', 'migrate-off-elementor' ) }
 						value={ customClass }
 						onChange={ ( value ) =>
 							setAttributes( { customClass: value } )

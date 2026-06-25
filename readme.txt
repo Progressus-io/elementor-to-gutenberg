@@ -1,4 +1,4 @@
-=== Migrate Elementor to Gutenberg ===
+=== Migrate Off Elementor ===
 Contributors: progressus
 Tags: elementor, gutenberg, migration, conversion, blocks
 Requires at least: 6.7
@@ -12,7 +12,7 @@ Professional migration tool to convert Elementor layouts into native Gutenberg b
 
 == Description ==
 
-Migrate Elementor to Gutenberg is a professional migration tool that converts your Elementor-built pages into native WordPress Gutenberg blocks. It supports batch conversion, AI-powered improvements, and detailed conversion logging.
+Migrate Off Elementor is a professional migration tool that converts your Elementor-built pages into native WordPress Gutenberg blocks. It supports batch conversion, AI-powered improvements, and detailed conversion logging.
 
 = Features =
 

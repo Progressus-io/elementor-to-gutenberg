@@ -1,6 +1,6 @@
 <?php
 /**
- * One-time data migration for the rename to "Migrate Elementor to Gutenberg".
+ * One-time data migration for the rename to "Migrate Off Elementor".
  *
  * Earlier versions of the plugin stored data under the `ele2gb`/`etg`/
  * `progressus_gutenberg` prefixes and the `etg-*` CSS scope. This migration
