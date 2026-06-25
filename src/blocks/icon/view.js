@@ -160,7 +160,7 @@ style.textContent = `
 `;
 document.head.appendChild( style );
 
-// Add error handling for FontAwesome loading
+// Add error handling for FontAwesome loading.
 window.addEventListener(
 	'error',
 	function ( e ) {
@@ -171,7 +171,7 @@ window.addEventListener(
 		) {
 			// eslint-disable-next-line no-console
 			console.warn(
-				'FontAwesome failed to load from CDN. Icons may not display correctly.'
+				'FontAwesome failed to load. Icons may not display correctly.'
 			);
 
 			// Optionally, you could load a fallback or show text-based icons
@@ -195,17 +195,3 @@ window.addEventListener(
 	},
 	true
 );
-
-// Preload FontAwesome if not already loaded
-if ( ! document.querySelector( 'link[href*="font-awesome"]' ) ) {
-	const link = document.createElement( 'link' );
-	link.rel = 'preload';
-	link.as = 'style';
-	link.href =
-		'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
-	link.onload = function () {
-		this.onload = null;
-		this.rel = 'stylesheet';
-	};
-	document.head.appendChild( link );
-}
