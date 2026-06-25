@@ -23,10 +23,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 if ( ! defined( 'METG_VERSION' ) ) {
-	define( 'METG_VERSION', '1.1.0' );
+	define( 'METG_VERSION', '1.0.0' );
 }
 if ( ! defined( 'METG_DEBUG' ) ) {
-	define( 'METG_DEBUG', true );
+	define( 'METG_DEBUG', false );
 }
 if ( ! defined( 'METG_FILE' ) ) {
 	define( 'METG_FILE', __FILE__ );
