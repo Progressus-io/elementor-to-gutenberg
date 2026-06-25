@@ -142,6 +142,6 @@
       "default": ""
     }
   },
-  "textdomain": "migrate-off-elementor",
+  "textdomain": "blockshift-migrate-from-elementor",
   "editorStyle": "file:./index.css"
 }

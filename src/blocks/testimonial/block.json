@@ -73,7 +73,7 @@
       "default": ""
     }
   },
-  "textdomain": "migrate-off-elementor",
+  "textdomain": "blockshift-migrate-from-elementor",
   "editorScript": "file:./index.js",
   "style": "file:./style-index.css"
 }

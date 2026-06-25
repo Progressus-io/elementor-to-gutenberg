@@ -56,7 +56,7 @@
       "default": "center"
     }
   },
-  "textdomain": "migrate-off-elementor",
+  "textdomain": "blockshift-migrate-from-elementor",
   "editorScript": "file:./index.js",
   "viewScript": "file:./view.js",
   "editorStyle": "file:./index.css",

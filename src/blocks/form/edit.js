@@ -95,30 +95,30 @@ const Edit = ( { attributes, setAttributes } ) => {
 		<>
 			<InspectorControls>
 				<PanelBody
-					title={ __( 'Form Settings', 'migrate-off-elementor' ) }
+					title={ __( 'Form Settings', 'blockshift-migrate-from-elementor' ) }
 					initialOpen={ true }
 				>
 					<TextControl
-						label={ __( 'Form Name', 'migrate-off-elementor' ) }
+						label={ __( 'Form Name', 'blockshift-migrate-from-elementor' ) }
 						value={ formName }
 						onChange={ ( value ) =>
 							setAttributes( { formName: value } )
 						}
 					/>
 					<SelectControl
-						label={ __( 'Input Size', 'migrate-off-elementor' ) }
+						label={ __( 'Input Size', 'blockshift-migrate-from-elementor' ) }
 						value={ inputSize }
 						options={ [
 							{
-								label: __( 'Small', 'migrate-off-elementor' ),
+								label: __( 'Small', 'blockshift-migrate-from-elementor' ),
 								value: 'sm',
 							},
 							{
-								label: __( 'Medium', 'migrate-off-elementor' ),
+								label: __( 'Medium', 'blockshift-migrate-from-elementor' ),
 								value: 'md',
 							},
 							{
-								label: __( 'Large', 'migrate-off-elementor' ),
+								label: __( 'Large', 'blockshift-migrate-from-elementor' ),
 								value: 'lg',
 							},
 						] }
@@ -127,7 +127,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						}
 					/>
 					<RangeControl
-						label={ __( 'Column Gap', 'migrate-off-elementor' ) }
+						label={ __( 'Column Gap', 'blockshift-migrate-from-elementor' ) }
 						value={ columnGap }
 						onChange={ ( value ) =>
 							setAttributes( { columnGap: value } )
@@ -136,7 +136,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						max={ 100 }
 					/>
 					<RangeControl
-						label={ __( 'Row Gap', 'migrate-off-elementor' ) }
+						label={ __( 'Row Gap', 'blockshift-migrate-from-elementor' ) }
 						value={ rowGap }
 						onChange={ ( value ) =>
 							setAttributes( { rowGap: value } )
@@ -147,11 +147,11 @@ const Edit = ( { attributes, setAttributes } ) => {
 				</PanelBody>
 
 				<PanelBody
-					title={ __( 'Label Style', 'migrate-off-elementor' ) }
+					title={ __( 'Label Style', 'blockshift-migrate-from-elementor' ) }
 					initialOpen={ false }
 				>
 					<RangeControl
-						label={ __( 'Label Spacing', 'migrate-off-elementor' ) }
+						label={ __( 'Label Spacing', 'blockshift-migrate-from-elementor' ) }
 						value={ labelSpacing }
 						onChange={ ( value ) =>
 							setAttributes( { labelSpacing: value } )
@@ -160,7 +160,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						max={ 50 }
 					/>
 					<TextControl
-						label={ __( 'Font Family', 'migrate-off-elementor' ) }
+						label={ __( 'Font Family', 'blockshift-migrate-from-elementor' ) }
 						value={ labelTypography.fontFamily }
 						onChange={ ( value ) =>
 							setAttributes( {
@@ -172,15 +172,15 @@ const Edit = ( { attributes, setAttributes } ) => {
 						}
 					/>
 					<SelectControl
-						label={ __( 'Font Weight', 'migrate-off-elementor' ) }
+						label={ __( 'Font Weight', 'blockshift-migrate-from-elementor' ) }
 						value={ labelTypography.fontWeight }
 						options={ [
 							{
-								label: __( 'Normal', 'migrate-off-elementor' ),
+								label: __( 'Normal', 'blockshift-migrate-from-elementor' ),
 								value: 'normal',
 							},
 							{
-								label: __( 'Bold', 'migrate-off-elementor' ),
+								label: __( 'Bold', 'blockshift-migrate-from-elementor' ),
 								value: 'bold',
 							},
 							{ label: '100', value: '100' },
@@ -205,7 +205,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					<RangeControl
 						label={ __(
 							'Letter Spacing (px)',
-							'migrate-off-elementor'
+							'blockshift-migrate-from-elementor'
 						) }
 						value={ labelTypography.letterSpacing }
 						onChange={ ( value ) =>
@@ -223,7 +223,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					<RangeControl
 						label={ __(
 							'Word Spacing (px)',
-							'migrate-off-elementor'
+							'blockshift-migrate-from-elementor'
 						) }
 						value={ labelTypography.wordSpacing }
 						onChange={ ( value ) =>
@@ -241,11 +241,11 @@ const Edit = ( { attributes, setAttributes } ) => {
 				</PanelBody>
 
 				<PanelBody
-					title={ __( 'Button Style', 'migrate-off-elementor' ) }
+					title={ __( 'Button Style', 'blockshift-migrate-from-elementor' ) }
 					initialOpen={ false }
 				>
 					<TextControl
-						label={ __( 'Button Text', 'migrate-off-elementor' ) }
+						label={ __( 'Button Text', 'blockshift-migrate-from-elementor' ) }
 						value={ buttonText }
 						onChange={ ( value ) =>
 							setAttributes( { buttonText: value } )
@@ -254,20 +254,20 @@ const Edit = ( { attributes, setAttributes } ) => {
 					<SelectControl
 						label={ __(
 							'Button Alignment',
-							'migrate-off-elementor'
+							'blockshift-migrate-from-elementor'
 						) }
 						value={ buttonAlign }
 						options={ [
 							{
-								label: __( 'Start', 'migrate-off-elementor' ),
+								label: __( 'Start', 'blockshift-migrate-from-elementor' ),
 								value: 'start',
 							},
 							{
-								label: __( 'Center', 'migrate-off-elementor' ),
+								label: __( 'Center', 'blockshift-migrate-from-elementor' ),
 								value: 'center',
 							},
 							{
-								label: __( 'End', 'migrate-off-elementor' ),
+								label: __( 'End', 'blockshift-migrate-from-elementor' ),
 								value: 'end',
 							},
 						] }
@@ -278,7 +278,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					<TextControl
 						label={ __(
 							'Background Color',
-							'migrate-off-elementor'
+							'blockshift-migrate-from-elementor'
 						) }
 						value={ buttonBackgroundColor }
 						onChange={ ( value ) =>
@@ -287,7 +287,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						type="color"
 					/>
 					<TextControl
-						label={ __( 'Text Color', 'migrate-off-elementor' ) }
+						label={ __( 'Text Color', 'blockshift-migrate-from-elementor' ) }
 						value={ buttonTextColor }
 						onChange={ ( value ) =>
 							setAttributes( { buttonTextColor: value } )
@@ -295,14 +295,14 @@ const Edit = ( { attributes, setAttributes } ) => {
 						type="color"
 					/>
 					<BoxControl
-						label={ __( 'Border Radius', 'migrate-off-elementor' ) }
+						label={ __( 'Border Radius', 'blockshift-migrate-from-elementor' ) }
 						values={ buttonBorderRadius }
 						onChange={ ( value ) =>
 							setAttributes( { buttonBorderRadius: value } )
 						}
 					/>
 					<BoxControl
-						label={ __( 'Padding', 'migrate-off-elementor' ) }
+						label={ __( 'Padding', 'blockshift-migrate-from-elementor' ) }
 						values={ buttonPadding }
 						onChange={ ( value ) =>
 							setAttributes( { buttonPadding: value } )
@@ -311,13 +311,13 @@ const Edit = ( { attributes, setAttributes } ) => {
 				</PanelBody>
 
 				<PanelBody
-					title={ __( 'Messages', 'migrate-off-elementor' ) }
+					title={ __( 'Messages', 'blockshift-migrate-from-elementor' ) }
 					initialOpen={ false }
 				>
 					<TextControl
 						label={ __(
 							'Success Message',
-							'migrate-off-elementor'
+							'blockshift-migrate-from-elementor'
 						) }
 						value={ successMessage }
 						onChange={ ( value ) =>
@@ -325,7 +325,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						}
 					/>
 					<TextControl
-						label={ __( 'Error Message', 'migrate-off-elementor' ) }
+						label={ __( 'Error Message', 'blockshift-migrate-from-elementor' ) }
 						value={ errorMessage }
 						onChange={ ( value ) =>
 							setAttributes( { errorMessage: value } )
@@ -334,7 +334,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					<TextControl
 						label={ __(
 							'Required Field Message',
-							'migrate-off-elementor'
+							'blockshift-migrate-from-elementor'
 						) }
 						value={ requiredFieldMessage }
 						onChange={ ( value ) =>
@@ -344,18 +344,18 @@ const Edit = ( { attributes, setAttributes } ) => {
 				</PanelBody>
 
 				<PanelBody
-					title={ __( 'Spacing', 'migrate-off-elementor' ) }
+					title={ __( 'Spacing', 'blockshift-migrate-from-elementor' ) }
 					initialOpen={ false }
 				>
 					<BoxControl
-						label={ __( 'Margin', 'migrate-off-elementor' ) }
+						label={ __( 'Margin', 'blockshift-migrate-from-elementor' ) }
 						values={ _margin }
 						onChange={ ( value ) =>
 							setAttributes( { _margin: value } )
 						}
 					/>
 					<BoxControl
-						label={ __( 'Padding', 'migrate-off-elementor' ) }
+						label={ __( 'Padding', 'blockshift-migrate-from-elementor' ) }
 						values={ _padding }
 						onChange={ ( value ) =>
 							setAttributes( { _padding: value } )
@@ -364,7 +364,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 				</PanelBody>
 
 				<PanelBody
-					title={ __( 'Form Fields', 'migrate-off-elementor' ) }
+					title={ __( 'Form Fields', 'blockshift-migrate-from-elementor' ) }
 					initialOpen={ true }
 				>
 					<div style={ { marginBottom: '16px' } }>
@@ -414,7 +414,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 										>
 											{ __(
 												'Edit',
-												'migrate-off-elementor'
+												'blockshift-migrate-from-elementor'
 											) }
 										</Button>
 										<Button
@@ -426,7 +426,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 										>
 											{ __(
 												'Remove',
-												'migrate-off-elementor'
+												'blockshift-migrate-from-elementor'
 											) }
 										</Button>
 									</div>
@@ -442,56 +442,56 @@ const Edit = ( { attributes, setAttributes } ) => {
 						onClick={ addField }
 						style={ { width: '100%' } }
 					>
-						{ __( 'Add Field', 'migrate-off-elementor' ) }
+						{ __( 'Add Field', 'blockshift-migrate-from-elementor' ) }
 					</Button>
 				</PanelBody>
 
 				{ formFields[ editingField ] && (
 					<PanelBody
-						title={ __( 'Edit Field', 'migrate-off-elementor' ) }
+						title={ __( 'Edit Field', 'blockshift-migrate-from-elementor' ) }
 						initialOpen={ true }
 					>
 						<TextControl
-							label={ __( 'Field ID', 'migrate-off-elementor' ) }
+							label={ __( 'Field ID', 'blockshift-migrate-from-elementor' ) }
 							value={ formFields[ editingField ].customId }
 							onChange={ ( value ) =>
 								updateField( editingField, 'customId', value )
 							}
 						/>
 						<SelectControl
-							label={ __( 'Field Type', 'migrate-off-elementor' ) }
+							label={ __( 'Field Type', 'blockshift-migrate-from-elementor' ) }
 							value={ formFields[ editingField ].fieldType }
 							options={ [
 								{
-									label: __( 'Text', 'migrate-off-elementor' ),
+									label: __( 'Text', 'blockshift-migrate-from-elementor' ),
 									value: 'text',
 								},
 								{
 									label: __(
 										'Email',
-										'migrate-off-elementor'
+										'blockshift-migrate-from-elementor'
 									),
 									value: 'email',
 								},
 								{
-									label: __( 'Tel', 'migrate-off-elementor' ),
+									label: __( 'Tel', 'blockshift-migrate-from-elementor' ),
 									value: 'tel',
 								},
 								{
 									label: __(
 										'Number',
-										'migrate-off-elementor'
+										'blockshift-migrate-from-elementor'
 									),
 									value: 'number',
 								},
 								{
-									label: __( 'URL', 'migrate-off-elementor' ),
+									label: __( 'URL', 'blockshift-migrate-from-elementor' ),
 									value: 'url',
 								},
 								{
 									label: __(
 										'Textarea',
-										'migrate-off-elementor'
+										'blockshift-migrate-from-elementor'
 									),
 									value: 'textarea',
 								},
@@ -503,7 +503,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						<TextControl
 							label={ __(
 								'Field Label',
-								'migrate-off-elementor'
+								'blockshift-migrate-from-elementor'
 							) }
 							value={ formFields[ editingField ].fieldLabel }
 							onChange={ ( value ) =>
@@ -513,7 +513,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						<TextControl
 							label={ __(
 								'Placeholder',
-								'migrate-off-elementor'
+								'blockshift-migrate-from-elementor'
 							) }
 							value={ formFields[ editingField ].placeholder }
 							onChange={ ( value ) =>
@@ -525,7 +525,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 							}
 						/>
 						<ToggleControl
-							label={ __( 'Required', 'migrate-off-elementor' ) }
+							label={ __( 'Required', 'blockshift-migrate-from-elementor' ) }
 							checked={ formFields[ editingField ].required }
 							onChange={ ( value ) =>
 								updateField( editingField, 'required', value )
@@ -535,18 +535,18 @@ const Edit = ( { attributes, setAttributes } ) => {
 				) }
 
 				<PanelBody
-					title={ __( 'Advanced', 'migrate-off-elementor' ) }
+					title={ __( 'Advanced', 'blockshift-migrate-from-elementor' ) }
 					initialOpen={ false }
 				>
 					<TextControl
-						label={ __( 'Custom ID', 'migrate-off-elementor' ) }
+						label={ __( 'Custom ID', 'blockshift-migrate-from-elementor' ) }
 						value={ customId }
 						onChange={ ( value ) =>
 							setAttributes( { customId: value } )
 						}
 					/>
 					<TextControl
-						label={ __( 'Custom Class', 'migrate-off-elementor' ) }
+						label={ __( 'Custom Class', 'blockshift-migrate-from-elementor' ) }
 						value={ customClass }
 						onChange={ ( value ) =>
 							setAttributes( { customClass: value } )

@@ -133,13 +133,13 @@ const Edit = ( { attributes, setAttributes } ) => {
 			<InspectorControls>
 				{ /* ── Content Panel ─────────────────────────────────── */ }
 				<PanelBody
-					title={ __( 'Content', 'migrate-off-elementor' ) }
+					title={ __( 'Content', 'blockshift-migrate-from-elementor' ) }
 					initialOpen={ true }
 				>
 					<TextareaControl
 						label={ __(
 							'Quote / Testimonial',
-							'migrate-off-elementor'
+							'blockshift-migrate-from-elementor'
 						) }
 						value={ content }
 						onChange={ ( val ) =>
@@ -148,29 +148,29 @@ const Edit = ( { attributes, setAttributes } ) => {
 						rows={ 4 }
 					/>
 					<TextControl
-						label={ __( 'Client Name', 'migrate-off-elementor' ) }
+						label={ __( 'Client Name', 'blockshift-migrate-from-elementor' ) }
 						value={ name }
 						onChange={ ( val ) => setAttributes( { name: val } ) }
 					/>
 					<TextControl
-						label={ __( 'Job / Title', 'migrate-off-elementor' ) }
+						label={ __( 'Job / Title', 'blockshift-migrate-from-elementor' ) }
 						value={ job }
 						onChange={ ( val ) => setAttributes( { job: val } ) }
 					/>
 					<SelectControl
-						label={ __( 'Alignment', 'migrate-off-elementor' ) }
+						label={ __( 'Alignment', 'blockshift-migrate-from-elementor' ) }
 						value={ alignment }
 						options={ [
 							{
-								label: __( 'Left', 'migrate-off-elementor' ),
+								label: __( 'Left', 'blockshift-migrate-from-elementor' ),
 								value: 'left',
 							},
 							{
-								label: __( 'Center', 'migrate-off-elementor' ),
+								label: __( 'Center', 'blockshift-migrate-from-elementor' ),
 								value: 'center',
 							},
 							{
-								label: __( 'Right', 'migrate-off-elementor' ),
+								label: __( 'Right', 'blockshift-migrate-from-elementor' ),
 								value: 'right',
 							},
 						] }
@@ -182,7 +182,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 
 				{ /* ── Avatar / Image Panel ───────────────────────────── */ }
 				<PanelBody
-					title={ __( 'Avatar Image', 'migrate-off-elementor' ) }
+					title={ __( 'Avatar Image', 'blockshift-migrate-from-elementor' ) }
 					initialOpen={ false }
 				>
 					<MediaUploadCheck>
@@ -220,11 +220,11 @@ const Edit = ( { attributes, setAttributes } ) => {
 										{ imageUrl
 											? __(
 													'Replace Image',
-													'migrate-off-elementor'
+													'blockshift-migrate-from-elementor'
 											  )
 											: __(
 													'Upload Image',
-													'migrate-off-elementor'
+													'blockshift-migrate-from-elementor'
 											  ) }
 									</Button>
 									{ imageUrl && (
@@ -241,7 +241,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 										>
 											{ __(
 												'Remove',
-												'migrate-off-elementor'
+												'blockshift-migrate-from-elementor'
 											) }
 										</Button>
 									) }
@@ -253,7 +253,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					<RangeControl
 						label={ __(
 							'Image Size (px)',
-							'migrate-off-elementor'
+							'blockshift-migrate-from-elementor'
 						) }
 						value={ imageSize }
 						onChange={ ( val ) =>
@@ -264,7 +264,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					/>
 
 					<BoxControl
-						label={ __( 'Border Radius', 'migrate-off-elementor' ) }
+						label={ __( 'Border Radius', 'blockshift-migrate-from-elementor' ) }
 						values={ trblToBoxControl( imageBorderRadius ) }
 						onChange={ ( nextVal ) =>
 							setAttributes( {
@@ -277,7 +277,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					/>
 
 					<BoxControl
-						label={ __( 'Border Width', 'migrate-off-elementor' ) }
+						label={ __( 'Border Width', 'blockshift-migrate-from-elementor' ) }
 						values={ trblToBoxControl( imageBorderWidth ) }
 						onChange={ ( nextVal ) =>
 							setAttributes( {
@@ -290,7 +290,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					/>
 
 					<p style={ { fontWeight: 600, marginBottom: '8px' } }>
-						{ __( 'Border Color', 'migrate-off-elementor' ) }
+						{ __( 'Border Color', 'blockshift-migrate-from-elementor' ) }
 					</p>
 					<ColorPicker
 						color={ imageBorderColor }
@@ -305,14 +305,14 @@ const Edit = ( { attributes, setAttributes } ) => {
 			{ /* ── Advanced Controls ──────────────────────────────────── */ }
 			<InspectorAdvancedControls>
 				<TextControl
-					label={ __( 'HTML Anchor (ID)', 'migrate-off-elementor' ) }
+					label={ __( 'HTML Anchor (ID)', 'blockshift-migrate-from-elementor' ) }
 					value={ customId }
 					onChange={ ( val ) => setAttributes( { customId: val } ) }
 				/>
 				<TextControl
 					label={ __(
 						'Additional CSS Class(es)',
-						'migrate-off-elementor'
+						'blockshift-migrate-from-elementor'
 					) }
 					value={ customClass }
 					onChange={ ( val ) =>

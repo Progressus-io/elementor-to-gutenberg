@@ -58,8 +58,8 @@ class AI_Enhancement_Admin {
 	public function register_menu(): void {
 		add_submenu_page(
 			'gutenberg-settings',
-			esc_html__( 'AI Enhancement', 'migrate-off-elementor' ),
-			esc_html__( 'AI Enhancement', 'migrate-off-elementor' ),
+			esc_html__( 'AI Enhancement', 'blockshift-migrate-from-elementor' ),
+			esc_html__( 'AI Enhancement', 'blockshift-migrate-from-elementor' ),
 			'edit_pages',
 			self::MENU_SLUG,
 			array( $this, 'render_page' )
@@ -127,27 +127,27 @@ class AI_Enhancement_Admin {
 
 	public function render_page(): void {
 		if ( ! current_user_can( 'edit_pages' ) ) {
-			wp_die( esc_html__( 'You do not have permission to access this page.', 'migrate-off-elementor' ) );
+			wp_die( esc_html__( 'You do not have permission to access this page.', 'blockshift-migrate-from-elementor' ) );
 		}
 
 		$has_pages = ! empty( $this->get_converted_pages() );
 		?>
 		<div class="wrap pgs metg-wizard-wrap">
 			<header class="pgs-pluginhead">
-				<span class="pgs-pluginhead__brand"><span class="pgs-pluginhead__name"><?php esc_html_e( 'Migrate Off Elementor', 'migrate-off-elementor' ); ?></span></span>
+				<span class="pgs-pluginhead__brand"><span class="pgs-pluginhead__name"><?php esc_html_e( 'BlockShift – Migrate from Elementor', 'blockshift-migrate-from-elementor' ); ?></span></span>
 			</header>
 			<hr class="wp-header-end" style="margin:0;border:0;">
 			<?php if ( ! $has_pages ) : ?>
 				<div class="pgs-col">
 					<div class="pgs-pagetitle">
 						<div>
-							<h1><?php esc_html_e( 'AI Enhancement', 'migrate-off-elementor' ); ?></h1>
-							<p><?php esc_html_e( 'Refine converted pages until they visually match the original.', 'migrate-off-elementor' ); ?></p>
+							<h1><?php esc_html_e( 'AI Enhancement', 'blockshift-migrate-from-elementor' ); ?></h1>
+							<p><?php esc_html_e( 'Refine converted pages until they visually match the original.', 'blockshift-migrate-from-elementor' ); ?></p>
 						</div>
 					</div>
 					<div class="pgs-banner pgs-banner--neutral" role="status">
 						<span class="pgs-banner__icon"><i data-icon="info"></i></span>
-						<div class="pgs-banner__body"><span class="pgs-banner__text"><?php esc_html_e( 'No converted pages found. Use the Conversion Wizard to convert Elementor pages first.', 'migrate-off-elementor' ); ?></span></div>
+						<div class="pgs-banner__body"><span class="pgs-banner__text"><?php esc_html_e( 'No converted pages found. Use the Conversion Wizard to convert Elementor pages first.', 'blockshift-migrate-from-elementor' ); ?></span></div>
 					</div>
 				</div>
 			<?php else : ?>
@@ -205,65 +205,65 @@ class AI_Enhancement_Admin {
 
 	private function get_strings(): array {
 		return array(
-			'colPage'                  => __( 'Converted Page', 'migrate-off-elementor' ),
-			'colSource'                => __( 'Source Page', 'migrate-off-elementor' ),
-			'colActions'               => __( 'Actions', 'migrate-off-elementor' ),
-			'enhanceSingle'            => __( 'Enhance with AI', 'migrate-off-elementor' ),
-			'enhanceSelected'          => __( 'Bulk Enhance with AI', 'migrate-off-elementor' ),
+			'colPage'                  => __( 'Converted Page', 'blockshift-migrate-from-elementor' ),
+			'colSource'                => __( 'Source Page', 'blockshift-migrate-from-elementor' ),
+			'colActions'               => __( 'Actions', 'blockshift-migrate-from-elementor' ),
+			'enhanceSingle'            => __( 'Enhance with AI', 'blockshift-migrate-from-elementor' ),
+			'enhanceSelected'          => __( 'Bulk Enhance with AI', 'blockshift-migrate-from-elementor' ),
 			/* translators: %1$d: number of selected items */
-			'enhanceSelectedCount'     => __( 'Enhance %1$d items with AI', 'migrate-off-elementor' ),
-			'noApiMessage'             => __( 'To enhance pages with AI, you need to enter your Claude API key.', 'migrate-off-elementor' ),
-			'addApiLink'               => __( 'Add your API key in Settings', 'migrate-off-elementor' ),
-			'back'                     => __( 'Back', 'migrate-off-elementor' ),
-			'backToList'               => __( 'Back to list', 'migrate-off-elementor' ),
-			'skip'                     => __( 'Skip', 'migrate-off-elementor' ),
-			'retry'                    => __( 'Retry', 'migrate-off-elementor' ),
-			'aiReadinessTitle'         => __( 'Pre-flight checklist', 'migrate-off-elementor' ),
-			'aiReadinessApiValid'      => __( 'API key configured', 'migrate-off-elementor' ),
-			'aiReadinessApiInvalid'    => __( 'API key not configured', 'migrate-off-elementor' ),
+			'enhanceSelectedCount'     => __( 'Enhance %1$d items with AI', 'blockshift-migrate-from-elementor' ),
+			'noApiMessage'             => __( 'To enhance pages with AI, you need to enter your Claude API key.', 'blockshift-migrate-from-elementor' ),
+			'addApiLink'               => __( 'Add your API key in Settings', 'blockshift-migrate-from-elementor' ),
+			'back'                     => __( 'Back', 'blockshift-migrate-from-elementor' ),
+			'backToList'               => __( 'Back to list', 'blockshift-migrate-from-elementor' ),
+			'skip'                     => __( 'Skip', 'blockshift-migrate-from-elementor' ),
+			'retry'                    => __( 'Retry', 'blockshift-migrate-from-elementor' ),
+			'aiReadinessTitle'         => __( 'Pre-flight checklist', 'blockshift-migrate-from-elementor' ),
+			'aiReadinessApiValid'      => __( 'API key configured', 'blockshift-migrate-from-elementor' ),
+			'aiReadinessApiInvalid'    => __( 'API key not configured', 'blockshift-migrate-from-elementor' ),
 			/* translators: %1$d: estimated number of API calls */
-			'aiReadinessCredits'       => __( 'Estimated: ~%1$d API call(s), ~1–2 minutes per item', 'migrate-off-elementor' ),
-			'aiImproveWarningTitle'    => __( 'AI credits will be used', 'migrate-off-elementor' ),
-			'aiImproveWarning'         => __( 'This will use AI credits once per selected item. Make sure your API key has sufficient credits before starting.', 'migrate-off-elementor' ),
-			'aiImproveStart'           => __( 'Start AI Enhancement', 'migrate-off-elementor' ),
-			'aiImproveError'           => __( 'An unexpected error occurred.', 'migrate-off-elementor' ),
-			'aiImproveType'            => __( 'Type', 'migrate-off-elementor' ),
-			'aiImprovePaused'          => __( 'Paused — an item failed. Review the error below, then skip or retry to continue.', 'migrate-off-elementor' ),
-			'aiImproveFinishedOk'      => __( 'All items improved successfully.', 'migrate-off-elementor' ),
+			'aiReadinessCredits'       => __( 'Estimated: ~%1$d API call(s), ~1–2 minutes per item', 'blockshift-migrate-from-elementor' ),
+			'aiImproveWarningTitle'    => __( 'AI credits will be used', 'blockshift-migrate-from-elementor' ),
+			'aiImproveWarning'         => __( 'This will use AI credits once per selected item. Make sure your API key has sufficient credits before starting.', 'blockshift-migrate-from-elementor' ),
+			'aiImproveStart'           => __( 'Start AI Enhancement', 'blockshift-migrate-from-elementor' ),
+			'aiImproveError'           => __( 'An unexpected error occurred.', 'blockshift-migrate-from-elementor' ),
+			'aiImproveType'            => __( 'Type', 'blockshift-migrate-from-elementor' ),
+			'aiImprovePaused'          => __( 'Paused — an item failed. Review the error below, then skip or retry to continue.', 'blockshift-migrate-from-elementor' ),
+			'aiImproveFinishedOk'      => __( 'All items improved successfully.', 'blockshift-migrate-from-elementor' ),
 			/* translators: 1: number of items done, 2: number failed, 3: number skipped */
-			'aiImproveFinishedErr'     => __( 'Finished — %1$d done, %2$d failed, %3$d skipped.', 'migrate-off-elementor' ),
-			'aiStatusPending'          => __( 'Pending', 'migrate-off-elementor' ),
-			'aiStatusProcessing'       => __( 'Processing…', 'migrate-off-elementor' ),
-			'aiStatusDone'             => __( 'Done', 'migrate-off-elementor' ),
-			'aiStatusFailed'           => __( 'Failed', 'migrate-off-elementor' ),
-			'aiStatusSkipped'          => __( 'Skipped', 'migrate-off-elementor' ),
-			'aiLoaderTitle'            => __( 'Improving with AI…', 'migrate-off-elementor' ),
-			'aiStageAnalyzing'         => __( 'Analyzing…', 'migrate-off-elementor' ),
-			'aiStageGenerating'        => __( 'Generating…', 'migrate-off-elementor' ),
-			'aiStageSaving'            => __( 'Saving…', 'migrate-off-elementor' ),
-			'statTotalPages'           => __( 'Converted Items', 'migrate-off-elementor' ),
-			'statAiEnhanced'           => __( 'AI-Enhanced', 'migrate-off-elementor' ),
+			'aiImproveFinishedErr'     => __( 'Finished — %1$d done, %2$d failed, %3$d skipped.', 'blockshift-migrate-from-elementor' ),
+			'aiStatusPending'          => __( 'Pending', 'blockshift-migrate-from-elementor' ),
+			'aiStatusProcessing'       => __( 'Processing…', 'blockshift-migrate-from-elementor' ),
+			'aiStatusDone'             => __( 'Done', 'blockshift-migrate-from-elementor' ),
+			'aiStatusFailed'           => __( 'Failed', 'blockshift-migrate-from-elementor' ),
+			'aiStatusSkipped'          => __( 'Skipped', 'blockshift-migrate-from-elementor' ),
+			'aiLoaderTitle'            => __( 'Improving with AI…', 'blockshift-migrate-from-elementor' ),
+			'aiStageAnalyzing'         => __( 'Analyzing…', 'blockshift-migrate-from-elementor' ),
+			'aiStageGenerating'        => __( 'Generating…', 'blockshift-migrate-from-elementor' ),
+			'aiStageSaving'            => __( 'Saving…', 'blockshift-migrate-from-elementor' ),
+			'statTotalPages'           => __( 'Converted Items', 'blockshift-migrate-from-elementor' ),
+			'statAiEnhanced'           => __( 'AI-Enhanced', 'blockshift-migrate-from-elementor' ),
 
 			// Feedback strings
-			'feedbackBtn'              => __( 'Send Feedback', 'migrate-off-elementor' ),
-			'feedbackModalTitle'       => __( 'How did AI Enhancement go?', 'migrate-off-elementor' ),
-			'feedbackIssueLabel'       => __( 'Issue type', 'migrate-off-elementor' ),
-			'feedbackIssueDetailLabel' => __( 'Describe the issue', 'migrate-off-elementor' ),
-			'feedbackNoteLabel'        => __( 'Additional notes', 'migrate-off-elementor' ),
-			'feedbackConsentLabel'     => __( 'I consent to sending this anonymised AI enhancement report to the plugin developer for quality improvement. No passwords, API keys, or user data are included.', 'migrate-off-elementor' ),
-			'feedbackSubmit'           => __( 'Send Feedback', 'migrate-off-elementor' ),
-			'feedbackCancel'           => __( 'Cancel', 'migrate-off-elementor' ),
-			'feedbackSending'          => __( 'Sending…', 'migrate-off-elementor' ),
+			'feedbackBtn'              => __( 'Send Feedback', 'blockshift-migrate-from-elementor' ),
+			'feedbackModalTitle'       => __( 'How did AI Enhancement go?', 'blockshift-migrate-from-elementor' ),
+			'feedbackIssueLabel'       => __( 'Issue type', 'blockshift-migrate-from-elementor' ),
+			'feedbackIssueDetailLabel' => __( 'Describe the issue', 'blockshift-migrate-from-elementor' ),
+			'feedbackNoteLabel'        => __( 'Additional notes', 'blockshift-migrate-from-elementor' ),
+			'feedbackConsentLabel'     => __( 'I consent to sending this anonymised AI enhancement report to the plugin developer for quality improvement. No passwords, API keys, or user data are included.', 'blockshift-migrate-from-elementor' ),
+			'feedbackSubmit'           => __( 'Send Feedback', 'blockshift-migrate-from-elementor' ),
+			'feedbackCancel'           => __( 'Cancel', 'blockshift-migrate-from-elementor' ),
+			'feedbackSending'          => __( 'Sending…', 'blockshift-migrate-from-elementor' ),
 			/* translators: %1$s: feedback submission ID */
-			'feedbackSuccess'          => __( 'Thank you! Feedback submitted (ID: %1$s).', 'migrate-off-elementor' ),
+			'feedbackSuccess'          => __( 'Thank you! Feedback submitted (ID: %1$s).', 'blockshift-migrate-from-elementor' ),
 			/* translators: %s: error message describing why feedback could not be sent */
-			'feedbackError'            => __( 'Could not send feedback: %s', 'migrate-off-elementor' ),
-			'feedbackNoIssue'          => __( 'No issue', 'migrate-off-elementor' ),
-			'feedbackIssueLayout'      => __( 'Layout issues after AI', 'migrate-off-elementor' ),
-			'feedbackIssueMissing'     => __( 'Wrong or missing content', 'migrate-off-elementor' ),
-			'feedbackIssueCss'         => __( 'CSS / styling problems', 'migrate-off-elementor' ),
-			'feedbackIssueQuality'     => __( 'AI output quality', 'migrate-off-elementor' ),
-			'feedbackIssueOther'       => __( 'Other', 'migrate-off-elementor' ),
+			'feedbackError'            => __( 'Could not send feedback: %s', 'blockshift-migrate-from-elementor' ),
+			'feedbackNoIssue'          => __( 'No issue', 'blockshift-migrate-from-elementor' ),
+			'feedbackIssueLayout'      => __( 'Layout issues after AI', 'blockshift-migrate-from-elementor' ),
+			'feedbackIssueMissing'     => __( 'Wrong or missing content', 'blockshift-migrate-from-elementor' ),
+			'feedbackIssueCss'         => __( 'CSS / styling problems', 'blockshift-migrate-from-elementor' ),
+			'feedbackIssueQuality'     => __( 'AI output quality', 'blockshift-migrate-from-elementor' ),
+			'feedbackIssueOther'       => __( 'Other', 'blockshift-migrate-from-elementor' ),
 		);
 	}
 
@@ -274,13 +274,13 @@ class AI_Enhancement_Admin {
 		check_ajax_referer( self::FEEDBACK_NONCE, 'nonce' );
 
 		if ( ! current_user_can( 'edit_pages' ) ) {
-			wp_send_json_error( array( 'error' => esc_html__( 'Unauthorized.', 'migrate-off-elementor' ) ) );
+			wp_send_json_error( array( 'error' => esc_html__( 'Unauthorized.', 'blockshift-migrate-from-elementor' ) ) );
 			return;
 		}
 
 		$consent_raw = isset( $_POST['consent_given'] ) ? sanitize_text_field( wp_unslash( $_POST['consent_given'] ) ) : '';
 		if ( 'true' !== $consent_raw ) {
-			wp_send_json_error( array( 'error' => esc_html__( 'Consent is required to submit feedback.', 'migrate-off-elementor' ) ) );
+			wp_send_json_error( array( 'error' => esc_html__( 'Consent is required to submit feedback.', 'blockshift-migrate-from-elementor' ) ) );
 			return;
 		}
 
@@ -293,13 +293,13 @@ class AI_Enhancement_Admin {
 		$user_note    = substr( $user_note, 0, 2000 );
 
 		if ( $target_id <= 0 ) {
-			wp_send_json_error( array( 'error' => esc_html__( 'Invalid page ID.', 'migrate-off-elementor' ) ) );
+			wp_send_json_error( array( 'error' => esc_html__( 'Invalid page ID.', 'blockshift-migrate-from-elementor' ) ) );
 			return;
 		}
 
 		$target_post = get_post( $target_id );
 		if ( ! $target_post instanceof \WP_Post ) {
-			wp_send_json_error( array( 'error' => esc_html__( 'Page not found.', 'migrate-off-elementor' ) ) );
+			wp_send_json_error( array( 'error' => esc_html__( 'Page not found.', 'blockshift-migrate-from-elementor' ) ) );
 			return;
 		}
 

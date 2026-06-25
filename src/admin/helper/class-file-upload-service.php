@@ -39,7 +39,7 @@ class File_Upload_Service {
 				add_settings_error(
 					'gutenberg_json_data',
 					'json_upload_error',
-					esc_html__( 'Invalid JSON file uploaded.', 'migrate-off-elementor' ),
+					esc_html__( 'Invalid JSON file uploaded.', 'blockshift-migrate-from-elementor' ),
 					'error'
 				);
 				return null;
@@ -56,7 +56,7 @@ class File_Upload_Service {
 			add_settings_error(
 				'gutenberg_json_data',
 				'json_upload_error',
-				esc_html__( 'Failed to upload file.', 'migrate-off-elementor' ),
+				esc_html__( 'Failed to upload file.', 'blockshift-migrate-from-elementor' ),
 				'error'
 			);
 			return null;
