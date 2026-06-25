@@ -7,6 +7,8 @@
 		"blockshift-migrate-from-elementor.php",
 		"readme.txt",
 		"LICENSE.txt",
+		"composer.json",
+		"composer.lock",
 		"build",
 		"src",
 		"assets",
