@@ -88,6 +88,25 @@ class Conversion_Log_Admin {
 			METG_DEBUG && file_exists( $icons_path ) ? (string) filemtime( $icons_path ) : METG_VERSION,
 			true
 		);
+
+		$log_js_path = METG_DIR_PATH . '/assets/js/conversion-log.js';
+
+		wp_enqueue_script(
+			'metg-conversion-log',
+			plugins_url( 'assets/js/conversion-log.js', METG_MAIN_FILE ),
+			array(),
+			METG_DEBUG && file_exists( $log_js_path ) ? (string) filemtime( $log_js_path ) : METG_VERSION,
+			true
+		);
+
+		wp_localize_script(
+			'metg-conversion-log',
+			'metgConversionLog',
+			array(
+				'copy'   => __( 'Copy', 'migrate-off-elementor' ),
+				'copied' => __( 'Copied', 'migrate-off-elementor' ),
+			)
+		);
 	}
 
 	public function register_menu(): void {
@@ -513,26 +532,6 @@ class Conversion_Log_Admin {
 								);
 								?>
 							</p>
-							<script>
-							(function(){
-								var pre = document.getElementById('metg-jsonl-log');
-								var btn = document.getElementById('metg-jsonl-copy');
-								if (!pre || !btn) return;
-								var label = btn.querySelector('span');
-								btn.addEventListener('click', function(){
-									var text = pre.textContent;
-									var done = function(){
-										if (label) { label.textContent = '<?php echo esc_js( __( 'Copied', 'migrate-off-elementor' ) ); ?>'; }
-										setTimeout(function(){ if (label) { label.textContent = '<?php echo esc_js( __( 'Copy', 'migrate-off-elementor' ) ); ?>'; } }, 1500);
-									};
-									if (navigator.clipboard && navigator.clipboard.writeText) {
-										navigator.clipboard.writeText(text).then(done, done);
-									} else {
-										done();
-									}
-								});
-							})();
-							</script>
 						<?php elseif ( $logging_on ) : ?>
 							<p class="pgs-muted" style="font-style:italic;">
 								<?php esc_html_e( 'No diagnostic log events yet. Run a conversion and refresh this page.', 'migrate-off-elementor' ); ?>
