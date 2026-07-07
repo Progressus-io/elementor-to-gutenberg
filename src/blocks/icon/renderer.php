@@ -39,7 +39,10 @@ function metg_render_icon_block( $attributes ) {
 		if ( preg_match( '/^#(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i', $value ) ) {
 			return true;
 		}
-		if ( preg_match( '/^(?:rgb|rgba|hsl|hsla)\([0-9.,%\/\s]+\)$/i', $value ) ) {
+		if ( preg_match( '/^(?:rgb|rgba|hsl|hsla)\([a-z0-9.,%\/\s-]+\)$/i', $value ) ) {
+			return true;
+		}
+		if ( preg_match( '/^var\(\s*--[a-z0-9_-]+\s*(?:,[^;{}<>]*)?\)$/i', $value ) ) {
 			return true;
 		}
 		return (bool) preg_match( '/^[a-z]+$/i', $value );

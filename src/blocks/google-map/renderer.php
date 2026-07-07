@@ -87,7 +87,13 @@ function render_google_map_block( $attributes, $_content, $_block ) { // phpcs:i
 			return $value . 'px';
 		}
 		$value = is_string( $value ) ? trim( $value ) : '';
-		if ( '' !== $value && preg_match( '/^-?(?:\d+|\d*\.\d+)(?:px|em|rem|%|vh|vw|vmin|vmax|pt|pc|ex|ch|cm|mm|in)$/', $value ) ) {
+		if ( '' === $value ) {
+			return '0px';
+		}
+		if ( in_array( strtolower( $value ), array( 'auto', 'inherit', 'initial', 'unset' ), true ) ) {
+			return $value;
+		}
+		if ( preg_match( '/^-?(?:\d+|\d*\.\d+)(?:px|em|rem|%|vh|vw|vmin|vmax|pt|pc|ex|ch|cm|mm|in)$/i', $value ) ) {
 			return $value;
 		}
 		return '0px';

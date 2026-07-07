@@ -332,19 +332,21 @@ class External_CSS_Service {
 
 		$patterns = array(
 			// Control characters that have no place in a stylesheet.
-			'/[\x00-\x08\x0B\x0C\x0E-\x1F]/' => '',
+			'/[\x00-\x08\x0B\x0C\x0E-\x1F]/'   => '',
 			// Opening angle bracket: never valid CSS, enables </style> / <script> breakouts.
 			// The ">" child combinator is left intact.
-			'/</'                            => '',
-			// Remote/arbitrary style inclusion.
-			'/@import\b[^;]*;?/i'            => '',
+			'/</'                              => '',
+			// Remote/arbitrary style inclusion. Bounded to a single line so a missing
+			// semicolon cannot swallow the following rule.
+			'/@import\b[^;\n]*;?/i'            => '',
 			// Legacy IE CSS expressions (execute JS).
-			'/expression\s*\(/i'             => '',
+			'/expression\s*\(/i'               => '',
 			// Script protocols anywhere (e.g. inside url()).
-			'/(?:javascript|vbscript)\s*:/i' => '',
-			// Legacy behavior / data-binding declarations.
-			'/-moz-binding\s*:[^;]*;?/i'     => '',
-			'/\bbehavior\s*:[^;]*;?/i'       => '',
+			'/(?:javascript|vbscript)\s*:/i'   => '',
+			// Legacy data-binding / behavior declarations. The lookbehind keeps the
+			// standard scroll-behavior and overscroll-behavior properties intact.
+			'/-moz-binding\s*:[^;]*;?/i'       => '',
+			'/(?<![-\w])behavior\s*:[^;]*;?/i' => '',
 		);
 
 		foreach ( $patterns as $pattern => $replacement ) {
