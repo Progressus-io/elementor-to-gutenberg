@@ -502,21 +502,56 @@ class AI_Improvement_Admin {
 	/**
 	 * Sanitize AI-generated block content before it is persisted as post_content.
 	 *
-	 * Mirrors WordPress core: users who cannot post unfiltered HTML get the content
-	 * run through wp_kses_post(), exactly as wp_update_post() would apply on save.
-	 * Users with the unfiltered_html capability keep the content verbatim, matching
-	 * how the normal block editor behaves, so valid block markup is never corrupted.
+	 * Two layers: (1) executable constructs (scripts, inline event handlers,
+	 * script: URIs) are stripped for EVERY user — the AI response is untrusted
+	 * input and such markup never belongs in converted block content, so this
+	 * closes the gap even for users who can post unfiltered HTML; (2) users who
+	 * cannot post unfiltered HTML additionally get the same wp_kses_post() filter
+	 * WordPress core applies to post_content on save. Block-delimiter comments and
+	 * ordinary block markup (including form/embed elements) are preserved.
 	 *
 	 * @param string $content Raw Gutenberg content returned by the AI.
 	 *
 	 * @return string Sanitized block content.
 	 */
 	private static function sanitize_block_content( string $content ): string {
-		if ( current_user_can( 'unfiltered_html' ) ) {
-			return $content;
+		$content = self::strip_executable_markup( $content );
+
+		if ( ! current_user_can( 'unfiltered_html' ) ) {
+			$content = wp_kses_post( $content );
 		}
 
-		return wp_kses_post( $content );
+		return $content;
+	}
+
+	/**
+	 * Remove script-execution vectors from a markup string without disturbing
+	 * legitimate block markup or block-delimiter comments.
+	 *
+	 * @param string $content Markup to clean.
+	 *
+	 * @return string Markup with scripts, inline event handlers and script: URIs removed.
+	 */
+	private static function strip_executable_markup( string $content ): string {
+		$patterns = array(
+			// Paired <script>…</script> blocks including their contents.
+			'#<\s*script\b[^>]*>.*?<\s*/\s*script\s*>#is' => '',
+			// Stray or unpaired <script> tags.
+			'#<\s*/?\s*script\b[^>]*>#i'                  => '',
+			// Inline event-handler attributes (onclick=, onerror=, …).
+			'#\son[a-z]+\s*=\s*(?:"[^"]*"|\'[^\']*\'|[^\s>]+)#i' => '',
+			// Script protocols in attribute values.
+			'#(=\s*["\']?)\s*(?:javascript|vbscript)\s*:#i' => '$1',
+		);
+
+		foreach ( $patterns as $pattern => $replacement ) {
+			$result = preg_replace( $pattern, $replacement, $content );
+			if ( null !== $result ) {
+				$content = $result;
+			}
+		}
+
+		return $content;
 	}
 
 	/**
