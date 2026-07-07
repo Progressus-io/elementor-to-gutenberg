@@ -68,7 +68,7 @@
       }
     }
   },
-  "textdomain": "migrate-elementor-to-gutenberg",
+  "textdomain": "blockshift-migrate-from-elementor",
   "editorScript": "file:./index.js",
   "viewScript": "file:./view.js",
   "editorStyle": "file:./index.css",

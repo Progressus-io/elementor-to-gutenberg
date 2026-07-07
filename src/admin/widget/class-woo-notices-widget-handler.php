@@ -1,8 +1,8 @@
 <?php
 
-namespace Progressus\MigrateElementorToGutenberg\Admin\Widget;
+namespace Progressus\BlockShift\Admin\Widget;
 
-use Progressus\MigrateElementorToGutenberg\Admin\Widget_Handler_Interface;
+use Progressus\BlockShift\Admin\Widget_Handler_Interface;
 
 defined( 'ABSPATH' ) || exit;
 

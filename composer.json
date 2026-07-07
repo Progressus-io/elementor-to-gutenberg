@@ -1,5 +1,5 @@
 {
-	"name": "progressus/migrate-elementor-to-gutenberg",
+	"name": "progressus/blockshift-migrate-from-elementor",
 	"license": "GPL-3.0",
 	"require-dev": {
 		"woocommerce/woocommerce-sniffs": "^1.0",
@@ -13,7 +13,7 @@
 	},
 	"autoload": {
 		"psr-4": {
-			"Progressus\\MigrateElementorToGutenberg\\": "src/"
+			"Progressus\\BlockShift\\": "src/"
 		},
 		"classmap": [
 			"src/"
@@ -25,8 +25,6 @@
 			"!/languages",
 			"!/vendor",
 			"/node_modules",
-			"composer.json",
-			"composer.lock",
 			"package.json",
 			".gitignore",
 			"README.md",

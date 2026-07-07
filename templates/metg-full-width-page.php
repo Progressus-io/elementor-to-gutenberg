@@ -4,7 +4,7 @@
  * Template Post Type: page
  *
  *
- * @package Progressus\MigrateElementorToGutenberg
+ * @package Progressus\BlockShift
  */
 
 defined( 'ABSPATH' ) || exit;

@@ -2,10 +2,10 @@
 /**
  * Manual AI prompt builder for converted pages.
  *
- * @package Progressus\MigrateElementorToGutenberg
+ * @package Progressus\BlockShift
  */
 
-namespace Progressus\MigrateElementorToGutenberg\Admin\Helper;
+namespace Progressus\BlockShift\Admin\Helper;
 
 use function wp_json_encode;
 

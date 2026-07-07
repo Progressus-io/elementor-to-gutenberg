@@ -1,6 +1,6 @@
 <?php
 /**
- * One-time data migration for the rename to "Migrate Elementor to Gutenberg".
+ * One-time data migration for the rename to "Migrate Off Elementor".
  *
  * Earlier versions of the plugin stored data under the `ele2gb`/`etg`/
  * `progressus_gutenberg` prefixes and the `etg-*` CSS scope. This migration
@@ -16,10 +16,10 @@
  *
  * The whole pass is guarded by an option so it runs at most once per site.
  *
- * @package Progressus\MigrateElementorToGutenberg
+ * @package Progressus\BlockShift
  */
 
-namespace Progressus\MigrateElementorToGutenberg\Admin;
+namespace Progressus\BlockShift\Admin;
 
 use function add_option;
 use function current_user_can;

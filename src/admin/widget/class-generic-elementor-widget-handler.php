@@ -2,12 +2,12 @@
 /**
  * Generic safe mappings for selected Elementor widgets.
  *
- * @package Progressus\MigrateElementorToGutenberg
+ * @package Progressus\BlockShift
  */
 
-namespace Progressus\MigrateElementorToGutenberg\Admin\Widget;
+namespace Progressus\BlockShift\Admin\Widget;
 
-use Progressus\MigrateElementorToGutenberg\Admin\Widget_Handler_Interface;
+use Progressus\BlockShift\Admin\Widget_Handler_Interface;
 
 defined( 'ABSPATH' ) || exit;
 

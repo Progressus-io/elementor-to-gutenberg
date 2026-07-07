@@ -26,9 +26,9 @@ const Edit = ( { attributes, setAttributes } ) => {
 	const blockProps = useBlockProps();
 
 	const alignmentOptions = [
-		{ label: __( 'Left', 'migrate-elementor-to-gutenberg' ), value: 'left' },
-		{ label: __( 'Center', 'migrate-elementor-to-gutenberg' ), value: 'center' },
-		{ label: __( 'Right', 'migrate-elementor-to-gutenberg' ), value: 'right' },
+		{ label: __( 'Left', 'blockshift-migrate-from-elementor' ), value: 'left' },
+		{ label: __( 'Center', 'blockshift-migrate-from-elementor' ), value: 'center' },
+		{ label: __( 'Right', 'blockshift-migrate-from-elementor' ), value: 'right' },
 	];
 
 	const counterStyle = {
@@ -47,11 +47,11 @@ const Edit = ( { attributes, setAttributes } ) => {
 		<>
 			<InspectorControls>
 				<PanelBody
-					title={ __( 'Counter Settings', 'migrate-elementor-to-gutenberg' ) }
+					title={ __( 'Counter Settings', 'blockshift-migrate-from-elementor' ) }
 					initialOpen={ true }
 				>
 					<RangeControl
-						label={ __( 'Start Value', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Start Value', 'blockshift-migrate-from-elementor' ) }
 						value={ startValue }
 						onChange={ ( value ) =>
 							setAttributes( { startValue: value } )
@@ -60,7 +60,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						max={ endValue }
 					/>
 					<RangeControl
-						label={ __( 'End Value', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'End Value', 'blockshift-migrate-from-elementor' ) }
 						value={ endValue }
 						onChange={ ( value ) =>
 							setAttributes( { endValue: value } )
@@ -71,7 +71,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					<RangeControl
 						label={ __(
 							'Animation Duration (ms)',
-							'migrate-elementor-to-gutenberg'
+							'blockshift-migrate-from-elementor'
 						) }
 						value={ duration }
 						onChange={ ( value ) =>
@@ -82,21 +82,21 @@ const Edit = ( { attributes, setAttributes } ) => {
 						step={ 100 }
 					/>
 					<TextControl
-						label={ __( 'Prefix', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Prefix', 'blockshift-migrate-from-elementor' ) }
 						value={ prefix }
 						onChange={ ( value ) =>
 							setAttributes( { prefix: value } )
 						}
 					/>
 					<TextControl
-						label={ __( 'Suffix', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Suffix', 'blockshift-migrate-from-elementor' ) }
 						value={ suffix }
 						onChange={ ( value ) =>
 							setAttributes( { suffix: value } )
 						}
 					/>
 					<TextControl
-						label={ __( 'Title', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Title', 'blockshift-migrate-from-elementor' ) }
 						value={ title }
 						onChange={ ( value ) =>
 							setAttributes( { title: value } )
@@ -104,11 +104,11 @@ const Edit = ( { attributes, setAttributes } ) => {
 					/>
 				</PanelBody>
 				<PanelBody
-					title={ __( 'Style Settings', 'migrate-elementor-to-gutenberg' ) }
+					title={ __( 'Style Settings', 'blockshift-migrate-from-elementor' ) }
 					initialOpen={ false }
 				>
 					<SelectControl
-						label={ __( 'Alignment', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Alignment', 'blockshift-migrate-from-elementor' ) }
 						value={ alignment }
 						options={ alignmentOptions }
 						onChange={ ( value ) =>
@@ -118,7 +118,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					<div className="components-base-control">
 						{ /* eslint-disable-next-line jsx-a11y/label-has-associated-control */ }
 						<label className="components-base-control__label">
-							{ __( 'Number Color', 'migrate-elementor-to-gutenberg' ) }
+							{ __( 'Number Color', 'blockshift-migrate-from-elementor' ) }
 						</label>
 						<ColorPicker
 							color={ numberColor }
@@ -128,7 +128,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						/>
 					</div>
 					<RangeControl
-						label={ __( 'Number Size', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Number Size', 'blockshift-migrate-from-elementor' ) }
 						value={ numberSize }
 						onChange={ ( value ) =>
 							setAttributes( { numberSize: value } )
@@ -139,7 +139,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					<div className="components-base-control">
 						{ /* eslint-disable-next-line jsx-a11y/label-has-associated-control */ }
 						<label className="components-base-control__label">
-							{ __( 'Title Color', 'migrate-elementor-to-gutenberg' ) }
+							{ __( 'Title Color', 'blockshift-migrate-from-elementor' ) }
 						</label>
 						<ColorPicker
 							color={ titleColor }
@@ -149,7 +149,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						/>
 					</div>
 					<RangeControl
-						label={ __( 'Title Size', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Title Size', 'blockshift-migrate-from-elementor' ) }
 						value={ titleSize }
 						onChange={ ( value ) =>
 							setAttributes( { titleSize: value } )

@@ -73,7 +73,7 @@
       "default": ""
     }
   },
-  "textdomain": "migrate-elementor-to-gutenberg",
+  "textdomain": "blockshift-migrate-from-elementor",
   "editorScript": "file:./index.js",
   "style": "file:./style-index.css"
 }

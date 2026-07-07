@@ -4,10 +4,10 @@
  *
  * Sends prompts to the Anthropic Claude API and parses the response.
  *
- * @package Progressus\MigrateElementorToGutenberg
+ * @package Progressus\BlockShift
  */
 
-namespace Progressus\MigrateElementorToGutenberg\Admin\Helper;
+namespace Progressus\BlockShift\Admin\Helper;
 
 use function get_option;
 use function is_wp_error;

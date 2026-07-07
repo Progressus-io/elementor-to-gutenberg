@@ -2,10 +2,10 @@
 /**
  * External CSS file service.
  *
- * @package Progressus\MigrateElementorToGutenberg
+ * @package Progressus\BlockShift
  */
 
-namespace Progressus\MigrateElementorToGutenberg\Admin\Helper;
+namespace Progressus\BlockShift\Admin\Helper;
 
 use function absint;
 use function current_time;

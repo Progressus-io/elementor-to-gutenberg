@@ -68,18 +68,18 @@ export default function Edit( { attributes, setAttributes } ) {
 				<PanelBody
 					title={ __(
 						'Progress Bar Settings',
-						'migrate-elementor-to-gutenberg'
+						'blockshift-migrate-from-elementor'
 					) }
 				>
 					<TextControl
-						label={ __( 'Title', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Title', 'blockshift-migrate-from-elementor' ) }
 						value={ title }
 						onChange={ ( value ) =>
 							setAttributes( { title: value } )
 						}
 					/>
 					<RangeControl
-						label={ __( 'Percentage', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Percentage', 'blockshift-migrate-from-elementor' ) }
 						value={ percentage }
 						onChange={ ( value ) =>
 							setAttributes( { percentage: value } )
@@ -88,7 +88,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						max={ 100 }
 					/>
 					<TextControl
-						label={ __( 'Inner Text', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Inner Text', 'blockshift-migrate-from-elementor' ) }
 						value={ innerText }
 						onChange={ ( value ) =>
 							setAttributes( { innerText: value } )
@@ -97,7 +97,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					<ToggleControl
 						label={ __(
 							'Show Percentage',
-							'migrate-elementor-to-gutenberg'
+							'blockshift-migrate-from-elementor'
 						) }
 						checked={ showPercentage }
 						onChange={ ( value ) =>
@@ -105,14 +105,14 @@ export default function Edit( { attributes, setAttributes } ) {
 						}
 					/>
 					<ToggleControl
-						label={ __( 'Show Title', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Show Title', 'blockshift-migrate-from-elementor' ) }
 						checked={ showTitle }
 						onChange={ ( value ) =>
 							setAttributes( { showTitle: value } )
 						}
 					/>
 					<RangeControl
-						label={ __( 'Title Size', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Title Size', 'blockshift-migrate-from-elementor' ) }
 						value={ titleSize }
 						onChange={ ( value ) =>
 							setAttributes( { titleSize: value } )
@@ -121,7 +121,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						max={ 50 }
 					/>
 					<RangeControl
-						label={ __( 'Bar Height', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Bar Height', 'blockshift-migrate-from-elementor' ) }
 						value={ barHeight }
 						onChange={ ( value ) =>
 							setAttributes( { barHeight: value } )
@@ -130,7 +130,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						max={ 50 }
 					/>
 					<RangeControl
-						label={ __( 'Border Radius', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Border Radius', 'blockshift-migrate-from-elementor' ) }
 						value={ borderRadius }
 						onChange={ ( value ) =>
 							setAttributes( { borderRadius: value } )
@@ -143,7 +143,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						<label>
 							{ __(
 								'Progress Text Color',
-								'migrate-elementor-to-gutenberg'
+								'blockshift-migrate-from-elementor'
 							) }
 						</label>
 						<ColorPicker
@@ -155,7 +155,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						/>
 					</div>
 					<RangeControl
-						label={ __( 'Bar Color', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Bar Color', 'blockshift-migrate-from-elementor' ) }
 						value={ barColor }
 						onChange={ ( value ) =>
 							setAttributes( { barColor: value } )
@@ -165,7 +165,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					<div>
 						{ /* eslint-disable-next-line jsx-a11y/label-has-associated-control */ }
 						<label>
-							{ __( 'Bar Color', 'migrate-elementor-to-gutenberg' ) }
+							{ __( 'Bar Color', 'blockshift-migrate-from-elementor' ) }
 						</label>
 						<ColorPicker
 							color={ barColor }
@@ -178,7 +178,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					<div>
 						{ /* eslint-disable-next-line jsx-a11y/label-has-associated-control */ }
 						<label>
-							{ __( 'Background Color', 'migrate-elementor-to-gutenberg' ) }
+							{ __( 'Background Color', 'blockshift-migrate-from-elementor' ) }
 						</label>
 						<ColorPicker
 							color={ backgroundColor }
@@ -191,7 +191,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					<div>
 						{ /* eslint-disable-next-line jsx-a11y/label-has-associated-control */ }
 						<label>
-							{ __( 'Title Color', 'migrate-elementor-to-gutenberg' ) }
+							{ __( 'Title Color', 'blockshift-migrate-from-elementor' ) }
 						</label>
 						<ColorPicker
 							color={ titleColor }

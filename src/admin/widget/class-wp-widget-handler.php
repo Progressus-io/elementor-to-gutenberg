@@ -1,8 +1,8 @@
 <?php
 
-namespace Progressus\MigrateElementorToGutenberg\Admin\Widget;
+namespace Progressus\BlockShift\Admin\Widget;
 
-use Progressus\MigrateElementorToGutenberg\Admin\Widget_Handler_Interface;
+use Progressus\BlockShift\Admin\Widget_Handler_Interface;
 use function absint;
 use function esc_attr;
 use function esc_html;

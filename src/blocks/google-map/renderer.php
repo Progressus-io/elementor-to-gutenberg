@@ -2,10 +2,10 @@
 /**
  * Server-side render for the `progressus/google-map` block.
  *
- * @package Progressus\MigrateElementorToGutenberg
+ * @package Progressus\BlockShift
  */
 
-namespace Progressus\MigrateElementorToGutenberg\Blocks;
+namespace Progressus\BlockShift\Blocks;
 
 defined( 'ABSPATH' ) || exit;
 use function esc_attr;

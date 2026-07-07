@@ -2,13 +2,13 @@
 /**
  * Widget handler for Elementor progress widget.
  *
- * @package Progressus\MigrateElementorToGutenberg
+ * @package Progressus\BlockShift
  */
 
-namespace Progressus\MigrateElementorToGutenberg\Admin\Widget;
+namespace Progressus\BlockShift\Admin\Widget;
 
-use Progressus\MigrateElementorToGutenberg\Admin\Helper\Style_Parser;
-use Progressus\MigrateElementorToGutenberg\Admin\Widget_Handler_Interface;
+use Progressus\BlockShift\Admin\Helper\Style_Parser;
+use Progressus\BlockShift\Admin\Widget_Handler_Interface;
 
 defined( 'ABSPATH' ) || exit;
 

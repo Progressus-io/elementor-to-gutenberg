@@ -7,10 +7,10 @@
  * array of chunk URLs (one element for single-screen pages, multiple for pages
  * that exceed the service's 7500 px chunk limit).
  *
- * @package Progressus\MigrateElementorToGutenberg
+ * @package Progressus\BlockShift
  */
 
-namespace Progressus\MigrateElementorToGutenberg\Admin\Helper;
+namespace Progressus\BlockShift\Admin\Helper;
 
 use function current_time;
 use function get_option;
@@ -191,7 +191,7 @@ class AI_Remediation_Screenshot_Meta_Service {
 			self::save_status( $target_id, self::STATUS_FAILED );
 			return array(
 				'success' => false,
-				'error'   => __( 'Could not resolve public URLs for the source or target page.', 'migrate-elementor-to-gutenberg' ),
+				'error'   => __( 'Could not resolve public URLs for the source or target page.', 'blockshift-migrate-from-elementor' ),
 			);
 		}
 

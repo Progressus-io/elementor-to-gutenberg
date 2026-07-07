@@ -2,10 +2,10 @@
 /**
  * Elementor font utilities.
  *
- * @package Progressus\MigrateElementorToGutenberg
+ * @package Progressus\BlockShift
  */
 
-namespace Progressus\MigrateElementorToGutenberg\Admin\Helper;
+namespace Progressus\BlockShift\Admin\Helper;
 
 use function get_option;
 use function get_post_meta;

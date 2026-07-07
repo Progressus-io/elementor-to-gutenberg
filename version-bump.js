@@ -49,4 +49,4 @@ function bumpPluginVersion( path ) {
 	fs.writeFileSync( path, fileContent );
 }
 
-bumpPluginVersion( './migrate-elementor-to-gutenberg.php' );
+bumpPluginVersion( './blockshift-migrate-from-elementor.php' );

@@ -2,10 +2,10 @@
 /**
  * Centralized alignment helper for Elementor to Gutenberg conversions.
  *
- * @package Progressus\MigrateElementorToGutenberg
+ * @package Progressus\BlockShift
  */
 
-namespace Progressus\MigrateElementorToGutenberg\Admin\Helper;
+namespace Progressus\BlockShift\Admin\Helper;
 
 defined( 'ABSPATH' ) || exit;
 

@@ -1,6 +1,6 @@
 <?php
 
-namespace Progressus\MigrateElementorToGutenberg\Admin\Widget;
+namespace Progressus\BlockShift\Admin\Widget;
 
 use function is_array;
 use function wp_json_encode;

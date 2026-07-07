@@ -2,10 +2,10 @@
 /**
  * Utility class for parsing styles and attributes.
  *
- * @package Progressus\MigrateElementorToGutenberg
+ * @package Progressus\BlockShift
  */
 
-namespace Progressus\MigrateElementorToGutenberg\Admin\Helper;
+namespace Progressus\BlockShift\Admin\Helper;
 
 use Elementor\Plugin;
 use function sanitize_html_class;

@@ -2,10 +2,10 @@
 /**
  * Storage for manual AI improvement workspace.
  *
- * @package Progressus\MigrateElementorToGutenberg
+ * @package Progressus\BlockShift
  */
 
-namespace Progressus\MigrateElementorToGutenberg\Admin\Helper;
+namespace Progressus\BlockShift\Admin\Helper;
 
 use function current_time;
 use function get_post_meta;

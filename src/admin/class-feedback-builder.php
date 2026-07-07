@@ -4,10 +4,10 @@
 /**
  * Assembles the feedback manifest from the job transient and available post meta.
  *
- * @package Progressus\MigrateElementorToGutenberg
+ * @package Progressus\BlockShift
  */
 
-namespace Progressus\MigrateElementorToGutenberg\Admin;
+namespace Progressus\BlockShift\Admin;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -126,7 +126,7 @@ class Feedback_Builder {
 		return array(
 			'site_url_hash'              => hash( 'sha256', (string) home_url() ),
 			'site_domain'                => (string) wp_parse_url( home_url(), PHP_URL_HOST ),
-			'plugin_version'             => METG_VERSION,
+			'plugin_version'             => BLOCKSHIFT_VERSION,
 			'wordpress_version'          => get_bloginfo( 'version' ),
 			'php_version'                => PHP_VERSION,
 			'active_theme'               => (string) $theme->get( 'Name' ),

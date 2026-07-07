@@ -4,21 +4,21 @@
 /**
  * Main admin settings class for Elementor to Gutenberg conversion.
  *
- * @package Progressus\MigrateElementorToGutenberg
+ * @package Progressus\BlockShift
  */
 
-namespace Progressus\MigrateElementorToGutenberg\Admin;
+namespace Progressus\BlockShift\Admin;
 
-use Progressus\MigrateElementorToGutenberg\Admin\Helper\File_Upload_Service;
-use Progressus\MigrateElementorToGutenberg\Admin\Helper\Block_Builder;
-use Progressus\MigrateElementorToGutenberg\Admin\Layout\Container_Classifier;
-use Progressus\MigrateElementorToGutenberg\Admin\Helper\Style_Parser;
-use Progressus\MigrateElementorToGutenberg\Admin\Helper\Alignment_Helper;
-use Progressus\MigrateElementorToGutenberg\Admin\Helper\External_CSS_Service;
-use Progressus\MigrateElementorToGutenberg\Admin\Helper\External_Style_Collector;
-use Progressus\MigrateElementorToGutenberg\Admin\Helper\AI_Remediation_Screenshot_Api_Service;
-use Progressus\MigrateElementorToGutenberg\Admin\Conversion_Log;
-use Progressus\MigrateElementorToGutenberg\Admin\Conversion_Log_Admin;
+use Progressus\BlockShift\Admin\Helper\File_Upload_Service;
+use Progressus\BlockShift\Admin\Helper\Block_Builder;
+use Progressus\BlockShift\Admin\Layout\Container_Classifier;
+use Progressus\BlockShift\Admin\Helper\Style_Parser;
+use Progressus\BlockShift\Admin\Helper\Alignment_Helper;
+use Progressus\BlockShift\Admin\Helper\External_CSS_Service;
+use Progressus\BlockShift\Admin\Helper\External_Style_Collector;
+use Progressus\BlockShift\Admin\Helper\AI_Remediation_Screenshot_Api_Service;
+use Progressus\BlockShift\Admin\Conversion_Log;
+use Progressus\BlockShift\Admin\Conversion_Log_Admin;
 
 use function esc_html;
 use function esc_html__;
@@ -152,7 +152,7 @@ class Admin_Settings {
 	 */
 	public function __construct() {
 		add_action( 'admin_menu', array( $this, 'add_admin_menu' ) );
-		add_filter( 'plugin_action_links_' . METG_BASENAME, array( $this, 'add_plugin_action_links' ) );
+		add_filter( 'plugin_action_links_' . BLOCKSHIFT_BASENAME, array( $this, 'add_plugin_action_links' ) );
 		add_filter( 'page_row_actions', array( $this, 'metg_add_convert_button' ), 10, 2 );
 		add_action( 'admin_post_metg_convert_page', array( $this, 'metg_handle_convert_page' ) );
 		add_action( 'admin_post_metg_save_screenshot_settings', array( $this, 'save_screenshot_settings' ) );
@@ -170,21 +170,21 @@ class Admin_Settings {
 			return;
 		}
 
-		$css_path  = METG_DIR_PATH . '/assets/css/batch-wizard.css';
-		$icons_path = METG_DIR_PATH . '/assets/js/pgs-icons.js';
+		$css_path  = BLOCKSHIFT_DIR_PATH . '/assets/css/batch-wizard.css';
+		$icons_path = BLOCKSHIFT_DIR_PATH . '/assets/js/pgs-icons.js';
 
 		wp_enqueue_style(
 			'metg-pgs-admin',
-			plugins_url( 'assets/css/batch-wizard.css', METG_MAIN_FILE ),
+			plugins_url( 'assets/css/batch-wizard.css', BLOCKSHIFT_MAIN_FILE ),
 			array(),
-			METG_DEBUG && file_exists( $css_path ) ? (string) filemtime( $css_path ) : METG_VERSION
+			BLOCKSHIFT_DEBUG && file_exists( $css_path ) ? (string) filemtime( $css_path ) : BLOCKSHIFT_VERSION
 		);
 
 		wp_enqueue_script(
 			'metg-pgs-icons',
-			plugins_url( 'assets/js/pgs-icons.js', METG_MAIN_FILE ),
+			plugins_url( 'assets/js/pgs-icons.js', BLOCKSHIFT_MAIN_FILE ),
 			array(),
-			METG_DEBUG && file_exists( $icons_path ) ? (string) filemtime( $icons_path ) : METG_VERSION,
+			BLOCKSHIFT_DEBUG && file_exists( $icons_path ) ? (string) filemtime( $icons_path ) : BLOCKSHIFT_VERSION,
 			true
 		);
 	}
@@ -196,7 +196,7 @@ class Admin_Settings {
 	 */
 	public function save_all_settings(): void {
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( esc_html__( 'You do not have permission to change plugin settings.', 'migrate-elementor-to-gutenberg' ) );
+			wp_die( esc_html__( 'You do not have permission to change plugin settings.', 'blockshift-migrate-from-elementor' ) );
 		}
 
 		check_admin_referer( 'metg_save_settings' );
@@ -373,7 +373,7 @@ class Admin_Settings {
 			return;
 		}
 
-		$slug = \Progressus\MigrateElementorToGutenberg\Gutenberg::FULL_WIDTH_PAGE_TEMPLATE_SLUG;
+		$slug = \Progressus\BlockShift\Gutenberg::FULL_WIDTH_PAGE_TEMPLATE_SLUG;
 
 		update_post_meta( $target_id, '_wp_page_template', $slug );
 		delete_post_meta( $target_id, 'wp_template' );
@@ -408,8 +408,8 @@ class Admin_Settings {
 	 */
 	public function add_admin_menu(): void {
 		add_menu_page(
-			esc_html__( 'Migrate Elementor to Gutenberg', 'migrate-elementor-to-gutenberg' ),
-			esc_html__( 'Migrate Elementor to Gutenberg', 'migrate-elementor-to-gutenberg' ),
+			esc_html__( 'BlockShift – Migrate from Elementor', 'blockshift-migrate-from-elementor' ),
+			esc_html__( 'BlockShift – Migrate from Elementor', 'blockshift-migrate-from-elementor' ),
 			'manage_options',
 			'gutenberg-settings',
 			array( $this, 'settings_page_content' ),
@@ -419,8 +419,8 @@ class Admin_Settings {
 
 		add_submenu_page(
 			'gutenberg-settings',
-			esc_html__( 'Settings', 'migrate-elementor-to-gutenberg' ),
-			esc_html__( 'Settings', 'migrate-elementor-to-gutenberg' ),
+			esc_html__( 'Settings', 'blockshift-migrate-from-elementor' ),
+			esc_html__( 'Settings', 'blockshift-migrate-from-elementor' ),
 			'manage_options',
 			'gutenberg-settings',
 			array( $this, 'settings_page_content' )
@@ -535,7 +535,7 @@ class Admin_Settings {
 			add_settings_error(
 				'gutenberg_json_data',
 				'json_upload_error',
-				esc_html__( 'Failed to create new page.', 'migrate-elementor-to-gutenberg' ),
+				esc_html__( 'Failed to create new page.', 'blockshift-migrate-from-elementor' ),
 				'error'
 			);
 
@@ -545,7 +545,7 @@ class Admin_Settings {
 		add_settings_error(
 			'gutenberg_json_data',
 			'json_upload_success',
-			esc_html__( 'JSON file uploaded and page created successfully!', 'migrate-elementor-to-gutenberg' ),
+			esc_html__( 'JSON file uploaded and page created successfully!', 'blockshift-migrate-from-elementor' ),
 			'updated'
 		);
 
@@ -560,7 +560,7 @@ class Admin_Settings {
 	 */
 	public function save_screenshot_settings(): void {
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( esc_html__( 'You do not have permission to change plugin settings.', 'migrate-elementor-to-gutenberg' ) );
+			wp_die( esc_html__( 'You do not have permission to change plugin settings.', 'blockshift-migrate-from-elementor' ) );
 		}
 
 		check_admin_referer( 'metg_save_screenshot_settings' );
@@ -606,22 +606,22 @@ class Admin_Settings {
         <div class="pgs-screen" data-screen-label="Settings">
 
             <header class="pgs-pluginhead">
-                <span class="pgs-pluginhead__brand"><span class="pgs-pluginhead__name"><?php esc_html_e( 'Migrate Elementor to Gutenberg', 'migrate-elementor-to-gutenberg' ); ?></span></span>
+                <span class="pgs-pluginhead__brand"><span class="pgs-pluginhead__name"><?php esc_html_e( 'BlockShift – Migrate from Elementor', 'blockshift-migrate-from-elementor' ); ?></span></span>
             </header>
             <hr class="wp-header-end" style="margin:0;border:0;">
 
             <div class="pgs-col">
                 <div class="pgs-pagetitle">
                     <div>
-                        <h1><?php esc_html_e( 'Migrate Elementor to Gutenberg', 'migrate-elementor-to-gutenberg' ); ?></h1>
-                        <p><?php esc_html_e( 'Professional migration tool to convert Elementor layouts into native Gutenberg blocks.', 'migrate-elementor-to-gutenberg' ); ?></p>
+                        <h1><?php esc_html_e( 'BlockShift – Migrate from Elementor', 'blockshift-migrate-from-elementor' ); ?></h1>
+                        <p><?php esc_html_e( 'Professional migration tool to convert Elementor layouts into native Gutenberg blocks.', 'blockshift-migrate-from-elementor' ); ?></p>
                     </div>
                 </div>
 
                 <?php if ( isset( $_GET['metg_settings_saved'] ) && '1' === $_GET['metg_settings_saved'] ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
                     <div class="pgs-banner pgs-banner--success" role="status">
                         <span class="pgs-banner__icon"><i data-icon="check-circle-2"></i></span>
-                        <div class="pgs-banner__body"><span class="pgs-banner__text"><?php esc_html_e( 'Settings saved.', 'migrate-elementor-to-gutenberg' ); ?></span></div>
+                        <div class="pgs-banner__body"><span class="pgs-banner__text"><?php esc_html_e( 'Settings saved.', 'blockshift-migrate-from-elementor' ); ?></span></div>
                     </div>
                 <?php endif; ?>
 
@@ -634,15 +634,15 @@ class Admin_Settings {
                         <div class="pgs-card">
                             <div class="pgs-card__header">
                                 <div>
-                                    <div class="pgs-card__eyebrow"><?php esc_html_e( 'Output', 'migrate-elementor-to-gutenberg' ); ?></div>
-                                    <div class="pgs-card__title"><?php esc_html_e( 'Layout Settings', 'migrate-elementor-to-gutenberg' ); ?></div>
+                                    <div class="pgs-card__eyebrow"><?php esc_html_e( 'Output', 'blockshift-migrate-from-elementor' ); ?></div>
+                                    <div class="pgs-card__title"><?php esc_html_e( 'Layout Settings', 'blockshift-migrate-from-elementor' ); ?></div>
                                 </div>
                             </div>
                             <div class="pgs-card__body">
                                 <div class="pgs-setrow">
                                     <div class="pgs-setrow__meta">
-                                        <label class="pgs-setrow__label" for="metg_section_content_width"><?php esc_html_e( 'Section content width', 'migrate-elementor-to-gutenberg' ); ?></label>
-                                        <div class="pgs-setrow__desc"><?php esc_html_e( 'Controls the content width applied to converted top-level Elementor sections. Match this to your Elementor kit\'s container width so converted pages render at the same width as the originals. Typical values: 1140, 1200, 1024. Clamped to 320–2560.', 'migrate-elementor-to-gutenberg' ); ?></div>
+                                        <label class="pgs-setrow__label" for="metg_section_content_width"><?php esc_html_e( 'Section content width', 'blockshift-migrate-from-elementor' ); ?></label>
+                                        <div class="pgs-setrow__desc"><?php esc_html_e( 'Controls the content width applied to converted top-level Elementor sections. Match this to your Elementor kit\'s container width so converted pages render at the same width as the originals. Typical values: 1140, 1200, 1024. Clamped to 320–2560.', 'blockshift-migrate-from-elementor' ); ?></div>
                                     </div>
                                     <div class="pgs-setrow__control">
                                         <div class="pgs-field">
@@ -659,21 +659,21 @@ class Admin_Settings {
                         <div class="pgs-card">
                             <div class="pgs-card__header">
                                 <div>
-                                    <div class="pgs-card__eyebrow"><?php esc_html_e( 'Defaults', 'migrate-elementor-to-gutenberg' ); ?></div>
-                                    <div class="pgs-card__title"><?php esc_html_e( 'Conversion Preferences', 'migrate-elementor-to-gutenberg' ); ?></div>
+                                    <div class="pgs-card__eyebrow"><?php esc_html_e( 'Defaults', 'blockshift-migrate-from-elementor' ); ?></div>
+                                    <div class="pgs-card__title"><?php esc_html_e( 'Conversion Preferences', 'blockshift-migrate-from-elementor' ); ?></div>
                                 </div>
                             </div>
                             <div class="pgs-card__body">
                                 <div class="pgs-setrow">
                                     <div class="pgs-setrow__meta">
-                                        <div class="pgs-setrow__label"><?php esc_html_e( 'Metadata', 'migrate-elementor-to-gutenberg' ); ?></div>
-                                        <div class="pgs-setrow__desc"><?php esc_html_e( 'When enabled, every converted page automatically copies post meta fields and the featured image from the source Elementor page. When disabled, the wizard skips this step entirely.', 'migrate-elementor-to-gutenberg' ); ?></div>
+                                        <div class="pgs-setrow__label"><?php esc_html_e( 'Metadata', 'blockshift-migrate-from-elementor' ); ?></div>
+                                        <div class="pgs-setrow__desc"><?php esc_html_e( 'When enabled, every converted page automatically copies post meta fields and the featured image from the source Elementor page. When disabled, the wizard skips this step entirely.', 'blockshift-migrate-from-elementor' ); ?></div>
                                     </div>
                                     <div class="pgs-setrow__control">
                                         <label class="pgs-check">
                                             <input type="checkbox" class="pgs-check__input" name="metg_conversion_preferences[copy_meta_and_featured_image]" value="1" <?php checked( $copy_meta_enabled ); ?> />
                                             <span class="pgs-check__box" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
-                                            <span class="pgs-check__text"><span class="pgs-check__label"><?php esc_html_e( 'Copy metadata and featured image', 'migrate-elementor-to-gutenberg' ); ?></span></span>
+                                            <span class="pgs-check__text"><span class="pgs-check__label"><?php esc_html_e( 'Copy metadata and featured image', 'blockshift-migrate-from-elementor' ); ?></span></span>
                                         </label>
                                     </div>
                                 </div>
@@ -683,20 +683,20 @@ class Admin_Settings {
                         <div class="pgs-card">
                             <div class="pgs-card__header">
                                 <div>
-                                    <div class="pgs-card__eyebrow"><?php esc_html_e( 'Visibility', 'migrate-elementor-to-gutenberg' ); ?></div>
-                                    <div class="pgs-card__title"><?php esc_html_e( 'Logging', 'migrate-elementor-to-gutenberg' ); ?></div>
+                                    <div class="pgs-card__eyebrow"><?php esc_html_e( 'Visibility', 'blockshift-migrate-from-elementor' ); ?></div>
+                                    <div class="pgs-card__title"><?php esc_html_e( 'Logging', 'blockshift-migrate-from-elementor' ); ?></div>
                                 </div>
                             </div>
                             <div class="pgs-card__body">
                                 <div class="pgs-setrow">
                                     <div class="pgs-setrow__meta">
-                                        <div class="pgs-setrow__label"><?php esc_html_e( 'Conversion logging', 'migrate-elementor-to-gutenberg' ); ?></div>
+                                        <div class="pgs-setrow__label"><?php esc_html_e( 'Conversion logging', 'blockshift-migrate-from-elementor' ); ?></div>
                                         <div class="pgs-setrow__desc">
                                             <?php
                                             printf(
                                                 wp_kses(
                                                     /* translators: %s: URL to Conversion Log page */
-                                                    __( 'When enabled, each conversion records which widgets were converted, unsupported, or produced empty output. View the results in the <a href="%s">Conversion Log</a>. The log keeps the last 300 entries and does not affect conversion speed.', 'migrate-elementor-to-gutenberg' ),
+                                                    __( 'When enabled, each conversion records which widgets were converted, unsupported, or produced empty output. View the results in the <a href="%s">Conversion Log</a>. The log keeps the last 300 entries and does not affect conversion speed.', 'blockshift-migrate-from-elementor' ),
                                                     array( 'a' => array( 'href' => array() ) )
                                                 ),
                                                 esc_url( admin_url( 'admin.php?page=metg-conversion-log' ) )
@@ -708,7 +708,7 @@ class Admin_Settings {
                                         <label class="pgs-switch">
                                             <input type="checkbox" role="switch" class="pgs-switch__input" name="metg_logging_settings[enabled]" value="1" <?php checked( self::is_logging_enabled() ); ?> />
                                             <span class="pgs-switch__track" aria-hidden="true"></span>
-                                            <span class="pgs-switch__text"><span class="pgs-switch__label"><?php esc_html_e( 'Enable conversion logging', 'migrate-elementor-to-gutenberg' ); ?></span></span>
+                                            <span class="pgs-switch__text"><span class="pgs-switch__label"><?php esc_html_e( 'Enable conversion logging', 'blockshift-migrate-from-elementor' ); ?></span></span>
                                         </label>
                                     </div>
                                 </div>
@@ -718,17 +718,17 @@ class Admin_Settings {
                         <div class="pgs-card">
                             <div class="pgs-card__header">
                                 <div>
-                                    <div class="pgs-card__eyebrow"><?php esc_html_e( 'Integration', 'migrate-elementor-to-gutenberg' ); ?></div>
-                                    <div class="pgs-card__title"><?php esc_html_e( 'Claude AI', 'migrate-elementor-to-gutenberg' ); ?></div>
+                                    <div class="pgs-card__eyebrow"><?php esc_html_e( 'Integration', 'blockshift-migrate-from-elementor' ); ?></div>
+                                    <div class="pgs-card__title"><?php esc_html_e( 'Claude AI', 'blockshift-migrate-from-elementor' ); ?></div>
                                 </div>
                             </div>
                             <div class="pgs-card__body">
                                 <div class="pgs-setrow">
                                     <div class="pgs-setrow__meta">
-                                        <label class="pgs-setrow__label" for="metg_claude_api_key"><?php esc_html_e( 'Claude API Key', 'migrate-elementor-to-gutenberg' ); ?></label>
+                                        <label class="pgs-setrow__label" for="metg_claude_api_key"><?php esc_html_e( 'Claude API Key', 'blockshift-migrate-from-elementor' ); ?></label>
                                         <div class="pgs-setrow__desc">
-                                            <?php esc_html_e( 'Your Anthropic API key. Required for the "Improve with AI" automated workflow.', 'migrate-elementor-to-gutenberg' ); ?>
-                                            <a href="https://console.anthropic.com/" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Purchase Claude API key', 'migrate-elementor-to-gutenberg' ); ?></a>
+                                            <?php esc_html_e( 'Your Anthropic API key. Required for the "Improve with AI" automated workflow.', 'blockshift-migrate-from-elementor' ); ?>
+                                            <a href="https://console.anthropic.com/" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Purchase Claude API key', 'blockshift-migrate-from-elementor' ); ?></a>
                                         </div>
                                     </div>
                                     <div class="pgs-setrow__control">
@@ -737,9 +737,9 @@ class Admin_Settings {
                                                 <input class="pgs-input__el" type="password" id="metg_claude_api_key" name="metg_claude_settings[api_key]" value="<?php echo esc_attr( $claude_api_key ); ?>" autocomplete="off" />
                                                 <span class="pgs-input__affix">
                                                     <?php if ( '' !== $claude_api_key ) : ?>
-                                                        <span class="pgs-pill pgs-pill--success"><span class="pgs-pill__icon"><i data-icon="check"></i></span><?php esc_html_e( 'Configured', 'migrate-elementor-to-gutenberg' ); ?></span>
+                                                        <span class="pgs-pill pgs-pill--success"><span class="pgs-pill__icon"><i data-icon="check"></i></span><?php esc_html_e( 'Configured', 'blockshift-migrate-from-elementor' ); ?></span>
                                                     <?php else : ?>
-                                                        <span class="pgs-pill pgs-pill--neutral"><?php esc_html_e( 'Not configured', 'migrate-elementor-to-gutenberg' ); ?></span>
+                                                        <span class="pgs-pill pgs-pill--neutral"><?php esc_html_e( 'Not configured', 'blockshift-migrate-from-elementor' ); ?></span>
                                                     <?php endif; ?>
                                                 </span>
                                             </div>
@@ -750,7 +750,7 @@ class Admin_Settings {
                         </div>
 
                         <div class="pgs-actions-end">
-                            <button type="submit" class="pgs-btn pgs-btn--primary pgs-btn--md"><span class="pgs-btn__icon"><i data-icon="save"></i></span><span><?php esc_html_e( 'Save Settings', 'migrate-elementor-to-gutenberg' ); ?></span></button>
+                            <button type="submit" class="pgs-btn pgs-btn--primary pgs-btn--md"><span class="pgs-btn__icon"><i data-icon="save"></i></span><span><?php esc_html_e( 'Save Settings', 'blockshift-migrate-from-elementor' ); ?></span></button>
                         </div>
 
                     </div>

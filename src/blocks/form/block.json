@@ -142,6 +142,6 @@
       "default": ""
     }
   },
-  "textdomain": "migrate-elementor-to-gutenberg",
+  "textdomain": "blockshift-migrate-from-elementor",
   "editorStyle": "file:./index.css"
 }

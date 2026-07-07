@@ -2,12 +2,12 @@
 /**
  * AI Enhancement admin page.
  *
- * @package Progressus\MigrateElementorToGutenberg
+ * @package Progressus\BlockShift
  */
 
-namespace Progressus\MigrateElementorToGutenberg\Admin;
+namespace Progressus\BlockShift\Admin;
 
-use Progressus\MigrateElementorToGutenberg\Admin\Helper\Claude_Api_Service;
+use Progressus\BlockShift\Admin\Helper\Claude_Api_Service;
 
 use function add_action;
 use function add_submenu_page;
@@ -58,8 +58,8 @@ class AI_Enhancement_Admin {
 	public function register_menu(): void {
 		add_submenu_page(
 			'gutenberg-settings',
-			esc_html__( 'AI Enhancement', 'migrate-elementor-to-gutenberg' ),
-			esc_html__( 'AI Enhancement', 'migrate-elementor-to-gutenberg' ),
+			esc_html__( 'AI Enhancement', 'blockshift-migrate-from-elementor' ),
+			esc_html__( 'AI Enhancement', 'blockshift-migrate-from-elementor' ),
 			'edit_pages',
 			self::MENU_SLUG,
 			array( $this, 'render_page' )
@@ -72,11 +72,11 @@ class AI_Enhancement_Admin {
 	 * @param string $rel Plugin-relative asset path.
 	 */
 	private static function asset_ver( string $rel ): string {
-		$path = METG_DIR_PATH . '/' . ltrim( $rel, '/' );
-		if ( defined( 'METG_DEBUG' ) && METG_DEBUG && file_exists( $path ) ) {
+		$path = BLOCKSHIFT_DIR_PATH . '/' . ltrim( $rel, '/' );
+		if ( defined( 'BLOCKSHIFT_DEBUG' ) && BLOCKSHIFT_DEBUG && file_exists( $path ) ) {
 			return (string) filemtime( $path );
 		}
-		return METG_VERSION;
+		return BLOCKSHIFT_VERSION;
 	}
 
 	public function enqueue_assets(): void {
@@ -86,14 +86,14 @@ class AI_Enhancement_Admin {
 
 		wp_enqueue_style(
 			'metg-batch-wizard',
-			METG_CSS_DIR_URL . '/batch-wizard.css',
+			BLOCKSHIFT_CSS_DIR_URL . '/batch-wizard.css',
 			array(),
 			self::asset_ver( 'assets/css/batch-wizard.css' )
 		);
 
 		wp_enqueue_script(
 			'metg-pgs-icons',
-			METG_JS_DIR_URL . '/pgs-icons.js',
+			BLOCKSHIFT_JS_DIR_URL . '/pgs-icons.js',
 			array(),
 			self::asset_ver( 'assets/js/pgs-icons.js' ),
 			true
@@ -101,7 +101,7 @@ class AI_Enhancement_Admin {
 
 		wp_enqueue_script(
 			'metg-ai-enhancement',
-			METG_JS_DIR_URL . '/ai-enhancement.js',
+			BLOCKSHIFT_JS_DIR_URL . '/ai-enhancement.js',
 			array( 'metg-pgs-icons' ),
 			self::asset_ver( 'assets/js/ai-enhancement.js' ),
 			true
@@ -127,27 +127,27 @@ class AI_Enhancement_Admin {
 
 	public function render_page(): void {
 		if ( ! current_user_can( 'edit_pages' ) ) {
-			wp_die( esc_html__( 'You do not have permission to access this page.', 'migrate-elementor-to-gutenberg' ) );
+			wp_die( esc_html__( 'You do not have permission to access this page.', 'blockshift-migrate-from-elementor' ) );
 		}
 
 		$has_pages = ! empty( $this->get_converted_pages() );
 		?>
 		<div class="wrap pgs metg-wizard-wrap">
 			<header class="pgs-pluginhead">
-				<span class="pgs-pluginhead__brand"><span class="pgs-pluginhead__name"><?php esc_html_e( 'Migrate Elementor to Gutenberg', 'migrate-elementor-to-gutenberg' ); ?></span></span>
+				<span class="pgs-pluginhead__brand"><span class="pgs-pluginhead__name"><?php esc_html_e( 'BlockShift – Migrate from Elementor', 'blockshift-migrate-from-elementor' ); ?></span></span>
 			</header>
 			<hr class="wp-header-end" style="margin:0;border:0;">
 			<?php if ( ! $has_pages ) : ?>
 				<div class="pgs-col">
 					<div class="pgs-pagetitle">
 						<div>
-							<h1><?php esc_html_e( 'AI Enhancement', 'migrate-elementor-to-gutenberg' ); ?></h1>
-							<p><?php esc_html_e( 'Refine converted pages until they visually match the original.', 'migrate-elementor-to-gutenberg' ); ?></p>
+							<h1><?php esc_html_e( 'AI Enhancement', 'blockshift-migrate-from-elementor' ); ?></h1>
+							<p><?php esc_html_e( 'Refine converted pages until they visually match the original.', 'blockshift-migrate-from-elementor' ); ?></p>
 						</div>
 					</div>
 					<div class="pgs-banner pgs-banner--neutral" role="status">
 						<span class="pgs-banner__icon"><i data-icon="info"></i></span>
-						<div class="pgs-banner__body"><span class="pgs-banner__text"><?php esc_html_e( 'No converted pages found. Use the Conversion Wizard to convert Elementor pages first.', 'migrate-elementor-to-gutenberg' ); ?></span></div>
+						<div class="pgs-banner__body"><span class="pgs-banner__text"><?php esc_html_e( 'No converted pages found. Use the Conversion Wizard to convert Elementor pages first.', 'blockshift-migrate-from-elementor' ); ?></span></div>
 					</div>
 				</div>
 			<?php else : ?>
@@ -205,65 +205,65 @@ class AI_Enhancement_Admin {
 
 	private function get_strings(): array {
 		return array(
-			'colPage'                  => __( 'Converted Page', 'migrate-elementor-to-gutenberg' ),
-			'colSource'                => __( 'Source Page', 'migrate-elementor-to-gutenberg' ),
-			'colActions'               => __( 'Actions', 'migrate-elementor-to-gutenberg' ),
-			'enhanceSingle'            => __( 'Enhance with AI', 'migrate-elementor-to-gutenberg' ),
-			'enhanceSelected'          => __( 'Bulk Enhance with AI', 'migrate-elementor-to-gutenberg' ),
+			'colPage'                  => __( 'Converted Page', 'blockshift-migrate-from-elementor' ),
+			'colSource'                => __( 'Source Page', 'blockshift-migrate-from-elementor' ),
+			'colActions'               => __( 'Actions', 'blockshift-migrate-from-elementor' ),
+			'enhanceSingle'            => __( 'Enhance with AI', 'blockshift-migrate-from-elementor' ),
+			'enhanceSelected'          => __( 'Bulk Enhance with AI', 'blockshift-migrate-from-elementor' ),
 			/* translators: %1$d: number of selected items */
-			'enhanceSelectedCount'     => __( 'Enhance %1$d items with AI', 'migrate-elementor-to-gutenberg' ),
-			'noApiMessage'             => __( 'To enhance pages with AI, you need to enter your Claude API key.', 'migrate-elementor-to-gutenberg' ),
-			'addApiLink'               => __( 'Add your API key in Settings', 'migrate-elementor-to-gutenberg' ),
-			'back'                     => __( 'Back', 'migrate-elementor-to-gutenberg' ),
-			'backToList'               => __( 'Back to list', 'migrate-elementor-to-gutenberg' ),
-			'skip'                     => __( 'Skip', 'migrate-elementor-to-gutenberg' ),
-			'retry'                    => __( 'Retry', 'migrate-elementor-to-gutenberg' ),
-			'aiReadinessTitle'         => __( 'Pre-flight checklist', 'migrate-elementor-to-gutenberg' ),
-			'aiReadinessApiValid'      => __( 'API key configured', 'migrate-elementor-to-gutenberg' ),
-			'aiReadinessApiInvalid'    => __( 'API key not configured', 'migrate-elementor-to-gutenberg' ),
+			'enhanceSelectedCount'     => __( 'Enhance %1$d items with AI', 'blockshift-migrate-from-elementor' ),
+			'noApiMessage'             => __( 'To enhance pages with AI, you need to enter your Claude API key.', 'blockshift-migrate-from-elementor' ),
+			'addApiLink'               => __( 'Add your API key in Settings', 'blockshift-migrate-from-elementor' ),
+			'back'                     => __( 'Back', 'blockshift-migrate-from-elementor' ),
+			'backToList'               => __( 'Back to list', 'blockshift-migrate-from-elementor' ),
+			'skip'                     => __( 'Skip', 'blockshift-migrate-from-elementor' ),
+			'retry'                    => __( 'Retry', 'blockshift-migrate-from-elementor' ),
+			'aiReadinessTitle'         => __( 'Pre-flight checklist', 'blockshift-migrate-from-elementor' ),
+			'aiReadinessApiValid'      => __( 'API key configured', 'blockshift-migrate-from-elementor' ),
+			'aiReadinessApiInvalid'    => __( 'API key not configured', 'blockshift-migrate-from-elementor' ),
 			/* translators: %1$d: estimated number of API calls */
-			'aiReadinessCredits'       => __( 'Estimated: ~%1$d API call(s), ~1–2 minutes per item', 'migrate-elementor-to-gutenberg' ),
-			'aiImproveWarningTitle'    => __( 'AI credits will be used', 'migrate-elementor-to-gutenberg' ),
-			'aiImproveWarning'         => __( 'This will use AI credits once per selected item. Make sure your API key has sufficient credits before starting.', 'migrate-elementor-to-gutenberg' ),
-			'aiImproveStart'           => __( 'Start AI Enhancement', 'migrate-elementor-to-gutenberg' ),
-			'aiImproveError'           => __( 'An unexpected error occurred.', 'migrate-elementor-to-gutenberg' ),
-			'aiImproveType'            => __( 'Type', 'migrate-elementor-to-gutenberg' ),
-			'aiImprovePaused'          => __( 'Paused — an item failed. Review the error below, then skip or retry to continue.', 'migrate-elementor-to-gutenberg' ),
-			'aiImproveFinishedOk'      => __( 'All items improved successfully.', 'migrate-elementor-to-gutenberg' ),
+			'aiReadinessCredits'       => __( 'Estimated: ~%1$d API call(s), ~1–2 minutes per item', 'blockshift-migrate-from-elementor' ),
+			'aiImproveWarningTitle'    => __( 'AI credits will be used', 'blockshift-migrate-from-elementor' ),
+			'aiImproveWarning'         => __( 'This will use AI credits once per selected item. Make sure your API key has sufficient credits before starting.', 'blockshift-migrate-from-elementor' ),
+			'aiImproveStart'           => __( 'Start AI Enhancement', 'blockshift-migrate-from-elementor' ),
+			'aiImproveError'           => __( 'An unexpected error occurred.', 'blockshift-migrate-from-elementor' ),
+			'aiImproveType'            => __( 'Type', 'blockshift-migrate-from-elementor' ),
+			'aiImprovePaused'          => __( 'Paused — an item failed. Review the error below, then skip or retry to continue.', 'blockshift-migrate-from-elementor' ),
+			'aiImproveFinishedOk'      => __( 'All items improved successfully.', 'blockshift-migrate-from-elementor' ),
 			/* translators: 1: number of items done, 2: number failed, 3: number skipped */
-			'aiImproveFinishedErr'     => __( 'Finished — %1$d done, %2$d failed, %3$d skipped.', 'migrate-elementor-to-gutenberg' ),
-			'aiStatusPending'          => __( 'Pending', 'migrate-elementor-to-gutenberg' ),
-			'aiStatusProcessing'       => __( 'Processing…', 'migrate-elementor-to-gutenberg' ),
-			'aiStatusDone'             => __( 'Done', 'migrate-elementor-to-gutenberg' ),
-			'aiStatusFailed'           => __( 'Failed', 'migrate-elementor-to-gutenberg' ),
-			'aiStatusSkipped'          => __( 'Skipped', 'migrate-elementor-to-gutenberg' ),
-			'aiLoaderTitle'            => __( 'Improving with AI…', 'migrate-elementor-to-gutenberg' ),
-			'aiStageAnalyzing'         => __( 'Analyzing…', 'migrate-elementor-to-gutenberg' ),
-			'aiStageGenerating'        => __( 'Generating…', 'migrate-elementor-to-gutenberg' ),
-			'aiStageSaving'            => __( 'Saving…', 'migrate-elementor-to-gutenberg' ),
-			'statTotalPages'           => __( 'Converted Items', 'migrate-elementor-to-gutenberg' ),
-			'statAiEnhanced'           => __( 'AI-Enhanced', 'migrate-elementor-to-gutenberg' ),
+			'aiImproveFinishedErr'     => __( 'Finished — %1$d done, %2$d failed, %3$d skipped.', 'blockshift-migrate-from-elementor' ),
+			'aiStatusPending'          => __( 'Pending', 'blockshift-migrate-from-elementor' ),
+			'aiStatusProcessing'       => __( 'Processing…', 'blockshift-migrate-from-elementor' ),
+			'aiStatusDone'             => __( 'Done', 'blockshift-migrate-from-elementor' ),
+			'aiStatusFailed'           => __( 'Failed', 'blockshift-migrate-from-elementor' ),
+			'aiStatusSkipped'          => __( 'Skipped', 'blockshift-migrate-from-elementor' ),
+			'aiLoaderTitle'            => __( 'Improving with AI…', 'blockshift-migrate-from-elementor' ),
+			'aiStageAnalyzing'         => __( 'Analyzing…', 'blockshift-migrate-from-elementor' ),
+			'aiStageGenerating'        => __( 'Generating…', 'blockshift-migrate-from-elementor' ),
+			'aiStageSaving'            => __( 'Saving…', 'blockshift-migrate-from-elementor' ),
+			'statTotalPages'           => __( 'Converted Items', 'blockshift-migrate-from-elementor' ),
+			'statAiEnhanced'           => __( 'AI-Enhanced', 'blockshift-migrate-from-elementor' ),
 
 			// Feedback strings
-			'feedbackBtn'              => __( 'Send Feedback', 'migrate-elementor-to-gutenberg' ),
-			'feedbackModalTitle'       => __( 'How did AI Enhancement go?', 'migrate-elementor-to-gutenberg' ),
-			'feedbackIssueLabel'       => __( 'Issue type', 'migrate-elementor-to-gutenberg' ),
-			'feedbackIssueDetailLabel' => __( 'Describe the issue', 'migrate-elementor-to-gutenberg' ),
-			'feedbackNoteLabel'        => __( 'Additional notes', 'migrate-elementor-to-gutenberg' ),
-			'feedbackConsentLabel'     => __( 'I consent to sending this anonymised AI enhancement report to the plugin developer for quality improvement. No passwords, API keys, or user data are included.', 'migrate-elementor-to-gutenberg' ),
-			'feedbackSubmit'           => __( 'Send Feedback', 'migrate-elementor-to-gutenberg' ),
-			'feedbackCancel'           => __( 'Cancel', 'migrate-elementor-to-gutenberg' ),
-			'feedbackSending'          => __( 'Sending…', 'migrate-elementor-to-gutenberg' ),
+			'feedbackBtn'              => __( 'Send Feedback', 'blockshift-migrate-from-elementor' ),
+			'feedbackModalTitle'       => __( 'How did AI Enhancement go?', 'blockshift-migrate-from-elementor' ),
+			'feedbackIssueLabel'       => __( 'Issue type', 'blockshift-migrate-from-elementor' ),
+			'feedbackIssueDetailLabel' => __( 'Describe the issue', 'blockshift-migrate-from-elementor' ),
+			'feedbackNoteLabel'        => __( 'Additional notes', 'blockshift-migrate-from-elementor' ),
+			'feedbackConsentLabel'     => __( 'I consent to sending this anonymised AI enhancement report to the plugin developer for quality improvement. No passwords, API keys, or user data are included.', 'blockshift-migrate-from-elementor' ),
+			'feedbackSubmit'           => __( 'Send Feedback', 'blockshift-migrate-from-elementor' ),
+			'feedbackCancel'           => __( 'Cancel', 'blockshift-migrate-from-elementor' ),
+			'feedbackSending'          => __( 'Sending…', 'blockshift-migrate-from-elementor' ),
 			/* translators: %1$s: feedback submission ID */
-			'feedbackSuccess'          => __( 'Thank you! Feedback submitted (ID: %1$s).', 'migrate-elementor-to-gutenberg' ),
+			'feedbackSuccess'          => __( 'Thank you! Feedback submitted (ID: %1$s).', 'blockshift-migrate-from-elementor' ),
 			/* translators: %s: error message describing why feedback could not be sent */
-			'feedbackError'            => __( 'Could not send feedback: %s', 'migrate-elementor-to-gutenberg' ),
-			'feedbackNoIssue'          => __( 'No issue', 'migrate-elementor-to-gutenberg' ),
-			'feedbackIssueLayout'      => __( 'Layout issues after AI', 'migrate-elementor-to-gutenberg' ),
-			'feedbackIssueMissing'     => __( 'Wrong or missing content', 'migrate-elementor-to-gutenberg' ),
-			'feedbackIssueCss'         => __( 'CSS / styling problems', 'migrate-elementor-to-gutenberg' ),
-			'feedbackIssueQuality'     => __( 'AI output quality', 'migrate-elementor-to-gutenberg' ),
-			'feedbackIssueOther'       => __( 'Other', 'migrate-elementor-to-gutenberg' ),
+			'feedbackError'            => __( 'Could not send feedback: %s', 'blockshift-migrate-from-elementor' ),
+			'feedbackNoIssue'          => __( 'No issue', 'blockshift-migrate-from-elementor' ),
+			'feedbackIssueLayout'      => __( 'Layout issues after AI', 'blockshift-migrate-from-elementor' ),
+			'feedbackIssueMissing'     => __( 'Wrong or missing content', 'blockshift-migrate-from-elementor' ),
+			'feedbackIssueCss'         => __( 'CSS / styling problems', 'blockshift-migrate-from-elementor' ),
+			'feedbackIssueQuality'     => __( 'AI output quality', 'blockshift-migrate-from-elementor' ),
+			'feedbackIssueOther'       => __( 'Other', 'blockshift-migrate-from-elementor' ),
 		);
 	}
 
@@ -274,13 +274,13 @@ class AI_Enhancement_Admin {
 		check_ajax_referer( self::FEEDBACK_NONCE, 'nonce' );
 
 		if ( ! current_user_can( 'edit_pages' ) ) {
-			wp_send_json_error( array( 'error' => esc_html__( 'Unauthorized.', 'migrate-elementor-to-gutenberg' ) ) );
+			wp_send_json_error( array( 'error' => esc_html__( 'Unauthorized.', 'blockshift-migrate-from-elementor' ) ) );
 			return;
 		}
 
 		$consent_raw = isset( $_POST['consent_given'] ) ? sanitize_text_field( wp_unslash( $_POST['consent_given'] ) ) : '';
 		if ( 'true' !== $consent_raw ) {
-			wp_send_json_error( array( 'error' => esc_html__( 'Consent is required to submit feedback.', 'migrate-elementor-to-gutenberg' ) ) );
+			wp_send_json_error( array( 'error' => esc_html__( 'Consent is required to submit feedback.', 'blockshift-migrate-from-elementor' ) ) );
 			return;
 		}
 
@@ -293,13 +293,13 @@ class AI_Enhancement_Admin {
 		$user_note    = substr( $user_note, 0, 2000 );
 
 		if ( $target_id <= 0 ) {
-			wp_send_json_error( array( 'error' => esc_html__( 'Invalid page ID.', 'migrate-elementor-to-gutenberg' ) ) );
+			wp_send_json_error( array( 'error' => esc_html__( 'Invalid page ID.', 'blockshift-migrate-from-elementor' ) ) );
 			return;
 		}
 
 		$target_post = get_post( $target_id );
 		if ( ! $target_post instanceof \WP_Post ) {
-			wp_send_json_error( array( 'error' => esc_html__( 'Page not found.', 'migrate-elementor-to-gutenberg' ) ) );
+			wp_send_json_error( array( 'error' => esc_html__( 'Page not found.', 'blockshift-migrate-from-elementor' ) ) );
 			return;
 		}
 
@@ -314,7 +314,7 @@ class AI_Enhancement_Admin {
 			'site'           => array(
 				'site_url_hash'               => hash( 'sha256', (string) home_url() ),
 				'site_domain'                 => (string) wp_parse_url( home_url(), PHP_URL_HOST ),
-				'plugin_version'              => METG_VERSION,
+				'plugin_version'              => BLOCKSHIFT_VERSION,
 				'wordpress_version'           => get_bloginfo( 'version' ),
 				'php_version'                 => PHP_VERSION,
 				'active_theme'                => (string) $theme->get( 'Name' ),

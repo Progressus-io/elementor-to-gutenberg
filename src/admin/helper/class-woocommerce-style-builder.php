@@ -2,13 +2,13 @@
 /**
  * Build scoped WooCommerce styles for converted widgets.
  *
- * @package Progressus\MigrateElementorToGutenberg
+ * @package Progressus\BlockShift
  */
 
-namespace Progressus\MigrateElementorToGutenberg\Admin\Helper;
+namespace Progressus\BlockShift\Admin\Helper;
 
 use Elementor\Plugin;
-use Progressus\MigrateElementorToGutenberg\Admin\Helper\Block_Output_Builder;
+use Progressus\BlockShift\Admin\Helper\Block_Output_Builder;
 
 defined( 'ABSPATH' ) || exit;
 

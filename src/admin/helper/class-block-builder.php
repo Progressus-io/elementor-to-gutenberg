@@ -2,16 +2,16 @@
 /**
  * Helper for building block markup with wrapper elements.
  *
- * @package Progressus\MigrateElementorToGutenberg
+ * @package Progressus\BlockShift
  */
 
-namespace Progressus\MigrateElementorToGutenberg\Admin\Helper;
+namespace Progressus\BlockShift\Admin\Helper;
 
 use function esc_attr;
 use function wp_kses_post;
-use Progressus\MigrateElementorToGutenberg\Admin\Helper\Block_Output_Builder;
-use Progressus\MigrateElementorToGutenberg\Admin\Helper\Html_Attribute_Builder;
-use Progressus\MigrateElementorToGutenberg\Admin\Helper\Style_Normalizer;
+use Progressus\BlockShift\Admin\Helper\Block_Output_Builder;
+use Progressus\BlockShift\Admin\Helper\Html_Attribute_Builder;
+use Progressus\BlockShift\Admin\Helper\Style_Normalizer;
 
 defined( 'ABSPATH' ) || exit;
 

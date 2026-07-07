@@ -2,10 +2,10 @@
 /**
  * Map raw declarations onto Gutenberg-supported attributes.
  *
- * @package Progressus\MigrateElementorToGutenberg
+ * @package Progressus\BlockShift
  */
 
-namespace Progressus\MigrateElementorToGutenberg\Admin\Helper;
+namespace Progressus\BlockShift\Admin\Helper;
 
 defined( 'ABSPATH' ) || exit;
 

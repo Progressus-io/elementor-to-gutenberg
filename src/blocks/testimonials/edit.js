@@ -138,45 +138,45 @@ const Edit = ( { attributes, setAttributes } ) => {
 		<>
 			<InspectorControls>
 				<PanelBody
-					title={ __( 'Layout Settings', 'migrate-elementor-to-gutenberg' ) }
+					title={ __( 'Layout Settings', 'blockshift-migrate-from-elementor' ) }
 					initialOpen={ true }
 				>
 					<SelectControl
-						label={ __( 'Layout', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Layout', 'blockshift-migrate-from-elementor' ) }
 						value={ layout }
 						options={ [
 							{
 								label: __(
 									'Image Above',
-									'migrate-elementor-to-gutenberg'
+									'blockshift-migrate-from-elementor'
 								),
 								value: 'image_above',
 							},
 							{
 								label: __(
 									'Image Inline',
-									'migrate-elementor-to-gutenberg'
+									'blockshift-migrate-from-elementor'
 								),
 								value: 'image_inline',
 							},
 							{
 								label: __(
 									'Image Stacked',
-									'migrate-elementor-to-gutenberg'
+									'blockshift-migrate-from-elementor'
 								),
 								value: 'image_stacked',
 							},
 							{
 								label: __(
 									'Image Left',
-									'migrate-elementor-to-gutenberg'
+									'blockshift-migrate-from-elementor'
 								),
 								value: 'image_left',
 							},
 							{
 								label: __(
 									'Image Right',
-									'migrate-elementor-to-gutenberg'
+									'blockshift-migrate-from-elementor'
 								),
 								value: 'image_right',
 							},
@@ -186,19 +186,19 @@ const Edit = ( { attributes, setAttributes } ) => {
 						}
 					/>
 					<SelectControl
-						label={ __( 'Alignment', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Alignment', 'blockshift-migrate-from-elementor' ) }
 						value={ alignment }
 						options={ [
 							{
-								label: __( 'Left', 'migrate-elementor-to-gutenberg' ),
+								label: __( 'Left', 'blockshift-migrate-from-elementor' ),
 								value: 'left',
 							},
 							{
-								label: __( 'Center', 'migrate-elementor-to-gutenberg' ),
+								label: __( 'Center', 'blockshift-migrate-from-elementor' ),
 								value: 'center',
 							},
 							{
-								label: __( 'Right', 'migrate-elementor-to-gutenberg' ),
+								label: __( 'Right', 'blockshift-migrate-from-elementor' ),
 								value: 'right',
 							},
 						] }
@@ -209,7 +209,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					<RangeControl
 						label={ __(
 							'Slides Per View',
-							'migrate-elementor-to-gutenberg'
+							'blockshift-migrate-from-elementor'
 						) }
 						value={ slidesPerView }
 						onChange={ ( value ) =>
@@ -221,7 +221,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					<RangeControl
 						label={ __(
 							'Slides To Scroll',
-							'migrate-elementor-to-gutenberg'
+							'blockshift-migrate-from-elementor'
 						) }
 						value={ slidesToScroll }
 						onChange={ ( value ) =>
@@ -231,7 +231,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						max={ 6 }
 					/>
 					<RangeControl
-						label={ __( 'Width (%)', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Width (%)', 'blockshift-migrate-from-elementor' ) }
 						value={ width }
 						onChange={ ( value ) =>
 							setAttributes( { width: value } )
@@ -240,7 +240,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						max={ 100 }
 					/>
 					<RangeControl
-						label={ __( 'Space Between', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Space Between', 'blockshift-migrate-from-elementor' ) }
 						value={ spaceBetween }
 						onChange={ ( value ) =>
 							setAttributes( { spaceBetween: value } )
@@ -251,18 +251,18 @@ const Edit = ( { attributes, setAttributes } ) => {
 				</PanelBody>
 
 				<PanelBody
-					title={ __( 'Slide Style', 'migrate-elementor-to-gutenberg' ) }
+					title={ __( 'Slide Style', 'blockshift-migrate-from-elementor' ) }
 					initialOpen={ false }
 				>
 					<BoxControl
-						label={ __( 'Border Size', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Border Size', 'blockshift-migrate-from-elementor' ) }
 						values={ slideBorderSize }
 						onChange={ ( value ) =>
 							setAttributes( { slideBorderSize: value } )
 						}
 					/>
 					<RangeControl
-						label={ __( 'Border Radius', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Border Radius', 'blockshift-migrate-from-elementor' ) }
 						value={ slideBorderRadius }
 						onChange={ ( value ) =>
 							setAttributes( { slideBorderRadius: value } )
@@ -271,7 +271,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						max={ 100 }
 					/>
 					<BoxControl
-						label={ __( 'Slide Padding', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Slide Padding', 'blockshift-migrate-from-elementor' ) }
 						values={ slidePadding }
 						onChange={ ( value ) =>
 							setAttributes( { slidePadding: value } )
@@ -280,7 +280,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 				</PanelBody>
 
 				<PanelColorSettings
-					title={ __( 'Slide Colors', 'migrate-elementor-to-gutenberg' ) }
+					title={ __( 'Slide Colors', 'blockshift-migrate-from-elementor' ) }
 					colorSettings={ [
 						{
 							value: slideBackgroundColor,
@@ -290,24 +290,24 @@ const Edit = ( { attributes, setAttributes } ) => {
 								} ),
 							label: __(
 								'Background Color',
-								'migrate-elementor-to-gutenberg'
+								'blockshift-migrate-from-elementor'
 							),
 						},
 						{
 							value: slideBorderColor,
 							onChange: ( value ) =>
 								setAttributes( { slideBorderColor: value } ),
-							label: __( 'Border Color', 'migrate-elementor-to-gutenberg' ),
+							label: __( 'Border Color', 'blockshift-migrate-from-elementor' ),
 						},
 					] }
 				/>
 
 				<PanelBody
-					title={ __( 'Content Style', 'migrate-elementor-to-gutenberg' ) }
+					title={ __( 'Content Style', 'blockshift-migrate-from-elementor' ) }
 					initialOpen={ false }
 				>
 					<RangeControl
-						label={ __( 'Content Gap', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Content Gap', 'blockshift-migrate-from-elementor' ) }
 						value={ contentGap }
 						onChange={ ( value ) =>
 							setAttributes( { contentGap: value } )
@@ -316,7 +316,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						max={ 100 }
 					/>
 					<RangeControl
-						label={ __( 'Font Size', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Font Size', 'blockshift-migrate-from-elementor' ) }
 						value={ contentTypography.fontSize }
 						onChange={ ( value ) =>
 							setAttributes( {
@@ -330,7 +330,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						max={ 50 }
 					/>
 					<SelectControl
-						label={ __( 'Font Weight', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Font Weight', 'blockshift-migrate-from-elementor' ) }
 						value={ contentTypography.fontWeight }
 						options={ [
 							{ label: 'Normal', value: 'normal' },
@@ -351,7 +351,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						}
 					/>
 					<TextControl
-						label={ __( 'Font Family', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Font Family', 'blockshift-migrate-from-elementor' ) }
 						value={ contentTypography.fontFamily }
 						onChange={ ( value ) =>
 							setAttributes( {
@@ -363,7 +363,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						}
 					/>
 					<RangeControl
-						label={ __( 'Line Height', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Line Height', 'blockshift-migrate-from-elementor' ) }
 						value={ contentTypography.lineHeight }
 						onChange={ ( value ) =>
 							setAttributes( {
@@ -378,7 +378,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						step={ 1 }
 					/>
 					<RangeControl
-						label={ __( 'Letter Spacing', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Letter Spacing', 'blockshift-migrate-from-elementor' ) }
 						value={ contentTypography.letterSpacing }
 						onChange={ ( value ) =>
 							setAttributes( {
@@ -393,7 +393,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						step={ 0.1 }
 					/>
 					<RangeControl
-						label={ __( 'Word Spacing', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Word Spacing', 'blockshift-migrate-from-elementor' ) }
 						value={ contentTypography.wordSpacing }
 						onChange={ ( value ) =>
 							setAttributes( {
@@ -410,7 +410,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 				</PanelBody>
 
 				<PanelColorSettings
-					title={ __( 'Content Colors', 'migrate-elementor-to-gutenberg' ) }
+					title={ __( 'Content Colors', 'blockshift-migrate-from-elementor' ) }
 					colorSettings={ [
 						{
 							value: contentColor,
@@ -418,30 +418,30 @@ const Edit = ( { attributes, setAttributes } ) => {
 								setAttributes( { contentColor: value } ),
 							label: __(
 								'Content Color',
-								'migrate-elementor-to-gutenberg'
+								'blockshift-migrate-from-elementor'
 							),
 						},
 						{
 							value: nameColor,
 							onChange: ( value ) =>
 								setAttributes( { nameColor: value } ),
-							label: __( 'Name Color', 'migrate-elementor-to-gutenberg' ),
+							label: __( 'Name Color', 'blockshift-migrate-from-elementor' ),
 						},
 						{
 							value: titleColor,
 							onChange: ( value ) =>
 								setAttributes( { titleColor: value } ),
-							label: __( 'Title Color', 'migrate-elementor-to-gutenberg' ),
+							label: __( 'Title Color', 'blockshift-migrate-from-elementor' ),
 						},
 					] }
 				/>
 
 				<PanelBody
-					title={ __( 'Image Settings', 'migrate-elementor-to-gutenberg' ) }
+					title={ __( 'Image Settings', 'blockshift-migrate-from-elementor' ) }
 					initialOpen={ false }
 				>
 					<RangeControl
-						label={ __( 'Image Size', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Image Size', 'blockshift-migrate-from-elementor' ) }
 						value={ imageSize }
 						onChange={ ( value ) =>
 							setAttributes( { imageSize: value } )
@@ -450,7 +450,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						max={ 200 }
 					/>
 					<RangeControl
-						label={ __( 'Image Gap', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Image Gap', 'blockshift-migrate-from-elementor' ) }
 						value={ imageGap }
 						onChange={ ( value ) =>
 							setAttributes( { imageGap: value } )
@@ -461,7 +461,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					<RangeControl
 						label={ __(
 							'Image Border Radius (%)',
-							'migrate-elementor-to-gutenberg'
+							'blockshift-migrate-from-elementor'
 						) }
 						value={ imageBorderRadius }
 						onChange={ ( value ) =>
@@ -473,11 +473,11 @@ const Edit = ( { attributes, setAttributes } ) => {
 				</PanelBody>
 
 				<PanelBody
-					title={ __( 'Navigation', 'migrate-elementor-to-gutenberg' ) }
+					title={ __( 'Navigation', 'blockshift-migrate-from-elementor' ) }
 					initialOpen={ false }
 				>
 					<RangeControl
-						label={ __( 'Arrows Size', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Arrows Size', 'blockshift-migrate-from-elementor' ) }
 						value={ arrowsSize }
 						onChange={ ( value ) =>
 							setAttributes( { arrowsSize: value } )
@@ -486,7 +486,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						max={ 50 }
 					/>
 					<RangeControl
-						label={ __( 'Pagination Gap', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Pagination Gap', 'blockshift-migrate-from-elementor' ) }
 						value={ paginationGap }
 						onChange={ ( value ) =>
 							setAttributes( { paginationGap: value } )
@@ -497,7 +497,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					<RangeControl
 						label={ __(
 							'Pagination Size',
-							'migrate-elementor-to-gutenberg'
+							'blockshift-migrate-from-elementor'
 						) }
 						value={ paginationSize }
 						onChange={ ( value ) =>
@@ -509,13 +509,13 @@ const Edit = ( { attributes, setAttributes } ) => {
 				</PanelBody>
 
 				<PanelColorSettings
-					title={ __( 'Navigation Colors', 'migrate-elementor-to-gutenberg' ) }
+					title={ __( 'Navigation Colors', 'blockshift-migrate-from-elementor' ) }
 					colorSettings={ [
 						{
 							value: arrowsColor,
 							onChange: ( value ) =>
 								setAttributes( { arrowsColor: value } ),
-							label: __( 'Arrows Color', 'migrate-elementor-to-gutenberg' ),
+							label: __( 'Arrows Color', 'blockshift-migrate-from-elementor' ),
 						},
 						{
 							value: paginationColorInactive,
@@ -525,25 +525,25 @@ const Edit = ( { attributes, setAttributes } ) => {
 								} ),
 							label: __(
 								'Pagination Color',
-								'migrate-elementor-to-gutenberg'
+								'blockshift-migrate-from-elementor'
 							),
 						},
 					] }
 				/>
 
 				<PanelBody
-					title={ __( 'Spacing', 'migrate-elementor-to-gutenberg' ) }
+					title={ __( 'Spacing', 'blockshift-migrate-from-elementor' ) }
 					initialOpen={ false }
 				>
 					<BoxControl
-						label={ __( 'Margin', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Margin', 'blockshift-migrate-from-elementor' ) }
 						values={ _margin }
 						onChange={ ( value ) =>
 							setAttributes( { _margin: value } )
 						}
 					/>
 					<BoxControl
-						label={ __( 'Padding', 'migrate-elementor-to-gutenberg' ) }
+						label={ __( 'Padding', 'blockshift-migrate-from-elementor' ) }
 						values={ _padding }
 						onChange={ ( value ) =>
 							setAttributes( { _padding: value } )
@@ -554,14 +554,14 @@ const Edit = ( { attributes, setAttributes } ) => {
 
 			<InspectorAdvancedControls>
 				<TextControl
-					label={ __( 'Custom ID', 'migrate-elementor-to-gutenberg' ) }
+					label={ __( 'Custom ID', 'blockshift-migrate-from-elementor' ) }
 					value={ customId }
 					onChange={ ( value ) =>
 						setAttributes( { customId: value } )
 					}
 				/>
 				<TextControl
-					label={ __( 'Custom Class', 'migrate-elementor-to-gutenberg' ) }
+					label={ __( 'Custom Class', 'blockshift-migrate-from-elementor' ) }
 					value={ customClass }
 					onChange={ ( value ) =>
 						setAttributes( { customClass: value } )
@@ -692,7 +692,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 										>
 											{ __(
 												'Edit',
-												'migrate-elementor-to-gutenberg'
+												'blockshift-migrate-from-elementor'
 											) }
 										</Button>
 										<Button
@@ -704,7 +704,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 										>
 											{ __(
 												'Remove',
-												'migrate-elementor-to-gutenberg'
+												'blockshift-migrate-from-elementor'
 											) }
 										</Button>
 									</div>
@@ -714,7 +714,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					</div>
 
 					<Button isPrimary onClick={ addSlide }>
-						{ __( 'Add Testimonial', 'migrate-elementor-to-gutenberg' ) }
+						{ __( 'Add Testimonial', 'blockshift-migrate-from-elementor' ) }
 					</Button>
 
 					{ slides[ editingSlide ] && (
@@ -722,13 +722,13 @@ const Edit = ( { attributes, setAttributes } ) => {
 							<h3>
 								{ __(
 									'Edit Testimonial',
-									'migrate-elementor-to-gutenberg'
+									'blockshift-migrate-from-elementor'
 								) }
 							</h3>
 							<TextareaControl
 								label={ __(
 									'Content',
-									'migrate-elementor-to-gutenberg'
+									'blockshift-migrate-from-elementor'
 								) }
 								value={ slides[ editingSlide ].content }
 								onChange={ ( value ) =>
@@ -740,14 +740,14 @@ const Edit = ( { attributes, setAttributes } ) => {
 								}
 							/>
 							<TextControl
-								label={ __( 'Name', 'migrate-elementor-to-gutenberg' ) }
+								label={ __( 'Name', 'blockshift-migrate-from-elementor' ) }
 								value={ slides[ editingSlide ].name }
 								onChange={ ( value ) =>
 									updateSlide( editingSlide, 'name', value )
 								}
 							/>
 							<TextControl
-								label={ __( 'Title', 'migrate-elementor-to-gutenberg' ) }
+								label={ __( 'Title', 'blockshift-migrate-from-elementor' ) }
 								value={ slides[ editingSlide ].title }
 								onChange={ ( value ) =>
 									updateSlide( editingSlide, 'title', value )
@@ -777,11 +777,11 @@ const Edit = ( { attributes, setAttributes } ) => {
 											{ slides[ editingSlide ].imageUrl
 												? __(
 														'Change Image',
-														'migrate-elementor-to-gutenberg'
+														'blockshift-migrate-from-elementor'
 												  )
 												: __(
 														'Select Image',
-														'migrate-elementor-to-gutenberg'
+														'blockshift-migrate-from-elementor'
 												  ) }
 										</Button>
 									) }

@@ -1,11 +1,11 @@
 <?php
 
-namespace Progressus\MigrateElementorToGutenberg\Admin\Widget;
+namespace Progressus\BlockShift\Admin\Widget;
 
-use Progressus\MigrateElementorToGutenberg\Admin\Widget_Handler_Interface;
-use Progressus\MigrateElementorToGutenberg\Admin\Admin_Settings;
-use Progressus\MigrateElementorToGutenberg\Admin\Helper\Block_Builder;
-use Progressus\MigrateElementorToGutenberg\Admin\Helper\WooCommerce_Style_Builder;
+use Progressus\BlockShift\Admin\Widget_Handler_Interface;
+use Progressus\BlockShift\Admin\Admin_Settings;
+use Progressus\BlockShift\Admin\Helper\Block_Builder;
+use Progressus\BlockShift\Admin\Helper\WooCommerce_Style_Builder;
 
 use function absint;
 use function esc_attr;

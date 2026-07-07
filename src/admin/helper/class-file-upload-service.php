@@ -2,9 +2,9 @@
 /**
  * Service class for handling file uploads.
  *
- * @package Progressus\MigrateElementorToGutenberg
+ * @package Progressus\BlockShift
  */
-namespace Progressus\MigrateElementorToGutenberg\Admin\Helper;
+namespace Progressus\BlockShift\Admin\Helper;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -39,7 +39,7 @@ class File_Upload_Service {
 				add_settings_error(
 					'gutenberg_json_data',
 					'json_upload_error',
-					esc_html__( 'Invalid JSON file uploaded.', 'migrate-elementor-to-gutenberg' ),
+					esc_html__( 'Invalid JSON file uploaded.', 'blockshift-migrate-from-elementor' ),
 					'error'
 				);
 				return null;
@@ -56,7 +56,7 @@ class File_Upload_Service {
 			add_settings_error(
 				'gutenberg_json_data',
 				'json_upload_error',
-				esc_html__( 'Failed to upload file.', 'migrate-elementor-to-gutenberg' ),
+				esc_html__( 'Failed to upload file.', 'blockshift-migrate-from-elementor' ),
 				'error'
 			);
 			return null;

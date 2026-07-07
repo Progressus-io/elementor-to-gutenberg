@@ -2,16 +2,16 @@
 /**
  * Widget handler for Elementor icon widget.
  *
- * @package Progressus\MigrateElementorToGutenberg
+ * @package Progressus\BlockShift
  */
 
-namespace Progressus\MigrateElementorToGutenberg\Admin\Widget;
+namespace Progressus\BlockShift\Admin\Widget;
 
-use Progressus\MigrateElementorToGutenberg\Admin\Helper\Alignment_Helper;
-use Progressus\MigrateElementorToGutenberg\Admin\Helper\Block_Builder;
-use Progressus\MigrateElementorToGutenberg\Admin\Helper\Icon_Parser;
-use Progressus\MigrateElementorToGutenberg\Admin\Helper\Style_Parser;
-use Progressus\MigrateElementorToGutenberg\Admin\Widget_Handler_Interface;
+use Progressus\BlockShift\Admin\Helper\Alignment_Helper;
+use Progressus\BlockShift\Admin\Helper\Block_Builder;
+use Progressus\BlockShift\Admin\Helper\Icon_Parser;
+use Progressus\BlockShift\Admin\Helper\Style_Parser;
+use Progressus\BlockShift\Admin\Widget_Handler_Interface;
 
 use function esc_attr;
 use function esc_url;

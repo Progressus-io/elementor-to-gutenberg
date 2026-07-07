@@ -4,10 +4,10 @@
 /**
  * Extracts JSONL diagnostic events for a specific item from the conversion log.
  *
- * @package Progressus\MigrateElementorToGutenberg
+ * @package Progressus\BlockShift
  */
 
-namespace Progressus\MigrateElementorToGutenberg\Admin;
+namespace Progressus\BlockShift\Admin;
 
 defined( 'ABSPATH' ) || exit;
 
