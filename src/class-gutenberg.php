@@ -91,7 +91,7 @@ class Gutenberg {
 			return $templates;
 		}
 
-		$templates[ self::FULL_WIDTH_PAGE_TEMPLATE_SLUG ] = __( 'Full Width Page', 'layoutbridge-block-migration' );
+		$templates[ self::FULL_WIDTH_PAGE_TEMPLATE_SLUG ] = __( 'Full Width Page', 'blockshift-migrate-from-elementor' );
 
 		return $templates;
 	}
@@ -478,8 +478,8 @@ class Gutenberg {
 		register_block_template(
 			self::FULL_WIDTH_TEMPLATE_ID,
 			array(
-				'title'       => __( 'Full Width Page', 'layoutbridge-block-migration' ),
-				'description' => __( 'Template for converted full width pages that keeps the active theme header and footer without forcing constrained page layout.', 'layoutbridge-block-migration' ),
+				'title'       => __( 'Full Width Page', 'blockshift-migrate-from-elementor' ),
+				'description' => __( 'Template for converted full width pages that keeps the active theme header and footer without forcing constrained page layout.', 'blockshift-migrate-from-elementor' ),
 				'post_types'  => array( 'page' ),
 				'content'     => sprintf(
 					'<!-- wp:template-part {"slug":"header","theme":"%1$s","tagName":"header"} /-->' . "\n\n" .
@@ -501,7 +501,7 @@ class Gutenberg {
 		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'blockshift_form_nonce' ) ) {
 			wp_send_json_error(
 				array(
-					'message' => __( 'Security verification failed.', 'layoutbridge-block-migration' ),
+					'message' => __( 'Security verification failed.', 'blockshift-migrate-from-elementor' ),
 				)
 			);
 		}
@@ -522,16 +522,16 @@ class Gutenberg {
 
 		// Prepare email content
 		/* translators: %s: name of the form submitted */
-		$subject = sprintf( __( 'New Form Submission: %s', 'layoutbridge-block-migration' ), $form_name );
+		$subject = sprintf( __( 'New Form Submission: %s', 'blockshift-migrate-from-elementor' ), $form_name );
 		/* translators: %s: name of the WordPress site */
-		$message = sprintf( __( "You have received a new form submission from %s:\n\n", 'layoutbridge-block-migration' ), get_bloginfo( 'name' ) );
+		$message = sprintf( __( "You have received a new form submission from %s:\n\n", 'blockshift-migrate-from-elementor' ), get_bloginfo( 'name' ) );
 
 		foreach ( $form_data as $field => $value ) {
 			$message .= sprintf( "%s: %s\n", ucfirst( str_replace( array( '_', '-' ), ' ', $field ) ), $value );
 		}
 
 		/* translators: %s: date and time of form submission */
-		$message .= sprintf( "\n\n" . __( 'Submitted at: %s', 'layoutbridge-block-migration' ), current_time( 'mysql' ) );
+		$message .= sprintf( "\n\n" . __( 'Submitted at: %s', 'blockshift-migrate-from-elementor' ), current_time( 'mysql' ) );
 
 		// Set email headers
 		$headers = array( 'Content-Type: text/plain; charset=UTF-8' );
@@ -542,13 +542,13 @@ class Gutenberg {
 		if ( $email_sent ) {
 			wp_send_json_success(
 				array(
-					'message' => __( 'Your submission was successful. We will get back to you soon!', 'layoutbridge-block-migration' ),
+					'message' => __( 'Your submission was successful. We will get back to you soon!', 'blockshift-migrate-from-elementor' ),
 				)
 			);
 		} else {
 			wp_send_json_error(
 				array(
-					'message' => __( 'Your submission failed because of an error. Please try again.', 'layoutbridge-block-migration' ),
+					'message' => __( 'Your submission failed because of an error. Please try again.', 'blockshift-migrate-from-elementor' ),
 				)
 			);
 		}

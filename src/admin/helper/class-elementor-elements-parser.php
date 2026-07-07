@@ -53,7 +53,7 @@ class Elementor_Elements_Parser {
 			} else {
 				$block_content .= sprintf(
 					'<!-- wp:paragraph -->%s<!-- /wp:paragraph -->' . "\n",
-					esc_html__( 'Unknown element', 'layoutbridge-block-migration' )
+					esc_html__( 'Unknown element', 'blockshift-migrate-from-elementor' )
 				);
 			}
 		}
