@@ -309,7 +309,52 @@ class External_CSS_Service {
 		$css = str_replace( "\r", "\n", $css );
 		$css = trim( $css );
 
-		return $css;
+		return self::sanitize_css( $css );
+	}
+
+	/**
+	 * Strip constructs that could turn a saved stylesheet into an attack vector.
+	 *
+	 * AI-generated CSS is written to a file in uploads and enqueued, so it never
+	 * passes through WordPress content sanitization. This removes the pieces that
+	 * do not belong in a plain stylesheet: markup, remote @import rules, and the
+	 * legacy script-in-CSS vectors (expression(), behavior, -moz-binding,
+	 * javascript:/vbscript: URIs).
+	 *
+	 * @param string $css CSS content.
+	 *
+	 * @return string Sanitized CSS.
+	 */
+	private static function sanitize_css( string $css ): string {
+		if ( '' === $css ) {
+			return '';
+		}
+
+		$patterns = array(
+			// Control characters that have no place in a stylesheet.
+			'/[\x00-\x08\x0B\x0C\x0E-\x1F]/' => '',
+			// Opening angle bracket: never valid CSS, enables </style> / <script> breakouts.
+			// The ">" child combinator is left intact.
+			'/</'                            => '',
+			// Remote/arbitrary style inclusion.
+			'/@import\b[^;]*;?/i'            => '',
+			// Legacy IE CSS expressions (execute JS).
+			'/expression\s*\(/i'             => '',
+			// Script protocols anywhere (e.g. inside url()).
+			'/(?:javascript|vbscript)\s*:/i' => '',
+			// Legacy behavior / data-binding declarations.
+			'/-moz-binding\s*:[^;]*;?/i'     => '',
+			'/\bbehavior\s*:[^;]*;?/i'       => '',
+		);
+
+		foreach ( $patterns as $pattern => $replacement ) {
+			$result = preg_replace( $pattern, $replacement, $css );
+			if ( null !== $result ) {
+				$css = $result;
+			}
+		}
+
+		return trim( $css );
 	}
 
 	/**

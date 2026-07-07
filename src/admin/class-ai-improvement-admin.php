@@ -57,6 +57,7 @@ use function wp_nonce_field;
 use function wp_parse_url;
 use function wp_remote_get;
 use function wp_remote_retrieve_response_code;
+use function wp_kses_post;
 use function wp_safe_redirect;
 use function wp_unslash;
 use function wp_update_post;
@@ -421,7 +422,7 @@ class AI_Improvement_Admin {
 
 		$parsed           = Claude_Api_Service::parse_response( $api_result['content'] );
 		$css_result       = self::fix_css_namespace( $parsed['css'], $source_id, $target_id );
-		$gutenberg_result = $parsed['gutenberg'];
+		$gutenberg_result = self::sanitize_block_content( $parsed['gutenberg'] );
 
 		self::log_improvement(
 			array(
@@ -496,6 +497,26 @@ class AI_Improvement_Admin {
 			'error'   => '',
 			'notice'  => 'updated',
 		);
+	}
+
+	/**
+	 * Sanitize AI-generated block content before it is persisted as post_content.
+	 *
+	 * Mirrors WordPress core: users who cannot post unfiltered HTML get the content
+	 * run through wp_kses_post(), exactly as wp_update_post() would apply on save.
+	 * Users with the unfiltered_html capability keep the content verbatim, matching
+	 * how the normal block editor behaves, so valid block markup is never corrupted.
+	 *
+	 * @param string $content Raw Gutenberg content returned by the AI.
+	 *
+	 * @return string Sanitized block content.
+	 */
+	private static function sanitize_block_content( string $content ): string {
+		if ( current_user_can( 'unfiltered_html' ) ) {
+			return $content;
+		}
+
+		return wp_kses_post( $content );
 	}
 
 	/**
@@ -775,7 +796,7 @@ class AI_Improvement_Admin {
 
 		$parsed           = Claude_Api_Service::parse_response( $api_result['content'] );
 		$css_result       = self::fix_css_namespace( $parsed['css'], $source_id, $target_id );
-		$gutenberg_result = $parsed['gutenberg'];
+		$gutenberg_result = self::sanitize_block_content( $parsed['gutenberg'] );
 
 		self::log_improvement(
 			array(
