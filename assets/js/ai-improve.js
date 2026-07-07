@@ -27,23 +27,6 @@
 		} );
 	}
 
-	// ── Round 2+: Refine with AI ──────────────────────────────────────────────
-	const refineForm = document.getElementById( 'metg-ai-refine-form' );
-	const refineBtn = document.getElementById( 'metg_refine_submit' );
-	const focusInput = document.getElementById( 'metg-focus-instruction' );
-
-	if ( refineForm && refineBtn && loader ) {
-		refineForm.addEventListener( 'submit', function () {
-			refineBtn.disabled = true;
-			refineBtn.value = config.processingLabel;
-			if ( loaderTitle ) {
-				loaderTitle.textContent =
-					config.refiningLabel || loaderTitle.textContent;
-			}
-			loader.removeAttribute( 'hidden' );
-		} );
-	}
-
 	// ── Mobile improvement: separate AI pass on mobile screenshots ───────────
 	const mobileForm = document.getElementById(
 		'metg-ai-mobile-improve-form'
@@ -63,31 +46,6 @@
 			loader.removeAttribute( 'hidden' );
 		} );
 	}
-
-	// ── Suggestion chips ──────────────────────────────────────────────────────
-	const chips = document.querySelectorAll( '.metg-suggestion-chip' );
-
-	chips.forEach( function ( chip ) {
-		chip.addEventListener( 'click', function () {
-			if ( ! focusInput ) {
-				return;
-			}
-
-			const suggestion =
-				chip.getAttribute( 'data-suggestion' ) ||
-				chip.textContent.trim();
-			const current = focusInput.value.trim();
-
-			if ( '' === current ) {
-				focusInput.value = suggestion;
-			} else {
-				focusInput.value = current + '. ' + suggestion;
-			}
-
-			focusInput.focus();
-			chip.classList.add( 'metg-suggestion-chip--active' );
-		} );
-	} );
 
 	// ── Screenshot tabs ────────────────────────────────────────────────────────
 	const tabBtns = document.querySelectorAll( '.metg-ai-tab' );

@@ -43,7 +43,6 @@ use function is_wp_error;
 use function plugins_url;
 use function sanitize_key;
 use function sanitize_text_field;
-use function sanitize_textarea_field;
 use function trim;
 use function set_transient;
 use function sprintf;
@@ -67,7 +66,6 @@ class AI_Improvement_Admin {
 	public const MENU_SLUG = 'metg-ai-improvement';
 
 	private const NONCE_AUTO_IMPROVE   = 'metg_ai_auto_improve';
-	private const NONCE_REFINE         = 'metg_ai_refine';
 	private const NONCE_MOBILE_IMPROVE = 'metg_ai_mobile_improve';
 
 	/**
@@ -104,7 +102,6 @@ class AI_Improvement_Admin {
 		add_action( 'admin_menu', array( $this, 'register_menu' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 		add_action( 'admin_post_metg_ai_auto_improve', array( $this, 'handle_auto_improve' ) );
-		add_action( 'admin_post_metg_ai_refine', array( $this, 'handle_refine' ) );
 		add_action( 'admin_post_metg_ai_mobile_improve', array( $this, 'handle_mobile_improve' ) );
 		add_action( 'admin_post_metg_ai_regenerate_screenshots', array( $this, 'handle_regenerate_screenshots' ) );
 	}
@@ -148,7 +145,6 @@ class AI_Improvement_Admin {
 			array(
 				'processingLabel'     => __( 'Processing…', 'layoutbridge-block-migration' ),
 				'improvingLabel'      => __( 'Improving with AI…', 'layoutbridge-block-migration' ),
-				'refiningLabel'       => __( 'Refining with AI…', 'layoutbridge-block-migration' ),
 				'mobileLabel'         => __( 'Improving mobile with AI…', 'layoutbridge-block-migration' ),
 				'ajaxUrl'             => admin_url( 'admin-ajax.php' ),
 				'feedbackNonce'       => wp_create_nonce( AI_Enhancement_Admin::FEEDBACK_NONCE ),
@@ -699,209 +695,6 @@ class AI_Improvement_Admin {
 	}
 
 	/**
-	 * Handle the "Refine with AI" action (Round 2+).
-	 *
-	 * Takes fresh screenshots, then sends the current page state plus the user's
-	 * focus instruction to Claude for a targeted refinement pass.
-	 */
-	public function handle_refine(): void {
-		if ( ! current_user_can( 'edit_pages' ) ) {
-			wp_die( esc_html__( 'You do not have permission to perform this action.', 'layoutbridge-block-migration' ) );
-		}
-
-		check_admin_referer( self::NONCE_REFINE );
-
-		$target_id         = isset( $_POST['target_id'] ) ? absint( wp_unslash( $_POST['target_id'] ) ) : 0;
-		$source_id         = isset( $_POST['source_id'] ) ? absint( wp_unslash( $_POST['source_id'] ) ) : 0;
-		$focus_instruction = isset( $_POST['focus_instruction'] ) ? sanitize_textarea_field( wp_unslash( $_POST['focus_instruction'] ) ) : '';
-
-		if ( $target_id <= 0 || $source_id <= 0 ) {
-			wp_die( esc_html__( 'Source or target page is missing.', 'layoutbridge-block-migration' ) );
-		}
-
-		if ( ! current_user_can( 'edit_post', $target_id ) ) {
-			wp_die( esc_html__( 'You do not have permission to edit this page.', 'layoutbridge-block-migration' ) );
-		}
-
-		$stored_source_id = (int) get_post_meta( $target_id, '_metg_source_id', true );
-		if ( $stored_source_id > 0 && $stored_source_id !== $source_id ) {
-			$this->redirect_with_notice( $source_id, $target_id, 'invalid_mapping' );
-		}
-
-		$result = self::run_refinement( $source_id, $target_id, $focus_instruction );
-
-		if ( ! $result['success'] ) {
-			$notice = $result['notice'] ?? 'ai_failed';
-			set_transient( 'metg_ai_error_' . $target_id, $result['error'], 60 );
-			$this->redirect_with_notice( $source_id, $target_id, $notice );
-		}
-
-		$this->redirect_with_notice( $source_id, $target_id, 'refined' );
-	}
-
-	/**
-	 * Core refinement logic — Round 2+ targeted improvement.
-	 *
-	 * Sends the current page state, fresh screenshots, and user's focus instruction
-	 * to Claude using the refinement system prompt. The full CSS file is replaced
-	 * with the result on every run.
-	 *
-	 * @param int    $source_id         Elementor source post ID.
-	 * @param int    $target_id         Converted Gutenberg post ID.
-	 * @param string $focus_instruction User's instruction on what to fix.
-	 * @return array{success: bool, error: string, notice: string}
-	 */
-	public static function run_refinement( int $source_id, int $target_id, string $focus_instruction ): array {
-		$failure = static function ( string $error, string $notice = 'ai_failed' ): array {
-			return array(
-				'success' => false,
-				'error'   => $error,
-				'notice'  => $notice,
-			);
-		};
-
-		// Pre-flight: block the AI call if the page is not publicly reachable.
-		$access = self::check_page_accessibility( $source_id, $target_id );
-		if ( ! $access['accessible'] ) {
-			return $failure( $access['reason'], 'page_inaccessible' );
-		}
-
-		// Take fresh screenshots right before sending to Claude; do not send the
-		// AI request if they could not be captured.
-		$screenshot_result = AI_Remediation_Screenshot_Meta_Service::generate_and_store( $source_id, $target_id, true );
-		if ( ! $screenshot_result['success'] ) {
-			return $failure(
-				sprintf(
-					/* translators: %s: screenshot error details */
-					__( 'Screenshots could not be generated, so AI refinement was not run: %s', 'layoutbridge-block-migration' ),
-					$screenshot_result['error']
-				),
-				'screenshot_failed'
-			);
-		}
-
-		$gutenberg_content = (string) get_post_field( 'post_content', $target_id );
-		$elementor_json    = get_post_meta( $source_id, '_elementor_data', true );
-		if ( is_array( $elementor_json ) ) {
-			$elementor_json = wp_json_encode( $elementor_json, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
-		}
-		$elementor_json = (string) $elementor_json;
-
-		$current_css = self::fix_css_namespace( self::read_post_css( $target_id ), $source_id, $target_id );
-
-		$template_type = '';
-		if ( 'elementor_library' === get_post_type( $source_id ) ) {
-			$template_type = (string) get_post_meta( $source_id, '_elementor_template_type', true );
-		}
-
-		$prompt = AI_Prompt_Builder::build_refinement(
-			array(
-				'source_id'         => $source_id,
-				'target_id'         => $target_id,
-				'source_title'      => get_the_title( $source_id ),
-				'target_title'      => get_the_title( $target_id ),
-				'elementor_json'    => $elementor_json,
-				'gutenberg_content' => $gutenberg_content,
-				'current_css'       => $current_css,
-				'focus_instruction' => $focus_instruction,
-				'template_type'     => $template_type,
-			)
-		);
-
-		$elementor_shots = AI_Remediation_Screenshot_Meta_Service::get_elementor_urls( $target_id );
-		$gutenberg_shots = AI_Remediation_Screenshot_Meta_Service::get_gutenberg_urls( $target_id );
-
-		$api_result = Claude_Api_Service::send(
-			$prompt,
-			$elementor_shots,
-			$gutenberg_shots,
-			Claude_Api_Service::get_refinement_system_prompt()
-		);
-
-		if ( ! $api_result['success'] ) {
-			self::log_improvement(
-				array(
-					'step'      => 'refine_api_failed',
-					'target_id' => $target_id,
-					'error'     => $api_result['error'],
-				)
-			);
-			return $failure( $api_result['error'], 'ai_failed' );
-		}
-
-		$parsed           = Claude_Api_Service::parse_response( $api_result['content'] );
-		$css_result       = self::fix_css_namespace( $parsed['css'], $source_id, $target_id );
-		$gutenberg_result = self::sanitize_block_content( $parsed['gutenberg'] );
-
-		self::log_improvement(
-			array(
-				'step'              => 'refine_parse_complete',
-				'target_id'         => $target_id,
-				'css_length'        => strlen( $css_result ),
-				'gutenberg_length'  => strlen( $gutenberg_result ),
-				'gutenberg_preview' => substr( $gutenberg_result, 0, 120 ),
-			)
-		);
-
-		if ( '' === trim( $gutenberg_result ) ) {
-			self::log_improvement(
-				array(
-					'step'      => 'refine_parse_failed_empty_gutenberg',
-					'target_id' => $target_id,
-				)
-			);
-			return $failure(
-				__( 'No valid Gutenberg content could be parsed from the AI refinement response.', 'layoutbridge-block-migration' ),
-				'ai_parse_failed'
-			);
-		}
-
-		$update_result = wp_update_post(
-			array(
-				'ID'           => $target_id,
-				'post_content' => $gutenberg_result,
-			),
-			true
-		);
-
-		if ( is_wp_error( $update_result ) ) {
-			self::log_improvement(
-				array(
-					'step'      => 'refine_wp_update_post_failed',
-					'target_id' => $target_id,
-					'error'     => $update_result->get_error_message(),
-				)
-			);
-			return $failure( $update_result->get_error_message(), 'update_failed' );
-		}
-
-		// Replace the full CSS file on every refinement run.
-		if ( '' !== trim( $css_result ) ) {
-			External_CSS_Service::save_post_css( $target_id, $css_result );
-		}
-
-		if ( 'elementor_library' === get_post_type( $source_id ) ) {
-			External_CSS_Service::register_global_css_post( $target_id );
-		}
-
-		$workspace                           = AI_Workspace_Repository::get( $target_id );
-		$workspace['target_post_id']         = $target_id;
-		$workspace['source_post_id']         = $source_id;
-		$workspace['css_result_draft']       = $css_result;
-		$workspace['gutenberg_result_draft'] = $gutenberg_result;
-		$workspace['updated_at']             = current_time( 'mysql' );
-		AI_Workspace_Repository::save( $target_id, $workspace );
-
-		update_post_meta( $target_id, '_metg_last_ai_improved', current_time( 'mysql' ) );
-
-		return array(
-			'success' => true,
-			'error'   => '',
-			'notice'  => 'refined',
-		);
-	}
-
-	/**
 	 * Handle the "Improve Mobile with AI" action.
 	 *
 	 * A separate AI pass that uses ONLY the mobile screenshots and instructs Claude
@@ -1234,7 +1027,6 @@ class AI_Improvement_Admin {
 			'screenshots_regenerated' => array( 'success', esc_html__( 'Screenshots regenerated successfully.', 'layoutbridge-block-migration' ) ),
 			'screenshots_failed'      => array( 'error', esc_html__( 'Screenshot regeneration failed. Check the screenshot service settings and connectivity.', 'layoutbridge-block-migration' ) ),
 			'ai_parse_failed'         => array( 'error', esc_html__( 'Claude returned a response but no valid Gutenberg content could be parsed.', 'layoutbridge-block-migration' ) ),
-			'refined'                 => array( 'success', esc_html__( 'Page refined successfully. Fresh screenshots were captured before this run.', 'layoutbridge-block-migration' ) ),
 			'mobile_improved'         => array( 'success', esc_html__( 'Mobile CSS improved successfully. Desktop styles were not modified.', 'layoutbridge-block-migration' ) ),
 			'mobile_failed'           => array( 'error', esc_html__( 'Mobile improvement failed. Check the screenshot service and Claude API settings.', 'layoutbridge-block-migration' ) ),
 		);
@@ -1287,17 +1079,6 @@ class AI_Improvement_Admin {
 		$source_edit_url = admin_url( 'post.php?post=' . $source_id . '&action=edit' );
 		$source_prev_url = \get_permalink( $source_id );
 		$target_prev_url = \get_permalink( $target_id );
-
-		$suggestions = array(
-			__( 'Fix hero section spacing and alignment', 'layoutbridge-block-migration' ),
-			__( 'Match typography — font sizes and weights', 'layoutbridge-block-migration' ),
-			__( 'Improve button styles and colors', 'layoutbridge-block-migration' ),
-			__( 'Fix colors and contrast', 'layoutbridge-block-migration' ),
-			__( 'Fix image sizing and alignment', 'layoutbridge-block-migration' ),
-			__( 'Fix section padding and spacing', 'layoutbridge-block-migration' ),
-			__( 'Improve heading styles', 'layoutbridge-block-migration' ),
-			__( 'Fix navigation menu styling', 'layoutbridge-block-migration' ),
-		);
 
 		?>
 		<div class="metg-ai-page">
@@ -1455,30 +1236,17 @@ class AI_Improvement_Admin {
 							</div>
 						<?php else : ?>
 							<div class="metg-ai-card-header">
-								<h2><?php esc_html_e( 'Refine with AI', 'layoutbridge-block-migration' ); ?></h2>
+								<h2><?php esc_html_e( 'Improve with AI', 'layoutbridge-block-migration' ); ?></h2>
 								<span class="metg-status-pill metg-status-pill--success"><?php esc_html_e( 'Improved', 'layoutbridge-block-migration' ); ?></span>
 							</div>
 							<div class="metg-ai-card-body">
-								<p class="metg-card-desc"><?php esc_html_e( 'Tell AI exactly what to focus on. Fresh screenshots are captured automatically before each run.', 'layoutbridge-block-migration' ); ?></p>
-								<div class="metg-refine-suggestions">
-									<span class="metg-refine-suggestions-label"><?php esc_html_e( 'Quick suggestions:', 'layoutbridge-block-migration' ); ?></span>
-									<?php foreach ( $suggestions as $suggestion ) : ?>
-										<button type="button" class="metg-suggestion-chip" data-suggestion="<?php echo esc_attr( $suggestion ); ?>"><?php echo esc_html( $suggestion ); ?></button>
-									<?php endforeach; ?>
-								</div>
-								<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="metg-ai-refine-form">
-									<?php wp_nonce_field( self::NONCE_REFINE ); ?>
-									<input type="hidden" name="action" value="metg_ai_refine" />
+								<p class="metg-card-desc"><?php esc_html_e( 'Run another AI improvement pass. Fresh screenshots are captured automatically before each run, so it always works from the page\'s current state.', 'layoutbridge-block-migration' ); ?></p>
+								<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="metg-ai-improve-again-form">
+									<?php wp_nonce_field( self::NONCE_AUTO_IMPROVE ); ?>
+									<input type="hidden" name="action" value="metg_ai_auto_improve" />
 									<input type="hidden" name="target_id" value="<?php echo esc_attr( (string) $target_id ); ?>" />
 									<input type="hidden" name="source_id" value="<?php echo esc_attr( (string) $source_id ); ?>" />
-									<textarea
-										name="focus_instruction"
-										id="metg-focus-instruction"
-										rows="4"
-										placeholder="<?php echo esc_attr__( 'Describe what needs fixing, e.g. "The hero section spacing is too tight and the heading font is too small"', 'layoutbridge-block-migration' ); ?>"
-										class="metg-refine-textarea"
-									></textarea>
-									<?php submit_button( esc_html__( 'Refine with AI', 'layoutbridge-block-migration' ), 'primary', 'metg_refine_submit', false ); ?>
+									<?php submit_button( esc_html__( 'Improve Again with AI', 'layoutbridge-block-migration' ), 'primary', 'metg_auto_improve_submit', false ); ?>
 								</form>
 							</div>
 						<?php endif; ?>

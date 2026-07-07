@@ -51,7 +51,7 @@ After a page is converted, BlockShift can use AI to push it closer to the origin
 
 Here's how it works. From the AI Enhancement screen you pick a converted page (or several, to run in bulk). BlockShift captures a screenshot of the original Elementor page and the converted one, sends both to the AI to compare, and applies the layout and styling adjustments it suggests.
 
-The best part is that you can run it as many times as you like. The first pass does a general clean-up. After that you can keep refining, adding a short instruction each time such as "make the hero heading bigger" or "tighten the spacing between the cards", until the page looks right. Every run takes fresh screenshots, so it always works from the page's current state.
+The best part is that you can run it as many times as you like. The first pass does a general clean-up, and each additional pass refines the result a little further. Every run takes fresh screenshots, so it always works from the page's current state and keeps moving it closer to the original design.
 
 One requirement to know: because the screenshots are taken from your live page by an outside service, the page has to be reachable from the public internet. In practice that means it should be published, not password-protected, not behind a "coming soon"/maintenance screen, and on a public site rather than a local address. A quick way to check is to open the page in a private browser window while logged out; if you can see it there, so can the screenshot service.
 
@@ -157,7 +157,7 @@ The plugin doesn't charge for it. If you choose to use it, you provide your own 
 
 = Can I run the AI enhancement more than once on the same page? =
 
-Yes, as often as you like. The first pass does a general clean-up. After that you can keep refining, adding a short instruction each time (like "make the heading bigger" or "fix the spacing on the pricing section"), until you're happy. Each run takes fresh screenshots and works from the page's current state. The only cost is your own Anthropic usage.
+Yes, as often as you like. The first pass does a general clean-up, and each additional pass refines the result a little further until you're happy. Each run takes fresh screenshots and works from the page's current state. The only cost is your own Anthropic usage.
 
 = Can I run the AI on several pages at once? =
 

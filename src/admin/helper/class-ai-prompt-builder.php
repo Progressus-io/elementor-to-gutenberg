@@ -49,50 +49,6 @@ class AI_Prompt_Builder {
 	}
 
 	/**
-	 * Build the refinement prompt (Round 2+).
-	 *
-	 * Includes the user's focus instruction, current CSS, and current page state
-	 * so Claude can make targeted improvements while preserving everything else.
-	 *
-	 * @param array $context Prompt context.
-	 */
-	public static function build_refinement( array $context ): string {
-		$source_id         = isset( $context['source_id'] ) ? (int) $context['source_id'] : 0;
-		$target_id         = isset( $context['target_id'] ) ? (int) $context['target_id'] : 0;
-		$source_title      = isset( $context['source_title'] ) ? (string) $context['source_title'] : '';
-		$target_title      = isset( $context['target_title'] ) ? (string) $context['target_title'] : '';
-		$elementor_json    = isset( $context['elementor_json'] ) ? self::normalize_json_text( $context['elementor_json'] ) : '';
-		$gutenberg_content = isset( $context['gutenberg_content'] ) ? (string) $context['gutenberg_content'] : '';
-		$current_css       = isset( $context['current_css'] ) ? trim( (string) $context['current_css'] ) : '';
-		$focus_instruction = isset( $context['focus_instruction'] ) ? trim( (string) $context['focus_instruction'] ) : '';
-		$template_type     = isset( $context['template_type'] ) ? trim( (string) $context['template_type'] ) : '';
-
-		$css_namespace = 'metg-page-' . $source_id;
-
-		$focus_line = '' !== $focus_instruction
-			? $focus_instruction
-			: 'No specific instruction provided. Perform a general improvement pass: compare the screenshots and fix any remaining visual differences between the Elementor original and the Gutenberg page.';
-
-		$sections = array();
-
-		if ( '' !== $template_type ) {
-			$sections[] = "TEMPLATE_FOCUS\nThis is an Elementor {$template_type} template. The screenshot shows the full page. Focus only on the {$template_type} area. Do not touch anything outside the {$template_type}.";
-		}
-
-		$sections[] = "USER_FOCUS\n{$focus_line}";
-		$sections[] = "PAGE CONTEXT\nSource Elementor page ID: {$source_id}\nSource Elementor title: {$source_title}\nTarget Gutenberg page ID: {$target_id}\nTarget Gutenberg title: {$target_title}\nCSS Namespace: .{$css_namespace}";
-
-		if ( '' !== $current_css ) {
-			$sections[] = "CURRENT_CSS\n{$current_css}";
-		}
-
-		$sections[] = "ELEMENTOR_JSON\n{$elementor_json}";
-		$sections[] = "GUTENBERG_CONTENT\n{$gutenberg_content}";
-
-		return implode( "\n\n", $sections );
-	}
-
-	/**
 	 * Build the mobile-only improvement prompt.
 	 *
 	 * Targets a separate AI pass that should produce mobile-only @media query

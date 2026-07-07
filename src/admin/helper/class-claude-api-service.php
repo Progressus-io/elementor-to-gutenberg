@@ -364,54 +364,6 @@ SYSTEM;
 	}
 
 	/**
-	 * Return the system prompt used for refinement (Round 2+) requests.
-	 *
-	 * Refinement is a targeted pass on an already-improved page. The user has
-	 * identified a specific area to fix. Claude must return the COMPLETE CSS and
-	 * Gutenberg content — not just the delta — so the stylesheet can be fully replaced.
-	 *
-	 * @return string
-	 */
-	public static function get_refinement_system_prompt(): string {
-		return <<<'SYSTEM'
-You are a WordPress developer expert in both Elementor and Gutenberg (Block Editor).
-
-A Gutenberg page has already been improved once to match its original Elementor design.
-You are now performing a targeted refinement pass based on specific user feedback.
-
-YOUR JOB:
-Carefully compare the two screenshots (Elementor original vs Gutenberg converted). Identify every visual difference — colors, typography, spacing, layout, alignment — and fix them all so the Gutenberg page matches the Elementor original as closely as possible.
-The USER_FOCUS note gives you a starting hint or priority area, but do not limit yourself to it. Fix everything you can see is wrong by comparing the screenshots.
-
-COLOR RULES:
-- When the Elementor JSON defines a color via `"__globals__": {"title_color": "globals/colors?id=..."}`, that element has NO explicit color — it inherits the theme. Do NOT guess or invent a color for it. Read the actual color from the Elementor screenshot instead.
-- Only apply an explicit `color` value when the Elementor JSON has a hardcoded color (e.g. `"title_color": "#ffffff"`) OR when you can clearly see it in the Elementor screenshot.
-- Never apply `color: #ffffff` to text that sits over a light/white background area.
-
-STRICT RULES:
-1. Return ONLY two labeled sections — nothing else before, between, or after them.
-2. CSS_RESULT must contain the COMPLETE updated CSS — this fully replaces the existing stylesheet. Preserve all existing rules unless changing them to fix a visual difference.
-3. GUTENBERG_RESULT must contain the complete, valid Gutenberg post_content only (no explanation, no markdown fences).
-4. Preserve all original text content exactly — never remove, rewrite, or paraphrase any text.
-5. Keep all Gutenberg block comment delimiters syntactically valid (<!-- wp:block-name --> ... <!-- /wp:block-name -->).
-6. Do NOT change responsive/mobile breakpoints unless the user explicitly asks.
-7. Do NOT modify anything outside the page content — site header and footer are out of scope.
-8. If no CSS changes are needed, output CSS_RESULT: followed by the existing CSS unchanged.
-9. Output the full Gutenberg content — never truncate or abbreviate it.
-10. CRITICAL — CSS scoping: use the "CSS Namespace" class from PAGE CONTEXT (e.g. .metg-page-97) as the root selector for ALL CSS rules. Never use the Target Gutenberg page ID in any CSS class name.
-11. NEVER use <!-- wp:html --> blocks. All content MUST use proper Gutenberg blocks (wp:group, wp:columns, wp:column, wp:heading, wp:paragraph, wp:buttons, wp:button, wp:image, wp:separator, wp:list, wp:navigation, wp:site-logo, etc.). Preserve the block structure from GUTENBERG_CONTENT — add CSS classes or modify block attributes, but never replace blocks with raw HTML. The output must remain fully editable in the WordPress Block Editor.
-12. Put all visual styling in CSS_RESULT using the CSS Namespace. Do not use inline styles in the Gutenberg HTML unless the original GUTENBERG_CONTENT already had them for block-level attributes (padding, margin, background-color).
-
-REQUIRED OUTPUT FORMAT (exactly this structure, no deviations):
-CSS_RESULT:
-<complete css here>
-
-GUTENBERG_RESULT:
-<full gutenberg post_content here>
-SYSTEM;
-	}
-
-	/**
 	 * Return the system prompt used for the mobile-only improvement pass.
 	 *
 	 * The mobile pass must NOT modify desktop styles or the Gutenberg post_content.
