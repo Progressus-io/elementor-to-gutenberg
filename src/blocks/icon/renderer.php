@@ -90,7 +90,7 @@ function blockshift_render_icon_block( $attributes ) {
 
 	// Final markup.
 	return sprintf(
-		'<div class="wp-block-gutenberg-icon fontawesome-icon-align-%1$s" style="%2$s">%3$s</div>',
+		'<div class="wp-block-blockshift-icon fontawesome-icon-align-%1$s" style="%2$s">%3$s</div>',
 		esc_attr( $alignment ),
 		$wrapper_style,
 		$icon_html

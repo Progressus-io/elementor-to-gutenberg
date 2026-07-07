@@ -686,9 +686,9 @@ const Edit = ( { attributes, setAttributes } ) => {
 			</BlockControls>
 
 			<div { ...blockProps }>
-				<div className="progressus-tabs" style={ tabsStyle }>
+				<div className="blockshift-tabs" style={ tabsStyle }>
 					<div
-						className="progressus-tabs-headers"
+						className="blockshift-tabs-headers"
 						style={ {
 							display: 'flex',
 							flexDirection:
@@ -699,7 +699,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 							<button
 								key={ index }
 								type="button"
-								className={ `progressus-tab-header ${
+								className={ `blockshift-tab-header ${
 									index === activeTab ? 'active' : ''
 								}` }
 								style={
@@ -717,10 +717,10 @@ const Edit = ( { attributes, setAttributes } ) => {
 					</div>
 
 					<div
-						className="progressus-tabs-content"
+						className="blockshift-tabs-content"
 						style={ contentStyle }
 					>
-						<div className="progressus-tab-content">
+						<div className="blockshift-tab-content">
 							{ tabs[ activeTab ]?.content || '' }
 						</div>
 					</div>

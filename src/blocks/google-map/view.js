@@ -8,7 +8,7 @@ document.addEventListener( 'DOMContentLoaded', function () {
 	}
 
 	const wrappers = document.querySelectorAll(
-		'.wp-block-progressus-google-map'
+		'.wp-block-blockshift-google-map'
 	);
 	wrappers.forEach( ( wrapper ) => {
 		const locJson = wrapper.getAttribute( 'data-location' );
@@ -32,12 +32,12 @@ document.addEventListener( 'DOMContentLoaded', function () {
 
 		// Create or find map container. If iframe exists, replace it.
 		let mapContainer = wrapper.querySelector(
-			'.progressus-google-map__map'
+			'.blockshift-google-map__map'
 		);
 		const existingIframe = wrapper.querySelector( 'iframe' );
 		if ( ! mapContainer ) {
 			mapContainer = document.createElement( 'div' );
-			mapContainer.className = 'progressus-google-map__map';
+			mapContainer.className = 'blockshift-google-map__map';
 			mapContainer.style.width = '100%';
 			mapContainer.style.height = height + 'px';
 		}

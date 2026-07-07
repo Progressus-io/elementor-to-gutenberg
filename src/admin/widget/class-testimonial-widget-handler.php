@@ -19,7 +19,7 @@ defined( 'ABSPATH' ) || exit;
 class Testimonial_Widget_Handler implements Widget_Handler_Interface {
 
 	/**
-	 * Handle conversion of Elementor testimonial widget to progressus/testimonial block.
+	 * Handle conversion of Elementor testimonial widget to blockshift/testimonial block.
 	 *
 	 * @param array $element Elementor widget data.
 	 *
@@ -109,7 +109,7 @@ class Testimonial_Widget_Handler implements Widget_Handler_Interface {
 
 		$wrapper_classes = array_filter(
 			array_merge(
-				array( 'wp-block-progressus-testimonial', 'testimonial-widget', 'has-text-align-' . $alignment ),
+				array( 'wp-block-blockshift-testimonial', 'testimonial-widget', 'has-text-align-' . $alignment ),
 				$custom_classes
 			)
 		);
@@ -192,7 +192,7 @@ class Testimonial_Widget_Handler implements Widget_Handler_Interface {
 
 		$html = $wrapper_open . $inner . '</div>';
 
-		return Block_Builder::build( 'progressus/testimonial', $block_attrs, $html );
+		return Block_Builder::build( 'blockshift/testimonial', $block_attrs, $html );
 	}
 
 	/**

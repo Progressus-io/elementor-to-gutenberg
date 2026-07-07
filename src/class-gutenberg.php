@@ -256,8 +256,8 @@ class Gutenberg {
 		add_action( 'init', array( $this, 'init' ), 1 );
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'fontawesome_icon_block_enqueue_fontawesome' ) );
-		add_action( 'wp_ajax_progressus_form_submit', array( $this, 'handle_form_submission' ) );
-		add_action( 'wp_ajax_nopriv_progressus_form_submit', array( $this, 'handle_form_submission' ) );
+		add_action( 'wp_ajax_blockshift_form_submit', array( $this, 'handle_form_submission' ) );
+		add_action( 'wp_ajax_nopriv_blockshift_form_submit', array( $this, 'handle_form_submission' ) );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_editor_assets' ), 9999 );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_converted_page_css' ), 9999 );
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_converted_page_css' ), 9999 );
@@ -327,11 +327,11 @@ class Gutenberg {
 			)
 		);
 
-		if ( has_block( 'progressus/icon' ) ) {
+		if ( has_block( 'blockshift/icon' ) ) {
 			wp_enqueue_style( 'dashicons' );
 		}
 
-		if ( has_block( 'progressus/testimonials' ) ) {
+		if ( has_block( 'blockshift/testimonials' ) ) {
 			wp_enqueue_style(
 				'swiper-css',
 				BLOCKSHIFT_DIR_URL . '/assets/vendor/swiper/swiper-bundle.min.css',
@@ -351,13 +351,13 @@ class Gutenberg {
 		$this->enqueue_converted_post_fonts();
 
 		// Enqueue form submission script if form block is present
-		if ( has_block( 'progressus/form' ) ) {
+		if ( has_block( 'blockshift/form' ) ) {
 			wp_localize_script(
 				'blockshift-scripts',
-				'progressusFormData',
+				'blockshiftFormData',
 				array(
 					'ajaxUrl' => admin_url( 'admin-ajax.php' ),
-					'nonce'   => wp_create_nonce( 'progressus_form_nonce' ),
+					'nonce'   => wp_create_nonce( 'blockshift_form_nonce' ),
 				)
 			);
 		}
@@ -498,7 +498,7 @@ class Gutenberg {
 	 */
 	public function handle_form_submission() {
 		// Verify nonce
-		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'progressus_form_nonce' ) ) {
+		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'blockshift_form_nonce' ) ) {
 			wp_send_json_error(
 				array(
 					'message' => __( 'Security verification failed.', 'layoutbridge-block-migration' ),

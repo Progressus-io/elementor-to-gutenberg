@@ -109,7 +109,7 @@ class Icon_Box_Widget_Handler implements Widget_Handler_Interface {
 
 		$content = '<div ' . implode( ' ', $wrapper_attrs ) . '>' . implode( '', $segments ) . '</div>';
 
-		// Build block attributes for the new `gutenberg/icon-box` block.
+		// Build block attributes for the new `blockshift/icon-box` block.
 		$block_attributes = array(
 			'icon'             => isset( $icon_data['slug'] ) ? (string) $icon_data['slug'] : '',
 			'iconStyle'        => isset( $icon_data['style_class'] ) ? (string) $icon_data['style_class'] : 'fas',
@@ -131,7 +131,7 @@ class Icon_Box_Widget_Handler implements Widget_Handler_Interface {
 			Style_Parser::save_custom_css( $custom_css );
 		}
 
-		return Block_Builder::build( 'gutenberg/icon-box', $block_attributes, $content );
+		return Block_Builder::build( 'blockshift/icon-box', $block_attributes, $content );
 	}
 
 	/**

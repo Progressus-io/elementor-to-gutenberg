@@ -5,7 +5,7 @@
  * Replace them with your own styles or remove the file completely.
  */
 
-.wp-block-gutenberg-icon {
+.wp-block-blockshift-icon {
 	&.fontawesome-icon-align-left {
 		text-align: left;
 	}
@@ -91,7 +91,7 @@
 
 // Responsive adjustments
 @media (max-width: 768px) {
-	.wp-block-gutenberg-icon {
+	.wp-block-blockshift-icon {
 		i {
 			// Slightly reduce icon size on mobile if it's too large
 			&[style*="font-size"] {
@@ -104,7 +104,7 @@
 
 // Accessibility improvements
 @media (prefers-reduced-motion: reduce) {
-	.wp-block-gutenberg-icon {
+	.wp-block-blockshift-icon {
 		i {
 			transition: none !important;
 			animation: none !important;
@@ -118,7 +118,7 @@
 
 // High contrast mode support
 @media (prefers-contrast: high) {
-	.wp-block-gutenberg-icon {
+	.wp-block-blockshift-icon {
 		i {
 			filter: contrast(2);
 		}
@@ -126,7 +126,7 @@
 }
 
 // Focus styles for accessibility
-.wp-block-gutenberg-icon {
+.wp-block-blockshift-icon {
 	a:focus {
 		outline: 2px solid #005cee;
 		outline-offset: 2px;
@@ -142,7 +142,7 @@
 
 // Print styles
 @media print {
-	.wp-block-gutenberg-icon {
+	.wp-block-blockshift-icon {
 		i {
 			-webkit-print-color-adjust: exact;
 			color-adjust: exact;

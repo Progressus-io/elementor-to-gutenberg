@@ -1,7 +1,7 @@
 /* global Swiper */
 document.addEventListener( 'DOMContentLoaded', function () {
 	const carousels = document.querySelectorAll(
-		'.progressus-testimonials-carousel'
+		'.blockshift-testimonials-carousel'
 	);
 
 	carousels.forEach( ( carousel ) => {

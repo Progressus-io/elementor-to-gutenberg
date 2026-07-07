@@ -535,7 +535,7 @@ class Call_To_Action_Widget_Handler implements Widget_Handler_Interface {
 
 		$block_attributes = $this->filter_default_block_attributes( $block_attributes );
 
-		return Block_Builder::build( 'gutenberg/call-to-action', $block_attributes, $content );
+		return Block_Builder::build( 'blockshift/call-to-action', $block_attributes, $content );
 	}
 
 	/**

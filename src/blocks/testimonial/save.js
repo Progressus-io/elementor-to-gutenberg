@@ -1,5 +1,5 @@
 /**
- * Save component for progressus/testimonial block.
+ * Save component for blockshift/testimonial block.
  *
  * IMPORTANT: The HTML structure produced here must exactly match what
  * class-testimonial-widget-handler.php generates when converting from Elementor.
@@ -55,7 +55,7 @@ export default function save( { attributes } ) {
 
 	// ── Wrapper classes (order must match PHP handler) ──────────────────────
 	const wrapperClasses = [
-		'wp-block-progressus-testimonial',
+		'wp-block-blockshift-testimonial',
 		'testimonial-widget',
 		`has-text-align-${ alignment }`,
 		customClass,

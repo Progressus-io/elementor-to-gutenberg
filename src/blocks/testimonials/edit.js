@@ -570,7 +570,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 			</InspectorAdvancedControls>
 
 			<div { ...blockProps }>
-				<div className="progressus-testimonials-editor">
+				<div className="blockshift-testimonials-editor">
 					<div className="testimonial-slides">
 						{ slides.map( ( slide, index ) => {
 							const renderSlideImage = () => {

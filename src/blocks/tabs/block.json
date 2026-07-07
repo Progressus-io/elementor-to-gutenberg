@@ -1,7 +1,7 @@
 {
   "$schema": "https://schemas.wp.org/trunk/block.json",
   "apiVersion": 3,
-  "name": "progressus/tabs",
+  "name": "blockshift/tabs",
   "version": "1.0.0",
   "title": "Tabs",
   "category": "design",

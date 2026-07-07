@@ -1,6 +1,6 @@
 <?php
 /**
- * Server-side rendering of the `progressus/tabs` block.
+ * Server-side rendering of the `blockshift/tabs` block.
  *
  * @package Progressus\BlockShift
  */
@@ -14,7 +14,7 @@ use function get_block_wrapper_attributes;
 use function register_block_type;
 
 /**
- * Renders the `progressus/tabs` block on the server.
+ * Renders the `blockshift/tabs` block on the server.
  *
  * @param array    $attributes Block attributes.
  * @param string   $content    Block default content.
@@ -89,7 +89,7 @@ function render_tabs_block( $attributes, $_content, $_block ) { // phpcs:ignore 
 
 	$wrapper_attributes = \get_block_wrapper_attributes(
 		array(
-			'class'           => 'wp-block-progressus-tabs',
+			'class'           => 'wp-block-blockshift-tabs',
 			'data-tab-style'  => $tab_style,
 			'data-active-tab' => $active_tab,
 		)
@@ -157,15 +157,15 @@ function render_tabs_block( $attributes, $_content, $_block ) { // phpcs:ignore 
 	$headers_direction = 'vertical' === $tab_style ? 'column' : 'row';
 
 	$output  = sprintf( '<div %s>', $wrapper_attributes );
-	$output .= sprintf( '<div class="progressus-tabs" style="%s">', \esc_attr( $tabs_style ) );
+	$output .= sprintf( '<div class="blockshift-tabs" style="%s">', \esc_attr( $tabs_style ) );
 
 	// Render tab headers
-	$output .= sprintf( '<div class="progressus-tabs-headers" style="display: flex; flex-direction: %s;">', \esc_attr( $headers_direction ) );
+	$output .= sprintf( '<div class="blockshift-tabs-headers" style="display: flex; flex-direction: %s;">', \esc_attr( $headers_direction ) );
 
 	foreach ( $tabs as $index => $tab ) {
 		$tab_title    = isset( $tab['title'] ) ? \esc_html( $tab['title'] ) : sprintf( 'Tab %d', $index + 1 );
 		$is_active    = $index === $active_tab;
-		$header_class = $is_active ? 'progressus-tab-header active' : 'progressus-tab-header';
+		$header_class = $is_active ? 'blockshift-tab-header active' : 'blockshift-tab-header';
 		$header_style = $is_active ? $active_tab_header_style : $tab_header_style;
 
 		$output .= sprintf(
@@ -181,12 +181,12 @@ function render_tabs_block( $attributes, $_content, $_block ) { // phpcs:ignore 
 	$output .= '</div>'; // Close headers
 
 	// Render tab content
-	$output .= sprintf( '<div class="progressus-tabs-content" style="%s" role="tablist">', \esc_attr( $content_style ) );
+	$output .= sprintf( '<div class="blockshift-tabs-content" style="%s" role="tablist">', \esc_attr( $content_style ) );
 
 	foreach ( $tabs as $index => $tab ) {
 		$tab_content     = isset( $tab['content'] ) ? wp_kses_post( $tab['content'] ) : '';
 		$is_active       = $index === $active_tab;
-		$content_class   = $is_active ? 'progressus-tab-content active' : 'progressus-tab-content';
+		$content_class   = $is_active ? 'blockshift-tab-content active' : 'blockshift-tab-content';
 		$content_display = $is_active ? 'block' : 'none';
 
 		$output .= sprintf(
@@ -209,7 +209,7 @@ function render_tabs_block( $attributes, $_content, $_block ) { // phpcs:ignore 
 // Register the render callback
 if ( \function_exists( 'register_block_type' ) ) {
 	\register_block_type(
-		'progressus/tabs',
+		'blockshift/tabs',
 		array(
 			'render_callback' => __NAMESPACE__ . '\render_tabs_block',
 		)

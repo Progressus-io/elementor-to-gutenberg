@@ -1,7 +1,7 @@
 {
   "$schema": "https://schemas.wp.org/trunk/block.json",
   "apiVersion": 3,
-  "name": "gutenberg/image-box",
+  "name": "blockshift/image-box",
   "title": "Image Box",
   "category": "design",
   "icon": "format-image",

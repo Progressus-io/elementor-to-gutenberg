@@ -557,7 +557,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 
 			<div { ...blockProps } style={ formStyle }>
 				<form
-					className="progressus-form"
+					className="blockshift-form"
 					data-form-name={ formName }
 					data-success-message={ successMessage }
 					data-error-message={ errorMessage }

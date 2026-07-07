@@ -1,7 +1,7 @@
 /* global requestAnimationFrame, IntersectionObserver */
 document.addEventListener( 'DOMContentLoaded', function () {
 	const counters = document.querySelectorAll(
-		'.wp-block-progressus-counter'
+		'.wp-block-blockshift-counter'
 	);
 
 	const startCounter = ( counter ) => {

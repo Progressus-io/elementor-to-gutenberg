@@ -129,7 +129,7 @@ class Nested_Tabs_Widget_Handler implements Widget_Handler_Interface {
 	}
 
 	/**
-	 * Defaults aligned to the progressus/tabs block save() output.
+	 * Defaults aligned to the blockshift/tabs block save() output.
 	 *
 	 * @return array
 	 */
@@ -187,7 +187,7 @@ class Nested_Tabs_Widget_Handler implements Widget_Handler_Interface {
 	}
 
 	/**
-	 * Serialize a progressus/tabs block with inner HTML matching the block's save() output.
+	 * Serialize a blockshift/tabs block with inner HTML matching the block's save() output.
 	 *
 	 * @param array $attrs Block attributes.
 	 *
@@ -197,11 +197,11 @@ class Nested_Tabs_Widget_Handler implements Widget_Handler_Interface {
 		$inner = $this->render_progressus_tabs_inner_html( $attrs );
 		$json  = ' ' . wp_json_encode( $attrs );
 
-		return '<!-- wp:progressus/tabs' . $json . " -->\n" . $inner . "\n<!-- /wp:progressus/tabs -->\n";
+		return '<!-- wp:blockshift/tabs' . $json . " -->\n" . $inner . "\n<!-- /wp:blockshift/tabs -->\n";
 	}
 
 	/**
-	 * Render the exact DOM structure used by the progressus/tabs block.
+	 * Render the exact DOM structure used by the blockshift/tabs block.
 	 *
 	 * @param array $attrs Block attributes.
 	 *
@@ -308,7 +308,7 @@ class Nested_Tabs_Widget_Handler implements Widget_Handler_Interface {
 		foreach ( $tabs as $i => $tab ) {
 			$is_active = ( $i === $active );
 
-			$header_class = 'progressus-tab-header' . ( $is_active ? ' active' : ' ' );
+			$header_class = 'blockshift-tab-header' . ( $is_active ? ' active' : ' ' );
 
 			$header_style    = $base_header_style;
 			$header_style[0] = 'background-color:' . ( $is_active ? $active_tab_color : $tab_color );
@@ -323,16 +323,16 @@ class Nested_Tabs_Widget_Handler implements Widget_Handler_Interface {
 		$contents_html = '';
 		foreach ( $tabs as $i => $tab ) {
 			$is_active      = ( $i === $active );
-			$class          = 'progressus-tab-content' . ( $is_active ? ' active' : ' ' );
+			$class          = 'blockshift-tab-content' . ( $is_active ? ' active' : ' ' );
 			$style          = 'display:' . ( $is_active ? 'block' : 'none' );
 			$content        = isset( $tab['content'] ) ? (string) $tab['content'] : '';
 			$contents_html .= '<div class="' . esc_attr( $class ) . '" style="' . esc_attr( $style ) . '">' . esc_attr( $content ) . '</div>';
 		}
 
-		return '<div class="wp-block-progressus-tabs">' .
-				'<div class="progressus-tabs" style="' . esc_attr( $wrapper_style ) . '" data-tab-style="' . esc_attr( $tab_style ) . '" data-active-tab="' . esc_attr( (string) $active ) . '">' .
-				'<div class="progressus-tabs-headers" style="' . esc_attr( $headers_style ) . '">' . $headers_html . '</div>' .
-				'<div class="progressus-tabs-content" style="' . esc_attr( implode( ';', $content_style_parts ) ) . '">' . $contents_html . '</div>' .
+		return '<div class="wp-block-blockshift-tabs">' .
+				'<div class="blockshift-tabs" style="' . esc_attr( $wrapper_style ) . '" data-tab-style="' . esc_attr( $tab_style ) . '" data-active-tab="' . esc_attr( (string) $active ) . '">' .
+				'<div class="blockshift-tabs-headers" style="' . esc_attr( $headers_style ) . '">' . $headers_html . '</div>' .
+				'<div class="blockshift-tabs-content" style="' . esc_attr( implode( ';', $content_style_parts ) ) . '">' . $contents_html . '</div>' .
 				'</div></div>';
 	}
 }

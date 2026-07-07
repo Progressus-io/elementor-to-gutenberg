@@ -1,6 +1,6 @@
 <?php
 /**
- * Server-side render for the `progressus/google-map` block.
+ * Server-side render for the `blockshift/google-map` block.
  *
  * @package Progressus\BlockShift
  */
@@ -53,7 +53,7 @@ function render_google_map_block( $attributes, $_content, $_block ) { // phpcs:i
 		$src = '';
 	}
 
-	$wrapper = \get_block_wrapper_attributes( array( 'class' => 'wp-block-progressus-google-map' ) );
+	$wrapper = \get_block_wrapper_attributes( array( 'class' => 'wp-block-blockshift-google-map' ) );
 
 	// Attach serialized location data when present for richer frontend access.
 	$location_attr = isset( $attributes['location'] ) && is_array( $attributes['location'] ) ? $attributes['location'] : null;
@@ -132,5 +132,5 @@ function render_google_map_block( $attributes, $_content, $_block ) { // phpcs:i
 }
 
 if ( function_exists( 'register_block_type' ) ) {
-	register_block_type( 'progressus/google-map', array( 'render_callback' => __NAMESPACE__ . '\\render_google_map_block' ) );
+	register_block_type( 'blockshift/google-map', array( 'render_callback' => __NAMESPACE__ . '\\render_google_map_block' ) );
 }

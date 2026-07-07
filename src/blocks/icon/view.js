@@ -24,7 +24,7 @@
 document.addEventListener( 'DOMContentLoaded', function () {
 	// Get all FontAwesome icon blocks
 	const iconBlocks = document.querySelectorAll(
-		'.wp-block-gutenberg-icon i'
+		'.wp-block-blockshift-icon i'
 	);
 
 	iconBlocks.forEach( function ( icon ) {
@@ -144,17 +144,17 @@ style.textContent = `
 		backface-visibility: hidden;
 	}
 	
-	.wp-block-gutenberg-icon i.fa-loaded {
+	.wp-block-blockshift-icon i.fa-loaded {
 		opacity: 1 !important;
 		transition: all 0.3s ease;
 	}
 	
 	/* Reduce animations when not in viewport for performance */
-	.wp-block-gutenberg-icon i:not(.in-viewport) {
+	.wp-block-blockshift-icon i:not(.in-viewport) {
 		animation-play-state: paused;
 	}
 	
-	.wp-block-gutenberg-icon i.in-viewport {
+	.wp-block-blockshift-icon i.in-viewport {
 		animation-play-state: running;
 	}
 `;
@@ -177,7 +177,7 @@ window.addEventListener(
 
 			// Optionally, you could load a fallback or show text-based icons
 			const iconBlocks = document.querySelectorAll(
-				'.wp-block-gutenberg-icon i'
+				'.wp-block-blockshift-icon i'
 			);
 			iconBlocks.forEach( function ( icon ) {
 				const iconName = icon.getAttribute( 'data-icon' );

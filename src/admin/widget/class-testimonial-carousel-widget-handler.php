@@ -248,12 +248,12 @@ class Testimonial_Carousel_Widget_Handler implements Widget_Handler_Interface {
 			Style_Parser::save_custom_css( $custom_css );
 		}
 
-		$attributes = $this->prune_block_attrs_against_schema( 'progressus/testimonials', $attributes );
+		$attributes = $this->prune_block_attrs_against_schema( 'blockshift/testimonials', $attributes );
 
 		$rendered_html = $this->generate_testimonials_html( $attributes );
 
 		$parsed = array(
-			'blockName'    => 'progressus/testimonials',
+			'blockName'    => 'blockshift/testimonials',
 			'attrs'        => $attributes,
 			'innerBlocks'  => array(),
 			'innerHTML'    => $rendered_html,
@@ -269,9 +269,9 @@ class Testimonial_Carousel_Widget_Handler implements Widget_Handler_Interface {
 				$attributes_json = '{}';
 			}
 
-			$block_content  = '<!-- wp:progressus/testimonials ' . $attributes_json . ' -->';
+			$block_content  = '<!-- wp:blockshift/testimonials ' . $attributes_json . ' -->';
 			$block_content .= $rendered_html;
-			$block_content .= '<!-- /wp:progressus/testimonials -->';
+			$block_content .= '<!-- /wp:blockshift/testimonials -->';
 		}
 
 		return $block_content . "\n";
@@ -358,7 +358,7 @@ class Testimonial_Carousel_Widget_Handler implements Widget_Handler_Interface {
 		);
 
 		$custom_class = trim( (string) $custom_class );
-		$class_attr   = trim( 'wp-block-progressus-testimonials ' . $custom_class );
+		$class_attr   = trim( 'wp-block-blockshift-testimonials ' . $custom_class );
 
 		$wrapper_style = sprintf(
 			'margin:%dpx %dpx %dpx %dpx;padding:%dpx %dpx %dpx %dpx',
@@ -374,7 +374,7 @@ class Testimonial_Carousel_Widget_Handler implements Widget_Handler_Interface {
 
 		$html = '<div class="' . esc_attr( $class_attr ) . '" id="' . esc_attr( (string) $custom_id ) . '" style="' . esc_attr( $wrapper_style ) . '">';
 
-		$html .= '<div class="progressus-testimonials-carousel" data-slides-per-view="' . esc_attr( $slides_per_view ) . '" data-space-between="' . esc_attr( $space_between ) . '" data-arrows-size="' . esc_attr( $arrows_size ) . '" data-arrows-color="' . esc_attr( $arrows_color ) . '" data-pagination-gap="' . esc_attr( $pagination_gap ) . '" data-pagination-size="' . esc_attr( $pagination_size ) . '" data-pagination-color="' . esc_attr( $pagination_color_inactive ) . '">';
+		$html .= '<div class="blockshift-testimonials-carousel" data-slides-per-view="' . esc_attr( $slides_per_view ) . '" data-space-between="' . esc_attr( $space_between ) . '" data-arrows-size="' . esc_attr( $arrows_size ) . '" data-arrows-color="' . esc_attr( $arrows_color ) . '" data-pagination-gap="' . esc_attr( $pagination_gap ) . '" data-pagination-size="' . esc_attr( $pagination_size ) . '" data-pagination-color="' . esc_attr( $pagination_color_inactive ) . '">';
 		$html .= '<div class="swiper"><div class="swiper-wrapper">';
 
 		foreach ( $slides as $slide ) {

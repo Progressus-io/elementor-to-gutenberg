@@ -50,7 +50,7 @@ const Save = ( { attributes } ) => {
 	return (
 		<div { ...blockProps } style={ formStyle }>
 			<form
-				className="progressus-form"
+				className="blockshift-form"
 				data-form-name={ formName }
 				data-success-message={ successMessage }
 				data-error-message={ errorMessage }

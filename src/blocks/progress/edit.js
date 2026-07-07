@@ -204,20 +204,20 @@ export default function Edit( { attributes, setAttributes } ) {
 				</PanelBody>
 			</InspectorControls>
 
-			<div className="progressus-progress-bar" style={ containerStyle }>
+			<div className="blockshift-progress-bar" style={ containerStyle }>
 				{ showTitle && <h4 style={ titleStyle }>{ title }</h4> }
 				<div
-					className="progressus-progress-bar-container"
+					className="blockshift-progress-bar-container"
 					style={ progressBarStyle }
 				>
 					<div
-						className="progressus-progress-bar-fill"
+						className="blockshift-progress-bar-fill"
 						style={ progressStyle }
 					>
 						<div style={ textStyle }>
 							{ innerText }
 							{ showPercentage && (
-								<span className="progressus-progress-percentage">
+								<span className="blockshift-progress-percentage">
 									{ percentage }%
 								</span>
 							) }

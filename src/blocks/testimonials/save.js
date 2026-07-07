@@ -45,7 +45,7 @@ const Save = ( { attributes } ) => {
 	return (
 		<div { ...blockProps } style={ containerStyle }>
 			<div
-				className="progressus-testimonials-carousel"
+				className="blockshift-testimonials-carousel"
 				data-slides-per-view={ slidesPerView }
 				data-space-between={ spaceBetween }
 				data-arrows-size={ arrowsSize }
