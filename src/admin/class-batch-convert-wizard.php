@@ -197,8 +197,8 @@ class Batch_Convert_Wizard {
 	public function register_menu(): void {
 		add_submenu_page(
 			'blockshift-settings',
-			esc_html__( 'Conversion Wizard', 'blockshift-migrate-from-elementor' ),
-			esc_html__( 'Conversion Wizard', 'blockshift-migrate-from-elementor' ),
+			esc_html__( 'Conversion Wizard', 'layoutbridge-block-migration' ),
+			esc_html__( 'Conversion Wizard', 'layoutbridge-block-migration' ),
 			'edit_pages',
 			self::MENU_SLUG,
 			array( $this, 'render_page' )
@@ -264,19 +264,19 @@ class Batch_Convert_Wizard {
 	 */
 	public function render_page(): void {
 		if ( ! current_user_can( 'edit_pages' ) ) {
-			wp_die( esc_html__( 'You do not have permission to access this page.', 'blockshift-migrate-from-elementor' ) );
+			wp_die( esc_html__( 'You do not have permission to access this page.', 'layoutbridge-block-migration' ) );
 		}
 
 		?>
 		<div class="wrap pgs" style="margin-bottom:0;">
 			<header class="pgs-pluginhead">
-				<span class="pgs-pluginhead__brand"><span class="pgs-pluginhead__name"><?php esc_html_e( 'BlockShift – Migrate from Elementor', 'blockshift-migrate-from-elementor' ); ?></span></span>
+				<span class="pgs-pluginhead__brand"><span class="pgs-pluginhead__name"><?php esc_html_e( 'BlockShift – Migrate from Elementor', 'layoutbridge-block-migration' ); ?></span></span>
 			</header>
 			<hr class="wp-header-end" style="margin:0;border:0;">
 		</div>
 		<div class="wrap blockshift-wizard-wrap">
-			<h1 class="wp-heading-inline"><?php esc_html_e( 'Gutenberg Conversion Wizard', 'blockshift-migrate-from-elementor' ); ?></h1>
-			<p class="description"><?php esc_html_e( 'Convert Elementor pages to Gutenberg blocks.', 'blockshift-migrate-from-elementor' ); ?></p>
+			<h1 class="wp-heading-inline"><?php esc_html_e( 'Gutenberg Conversion Wizard', 'layoutbridge-block-migration' ); ?></h1>
+			<p class="description"><?php esc_html_e( 'Convert Elementor pages to Gutenberg blocks.', 'layoutbridge-block-migration' ); ?></p>
 			<div id="blockshift-batch-convert-root" class="blockshift-wizard-root" aria-live="polite"></div>
 		</div>
 		<?php
@@ -363,7 +363,7 @@ class Batch_Convert_Wizard {
 		if ( $change_theme && '' === $new_theme ) {
 			wp_send_json_error(
 				array(
-					'message' => esc_html__( 'Select a theme before starting the conversion.', 'blockshift-migrate-from-elementor' ),
+					'message' => esc_html__( 'Select a theme before starting the conversion.', 'layoutbridge-block-migration' ),
 				)
 			);
 		}
@@ -386,7 +386,7 @@ class Batch_Convert_Wizard {
 		if ( empty( $pages ) && empty( $templates['headers'] ) && empty( $templates['footers'] ) ) {
 			wp_send_json_error(
 				array(
-					'message' => esc_html__( 'Select at least one page or template before starting a conversion.', 'blockshift-migrate-from-elementor' ),
+					'message' => esc_html__( 'Select at least one page or template before starting a conversion.', 'layoutbridge-block-migration' ),
 				)
 			);
 		}
@@ -455,7 +455,7 @@ class Batch_Convert_Wizard {
 		if ( '' === $job_id ) {
 			wp_send_json_error(
 				array(
-					'message' => esc_html__( 'Missing job identifier.', 'blockshift-migrate-from-elementor' ),
+					'message' => esc_html__( 'Missing job identifier.', 'layoutbridge-block-migration' ),
 				)
 			);
 		}
@@ -464,7 +464,7 @@ class Batch_Convert_Wizard {
 		if ( empty( $job ) || get_current_user_id() !== (int) $job['user_id'] ) {
 			wp_send_json_error(
 				array(
-					'message' => esc_html__( 'Conversion job could not be found.', 'blockshift-migrate-from-elementor' ),
+					'message' => esc_html__( 'Conversion job could not be found.', 'layoutbridge-block-migration' ),
 				)
 			);
 		}
@@ -876,7 +876,7 @@ class Batch_Convert_Wizard {
 		if ( ! current_user_can( 'edit_pages' ) ) {
 			wp_send_json_error(
 				array(
-					'message' => esc_html__( 'You do not have permission to perform this action.', 'blockshift-migrate-from-elementor' ),
+					'message' => esc_html__( 'You do not have permission to perform this action.', 'layoutbridge-block-migration' ),
 				),
 				403
 			);
@@ -1618,10 +1618,10 @@ class Batch_Convert_Wizard {
 	private function get_template_source_label( string $source ): string {
 		switch ( $source ) {
 			case self::TEMPLATE_SOURCE_HEADER_FOOTER:
-				return esc_html__( 'Header Footer Elementor', 'blockshift-migrate-from-elementor' );
+				return esc_html__( 'Header Footer Elementor', 'layoutbridge-block-migration' );
 			case self::TEMPLATE_SOURCE_ELEMENTOR_PRO:
 			default:
-				return esc_html__( 'Elementor Pro', 'blockshift-migrate-from-elementor' );
+				return esc_html__( 'Elementor Pro', 'layoutbridge-block-migration' );
 		}
 	}
 
@@ -2036,14 +2036,14 @@ class Batch_Convert_Wizard {
 			}
 			$themes = wp_get_themes();
 			if ( ! isset( $themes[ $new_theme ] ) ) {
-				return new WP_Error( 'blockshift-theme-missing', esc_html__( 'The selected theme is not available.', 'blockshift-migrate-from-elementor' ) );
+				return new WP_Error( 'blockshift-theme-missing', esc_html__( 'The selected theme is not available.', 'layoutbridge-block-migration' ) );
 			}
 		}
 
 		switch_theme( $new_theme );
 
 		if ( get_stylesheet() !== $new_theme ) {
-			return new WP_Error( 'blockshift-theme-switch-failed', esc_html__( 'Unable to switch to the selected theme.', 'blockshift-migrate-from-elementor' ) );
+			return new WP_Error( 'blockshift-theme-switch-failed', esc_html__( 'Unable to switch to the selected theme.', 'layoutbridge-block-migration' ) );
 		}
 
 		if ( $should_copy_css && '' !== trim( $existing_css ) ) {
@@ -2085,7 +2085,7 @@ class Batch_Convert_Wizard {
 			$warning_code = 'theme_install_failed';
 		}
 
-		$message = esc_html__( 'Theme install/switch failed — conversion continued using current theme. To use this theme, please update WordPress.', 'blockshift-migrate-from-elementor' );
+		$message = esc_html__( 'Theme install/switch failed — conversion continued using current theme. To use this theme, please update WordPress.', 'layoutbridge-block-migration' );
 		if ( false !== strpos( $error_code, 'incompatible' ) || ( false !== strpos( strtolower( $error->get_error_message() ), 'requires' ) && false !== strpos( strtolower( $error->get_error_message() ), 'WordPress' ) ) ) {
 			$warning_code = 'theme_incompatible_wp';
 		}
@@ -2114,7 +2114,7 @@ class Batch_Convert_Wizard {
 		if ( ! current_user_can( 'install_themes' ) ) {
 			return new WP_Error(
 				'blockshift-theme-install-permissions',
-				esc_html__( 'You do not have permission to install themes.', 'blockshift-migrate-from-elementor' )
+				esc_html__( 'You do not have permission to install themes.', 'layoutbridge-block-migration' )
 			);
 		}
 
@@ -2126,7 +2126,7 @@ class Batch_Convert_Wizard {
 		if ( ! function_exists( 'themes_api' ) ) {
 			return new WP_Error(
 				'blockshift-theme-install-missing-api',
-				esc_html__( 'Theme installation API is not available on this site.', 'blockshift-migrate-from-elementor' )
+				esc_html__( 'Theme installation API is not available on this site.', 'layoutbridge-block-migration' )
 			);
 		}
 
@@ -2148,14 +2148,14 @@ class Batch_Convert_Wizard {
 		if ( ! empty( $api->requires ) && version_compare( get_bloginfo( 'version' ), (string) $api->requires, '<' ) ) {
 			return new WP_Error(
 				'blockshift-theme-incompatible-wp',
-				esc_html__( 'This theme requires a newer WordPress version.', 'blockshift-migrate-from-elementor' )
+				esc_html__( 'This theme requires a newer WordPress version.', 'layoutbridge-block-migration' )
 			);
 		}
 
 		if ( empty( $api->download_link ) ) {
 			return new WP_Error(
 				'blockshift-theme-install-no-download',
-				esc_html__( 'Could not find a download link for the selected theme.', 'blockshift-migrate-from-elementor' )
+				esc_html__( 'Could not find a download link for the selected theme.', 'layoutbridge-block-migration' )
 			);
 		}
 
@@ -2171,7 +2171,7 @@ class Batch_Convert_Wizard {
 		if ( ! $result ) {
 			return new WP_Error(
 				'blockshift-theme-install-failed',
-				esc_html__( 'Theme installation failed.', 'blockshift-migrate-from-elementor' )
+				esc_html__( 'Theme installation failed.', 'layoutbridge-block-migration' )
 			);
 		}
 
@@ -2200,7 +2200,7 @@ class Batch_Convert_Wizard {
 		);
 
 		if ( ! $post || ! in_array( $post->post_type, $this->get_convertible_post_types(), true ) ) {
-			$message           = esc_html__( 'Skipped: only Elementor posts can be converted.', 'blockshift-migrate-from-elementor' );
+			$message           = esc_html__( 'Skipped: only Elementor posts can be converted.', 'layoutbridge-block-migration' );
 			$result['message'] = $message;
 
 			return $result;
@@ -2217,7 +2217,7 @@ class Batch_Convert_Wizard {
 		if ( ! empty( $options['skip_converted'] ) && $existing_target_id > 0 && $this->has_been_converted( $source_id, $existing_target_id ) ) {
 			$title = get_the_title( $source_id );
 			/* translators: %s: page title */
-			$message                     = sprintf( esc_html__( 'Skipped: “%s” is already converted.', 'blockshift-migrate-from-elementor' ), $title );
+			$message                     = sprintf( esc_html__( 'Skipped: “%s” is already converted.', 'layoutbridge-block-migration' ), $title );
 			$result['message']           = $message;
 			$result['target']            = $existing_target_id;
 			$result['converted_post_id'] = $existing_target_id;
@@ -2227,7 +2227,7 @@ class Batch_Convert_Wizard {
 
 		$json_data = get_post_meta( $source_id, '_elementor_data', true );
 		if ( empty( $json_data ) ) {
-			$message           = esc_html__( 'Skipped: Elementor data not found.', 'blockshift-migrate-from-elementor' );
+			$message           = esc_html__( 'Skipped: Elementor data not found.', 'layoutbridge-block-migration' );
 			$result['message'] = $message;
 
 			return $result;
@@ -2235,7 +2235,7 @@ class Batch_Convert_Wizard {
 
 		$decoded = json_decode( $json_data, true );
 		if ( null === $decoded && JSON_ERROR_NONE !== json_last_error() ) {
-			$message           = esc_html__( 'Failed: invalid Elementor JSON data.', 'blockshift-migrate-from-elementor' );
+			$message           = esc_html__( 'Failed: invalid Elementor JSON data.', 'layoutbridge-block-migration' );
 			$result['status']  = 'error';
 			$result['message'] = $message;
 
@@ -2254,7 +2254,7 @@ class Batch_Convert_Wizard {
 		}
 
 		if ( '' === trim( $content ) ) {
-			$message           = esc_html__( 'Failed: conversion produced no Gutenberg content.', 'blockshift-migrate-from-elementor' );
+			$message           = esc_html__( 'Failed: conversion produced no Gutenberg content.', 'layoutbridge-block-migration' );
 			$result['status']  = 'error';
 			$result['message'] = $message;
 
@@ -2278,7 +2278,7 @@ class Batch_Convert_Wizard {
 			} else {
 				$title = get_the_title( $source_id );
 				/* translators: %s: page title */
-				$message                     = sprintf( esc_html__( 'Skipped: “%s” already has a converted copy.', 'blockshift-migrate-from-elementor' ), $title );
+				$message                     = sprintf( esc_html__( 'Skipped: “%s” already has a converted copy.', 'layoutbridge-block-migration' ), $title );
 				$result['message']           = $message;
 				$result['target']            = $existing_target_id;
 				$result['converted_post_id'] = $existing_target_id;
@@ -2313,7 +2313,7 @@ class Batch_Convert_Wizard {
 		$write_id = is_wp_error( $save ) ? 0 : (int) $save;
 
 		if ( empty( $write_id ) ) {
-			$message           = esc_html__( 'Failed: could not save Gutenberg content.', 'blockshift-migrate-from-elementor' );
+			$message           = esc_html__( 'Failed: could not save Gutenberg content.', 'layoutbridge-block-migration' );
 			$result['status']  = 'error';
 			$result['message'] = $message;
 
@@ -2326,7 +2326,7 @@ class Batch_Convert_Wizard {
 
 		if ( ! $this->is_overwrite_conversion_sane( $write_id ) ) {
 			$result['status']  = 'error';
-			$result['message'] = esc_html__( 'Failed: sanity check failed after saving Gutenberg content.', 'blockshift-migrate-from-elementor' );
+			$result['message'] = esc_html__( 'Failed: sanity check failed after saving Gutenberg content.', 'layoutbridge-block-migration' );
 
 			return $result;
 		}
@@ -2347,7 +2347,7 @@ class Batch_Convert_Wizard {
 
 		$title = get_the_title( $source_id );
 		/* translators: %s: page title */
-		$message = sprintf( esc_html__( 'Converted “%s” to Gutenberg blocks.', 'blockshift-migrate-from-elementor' ), $title );
+		$message = sprintf( esc_html__( 'Converted “%s” to Gutenberg blocks.', 'layoutbridge-block-migration' ), $title );
 
 		$result['status']            = 'success';
 		$result['message']           = $message;
@@ -2489,7 +2489,7 @@ class Batch_Convert_Wizard {
 
 		$post = get_post( (int) $template_info['id'] );
 		if ( ! $post instanceof WP_Post ) {
-			$result['message'] = esc_html__( 'Skipped: template not found.', 'blockshift-migrate-from-elementor' );
+			$result['message'] = esc_html__( 'Skipped: template not found.', 'layoutbridge-block-migration' );
 
 			return $result;
 		}
@@ -2505,7 +2505,7 @@ class Batch_Convert_Wizard {
 
 		if ( ! empty( $options['skip_converted'] ) && 'success' === $last_status && $existing_target ) {
 			$this->update_template_part_role( $existing_target, (string) $template_info['role'], (string) $template_info['type'] );
-			$message = esc_html__( 'Skipped: template already converted.', 'blockshift-migrate-from-elementor' );
+			$message = esc_html__( 'Skipped: template already converted.', 'layoutbridge-block-migration' );
 
 			$edit_link = $existing_target ? get_edit_post_link( $existing_target, '' ) : '';
 			if ( $existing_target && ! $edit_link ) {
@@ -2521,7 +2521,7 @@ class Batch_Convert_Wizard {
 
 		$json_data = get_post_meta( $post->ID, '_elementor_data', true );
 		if ( empty( $json_data ) ) {
-			$message   = esc_html__( 'Skipped: Elementor data not found.', 'blockshift-migrate-from-elementor' );
+			$message   = esc_html__( 'Skipped: Elementor data not found.', 'layoutbridge-block-migration' );
 			$edit_link = $existing_target ? get_edit_post_link( $existing_target, '' ) : '';
 			if ( $existing_target && ! $edit_link ) {
 				$edit_link = admin_url( 'post.php?post=' . $existing_target . '&action=edit' );
@@ -2536,7 +2536,7 @@ class Batch_Convert_Wizard {
 
 		$decoded = json_decode( $json_data, true );
 		if ( null === $decoded && JSON_ERROR_NONE !== json_last_error() ) {
-			$message   = esc_html__( 'Failed: invalid Elementor JSON data.', 'blockshift-migrate-from-elementor' );
+			$message   = esc_html__( 'Failed: invalid Elementor JSON data.', 'layoutbridge-block-migration' );
 			$edit_link = $existing_target ? get_edit_post_link( $existing_target, '' ) : '';
 			if ( $existing_target && ! $edit_link ) {
 				$edit_link = admin_url( 'post.php?post=' . $existing_target . '&action=edit' );
@@ -2562,7 +2562,7 @@ class Batch_Convert_Wizard {
 		}
 
 		if ( '' === trim( $content ) ) {
-			$message   = esc_html__( 'Failed: conversion produced no Gutenberg content.', 'blockshift-migrate-from-elementor' );
+			$message   = esc_html__( 'Failed: conversion produced no Gutenberg content.', 'layoutbridge-block-migration' );
 			$edit_link = $existing_target ? get_edit_post_link( $existing_target, '' ) : '';
 			if ( $existing_target && ! $edit_link ) {
 				$edit_link = admin_url( 'post.php?post=' . $existing_target . '&action=edit' );
@@ -2578,7 +2578,7 @@ class Batch_Convert_Wizard {
 
 		$target_id = $this->save_template_part( $template_info, $post, $content, $existing_target );
 		if ( ! $target_id ) {
-			$message           = esc_html__( 'Failed: could not save Gutenberg template.', 'blockshift-migrate-from-elementor' );
+			$message           = esc_html__( 'Failed: could not save Gutenberg template.', 'layoutbridge-block-migration' );
 			$result['status']  = 'error';
 			$result['message'] = $message;
 			$result['target']  = $existing_target;
@@ -2609,10 +2609,10 @@ class Batch_Convert_Wizard {
 			$this->link_template_part_to_target_pages( $target_id, $template_info );
 		}
 
-		$label = 'header' === $template_info['type'] ? esc_html__( 'header', 'blockshift-migrate-from-elementor' ) : esc_html__( 'footer', 'blockshift-migrate-from-elementor' );
+		$label = 'header' === $template_info['type'] ? esc_html__( 'header', 'layoutbridge-block-migration' ) : esc_html__( 'footer', 'layoutbridge-block-migration' );
 		$title = get_the_title( $post );
 		/* translators: 1: template type (header or footer), 2: template title */
-		$message = sprintf( esc_html__( 'Converted %1$s “%2$s”.', 'blockshift-migrate-from-elementor' ), $label, $title );
+		$message = sprintf( esc_html__( 'Converted %1$s “%2$s”.', 'layoutbridge-block-migration' ), $label, $title );
 
 		$edit_link = get_edit_post_link( $target_id, '' );
 		if ( ! $edit_link ) {
@@ -2634,8 +2634,8 @@ class Batch_Convert_Wizard {
 		$slug = sanitize_title( sprintf( 'converted-%s-%d', $template_info['type'], $source_post->ID ) );
 
 		/* translators: 1: template type (Header or Footer), 2: template title */
-		$title_format = esc_html__( 'Converted %1$s: %2$s', 'blockshift-migrate-from-elementor' );
-		$label        = 'header' === $template_info['type'] ? esc_html__( 'Header', 'blockshift-migrate-from-elementor' ) : esc_html__( 'Footer', 'blockshift-migrate-from-elementor' );
+		$title_format = esc_html__( 'Converted %1$s: %2$s', 'layoutbridge-block-migration' );
+		$label        = 'header' === $template_info['type'] ? esc_html__( 'Header', 'layoutbridge-block-migration' ) : esc_html__( 'Footer', 'layoutbridge-block-migration' );
 		$post_title   = sprintf( $title_format, $label, get_the_title( $source_post ) );
 
 		$postarr = array(
@@ -2892,7 +2892,7 @@ class Batch_Convert_Wizard {
 		$content = $this->build_page_template_content( $header_slug, $footer_slug );
 
 		/* translators: %s: page title the template was created for */
-		$title_format = esc_html__( 'Page Template: %s', 'blockshift-migrate-from-elementor' );
+		$title_format = esc_html__( 'Page Template: %s', 'layoutbridge-block-migration' );
 		$post_title   = sprintf( $title_format, get_the_title( $converted_page_id ) );
 
 		$postarr = array(
@@ -3241,213 +3241,213 @@ class Batch_Convert_Wizard {
 	private function get_strings(): array {
 		return array(
 			/* translators: 1: current step number, 2: total steps, 3: step label */
-			'step'                     => __( 'Step %1$s of %2$s — %3$s', 'blockshift-migrate-from-elementor' ),
-			'stepLabelMode'            => __( 'Mode', 'blockshift-migrate-from-elementor' ),
-			'stepLabelTheme'           => __( 'Theme', 'blockshift-migrate-from-elementor' ),
-			'stepLabelSelect'          => __( 'Pages', 'blockshift-migrate-from-elementor' ),
-			'stepLabelTemplates'       => __( 'Header & Footer', 'blockshift-migrate-from-elementor' ),
-			'stepLabelConflicts'       => __( 'Conflicts', 'blockshift-migrate-from-elementor' ),
-			'stepLabelReview'          => __( 'Review', 'blockshift-migrate-from-elementor' ),
-			'stepLabelProgress'        => __( 'Convert', 'blockshift-migrate-from-elementor' ),
-			'stepLabelAiImprove'       => __( 'AI Improve', 'blockshift-migrate-from-elementor' ),
-			'modeTitle'                => __( 'Choose Mode', 'blockshift-migrate-from-elementor' ),
-			'modeAutoTitle'            => __( 'Convert all pages automatically', 'blockshift-migrate-from-elementor' ),
-			'modeAutoDesc'             => __( 'Converts all eligible items, skips already converted, uses default settings.', 'blockshift-migrate-from-elementor' ),
-			'modeAutoSubtext'          => __( 'Recommended for first-time runs', 'blockshift-migrate-from-elementor' ),
-			'modeCustomTitle'          => __( 'Choose specific pages', 'blockshift-migrate-from-elementor' ),
-			'modeCustomDesc'           => __( 'Select exact pages and templates — best for testing or staged migration.', 'blockshift-migrate-from-elementor' ),
-			'modeCustomSubtext'        => __( 'For testing or staged migration', 'blockshift-migrate-from-elementor' ),
-			'continue'                 => __( 'Continue', 'blockshift-migrate-from-elementor' ),
-			'back'                     => __( 'Back', 'blockshift-migrate-from-elementor' ),
-			'selectPagesTitle'         => __( 'Select Content', 'blockshift-migrate-from-elementor' ),
-			'selectAll'                => __( 'Select all', 'blockshift-migrate-from-elementor' ),
-			'selectAllAcrossTypes'     => __( 'Select all across all types', 'blockshift-migrate-from-elementor' ),
+			'step'                     => __( 'Step %1$s of %2$s — %3$s', 'layoutbridge-block-migration' ),
+			'stepLabelMode'            => __( 'Mode', 'layoutbridge-block-migration' ),
+			'stepLabelTheme'           => __( 'Theme', 'layoutbridge-block-migration' ),
+			'stepLabelSelect'          => __( 'Pages', 'layoutbridge-block-migration' ),
+			'stepLabelTemplates'       => __( 'Header & Footer', 'layoutbridge-block-migration' ),
+			'stepLabelConflicts'       => __( 'Conflicts', 'layoutbridge-block-migration' ),
+			'stepLabelReview'          => __( 'Review', 'layoutbridge-block-migration' ),
+			'stepLabelProgress'        => __( 'Convert', 'layoutbridge-block-migration' ),
+			'stepLabelAiImprove'       => __( 'AI Improve', 'layoutbridge-block-migration' ),
+			'modeTitle'                => __( 'Choose Mode', 'layoutbridge-block-migration' ),
+			'modeAutoTitle'            => __( 'Convert all pages automatically', 'layoutbridge-block-migration' ),
+			'modeAutoDesc'             => __( 'Converts all eligible items, skips already converted, uses default settings.', 'layoutbridge-block-migration' ),
+			'modeAutoSubtext'          => __( 'Recommended for first-time runs', 'layoutbridge-block-migration' ),
+			'modeCustomTitle'          => __( 'Choose specific pages', 'layoutbridge-block-migration' ),
+			'modeCustomDesc'           => __( 'Select exact pages and templates — best for testing or staged migration.', 'layoutbridge-block-migration' ),
+			'modeCustomSubtext'        => __( 'For testing or staged migration', 'layoutbridge-block-migration' ),
+			'continue'                 => __( 'Continue', 'layoutbridge-block-migration' ),
+			'back'                     => __( 'Back', 'layoutbridge-block-migration' ),
+			'selectPagesTitle'         => __( 'Select Content', 'layoutbridge-block-migration' ),
+			'selectAll'                => __( 'Select all', 'layoutbridge-block-migration' ),
+			'selectAllAcrossTypes'     => __( 'Select all across all types', 'layoutbridge-block-migration' ),
 			/* translators: 1: number of selected items, 2: total number of items */
-			'selectionSummary'         => __( '%1$d selected / %2$d total', 'blockshift-migrate-from-elementor' ),
-			'noPagesFound'             => __( 'No Elementor content found for conversion.', 'blockshift-migrate-from-elementor' ),
+			'selectionSummary'         => __( '%1$d selected / %2$d total', 'layoutbridge-block-migration' ),
+			'noPagesFound'             => __( 'No Elementor content found for conversion.', 'layoutbridge-block-migration' ),
 			/* translators: 1: tab label, 2: item count */
-			'tabCountLabel'            => __( '%1$s (%2$d)', 'blockshift-migrate-from-elementor' ),
-			'skipConverted'            => __( 'Skip pages that were already converted', 'blockshift-migrate-from-elementor' ),
-			'selectAllEligible'        => __( 'Select all eligible', 'blockshift-migrate-from-elementor' ),
-			'clearSelection'           => __( 'Clear selection', 'blockshift-migrate-from-elementor' ),
+			'tabCountLabel'            => __( '%1$s (%2$d)', 'layoutbridge-block-migration' ),
+			'skipConverted'            => __( 'Skip pages that were already converted', 'layoutbridge-block-migration' ),
+			'selectAllEligible'        => __( 'Select all eligible', 'layoutbridge-block-migration' ),
+			'clearSelection'           => __( 'Clear selection', 'layoutbridge-block-migration' ),
 			/* translators: %1$d: number of selected items */
-			'selectionChip'            => __( '%1$d selected', 'blockshift-migrate-from-elementor' ),
-			'filterAll'                => __( 'All', 'blockshift-migrate-from-elementor' ),
-			'filterEligible'           => __( 'Eligible', 'blockshift-migrate-from-elementor' ),
-			'filterConverted'          => __( 'Converted', 'blockshift-migrate-from-elementor' ),
-			'filterFailed'             => __( 'Failed', 'blockshift-migrate-from-elementor' ),
-			'filterUnconverted'        => __( 'Unconverted', 'blockshift-migrate-from-elementor' ),
-			'searchPlaceholder'        => __( 'Search by title…', 'blockshift-migrate-from-elementor' ),
-			'statusReady'              => __( 'Ready', 'blockshift-migrate-from-elementor' ),
-			'statusAlreadyConverted'   => __( 'Already converted', 'blockshift-migrate-from-elementor' ),
-			'statusFailedLastRun'      => __( 'Failed last run', 'blockshift-migrate-from-elementor' ),
-			'conflictsTitle'           => __( 'Resolve Conflicts', 'blockshift-migrate-from-elementor' ),
+			'selectionChip'            => __( '%1$d selected', 'layoutbridge-block-migration' ),
+			'filterAll'                => __( 'All', 'layoutbridge-block-migration' ),
+			'filterEligible'           => __( 'Eligible', 'layoutbridge-block-migration' ),
+			'filterConverted'          => __( 'Converted', 'layoutbridge-block-migration' ),
+			'filterFailed'             => __( 'Failed', 'layoutbridge-block-migration' ),
+			'filterUnconverted'        => __( 'Unconverted', 'layoutbridge-block-migration' ),
+			'searchPlaceholder'        => __( 'Search by title…', 'layoutbridge-block-migration' ),
+			'statusReady'              => __( 'Ready', 'layoutbridge-block-migration' ),
+			'statusAlreadyConverted'   => __( 'Already converted', 'layoutbridge-block-migration' ),
+			'statusFailedLastRun'      => __( 'Failed last run', 'layoutbridge-block-migration' ),
+			'conflictsTitle'           => __( 'Resolve Conflicts', 'layoutbridge-block-migration' ),
 			/* translators: %1$d: number of conflicting pages */
-			'conflictDetected'         => __( '%1$d selected pages already have a converted version.', 'blockshift-migrate-from-elementor' ),
-			'conflictOverwrite'        => __( 'Update existing pages in place (overwrite)', 'blockshift-migrate-from-elementor' ),
-			'conflictSkip'             => __( 'Skip those pages', 'blockshift-migrate-from-elementor' ),
-			'conflictDuplicate'        => __( 'Create duplicates with “(Converted)” suffix', 'blockshift-migrate-from-elementor' ),
-			'themeStepTitle'           => __( 'Theme compatibility', 'blockshift-migrate-from-elementor' ),
-			'themeStepDesc'            => __( 'Block themes work best with Gutenberg. You can keep your current theme or switch to a compatible one before conversion.', 'blockshift-migrate-from-elementor' ),
-			'themeCompatibilityNote'   => __( 'Some themes may require a newer WordPress version.', 'blockshift-migrate-from-elementor' ),
-			'themeCurrentGood'         => __( 'Your current theme already supports Gutenberg and block templates.', 'blockshift-migrate-from-elementor' ),
-			'themeSelectPrompt'        => __( 'Select a block theme for best compatibility.', 'blockshift-migrate-from-elementor' ),
-			'themeKeepCurrent'         => __( 'Keep current theme', 'blockshift-migrate-from-elementor' ),
-			'themeSuggestedCore'       => __( 'Suggested core block themes', 'blockshift-migrate-from-elementor' ),
-			'themeInstalledList'       => __( 'Installed block themes', 'blockshift-migrate-from-elementor' ),
-			'themeNoInstalled'         => __( 'No compatible block themes are installed.', 'blockshift-migrate-from-elementor' ),
+			'conflictDetected'         => __( '%1$d selected pages already have a converted version.', 'layoutbridge-block-migration' ),
+			'conflictOverwrite'        => __( 'Update existing pages in place (overwrite)', 'layoutbridge-block-migration' ),
+			'conflictSkip'             => __( 'Skip those pages', 'layoutbridge-block-migration' ),
+			'conflictDuplicate'        => __( 'Create duplicates with “(Converted)” suffix', 'layoutbridge-block-migration' ),
+			'themeStepTitle'           => __( 'Theme compatibility', 'layoutbridge-block-migration' ),
+			'themeStepDesc'            => __( 'Block themes work best with Gutenberg. You can keep your current theme or switch to a compatible one before conversion.', 'layoutbridge-block-migration' ),
+			'themeCompatibilityNote'   => __( 'Some themes may require a newer WordPress version.', 'layoutbridge-block-migration' ),
+			'themeCurrentGood'         => __( 'Your current theme already supports Gutenberg and block templates.', 'layoutbridge-block-migration' ),
+			'themeSelectPrompt'        => __( 'Select a block theme for best compatibility.', 'layoutbridge-block-migration' ),
+			'themeKeepCurrent'         => __( 'Keep current theme', 'layoutbridge-block-migration' ),
+			'themeSuggestedCore'       => __( 'Suggested core block themes', 'layoutbridge-block-migration' ),
+			'themeInstalledList'       => __( 'Installed block themes', 'layoutbridge-block-migration' ),
+			'themeNoInstalled'         => __( 'No compatible block themes are installed.', 'layoutbridge-block-migration' ),
 			/* translators: %s: selected theme name */
-			'themeSelectedSummary'     => __( 'Selected: %s', 'blockshift-migrate-from-elementor' ),
+			'themeSelectedSummary'     => __( 'Selected: %s', 'layoutbridge-block-migration' ),
 			/* translators: %s: current active theme name */
-			'themeUsingCurrentSummary' => __( 'Using current theme: %s', 'blockshift-migrate-from-elementor' ),
-			'themeStatusInstalled'     => __( 'Installed', 'blockshift-migrate-from-elementor' ),
-			'themeStatusNotInstalled'  => __( 'Not installed', 'blockshift-migrate-from-elementor' ),
-			'themeBlockLabel'          => __( 'Block theme', 'blockshift-migrate-from-elementor' ),
-			'themeSelected'            => __( 'Selected', 'blockshift-migrate-from-elementor' ),
-			'themeActionUseTheme'      => __( 'Use this theme', 'blockshift-migrate-from-elementor' ),
-			'themeActionInstall'       => __( 'Install', 'blockshift-migrate-from-elementor' ),
-			'themeActionActive'        => __( 'Active', 'blockshift-migrate-from-elementor' ),
-			'copyAdditionalCss'        => __( 'Copy Additional CSS from the current theme', 'blockshift-migrate-from-elementor' ),
-			'themeSwitchError'         => __( 'Unable to switch themes. Please try again or choose a different theme.', 'blockshift-migrate-from-elementor' ),
-			'themeActiveLabel'         => __( 'Active', 'blockshift-migrate-from-elementor' ),
-			'themeWarningInline'       => __( 'Theme step failed — conversion continued using current theme. Update WordPress to use this theme.', 'blockshift-migrate-from-elementor' ),
-			'reviewTitle'              => __( 'Review & Confirm', 'blockshift-migrate-from-elementor' ),
+			'themeUsingCurrentSummary' => __( 'Using current theme: %s', 'layoutbridge-block-migration' ),
+			'themeStatusInstalled'     => __( 'Installed', 'layoutbridge-block-migration' ),
+			'themeStatusNotInstalled'  => __( 'Not installed', 'layoutbridge-block-migration' ),
+			'themeBlockLabel'          => __( 'Block theme', 'layoutbridge-block-migration' ),
+			'themeSelected'            => __( 'Selected', 'layoutbridge-block-migration' ),
+			'themeActionUseTheme'      => __( 'Use this theme', 'layoutbridge-block-migration' ),
+			'themeActionInstall'       => __( 'Install', 'layoutbridge-block-migration' ),
+			'themeActionActive'        => __( 'Active', 'layoutbridge-block-migration' ),
+			'copyAdditionalCss'        => __( 'Copy Additional CSS from the current theme', 'layoutbridge-block-migration' ),
+			'themeSwitchError'         => __( 'Unable to switch themes. Please try again or choose a different theme.', 'layoutbridge-block-migration' ),
+			'themeActiveLabel'         => __( 'Active', 'layoutbridge-block-migration' ),
+			'themeWarningInline'       => __( 'Theme step failed — conversion continued using current theme. Update WordPress to use this theme.', 'layoutbridge-block-migration' ),
+			'reviewTitle'              => __( 'Review & Confirm', 'layoutbridge-block-migration' ),
 			/* translators: 1: total selected pages, 2: pages to convert, 3: pages to skip */
-			'reviewSummary'            => __( '%1$d pages selected — %2$d will be converted, %3$d skipped.', 'blockshift-migrate-from-elementor' ),
-			'startConversion'          => __( 'Start Conversion', 'blockshift-migrate-from-elementor' ),
-			'backgroundInfo'           => __( 'Conversion runs in the background. You can safely close this page.', 'blockshift-migrate-from-elementor' ),
-			'progressTitle'            => __( 'Progress & Results', 'blockshift-migrate-from-elementor' ),
-			'converted'                => __( 'Converted', 'blockshift-migrate-from-elementor' ),
-			'skipped'                  => __( 'Skipped', 'blockshift-migrate-from-elementor' ),
-			'errors'                   => __( 'Errors', 'blockshift-migrate-from-elementor' ),
-			'duration'                 => __( 'Duration', 'blockshift-migrate-from-elementor' ),
-			'viewConverted'            => __( 'View', 'blockshift-migrate-from-elementor' ),
-			'viewConvertedTooltip'     => __( 'View converted page', 'blockshift-migrate-from-elementor' ),
-			'improveWithAi'            => __( 'Improve with AI', 'blockshift-migrate-from-elementor' ),
-			'improveWithAiTooltip'     => __( 'Improve this page with AI', 'blockshift-migrate-from-elementor' ),
-			'retryTooltip'             => __( 'Retry this conversion', 'blockshift-migrate-from-elementor' ),
-			'retry'                    => __( 'Retry', 'blockshift-migrate-from-elementor' ),
-			'skip'                     => __( 'Skip', 'blockshift-migrate-from-elementor' ),
-			'viewPages'                => __( 'View converted pages', 'blockshift-migrate-from-elementor' ),
-			'startNew'                 => __( 'Start new conversion', 'blockshift-migrate-from-elementor' ),
-			'aiLoaderTitle'            => __( 'Improving with AI…', 'blockshift-migrate-from-elementor' ),
-			'aiLoaderMessage'          => __( 'Analysing page structure and generating improvements. This may take up to 2 minutes.', 'blockshift-migrate-from-elementor' ),
+			'reviewSummary'            => __( '%1$d pages selected — %2$d will be converted, %3$d skipped.', 'layoutbridge-block-migration' ),
+			'startConversion'          => __( 'Start Conversion', 'layoutbridge-block-migration' ),
+			'backgroundInfo'           => __( 'Conversion runs in the background. You can safely close this page.', 'layoutbridge-block-migration' ),
+			'progressTitle'            => __( 'Progress & Results', 'layoutbridge-block-migration' ),
+			'converted'                => __( 'Converted', 'layoutbridge-block-migration' ),
+			'skipped'                  => __( 'Skipped', 'layoutbridge-block-migration' ),
+			'errors'                   => __( 'Errors', 'layoutbridge-block-migration' ),
+			'duration'                 => __( 'Duration', 'layoutbridge-block-migration' ),
+			'viewConverted'            => __( 'View', 'layoutbridge-block-migration' ),
+			'viewConvertedTooltip'     => __( 'View converted page', 'layoutbridge-block-migration' ),
+			'improveWithAi'            => __( 'Improve with AI', 'layoutbridge-block-migration' ),
+			'improveWithAiTooltip'     => __( 'Improve this page with AI', 'layoutbridge-block-migration' ),
+			'retryTooltip'             => __( 'Retry this conversion', 'layoutbridge-block-migration' ),
+			'retry'                    => __( 'Retry', 'layoutbridge-block-migration' ),
+			'skip'                     => __( 'Skip', 'layoutbridge-block-migration' ),
+			'viewPages'                => __( 'View converted pages', 'layoutbridge-block-migration' ),
+			'startNew'                 => __( 'Start new conversion', 'layoutbridge-block-migration' ),
+			'aiLoaderTitle'            => __( 'Improving with AI…', 'layoutbridge-block-migration' ),
+			'aiLoaderMessage'          => __( 'Analysing page structure and generating improvements. This may take up to 2 minutes.', 'layoutbridge-block-migration' ),
 			/* translators: %1$d: number of items to improve */
-			'aiImproveAllBtn'          => __( 'Improve all with AI (%1$d)', 'blockshift-migrate-from-elementor' ),
-			'aiImproveTitle'           => __( 'AI Improvement', 'blockshift-migrate-from-elementor' ),
-			'aiImproveWarningTitle'    => __( 'AI credits will be used', 'blockshift-migrate-from-elementor' ),
-			'aiImproveWarning'         => __( 'This will use AI credits once per selected item. Make sure your API key has sufficient credits before starting.', 'blockshift-migrate-from-elementor' ),
-			'aiReadinessTitle'         => __( 'Pre-flight checklist', 'blockshift-migrate-from-elementor' ),
-			'aiReadinessAllReady'      => __( '✓ Ready to start', 'blockshift-migrate-from-elementor' ),
-			'aiReadinessApiValid'      => __( 'API key configured', 'blockshift-migrate-from-elementor' ),
-			'aiReadinessApiInvalid'    => __( 'API key not configured', 'blockshift-migrate-from-elementor' ),
-			'aiReadinessApiMissing'    => __( 'AI features require a valid API key. ', 'blockshift-migrate-from-elementor' ),
+			'aiImproveAllBtn'          => __( 'Improve all with AI (%1$d)', 'layoutbridge-block-migration' ),
+			'aiImproveTitle'           => __( 'AI Improvement', 'layoutbridge-block-migration' ),
+			'aiImproveWarningTitle'    => __( 'AI credits will be used', 'layoutbridge-block-migration' ),
+			'aiImproveWarning'         => __( 'This will use AI credits once per selected item. Make sure your API key has sufficient credits before starting.', 'layoutbridge-block-migration' ),
+			'aiReadinessTitle'         => __( 'Pre-flight checklist', 'layoutbridge-block-migration' ),
+			'aiReadinessAllReady'      => __( '✓ Ready to start', 'layoutbridge-block-migration' ),
+			'aiReadinessApiValid'      => __( 'API key configured', 'layoutbridge-block-migration' ),
+			'aiReadinessApiInvalid'    => __( 'API key not configured', 'layoutbridge-block-migration' ),
+			'aiReadinessApiMissing'    => __( 'AI features require a valid API key. ', 'layoutbridge-block-migration' ),
 			/* translators: %1$d: estimated number of API calls */
-			'aiReadinessCredits'       => __( 'Estimated: ~%1$d API call(s), ~1–2 minutes per item', 'blockshift-migrate-from-elementor' ),
-			'goToSettings'             => __( 'Go to Settings →', 'blockshift-migrate-from-elementor' ),
-			'editSection'              => __( 'Edit', 'blockshift-migrate-from-elementor' ),
-			'reviewDesc'               => __( 'Double-check the plan below before starting. You can edit any section from here.', 'blockshift-migrate-from-elementor' ),
-			'reviewStatPages'          => __( 'Pages to convert', 'blockshift-migrate-from-elementor' ),
-			'reviewStatHeaders'        => __( 'Headers', 'blockshift-migrate-from-elementor' ),
-			'reviewStatFooters'        => __( 'Footers', 'blockshift-migrate-from-elementor' ),
-			'reviewStatSkipped'        => __( 'To skip', 'blockshift-migrate-from-elementor' ),
-			'reviewSectionScope'       => __( 'Scope', 'blockshift-migrate-from-elementor' ),
-			'reviewSectionTheme'       => __( 'Theme', 'blockshift-migrate-from-elementor' ),
-			'reviewSectionTemplates'   => __( 'Templates', 'blockshift-migrate-from-elementor' ),
-			'reviewSectionConflicts'   => __( 'Conflicts', 'blockshift-migrate-from-elementor' ),
-			'safetyNote'               => __( 'Recommended to run on a staging environment if your site is live. Conversion runs in the background — you can safely close this page.', 'blockshift-migrate-from-elementor' ),
-			'aiStageAnalyzing'         => __( 'Analyzing…', 'blockshift-migrate-from-elementor' ),
-			'aiStageGenerating'        => __( 'Generating…', 'blockshift-migrate-from-elementor' ),
-			'aiStageSaving'            => __( 'Saving…', 'blockshift-migrate-from-elementor' ),
-			'resultsNeedsAttention'    => __( 'Needs attention', 'blockshift-migrate-from-elementor' ),
-			'resultsCompleted'         => __( 'Completed successfully', 'blockshift-migrate-from-elementor' ),
-			'errorNoOutput'            => __( 'No Gutenberg output was generated. The source may contain unsupported widgets or empty content.', 'blockshift-migrate-from-elementor' ),
+			'aiReadinessCredits'       => __( 'Estimated: ~%1$d API call(s), ~1–2 minutes per item', 'layoutbridge-block-migration' ),
+			'goToSettings'             => __( 'Go to Settings →', 'layoutbridge-block-migration' ),
+			'editSection'              => __( 'Edit', 'layoutbridge-block-migration' ),
+			'reviewDesc'               => __( 'Double-check the plan below before starting. You can edit any section from here.', 'layoutbridge-block-migration' ),
+			'reviewStatPages'          => __( 'Pages to convert', 'layoutbridge-block-migration' ),
+			'reviewStatHeaders'        => __( 'Headers', 'layoutbridge-block-migration' ),
+			'reviewStatFooters'        => __( 'Footers', 'layoutbridge-block-migration' ),
+			'reviewStatSkipped'        => __( 'To skip', 'layoutbridge-block-migration' ),
+			'reviewSectionScope'       => __( 'Scope', 'layoutbridge-block-migration' ),
+			'reviewSectionTheme'       => __( 'Theme', 'layoutbridge-block-migration' ),
+			'reviewSectionTemplates'   => __( 'Templates', 'layoutbridge-block-migration' ),
+			'reviewSectionConflicts'   => __( 'Conflicts', 'layoutbridge-block-migration' ),
+			'safetyNote'               => __( 'Recommended to run on a staging environment if your site is live. Conversion runs in the background — you can safely close this page.', 'layoutbridge-block-migration' ),
+			'aiStageAnalyzing'         => __( 'Analyzing…', 'layoutbridge-block-migration' ),
+			'aiStageGenerating'        => __( 'Generating…', 'layoutbridge-block-migration' ),
+			'aiStageSaving'            => __( 'Saving…', 'layoutbridge-block-migration' ),
+			'resultsNeedsAttention'    => __( 'Needs attention', 'layoutbridge-block-migration' ),
+			'resultsCompleted'         => __( 'Completed successfully', 'layoutbridge-block-migration' ),
+			'errorNoOutput'            => __( 'No Gutenberg output was generated. The source may contain unsupported widgets or empty content.', 'layoutbridge-block-migration' ),
 			/* translators: %1$d: number of successfully converted items */
-			'improveSuccessful'        => __( 'Improve successful items with AI (%1$d)', 'blockshift-migrate-from-elementor' ),
-			'themeChangeWarning'       => __( 'Changing the active theme may affect the live site appearance. Test on staging when possible.', 'blockshift-migrate-from-elementor' ),
-			'aiImproveStart'           => __( 'Start AI Improvement', 'blockshift-migrate-from-elementor' ),
-			'aiImproveNone'            => __( 'No successfully converted items found in this session.', 'blockshift-migrate-from-elementor' ),
-			'aiImproveError'           => __( 'An unexpected error occurred.', 'blockshift-migrate-from-elementor' ),
-			'aiImproveType'            => __( 'Type', 'blockshift-migrate-from-elementor' ),
-			'aiImprovePaused'          => __( 'Paused — a page failed. Review the error below, then skip or retry to continue.', 'blockshift-migrate-from-elementor' ),
-			'aiImproveFinishedOk'      => __( 'All items improved successfully.', 'blockshift-migrate-from-elementor' ),
+			'improveSuccessful'        => __( 'Improve successful items with AI (%1$d)', 'layoutbridge-block-migration' ),
+			'themeChangeWarning'       => __( 'Changing the active theme may affect the live site appearance. Test on staging when possible.', 'layoutbridge-block-migration' ),
+			'aiImproveStart'           => __( 'Start AI Improvement', 'layoutbridge-block-migration' ),
+			'aiImproveNone'            => __( 'No successfully converted items found in this session.', 'layoutbridge-block-migration' ),
+			'aiImproveError'           => __( 'An unexpected error occurred.', 'layoutbridge-block-migration' ),
+			'aiImproveType'            => __( 'Type', 'layoutbridge-block-migration' ),
+			'aiImprovePaused'          => __( 'Paused — a page failed. Review the error below, then skip or retry to continue.', 'layoutbridge-block-migration' ),
+			'aiImproveFinishedOk'      => __( 'All items improved successfully.', 'layoutbridge-block-migration' ),
 			/* translators: 1: items done, 2: items failed, 3: items skipped */
-			'aiImproveFinishedErr'     => __( 'Finished with issues — %1$d done, %2$d failed, %3$d skipped.', 'blockshift-migrate-from-elementor' ),
-			'aiStatusPending'          => __( 'Pending', 'blockshift-migrate-from-elementor' ),
-			'aiStatusProcessing'       => __( 'Processing…', 'blockshift-migrate-from-elementor' ),
-			'aiStatusDone'             => __( 'Done', 'blockshift-migrate-from-elementor' ),
-			'aiStatusFailed'           => __( 'Failed', 'blockshift-migrate-from-elementor' ),
-			'aiStatusSkipped'          => __( 'Skipped', 'blockshift-migrate-from-elementor' ),
-			'statusConverted'          => __( 'Converted', 'blockshift-migrate-from-elementor' ),
-			'statusNotConverted'       => __( 'Not converted', 'blockshift-migrate-from-elementor' ),
-			'statusPartial'            => __( 'Partial', 'blockshift-migrate-from-elementor' ),
-			'statusError'              => __( 'Error', 'blockshift-migrate-from-elementor' ),
-			'statusSkipped'            => __( 'Skipped', 'blockshift-migrate-from-elementor' ),
-			'statusUnknown'            => __( 'Unknown', 'blockshift-migrate-from-elementor' ),
-			'tableTitle'               => __( 'Title', 'blockshift-migrate-from-elementor' ),
-			'tableStatus'              => __( 'Status', 'blockshift-migrate-from-elementor' ),
-			'tableConversionStatus'    => __( 'Conversion status', 'blockshift-migrate-from-elementor' ),
-			'tableLastConverted'       => __( 'Last converted', 'blockshift-migrate-from-elementor' ),
-			'tableCompatibility'       => __( 'Compatibility', 'blockshift-migrate-from-elementor' ),
-			'compatShowDetails'        => __( 'Show compatibility details', 'blockshift-migrate-from-elementor' ),
-			'compatPopoverTitle'       => __( 'Compatibility Notes', 'blockshift-migrate-from-elementor' ),
-			'warnTitleUnsupported'     => __( 'Unsupported Widgets', 'blockshift-migrate-from-elementor' ),
-			'warnDescUnsupported'      => __( 'These widgets will become placeholder blocks after conversion.', 'blockshift-migrate-from-elementor' ),
-			'warnTitleDynamic'         => __( 'Dynamic Content', 'blockshift-migrate-from-elementor' ),
-			'warnDescDynamic'          => __( 'This page uses Elementor dynamic tags. Connections to external data will be lost — manual reconnection in Gutenberg is needed.', 'blockshift-migrate-from-elementor' ),
-			'warnTitleAnimation'       => __( 'Animations', 'blockshift-migrate-from-elementor' ),
-			'warnDescAnimation'        => __( 'Entrance animations will not carry over to Gutenberg and must be re-applied manually.', 'blockshift-migrate-from-elementor' ),
+			'aiImproveFinishedErr'     => __( 'Finished with issues — %1$d done, %2$d failed, %3$d skipped.', 'layoutbridge-block-migration' ),
+			'aiStatusPending'          => __( 'Pending', 'layoutbridge-block-migration' ),
+			'aiStatusProcessing'       => __( 'Processing…', 'layoutbridge-block-migration' ),
+			'aiStatusDone'             => __( 'Done', 'layoutbridge-block-migration' ),
+			'aiStatusFailed'           => __( 'Failed', 'layoutbridge-block-migration' ),
+			'aiStatusSkipped'          => __( 'Skipped', 'layoutbridge-block-migration' ),
+			'statusConverted'          => __( 'Converted', 'layoutbridge-block-migration' ),
+			'statusNotConverted'       => __( 'Not converted', 'layoutbridge-block-migration' ),
+			'statusPartial'            => __( 'Partial', 'layoutbridge-block-migration' ),
+			'statusError'              => __( 'Error', 'layoutbridge-block-migration' ),
+			'statusSkipped'            => __( 'Skipped', 'layoutbridge-block-migration' ),
+			'statusUnknown'            => __( 'Unknown', 'layoutbridge-block-migration' ),
+			'tableTitle'               => __( 'Title', 'layoutbridge-block-migration' ),
+			'tableStatus'              => __( 'Status', 'layoutbridge-block-migration' ),
+			'tableConversionStatus'    => __( 'Conversion status', 'layoutbridge-block-migration' ),
+			'tableLastConverted'       => __( 'Last converted', 'layoutbridge-block-migration' ),
+			'tableCompatibility'       => __( 'Compatibility', 'layoutbridge-block-migration' ),
+			'compatShowDetails'        => __( 'Show compatibility details', 'layoutbridge-block-migration' ),
+			'compatPopoverTitle'       => __( 'Compatibility Notes', 'layoutbridge-block-migration' ),
+			'warnTitleUnsupported'     => __( 'Unsupported Widgets', 'layoutbridge-block-migration' ),
+			'warnDescUnsupported'      => __( 'These widgets will become placeholder blocks after conversion.', 'layoutbridge-block-migration' ),
+			'warnTitleDynamic'         => __( 'Dynamic Content', 'layoutbridge-block-migration' ),
+			'warnDescDynamic'          => __( 'This page uses Elementor dynamic tags. Connections to external data will be lost — manual reconnection in Gutenberg is needed.', 'layoutbridge-block-migration' ),
+			'warnTitleAnimation'       => __( 'Animations', 'layoutbridge-block-migration' ),
+			'warnDescAnimation'        => __( 'Entrance animations will not carry over to Gutenberg and must be re-applied manually.', 'layoutbridge-block-migration' ),
 			/* translators: 1: count of unsupported widgets, 2: comma-separated widget names */
-			'warnUnsupportedWidgets'   => __( '%1$d unsupported widget(s): %2$s', 'blockshift-migrate-from-elementor' ),
-			'warnDynamicContent'       => __( 'Has dynamic content — links to data may be lost', 'blockshift-migrate-from-elementor' ),
-			'warnAnimations'           => __( 'Has animations — will not be converted', 'blockshift-migrate-from-elementor' ),
-			'tableActions'             => __( 'Actions', 'blockshift-migrate-from-elementor' ),
+			'warnUnsupportedWidgets'   => __( '%1$d unsupported widget(s): %2$s', 'layoutbridge-block-migration' ),
+			'warnDynamicContent'       => __( 'Has dynamic content — links to data may be lost', 'layoutbridge-block-migration' ),
+			'warnAnimations'           => __( 'Has animations — will not be converted', 'layoutbridge-block-migration' ),
+			'tableActions'             => __( 'Actions', 'layoutbridge-block-migration' ),
 			/* translators: %s: elapsed time for the conversion job */
-			'jobCompleted'             => __( 'Conversion completed successfully in %s.', 'blockshift-migrate-from-elementor' ),
+			'jobCompleted'             => __( 'Conversion completed successfully in %s.', 'layoutbridge-block-migration' ),
 			/* translators: %s: elapsed time for the conversion job */
-			'jobCompletedWithErrors'   => __( 'Conversion finished with issues in %s.', 'blockshift-migrate-from-elementor' ),
-			'jobRunning'               => __( 'Conversion in progress…', 'blockshift-migrate-from-elementor' ),
-			'resumeJob'                => __( 'Resuming an active conversion job.', 'blockshift-migrate-from-elementor' ),
-			'processing'               => __( 'Processing…', 'blockshift-migrate-from-elementor' ),
-			'noSelectionError'         => __( 'Select at least one page or template before continuing.', 'blockshift-migrate-from-elementor' ),
-			'retryFailed'              => __( 'Unable to retry conversion. Please try again.', 'blockshift-migrate-from-elementor' ),
-			'headerFooterStepTitle'    => __( 'Header & Footer Templates', 'blockshift-migrate-from-elementor' ),
-			'headersLabel'             => __( 'Headers', 'blockshift-migrate-from-elementor' ),
-			'footersLabel'             => __( 'Footers', 'blockshift-migrate-from-elementor' ),
-			'defaultHeaderLabel'       => __( 'Default header after conversion', 'blockshift-migrate-from-elementor' ),
-			'defaultFooterLabel'       => __( 'Default footer after conversion', 'blockshift-migrate-from-elementor' ),
+			'jobCompletedWithErrors'   => __( 'Conversion finished with issues in %s.', 'layoutbridge-block-migration' ),
+			'jobRunning'               => __( 'Conversion in progress…', 'layoutbridge-block-migration' ),
+			'resumeJob'                => __( 'Resuming an active conversion job.', 'layoutbridge-block-migration' ),
+			'processing'               => __( 'Processing…', 'layoutbridge-block-migration' ),
+			'noSelectionError'         => __( 'Select at least one page or template before continuing.', 'layoutbridge-block-migration' ),
+			'retryFailed'              => __( 'Unable to retry conversion. Please try again.', 'layoutbridge-block-migration' ),
+			'headerFooterStepTitle'    => __( 'Header & Footer Templates', 'layoutbridge-block-migration' ),
+			'headersLabel'             => __( 'Headers', 'layoutbridge-block-migration' ),
+			'footersLabel'             => __( 'Footers', 'layoutbridge-block-migration' ),
+			'defaultHeaderLabel'       => __( 'Default header after conversion', 'layoutbridge-block-migration' ),
+			'defaultFooterLabel'       => __( 'Default footer after conversion', 'layoutbridge-block-migration' ),
 			/* translators: 1: number of selected headers, 2: number of selected footers */
-			'headerFooterSummary'      => __( '%1$d headers and %2$d footers selected for conversion.', 'blockshift-migrate-from-elementor' ),
+			'headerFooterSummary'      => __( '%1$d headers and %2$d footers selected for conversion.', 'layoutbridge-block-migration' ),
 			/* translators: 1: name of default header template, 2: name of default footer template */
-			'headerFooterDefaults'     => __( 'Default header: %1$s — Default footer: %2$s', 'blockshift-migrate-from-elementor' ),
-			'cancel'                   => __( 'Cancel', 'blockshift-migrate-from-elementor' ),
-			'jobCancelled'             => __( 'Conversion was cancelled.', 'blockshift-migrate-from-elementor' ),
+			'headerFooterDefaults'     => __( 'Default header: %1$s — Default footer: %2$s', 'layoutbridge-block-migration' ),
+			'cancel'                   => __( 'Cancel', 'layoutbridge-block-migration' ),
+			'jobCancelled'             => __( 'Conversion was cancelled.', 'layoutbridge-block-migration' ),
 
 			// Feedback feature strings
-			'feedbackButtonRun'        => __( 'Send Feedback', 'blockshift-migrate-from-elementor' ),
-			'feedbackButtonItem'       => __( 'Feedback', 'blockshift-migrate-from-elementor' ),
+			'feedbackButtonRun'        => __( 'Send Feedback', 'layoutbridge-block-migration' ),
+			'feedbackButtonItem'       => __( 'Feedback', 'layoutbridge-block-migration' ),
 			/* translators: %d: number of selected items to send feedback for */
-			'feedbackButtonSelected'   => __( 'Send Feedback for Selected (%d)', 'blockshift-migrate-from-elementor' ),
-			'feedbackModalTitle'       => __( 'How did the conversion go?', 'blockshift-migrate-from-elementor' ),
-			'feedbackItemTitle'        => __( 'How did this page convert?', 'blockshift-migrate-from-elementor' ),
-			'feedbackIssueLabel'       => __( 'Issue type', 'blockshift-migrate-from-elementor' ),
-			'feedbackIssueDetailLabel' => __( 'Describe the issue', 'blockshift-migrate-from-elementor' ),
-			'feedbackNoteLabel'        => __( 'Any additional notes?', 'blockshift-migrate-from-elementor' ),
-			'feedbackConsentLabel'     => __( 'I consent to sending this anonymised conversion report to the plugin developer for quality improvement. No passwords, API keys, or user data are included.', 'blockshift-migrate-from-elementor' ),
-			'feedbackSubmit'           => __( 'Send Feedback', 'blockshift-migrate-from-elementor' ),
-			'feedbackCancel'           => __( 'Cancel', 'blockshift-migrate-from-elementor' ),
-			'feedbackSending'          => __( 'Sending…', 'blockshift-migrate-from-elementor' ),
+			'feedbackButtonSelected'   => __( 'Send Feedback for Selected (%d)', 'layoutbridge-block-migration' ),
+			'feedbackModalTitle'       => __( 'How did the conversion go?', 'layoutbridge-block-migration' ),
+			'feedbackItemTitle'        => __( 'How did this page convert?', 'layoutbridge-block-migration' ),
+			'feedbackIssueLabel'       => __( 'Issue type', 'layoutbridge-block-migration' ),
+			'feedbackIssueDetailLabel' => __( 'Describe the issue', 'layoutbridge-block-migration' ),
+			'feedbackNoteLabel'        => __( 'Any additional notes?', 'layoutbridge-block-migration' ),
+			'feedbackConsentLabel'     => __( 'I consent to sending this anonymised conversion report to the plugin developer for quality improvement. No passwords, API keys, or user data are included.', 'layoutbridge-block-migration' ),
+			'feedbackSubmit'           => __( 'Send Feedback', 'layoutbridge-block-migration' ),
+			'feedbackCancel'           => __( 'Cancel', 'layoutbridge-block-migration' ),
+			'feedbackSending'          => __( 'Sending…', 'layoutbridge-block-migration' ),
 			/* translators: %s: feedback submission ID */
-			'feedbackSuccess'          => __( 'Thank you! Feedback submitted (ID: %s).', 'blockshift-migrate-from-elementor' ),
+			'feedbackSuccess'          => __( 'Thank you! Feedback submitted (ID: %s).', 'layoutbridge-block-migration' ),
 			/* translators: %s: error message */
-			'feedbackError'            => __( 'Could not send feedback: %s', 'blockshift-migrate-from-elementor' ),
-			'feedbackNoIssue'          => __( 'No issue', 'blockshift-migrate-from-elementor' ),
-			'feedbackIssueLayout'      => __( 'Layout issue', 'blockshift-migrate-from-elementor' ),
-			'feedbackIssueMissing'     => __( 'Missing content', 'blockshift-migrate-from-elementor' ),
-			'feedbackIssueWidget'      => __( 'Unsupported widget', 'blockshift-migrate-from-elementor' ),
-			'feedbackIssueCss'         => __( 'CSS/styling', 'blockshift-migrate-from-elementor' ),
-			'feedbackIssueAi'          => __( 'AI output quality', 'blockshift-migrate-from-elementor' ),
-			'feedbackIssueOther'       => __( 'Other', 'blockshift-migrate-from-elementor' ),
+			'feedbackError'            => __( 'Could not send feedback: %s', 'layoutbridge-block-migration' ),
+			'feedbackNoIssue'          => __( 'No issue', 'layoutbridge-block-migration' ),
+			'feedbackIssueLayout'      => __( 'Layout issue', 'layoutbridge-block-migration' ),
+			'feedbackIssueMissing'     => __( 'Missing content', 'layoutbridge-block-migration' ),
+			'feedbackIssueWidget'      => __( 'Unsupported widget', 'layoutbridge-block-migration' ),
+			'feedbackIssueCss'         => __( 'CSS/styling', 'layoutbridge-block-migration' ),
+			'feedbackIssueAi'          => __( 'AI output quality', 'layoutbridge-block-migration' ),
+			'feedbackIssueOther'       => __( 'Other', 'layoutbridge-block-migration' ),
 		);
 	}
 
@@ -3495,7 +3495,7 @@ class Batch_Convert_Wizard {
 		if ( '' === $job_id ) {
 			wp_send_json_error(
 				array(
-					'message' => esc_html__( 'No active conversion job to cancel.', 'blockshift-migrate-from-elementor' ),
+					'message' => esc_html__( 'No active conversion job to cancel.', 'layoutbridge-block-migration' ),
 				)
 			);
 		}
@@ -3504,7 +3504,7 @@ class Batch_Convert_Wizard {
 		if ( empty( $job ) || get_current_user_id() !== (int) $job['user_id'] ) {
 			wp_send_json_error(
 				array(
-					'message' => esc_html__( 'Conversion job could not be found.', 'blockshift-migrate-from-elementor' ),
+					'message' => esc_html__( 'Conversion job could not be found.', 'layoutbridge-block-migration' ),
 				)
 			);
 		}
@@ -3532,7 +3532,7 @@ class Batch_Convert_Wizard {
 	public function ajax_ai_improve_single(): void {
 		if ( ! current_user_can( 'edit_pages' ) ) {
 			wp_send_json_error(
-				array( 'message' => esc_html__( 'You do not have permission to perform this action.', 'blockshift-migrate-from-elementor' ) ),
+				array( 'message' => esc_html__( 'You do not have permission to perform this action.', 'layoutbridge-block-migration' ) ),
 				403
 			);
 		}
@@ -3544,13 +3544,13 @@ class Batch_Convert_Wizard {
 
 		if ( $source_id <= 0 || $target_id <= 0 ) {
 			wp_send_json_error(
-				array( 'message' => esc_html__( 'Invalid source or target page ID.', 'blockshift-migrate-from-elementor' ) )
+				array( 'message' => esc_html__( 'Invalid source or target page ID.', 'layoutbridge-block-migration' ) )
 			);
 		}
 
 		if ( ! current_user_can( 'edit_post', $target_id ) ) {
 			wp_send_json_error(
-				array( 'message' => esc_html__( 'You do not have permission to edit this page.', 'blockshift-migrate-from-elementor' ) ),
+				array( 'message' => esc_html__( 'You do not have permission to edit this page.', 'layoutbridge-block-migration' ) ),
 				403
 			);
 		}
@@ -3828,18 +3828,18 @@ class Batch_Convert_Wizard {
 		check_ajax_referer( self::FEEDBACK_NONCE_ACTION, 'nonce' );
 
 		if ( ! current_user_can( 'edit_pages' ) ) {
-			wp_send_json_error( array( 'error' => esc_html__( 'Insufficient permissions.', 'blockshift-migrate-from-elementor' ) ) );
+			wp_send_json_error( array( 'error' => esc_html__( 'Insufficient permissions.', 'layoutbridge-block-migration' ) ) );
 		}
 
 		// Consent is mandatory — re-verified server-side.
 		$consent_raw = isset( $_POST['consent_given'] ) ? sanitize_text_field( wp_unslash( $_POST['consent_given'] ) ) : '';
 		if ( 'true' !== $consent_raw ) {
-			wp_send_json_error( array( 'error' => esc_html__( 'Consent is required to submit feedback.', 'blockshift-migrate-from-elementor' ) ) );
+			wp_send_json_error( array( 'error' => esc_html__( 'Consent is required to submit feedback.', 'layoutbridge-block-migration' ) ) );
 		}
 
 		$job_id = isset( $_POST['job_id'] ) ? sanitize_text_field( wp_unslash( $_POST['job_id'] ) ) : '';
 		if ( '' === $job_id ) {
-			wp_send_json_error( array( 'error' => esc_html__( 'Job ID is required.', 'blockshift-migrate-from-elementor' ) ) );
+			wp_send_json_error( array( 'error' => esc_html__( 'Job ID is required.', 'layoutbridge-block-migration' ) ) );
 		}
 
 		$raw_ids             = isset( $_POST['selected_source_ids'] ) && is_array( $_POST['selected_source_ids'] )
@@ -3848,7 +3848,7 @@ class Batch_Convert_Wizard {
 		$selected_source_ids = array_values( array_unique( array_filter( $raw_ids ) ) );
 
 		if ( empty( $selected_source_ids ) ) {
-			wp_send_json_error( array( 'error' => esc_html__( 'No pages selected for feedback.', 'blockshift-migrate-from-elementor' ) ) );
+			wp_send_json_error( array( 'error' => esc_html__( 'No pages selected for feedback.', 'layoutbridge-block-migration' ) ) );
 		}
 
 		// Per-item ratings/notes keyed by source_id.
@@ -3893,7 +3893,7 @@ class Batch_Convert_Wizard {
 
 		$manifest = Feedback_Builder::build( $job_id, $selected_source_ids, $user_feedback, $client_info );
 		if ( null === $manifest ) {
-			wp_send_json_error( array( 'error' => esc_html__( 'Conversion job not found or no items matched.', 'blockshift-migrate-from-elementor' ) ) );
+			wp_send_json_error( array( 'error' => esc_html__( 'Conversion job not found or no items matched.', 'layoutbridge-block-migration' ) ) );
 		}
 
 		$result = Feedback_Sender::send( $manifest );

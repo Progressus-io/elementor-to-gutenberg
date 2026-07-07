@@ -103,8 +103,8 @@ class Conversion_Log_Admin {
 			'blockshift-conversion-log',
 			'blockshiftConversionLog',
 			array(
-				'copy'   => __( 'Copy', 'blockshift-migrate-from-elementor' ),
-				'copied' => __( 'Copied', 'blockshift-migrate-from-elementor' ),
+				'copy'   => __( 'Copy', 'layoutbridge-block-migration' ),
+				'copied' => __( 'Copied', 'layoutbridge-block-migration' ),
 			)
 		);
 	}
@@ -112,8 +112,8 @@ class Conversion_Log_Admin {
 	public function register_menu(): void {
 		add_submenu_page(
 			'blockshift-settings',
-			esc_html__( 'Conversion Log', 'blockshift-migrate-from-elementor' ),
-			esc_html__( 'Conversion Log', 'blockshift-migrate-from-elementor' ),
+			esc_html__( 'Conversion Log', 'layoutbridge-block-migration' ),
+			esc_html__( 'Conversion Log', 'layoutbridge-block-migration' ),
 			'manage_options',
 			self::MENU_SLUG,
 			array( $this, 'render_page' )
@@ -123,7 +123,7 @@ class Conversion_Log_Admin {
 	/** Clear both the DB log and the text log file, then redirect back. */
 	public function handle_clear_log(): void {
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( esc_html__( 'Unauthorized.', 'blockshift-migrate-from-elementor' ) );
+			wp_die( esc_html__( 'Unauthorized.', 'layoutbridge-block-migration' ) );
 		}
 		check_admin_referer( 'blockshift_clear_conversion_log' );
 
@@ -259,23 +259,23 @@ class Conversion_Log_Admin {
 		<div class="pgs-screen" data-screen-label="Conversion Log">
 
 			<header class="pgs-pluginhead">
-				<span class="pgs-pluginhead__brand"><span class="pgs-pluginhead__name"><?php esc_html_e( 'BlockShift – Migrate from Elementor', 'blockshift-migrate-from-elementor' ); ?></span></span>
+				<span class="pgs-pluginhead__brand"><span class="pgs-pluginhead__name"><?php esc_html_e( 'BlockShift – Migrate from Elementor', 'layoutbridge-block-migration' ); ?></span></span>
 			</header>
 			<hr class="wp-header-end" style="margin:0;border:0;">
 
 			<div class="pgs-col">
 				<div class="pgs-pagetitle">
 					<div>
-						<h1><?php esc_html_e( 'Conversion Log', 'blockshift-migrate-from-elementor' ); ?></h1>
-						<p><?php esc_html_e( 'Every widget conversion is recorded here — converted, skipped, or unsupported.', 'blockshift-migrate-from-elementor' ); ?></p>
+						<h1><?php esc_html_e( 'Conversion Log', 'layoutbridge-block-migration' ); ?></h1>
+						<p><?php esc_html_e( 'Every widget conversion is recorded here — converted, skipped, or unsupported.', 'layoutbridge-block-migration' ); ?></p>
 					</div>
 					<?php if ( $total_count > 0 || $jsonl_log_exists ) : ?>
 						<div class="pgs-pagetitle__actions">
 							<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>"
-								  onsubmit="return confirm('<?php echo esc_js( __( 'Clear all log entries? This cannot be undone.', 'blockshift-migrate-from-elementor' ) ); ?>');">
+								  onsubmit="return confirm('<?php echo esc_js( __( 'Clear all log entries? This cannot be undone.', 'layoutbridge-block-migration' ) ); ?>');">
 								<?php wp_nonce_field( 'blockshift_clear_conversion_log' ); ?>
 								<input type="hidden" name="action" value="blockshift_clear_conversion_log" />
-								<button type="submit" class="pgs-btn pgs-btn--secondary pgs-btn--sm"><span class="pgs-btn__icon"><i data-icon="trash-2"></i></span><span><?php esc_html_e( 'Clear All Logs', 'blockshift-migrate-from-elementor' ); ?></span></button>
+								<button type="submit" class="pgs-btn pgs-btn--secondary pgs-btn--sm"><span class="pgs-btn__icon"><i data-icon="trash-2"></i></span><span><?php esc_html_e( 'Clear All Logs', 'layoutbridge-block-migration' ); ?></span></button>
 							</form>
 						</div>
 					<?php endif; ?>
@@ -284,7 +284,7 @@ class Conversion_Log_Admin {
 				<?php if ( $cleared ) : ?>
 					<div class="pgs-banner pgs-banner--success" role="status">
 						<span class="pgs-banner__icon"><i data-icon="check-circle-2"></i></span>
-						<div class="pgs-banner__body"><span class="pgs-banner__text"><?php esc_html_e( 'Conversion log cleared.', 'blockshift-migrate-from-elementor' ); ?></span></div>
+						<div class="pgs-banner__body"><span class="pgs-banner__text"><?php esc_html_e( 'Conversion log cleared.', 'layoutbridge-block-migration' ); ?></span></div>
 					</div>
 				<?php endif; ?>
 
@@ -296,7 +296,7 @@ class Conversion_Log_Admin {
 							printf(
 								wp_kses(
 									/* translators: %s: URL to Settings page */
-									__( 'Conversion logging is <strong>disabled</strong>. Enable it in <a href="%s">Settings</a> to start capturing conversion events.', 'blockshift-migrate-from-elementor' ),
+									__( 'Conversion logging is <strong>disabled</strong>. Enable it in <a href="%s">Settings</a> to start capturing conversion events.', 'layoutbridge-block-migration' ),
 									array(
 										'strong' => array(),
 										'a'      => array( 'href' => array() ),
@@ -313,11 +313,11 @@ class Conversion_Log_Admin {
 				<div class="pgs-grid5">
 					<?php
 					$cards = array(
-						array( 'label' => __( 'Total',   'blockshift-migrate-from-elementor' ), 'count' => $total_count, 'filter' => 'all',     'variant' => '',                              'icon' => '' ),
-						array( 'label' => __( 'Success', 'blockshift-migrate-from-elementor' ), 'count' => $cnt_success, 'filter' => 'success', 'variant' => 'pgs-stat--tinted pgs-stat--success', 'icon' => 'check-circle-2' ),
-						array( 'label' => __( 'Partial', 'blockshift-migrate-from-elementor' ), 'count' => $cnt_partial, 'filter' => 'partial', 'variant' => 'pgs-stat--tinted pgs-stat--warning', 'icon' => 'alert-triangle' ),
-						array( 'label' => __( 'Errors',  'blockshift-migrate-from-elementor' ), 'count' => $cnt_error,   'filter' => 'error',   'variant' => '',                              'icon' => '' ),
-						array( 'label' => __( 'Skipped', 'blockshift-migrate-from-elementor' ), 'count' => $cnt_skipped, 'filter' => 'skipped', 'variant' => '',                              'icon' => '' ),
+						array( 'label' => __( 'Total',   'layoutbridge-block-migration' ), 'count' => $total_count, 'filter' => 'all',     'variant' => '',                              'icon' => '' ),
+						array( 'label' => __( 'Success', 'layoutbridge-block-migration' ), 'count' => $cnt_success, 'filter' => 'success', 'variant' => 'pgs-stat--tinted pgs-stat--success', 'icon' => 'check-circle-2' ),
+						array( 'label' => __( 'Partial', 'layoutbridge-block-migration' ), 'count' => $cnt_partial, 'filter' => 'partial', 'variant' => 'pgs-stat--tinted pgs-stat--warning', 'icon' => 'alert-triangle' ),
+						array( 'label' => __( 'Errors',  'layoutbridge-block-migration' ), 'count' => $cnt_error,   'filter' => 'error',   'variant' => '',                              'icon' => '' ),
+						array( 'label' => __( 'Skipped', 'layoutbridge-block-migration' ), 'count' => $cnt_skipped, 'filter' => 'skipped', 'variant' => '',                              'icon' => '' ),
 					);
 					foreach ( $cards as $card ) :
 						$active = ( $filter === $card['filter'] );
@@ -345,11 +345,11 @@ class Conversion_Log_Admin {
 						<div class="pgs-card__body" style="text-align:center;padding:48px 24px;">
 							<?php if ( 'all' === $filter ) : ?>
 								<p class="pgs-muted" style="font-size:var(--text-md);">
-									<?php esc_html_e( 'No conversion events recorded yet. Run a conversion to see results here.', 'blockshift-migrate-from-elementor' ); ?>
+									<?php esc_html_e( 'No conversion events recorded yet. Run a conversion to see results here.', 'layoutbridge-block-migration' ); ?>
 								</p>
 							<?php else : ?>
 								<p class="pgs-muted" style="font-size:var(--text-md);">
-									<?php esc_html_e( 'No entries match this filter.', 'blockshift-migrate-from-elementor' ); ?>
+									<?php esc_html_e( 'No entries match this filter.', 'layoutbridge-block-migration' ); ?>
 								</p>
 							<?php endif; ?>
 						</div>
@@ -360,13 +360,13 @@ class Conversion_Log_Admin {
 						<table class="pgs-table pgs-table--log">
 							<thead>
 								<tr>
-									<th><?php esc_html_e( 'Page / template', 'blockshift-migrate-from-elementor' ); ?></th>
-									<th><?php esc_html_e( 'Type', 'blockshift-migrate-from-elementor' ); ?></th>
-									<th><?php esc_html_e( 'Status', 'blockshift-migrate-from-elementor' ); ?></th>
-									<th><?php esc_html_e( 'Widgets', 'blockshift-migrate-from-elementor' ); ?></th>
-									<th><?php esc_html_e( 'Issues', 'blockshift-migrate-from-elementor' ); ?></th>
-									<th><?php esc_html_e( 'Duration', 'blockshift-migrate-from-elementor' ); ?></th>
-									<th><?php esc_html_e( 'Date', 'blockshift-migrate-from-elementor' ); ?></th>
+									<th><?php esc_html_e( 'Page / template', 'layoutbridge-block-migration' ); ?></th>
+									<th><?php esc_html_e( 'Type', 'layoutbridge-block-migration' ); ?></th>
+									<th><?php esc_html_e( 'Status', 'layoutbridge-block-migration' ); ?></th>
+									<th><?php esc_html_e( 'Widgets', 'layoutbridge-block-migration' ); ?></th>
+									<th><?php esc_html_e( 'Issues', 'layoutbridge-block-migration' ); ?></th>
+									<th><?php esc_html_e( 'Duration', 'layoutbridge-block-migration' ); ?></th>
+									<th><?php esc_html_e( 'Date', 'layoutbridge-block-migration' ); ?></th>
 								</tr>
 							</thead>
 							<tbody>
@@ -400,7 +400,7 @@ class Conversion_Log_Admin {
 										$post_title = get_the_title( $post_id );
 									}
 									if ( '' === $post_title ) {
-										$post_title = esc_html__( '(unknown)', 'blockshift-migrate-from-elementor' );
+										$post_title = esc_html__( '(unknown)', 'layoutbridge-block-migration' );
 									}
 
 									$target_id  = (int) ( $entry['target_id'] ?? 0 );
@@ -417,7 +417,7 @@ class Conversion_Log_Admin {
 										<?php endif; ?>
 										<?php if ( $target_id > 0 && $tgt_link ) : ?>
 											<div class="pgs-table__meta">
-												<?php esc_html_e( 'Target:', 'blockshift-migrate-from-elementor' ); ?>
+												<?php esc_html_e( 'Target:', 'layoutbridge-block-migration' ); ?>
 												<a href="<?php echo esc_url( (string) $tgt_link ); ?>">#<?php echo $target_id; ?></a>
 											</div>
 										<?php endif; ?>
@@ -429,7 +429,7 @@ class Conversion_Log_Admin {
 									<td style="min-width:140px;">
 										<?php if ( $total_w > 0 ) : ?>
 											<div class="pgs-progress pgs-progress--sm"><div class="pgs-progress__track"><div class="pgs-progress__fill<?php echo $is_partial ? ' pgs-progress__fill--warning' : ''; ?>" style="width:<?php echo $pct; ?>%;"></div></div></div>
-											<div class="pgs-table__count"><?php printf( esc_html__( '%1$d / %2$d', 'blockshift-migrate-from-elementor' ), $converted_w, $total_w ); ?></div>
+											<div class="pgs-table__count"><?php printf( esc_html__( '%1$d / %2$d', 'layoutbridge-block-migration' ), $converted_w, $total_w ); ?></div>
 										<?php else : ?>
 											<span class="pgs-table__muted">—</span>
 										<?php endif; ?>
@@ -441,7 +441,7 @@ class Conversion_Log_Admin {
 													<i data-icon="alert-triangle"></i>
 													<?php
 													$nt = count( $unsp_types );
-													printf( esc_html( _n( '%d unsupported type', '%d unsupported types', $nt, 'blockshift-migrate-from-elementor' ) ), $nt );
+													printf( esc_html( _n( '%d unsupported type', '%d unsupported types', $nt, 'layoutbridge-block-migration' ) ), $nt );
 													?>
 												</summary>
 												<ul style="margin:6px 0 0 16px;padding:0;font-size:var(--text-xs);color:var(--text-muted);list-style:disc;">
@@ -452,15 +452,15 @@ class Conversion_Log_Admin {
 											</details>
 											<?php if ( $empty_w > 0 ) : ?>
 												<div class="pgs-table__meta">
-													<?php printf( esc_html( _n( '+%d empty output', '+%d empty outputs', $empty_w, 'blockshift-migrate-from-elementor' ) ), $empty_w ); ?>
+													<?php printf( esc_html( _n( '+%d empty output', '+%d empty outputs', $empty_w, 'layoutbridge-block-migration' ) ), $empty_w ); ?>
 												</div>
 											<?php endif; ?>
 										<?php elseif ( $empty_w > 0 ) : ?>
 											<span class="pgs-issue">
-												<i data-icon="info"></i> <?php printf( esc_html( _n( '%d empty output', '%d empty outputs', $empty_w, 'blockshift-migrate-from-elementor' ) ), $empty_w ); ?>
+												<i data-icon="info"></i> <?php printf( esc_html( _n( '%d empty output', '%d empty outputs', $empty_w, 'layoutbridge-block-migration' ) ), $empty_w ); ?>
 											</span>
 										<?php else : ?>
-											<span class="pgs-issue pgs-issue--ok"><i data-icon="check"></i> <?php esc_html_e( 'None', 'blockshift-migrate-from-elementor' ); ?></span>
+											<span class="pgs-issue pgs-issue--ok"><i data-icon="check"></i> <?php esc_html_e( 'None', 'layoutbridge-block-migration' ); ?></span>
 										<?php endif; ?>
 									</td>
 									<td class="pgs-table__muted"><?php echo esc_html( $dur_str ); ?></td>
@@ -472,7 +472,7 @@ class Conversion_Log_Admin {
 						<div class="pgs-table__foot">
 							<?php
 							printf(
-								esc_html__( 'Showing %1$d entries. Log retains the last %2$d entries; oldest are discarded automatically.', 'blockshift-migrate-from-elementor' ),
+								esc_html__( 'Showing %1$d entries. Log retains the last %2$d entries; oldest are discarded automatically.', 'layoutbridge-block-migration' ),
 								count( $log ),
 								self::MAX_ENTRIES
 							);
@@ -485,32 +485,32 @@ class Conversion_Log_Admin {
 				<div class="pgs-card">
 					<div class="pgs-card__header">
 						<div>
-							<div class="pgs-card__eyebrow"><?php esc_html_e( 'Machine-readable', 'blockshift-migrate-from-elementor' ); ?></div>
-							<div class="pgs-card__title"><?php esc_html_e( 'Diagnostic Log (JSONL)', 'blockshift-migrate-from-elementor' ); ?></div>
+							<div class="pgs-card__eyebrow"><?php esc_html_e( 'Machine-readable', 'layoutbridge-block-migration' ); ?></div>
+							<div class="pgs-card__title"><?php esc_html_e( 'Diagnostic Log (JSONL)', 'layoutbridge-block-migration' ); ?></div>
 						</div>
 					</div>
 					<div class="pgs-card__body">
 						<p class="pgs-muted" style="margin-bottom:12px;">
-							<?php esc_html_e( 'Structured machine-readable log. Every conversion run appends JSON events — one per line. Attach this file to a feedback report or import it into the Feedback Hub for AI analysis.', 'blockshift-migrate-from-elementor' ); ?>
+							<?php esc_html_e( 'Structured machine-readable log. Every conversion run appends JSON events — one per line. Attach this file to a feedback report or import it into the Feedback Hub for AI analysis.', 'layoutbridge-block-migration' ); ?>
 						</p>
 
 						<div class="pgs-muted" style="margin-bottom:12px;line-height:var(--leading-relaxed);">
 							<div>
-								<strong><?php esc_html_e( 'File path:', 'blockshift-migrate-from-elementor' ); ?></strong>
+								<strong><?php esc_html_e( 'File path:', 'layoutbridge-block-migration' ); ?></strong>
 								<code style="background:var(--surface-sunken);padding:3px 6px;border-radius:var(--radius-xs);user-select:all;cursor:text;"><?php echo esc_html( $jsonl_log_path ); ?></code>
 							</div>
 							<div>
-								<strong><?php esc_html_e( 'File size:', 'blockshift-migrate-from-elementor' ); ?></strong>
+								<strong><?php esc_html_e( 'File size:', 'layoutbridge-block-migration' ); ?></strong>
 								<?php
 								if ( $jsonl_log_exists && $jsonl_log_size > 0 ) {
 									echo esc_html( size_format( $jsonl_log_size ) );
 									// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_exists
 									if ( file_exists( $jsonl_log_path . '.1' ) ) {
 										echo ' &nbsp;';
-										esc_html_e( '(rotated backup: .jsonl.1 also present)', 'blockshift-migrate-from-elementor' );
+										esc_html_e( '(rotated backup: .jsonl.1 also present)', 'layoutbridge-block-migration' );
 									}
 								} else {
-									esc_html_e( 'File not yet created — run a conversion first.', 'blockshift-migrate-from-elementor' );
+									esc_html_e( 'File not yet created — run a conversion first.', 'layoutbridge-block-migration' );
 								}
 								?>
 							</div>
@@ -520,21 +520,21 @@ class Conversion_Log_Admin {
 							<div class="pgs-code">
 								<div class="pgs-code__bar">
 									<span class="pgs-code__name"><i data-icon="braces"></i>conversion-log.jsonl</span>
-									<button type="button" class="pgs-code__copy" id="blockshift-jsonl-copy"><i data-icon="copy"></i><span><?php esc_html_e( 'Copy', 'blockshift-migrate-from-elementor' ); ?></span></button>
+									<button type="button" class="pgs-code__copy" id="blockshift-jsonl-copy"><i data-icon="copy"></i><span><?php esc_html_e( 'Copy', 'layoutbridge-block-migration' ); ?></span></button>
 								</div>
 								<pre class="pgs-code__pre" id="blockshift-jsonl-log" style="--_maxh:340px;"><?php echo esc_html( implode( "\n", $jsonl_log_lines ) ); ?></pre>
 							</div>
 							<p class="pgs-muted" style="margin-top:10px;">
 								<?php
 								printf(
-									esc_html__( 'Showing last %1$d events. The file rotates automatically at 5 MB — the previous file is kept as .jsonl.1.', 'blockshift-migrate-from-elementor' ),
+									esc_html__( 'Showing last %1$d events. The file rotates automatically at 5 MB — the previous file is kept as .jsonl.1.', 'layoutbridge-block-migration' ),
 									count( $jsonl_log_lines )
 								);
 								?>
 							</p>
 						<?php elseif ( $logging_on ) : ?>
 							<p class="pgs-muted" style="font-style:italic;">
-								<?php esc_html_e( 'No diagnostic log events yet. Run a conversion and refresh this page.', 'blockshift-migrate-from-elementor' ); ?>
+								<?php esc_html_e( 'No diagnostic log events yet. Run a conversion and refresh this page.', 'layoutbridge-block-migration' ); ?>
 							</p>
 						<?php endif; ?>
 					</div>

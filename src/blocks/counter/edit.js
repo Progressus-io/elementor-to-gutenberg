@@ -26,9 +26,9 @@ const Edit = ( { attributes, setAttributes } ) => {
 	const blockProps = useBlockProps();
 
 	const alignmentOptions = [
-		{ label: __( 'Left', 'blockshift-migrate-from-elementor' ), value: 'left' },
-		{ label: __( 'Center', 'blockshift-migrate-from-elementor' ), value: 'center' },
-		{ label: __( 'Right', 'blockshift-migrate-from-elementor' ), value: 'right' },
+		{ label: __( 'Left', 'layoutbridge-block-migration' ), value: 'left' },
+		{ label: __( 'Center', 'layoutbridge-block-migration' ), value: 'center' },
+		{ label: __( 'Right', 'layoutbridge-block-migration' ), value: 'right' },
 	];
 
 	const counterStyle = {
@@ -47,11 +47,11 @@ const Edit = ( { attributes, setAttributes } ) => {
 		<>
 			<InspectorControls>
 				<PanelBody
-					title={ __( 'Counter Settings', 'blockshift-migrate-from-elementor' ) }
+					title={ __( 'Counter Settings', 'layoutbridge-block-migration' ) }
 					initialOpen={ true }
 				>
 					<RangeControl
-						label={ __( 'Start Value', 'blockshift-migrate-from-elementor' ) }
+						label={ __( 'Start Value', 'layoutbridge-block-migration' ) }
 						value={ startValue }
 						onChange={ ( value ) =>
 							setAttributes( { startValue: value } )
@@ -60,7 +60,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						max={ endValue }
 					/>
 					<RangeControl
-						label={ __( 'End Value', 'blockshift-migrate-from-elementor' ) }
+						label={ __( 'End Value', 'layoutbridge-block-migration' ) }
 						value={ endValue }
 						onChange={ ( value ) =>
 							setAttributes( { endValue: value } )
@@ -71,7 +71,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					<RangeControl
 						label={ __(
 							'Animation Duration (ms)',
-							'blockshift-migrate-from-elementor'
+							'layoutbridge-block-migration'
 						) }
 						value={ duration }
 						onChange={ ( value ) =>
@@ -82,21 +82,21 @@ const Edit = ( { attributes, setAttributes } ) => {
 						step={ 100 }
 					/>
 					<TextControl
-						label={ __( 'Prefix', 'blockshift-migrate-from-elementor' ) }
+						label={ __( 'Prefix', 'layoutbridge-block-migration' ) }
 						value={ prefix }
 						onChange={ ( value ) =>
 							setAttributes( { prefix: value } )
 						}
 					/>
 					<TextControl
-						label={ __( 'Suffix', 'blockshift-migrate-from-elementor' ) }
+						label={ __( 'Suffix', 'layoutbridge-block-migration' ) }
 						value={ suffix }
 						onChange={ ( value ) =>
 							setAttributes( { suffix: value } )
 						}
 					/>
 					<TextControl
-						label={ __( 'Title', 'blockshift-migrate-from-elementor' ) }
+						label={ __( 'Title', 'layoutbridge-block-migration' ) }
 						value={ title }
 						onChange={ ( value ) =>
 							setAttributes( { title: value } )
@@ -104,11 +104,11 @@ const Edit = ( { attributes, setAttributes } ) => {
 					/>
 				</PanelBody>
 				<PanelBody
-					title={ __( 'Style Settings', 'blockshift-migrate-from-elementor' ) }
+					title={ __( 'Style Settings', 'layoutbridge-block-migration' ) }
 					initialOpen={ false }
 				>
 					<SelectControl
-						label={ __( 'Alignment', 'blockshift-migrate-from-elementor' ) }
+						label={ __( 'Alignment', 'layoutbridge-block-migration' ) }
 						value={ alignment }
 						options={ alignmentOptions }
 						onChange={ ( value ) =>
@@ -118,7 +118,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					<div className="components-base-control">
 						{ /* eslint-disable-next-line jsx-a11y/label-has-associated-control */ }
 						<label className="components-base-control__label">
-							{ __( 'Number Color', 'blockshift-migrate-from-elementor' ) }
+							{ __( 'Number Color', 'layoutbridge-block-migration' ) }
 						</label>
 						<ColorPicker
 							color={ numberColor }
@@ -128,7 +128,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						/>
 					</div>
 					<RangeControl
-						label={ __( 'Number Size', 'blockshift-migrate-from-elementor' ) }
+						label={ __( 'Number Size', 'layoutbridge-block-migration' ) }
 						value={ numberSize }
 						onChange={ ( value ) =>
 							setAttributes( { numberSize: value } )
@@ -139,7 +139,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					<div className="components-base-control">
 						{ /* eslint-disable-next-line jsx-a11y/label-has-associated-control */ }
 						<label className="components-base-control__label">
-							{ __( 'Title Color', 'blockshift-migrate-from-elementor' ) }
+							{ __( 'Title Color', 'layoutbridge-block-migration' ) }
 						</label>
 						<ColorPicker
 							color={ titleColor }
@@ -149,7 +149,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						/>
 					</div>
 					<RangeControl
-						label={ __( 'Title Size', 'blockshift-migrate-from-elementor' ) }
+						label={ __( 'Title Size', 'layoutbridge-block-migration' ) }
 						value={ titleSize }
 						onChange={ ( value ) =>
 							setAttributes( { titleSize: value } )

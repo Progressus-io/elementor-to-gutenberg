@@ -68,18 +68,18 @@ export default function Edit( { attributes, setAttributes } ) {
 				<PanelBody
 					title={ __(
 						'Progress Bar Settings',
-						'blockshift-migrate-from-elementor'
+						'layoutbridge-block-migration'
 					) }
 				>
 					<TextControl
-						label={ __( 'Title', 'blockshift-migrate-from-elementor' ) }
+						label={ __( 'Title', 'layoutbridge-block-migration' ) }
 						value={ title }
 						onChange={ ( value ) =>
 							setAttributes( { title: value } )
 						}
 					/>
 					<RangeControl
-						label={ __( 'Percentage', 'blockshift-migrate-from-elementor' ) }
+						label={ __( 'Percentage', 'layoutbridge-block-migration' ) }
 						value={ percentage }
 						onChange={ ( value ) =>
 							setAttributes( { percentage: value } )
@@ -88,7 +88,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						max={ 100 }
 					/>
 					<TextControl
-						label={ __( 'Inner Text', 'blockshift-migrate-from-elementor' ) }
+						label={ __( 'Inner Text', 'layoutbridge-block-migration' ) }
 						value={ innerText }
 						onChange={ ( value ) =>
 							setAttributes( { innerText: value } )
@@ -97,7 +97,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					<ToggleControl
 						label={ __(
 							'Show Percentage',
-							'blockshift-migrate-from-elementor'
+							'layoutbridge-block-migration'
 						) }
 						checked={ showPercentage }
 						onChange={ ( value ) =>
@@ -105,14 +105,14 @@ export default function Edit( { attributes, setAttributes } ) {
 						}
 					/>
 					<ToggleControl
-						label={ __( 'Show Title', 'blockshift-migrate-from-elementor' ) }
+						label={ __( 'Show Title', 'layoutbridge-block-migration' ) }
 						checked={ showTitle }
 						onChange={ ( value ) =>
 							setAttributes( { showTitle: value } )
 						}
 					/>
 					<RangeControl
-						label={ __( 'Title Size', 'blockshift-migrate-from-elementor' ) }
+						label={ __( 'Title Size', 'layoutbridge-block-migration' ) }
 						value={ titleSize }
 						onChange={ ( value ) =>
 							setAttributes( { titleSize: value } )
@@ -121,7 +121,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						max={ 50 }
 					/>
 					<RangeControl
-						label={ __( 'Bar Height', 'blockshift-migrate-from-elementor' ) }
+						label={ __( 'Bar Height', 'layoutbridge-block-migration' ) }
 						value={ barHeight }
 						onChange={ ( value ) =>
 							setAttributes( { barHeight: value } )
@@ -130,7 +130,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						max={ 50 }
 					/>
 					<RangeControl
-						label={ __( 'Border Radius', 'blockshift-migrate-from-elementor' ) }
+						label={ __( 'Border Radius', 'layoutbridge-block-migration' ) }
 						value={ borderRadius }
 						onChange={ ( value ) =>
 							setAttributes( { borderRadius: value } )
@@ -143,7 +143,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						<label>
 							{ __(
 								'Progress Text Color',
-								'blockshift-migrate-from-elementor'
+								'layoutbridge-block-migration'
 							) }
 						</label>
 						<ColorPicker
@@ -155,7 +155,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						/>
 					</div>
 					<RangeControl
-						label={ __( 'Bar Color', 'blockshift-migrate-from-elementor' ) }
+						label={ __( 'Bar Color', 'layoutbridge-block-migration' ) }
 						value={ barColor }
 						onChange={ ( value ) =>
 							setAttributes( { barColor: value } )
@@ -165,7 +165,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					<div>
 						{ /* eslint-disable-next-line jsx-a11y/label-has-associated-control */ }
 						<label>
-							{ __( 'Bar Color', 'blockshift-migrate-from-elementor' ) }
+							{ __( 'Bar Color', 'layoutbridge-block-migration' ) }
 						</label>
 						<ColorPicker
 							color={ barColor }
@@ -178,7 +178,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					<div>
 						{ /* eslint-disable-next-line jsx-a11y/label-has-associated-control */ }
 						<label>
-							{ __( 'Background Color', 'blockshift-migrate-from-elementor' ) }
+							{ __( 'Background Color', 'layoutbridge-block-migration' ) }
 						</label>
 						<ColorPicker
 							color={ backgroundColor }
@@ -191,7 +191,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					<div>
 						{ /* eslint-disable-next-line jsx-a11y/label-has-associated-control */ }
 						<label>
-							{ __( 'Title Color', 'blockshift-migrate-from-elementor' ) }
+							{ __( 'Title Color', 'layoutbridge-block-migration' ) }
 						</label>
 						<ColorPicker
 							color={ titleColor }

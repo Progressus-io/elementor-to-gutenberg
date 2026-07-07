@@ -9,7 +9,7 @@
  * Requires PHP: 7.4
  * License: GPLv2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain: blockshift-migrate-from-elementor
+ * Text Domain: layoutbridge-block-migration
  *
  * @package Progressus\BlockShift
  */

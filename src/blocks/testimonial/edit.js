@@ -133,13 +133,13 @@ const Edit = ( { attributes, setAttributes } ) => {
 			<InspectorControls>
 				{ /* ── Content Panel ─────────────────────────────────── */ }
 				<PanelBody
-					title={ __( 'Content', 'blockshift-migrate-from-elementor' ) }
+					title={ __( 'Content', 'layoutbridge-block-migration' ) }
 					initialOpen={ true }
 				>
 					<TextareaControl
 						label={ __(
 							'Quote / Testimonial',
-							'blockshift-migrate-from-elementor'
+							'layoutbridge-block-migration'
 						) }
 						value={ content }
 						onChange={ ( val ) =>
@@ -148,29 +148,29 @@ const Edit = ( { attributes, setAttributes } ) => {
 						rows={ 4 }
 					/>
 					<TextControl
-						label={ __( 'Client Name', 'blockshift-migrate-from-elementor' ) }
+						label={ __( 'Client Name', 'layoutbridge-block-migration' ) }
 						value={ name }
 						onChange={ ( val ) => setAttributes( { name: val } ) }
 					/>
 					<TextControl
-						label={ __( 'Job / Title', 'blockshift-migrate-from-elementor' ) }
+						label={ __( 'Job / Title', 'layoutbridge-block-migration' ) }
 						value={ job }
 						onChange={ ( val ) => setAttributes( { job: val } ) }
 					/>
 					<SelectControl
-						label={ __( 'Alignment', 'blockshift-migrate-from-elementor' ) }
+						label={ __( 'Alignment', 'layoutbridge-block-migration' ) }
 						value={ alignment }
 						options={ [
 							{
-								label: __( 'Left', 'blockshift-migrate-from-elementor' ),
+								label: __( 'Left', 'layoutbridge-block-migration' ),
 								value: 'left',
 							},
 							{
-								label: __( 'Center', 'blockshift-migrate-from-elementor' ),
+								label: __( 'Center', 'layoutbridge-block-migration' ),
 								value: 'center',
 							},
 							{
-								label: __( 'Right', 'blockshift-migrate-from-elementor' ),
+								label: __( 'Right', 'layoutbridge-block-migration' ),
 								value: 'right',
 							},
 						] }
@@ -182,7 +182,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 
 				{ /* ── Avatar / Image Panel ───────────────────────────── */ }
 				<PanelBody
-					title={ __( 'Avatar Image', 'blockshift-migrate-from-elementor' ) }
+					title={ __( 'Avatar Image', 'layoutbridge-block-migration' ) }
 					initialOpen={ false }
 				>
 					<MediaUploadCheck>
@@ -220,11 +220,11 @@ const Edit = ( { attributes, setAttributes } ) => {
 										{ imageUrl
 											? __(
 													'Replace Image',
-													'blockshift-migrate-from-elementor'
+													'layoutbridge-block-migration'
 											  )
 											: __(
 													'Upload Image',
-													'blockshift-migrate-from-elementor'
+													'layoutbridge-block-migration'
 											  ) }
 									</Button>
 									{ imageUrl && (
@@ -241,7 +241,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 										>
 											{ __(
 												'Remove',
-												'blockshift-migrate-from-elementor'
+												'layoutbridge-block-migration'
 											) }
 										</Button>
 									) }
@@ -253,7 +253,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					<RangeControl
 						label={ __(
 							'Image Size (px)',
-							'blockshift-migrate-from-elementor'
+							'layoutbridge-block-migration'
 						) }
 						value={ imageSize }
 						onChange={ ( val ) =>
@@ -264,7 +264,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					/>
 
 					<BoxControl
-						label={ __( 'Border Radius', 'blockshift-migrate-from-elementor' ) }
+						label={ __( 'Border Radius', 'layoutbridge-block-migration' ) }
 						values={ trblToBoxControl( imageBorderRadius ) }
 						onChange={ ( nextVal ) =>
 							setAttributes( {
@@ -277,7 +277,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					/>
 
 					<BoxControl
-						label={ __( 'Border Width', 'blockshift-migrate-from-elementor' ) }
+						label={ __( 'Border Width', 'layoutbridge-block-migration' ) }
 						values={ trblToBoxControl( imageBorderWidth ) }
 						onChange={ ( nextVal ) =>
 							setAttributes( {
@@ -290,7 +290,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					/>
 
 					<p style={ { fontWeight: 600, marginBottom: '8px' } }>
-						{ __( 'Border Color', 'blockshift-migrate-from-elementor' ) }
+						{ __( 'Border Color', 'layoutbridge-block-migration' ) }
 					</p>
 					<ColorPicker
 						color={ imageBorderColor }
@@ -305,14 +305,14 @@ const Edit = ( { attributes, setAttributes } ) => {
 			{ /* ── Advanced Controls ──────────────────────────────────── */ }
 			<InspectorAdvancedControls>
 				<TextControl
-					label={ __( 'HTML Anchor (ID)', 'blockshift-migrate-from-elementor' ) }
+					label={ __( 'HTML Anchor (ID)', 'layoutbridge-block-migration' ) }
 					value={ customId }
 					onChange={ ( val ) => setAttributes( { customId: val } ) }
 				/>
 				<TextControl
 					label={ __(
 						'Additional CSS Class(es)',
-						'blockshift-migrate-from-elementor'
+						'layoutbridge-block-migration'
 					) }
 					value={ customClass }
 					onChange={ ( val ) =>

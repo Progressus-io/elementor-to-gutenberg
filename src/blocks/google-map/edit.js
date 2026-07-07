@@ -11,10 +11,10 @@ import {
 import { Fragment, useState, useEffect, useRef } from '@wordpress/element';
 
 const mapTypes = [
-	{ label: __( 'Roadmap', 'blockshift-migrate-from-elementor' ), value: 'roadmap' },
-	{ label: __( 'Satellite', 'blockshift-migrate-from-elementor' ), value: 'satellite' },
-	{ label: __( 'Hybrid', 'blockshift-migrate-from-elementor' ), value: 'hybrid' },
-	{ label: __( 'Terrain', 'blockshift-migrate-from-elementor' ), value: 'terrain' },
+	{ label: __( 'Roadmap', 'layoutbridge-block-migration' ), value: 'roadmap' },
+	{ label: __( 'Satellite', 'layoutbridge-block-migration' ), value: 'satellite' },
+	{ label: __( 'Hybrid', 'layoutbridge-block-migration' ), value: 'hybrid' },
+	{ label: __( 'Terrain', 'layoutbridge-block-migration' ), value: 'terrain' },
 ];
 
 const Edit = ( { attributes, setAttributes } ) => {
@@ -325,28 +325,28 @@ const Edit = ( { attributes, setAttributes } ) => {
 		<Fragment>
 			<InspectorControls>
 				<PanelBody
-					title={ __( 'Map Settings', 'blockshift-migrate-from-elementor' ) }
+					title={ __( 'Map Settings', 'layoutbridge-block-migration' ) }
 					initialOpen={ true }
 				>
 					<p style={ { marginTop: 0, marginBottom: 8 } }>
 						{ __(
 							"Set your Google Maps API Key in the plugin's Integrations Settings page.",
-							'blockshift-migrate-from-elementor'
+							'layoutbridge-block-migration'
 						) }{ ' ' }
 						<a
 							href="/wp-admin/admin.php?page=blockshift-settings"
 							target="_blank"
 							rel="noopener noreferrer"
 						>
-							{ __( 'Open Settings', 'blockshift-migrate-from-elementor' ) }
+							{ __( 'Open Settings', 'layoutbridge-block-migration' ) }
 						</a>{ ' ' }
-						{ __( 'Create your key', 'blockshift-migrate-from-elementor' ) }{ ' ' }
+						{ __( 'Create your key', 'layoutbridge-block-migration' ) }{ ' ' }
 						<a
 							href="https://developers.google.com/maps/documentation/embed/get-api-key"
 							target="_blank"
 							rel="noopener noreferrer"
 						>
-							{ __( 'here.', 'blockshift-migrate-from-elementor' ) }
+							{ __( 'here.', 'layoutbridge-block-migration' ) }
 						</a>
 					</p>
 					<div style={ { marginBottom: 8 } }>
@@ -354,7 +354,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 							htmlFor="google-map-address-input"
 							className="components-base-control__label"
 						>
-							{ __( 'Address', 'blockshift-migrate-from-elementor' ) }
+							{ __( 'Address', 'layoutbridge-block-migration' ) }
 						</label>
 						<input
 							id="google-map-address-input"
@@ -378,7 +378,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 							}
 							placeholder={ __(
 								'Start typing an address…',
-								'blockshift-migrate-from-elementor'
+								'layoutbridge-block-migration'
 							) }
 							style={ { width: '100%' } }
 						/>
@@ -398,7 +398,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 									<div style={ { padding: 8 } }>
 										{ __(
 											'Searching…',
-											'blockshift-migrate-from-elementor'
+											'layoutbridge-block-migration'
 										) }
 									</div>
 								) }
@@ -406,7 +406,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 									<div style={ { padding: 8 } }>
 										{ __(
 											'No suggestions',
-											'blockshift-migrate-from-elementor'
+											'layoutbridge-block-migration'
 										) }
 									</div>
 								) }
@@ -439,7 +439,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					<TextControl
 						label={ __(
 							'Latitude (optional)',
-							'blockshift-migrate-from-elementor'
+							'layoutbridge-block-migration'
 						) }
 						value={ locLat === null ? '' : String( locLat ) }
 						onChange={ ( value ) =>
@@ -451,7 +451,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					<TextControl
 						label={ __(
 							'Longitude (optional)',
-							'blockshift-migrate-from-elementor'
+							'layoutbridge-block-migration'
 						) }
 						value={ locLng === null ? '' : String( locLng ) }
 						onChange={ ( value ) =>
@@ -461,7 +461,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						}
 					/>
 					<RangeControl
-						label={ __( 'Zoom', 'blockshift-migrate-from-elementor' ) }
+						label={ __( 'Zoom', 'layoutbridge-block-migration' ) }
 						value={ zoom }
 						onChange={ ( value ) =>
 							setAttributes( { zoom: value } )
@@ -470,7 +470,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						max={ 20 }
 					/>
 					<RangeControl
-						label={ __( 'Height (px)', 'blockshift-migrate-from-elementor' ) }
+						label={ __( 'Height (px)', 'layoutbridge-block-migration' ) }
 						value={ height }
 						onChange={ ( value ) =>
 							setAttributes( { height: value } )
@@ -480,7 +480,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					/>
 					{ /* Show Marker removed */ }
 					<SelectControl
-						label={ __( 'Map Type', 'blockshift-migrate-from-elementor' ) }
+						label={ __( 'Map Type', 'layoutbridge-block-migration' ) }
 						value={ mapType }
 						options={ mapTypes }
 						onChange={ ( value ) =>
@@ -488,12 +488,12 @@ const Edit = ( { attributes, setAttributes } ) => {
 						}
 					/>
 					<PanelBody
-						title={ __( 'Dimensions', 'blockshift-migrate-from-elementor' ) }
+						title={ __( 'Dimensions', 'layoutbridge-block-migration' ) }
 						initialOpen={ false }
 					>
 						{ /** Normalize values for BoxControl display: accept '2px' or numeric 2 */ }
 						<BoxControl
-							label={ __( 'Padding', 'blockshift-migrate-from-elementor' ) }
+							label={ __( 'Padding', 'layoutbridge-block-migration' ) }
 							values={ {
 								top: valueToCss( padding.top ),
 								right: valueToCss( padding.right ),
@@ -527,7 +527,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						/>
 
 						<BoxControl
-							label={ __( 'Margin', 'blockshift-migrate-from-elementor' ) }
+							label={ __( 'Margin', 'layoutbridge-block-migration' ) }
 							values={ {
 								top: valueToCss( margin.top ),
 								right: valueToCss( margin.right ),
@@ -583,7 +583,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 									src={ src }
 									title={ __(
 										'Google Map',
-										'blockshift-migrate-from-elementor'
+										'layoutbridge-block-migration'
 									) }
 									style={ {
 										width: '100%',
@@ -598,7 +598,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 							<div>
 								{ __(
 									'Enter an address or coordinates to preview',
-									'blockshift-migrate-from-elementor'
+									'layoutbridge-block-migration'
 								) }
 							</div>
 						);
