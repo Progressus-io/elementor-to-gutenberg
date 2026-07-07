@@ -38,21 +38,21 @@ defined( 'ABSPATH' ) || exit;
  * Screenshot data is keyed to the converted (target) page ID.
  *
  * Meta keys (each stores a JSON-encoded string[]):
- *   _metg_ai_elementor_screenshot_url         – Elementor source page (desktop)
- *   _metg_ai_gutenberg_screenshot_url         – Converted Gutenberg page (desktop)
- *   _metg_ai_elementor_screenshot_mobile_url  – Elementor source page (mobile)
- *   _metg_ai_gutenberg_screenshot_mobile_url  – Converted Gutenberg page (mobile)
- *   _metg_ai_screenshot_status                – Generation status constant
- *   _metg_ai_screenshot_generated_at          – Timestamp of last generation attempt
+ *   _blockshift_ai_elementor_screenshot_url         – Elementor source page (desktop)
+ *   _blockshift_ai_gutenberg_screenshot_url         – Converted Gutenberg page (desktop)
+ *   _blockshift_ai_elementor_screenshot_mobile_url  – Elementor source page (mobile)
+ *   _blockshift_ai_gutenberg_screenshot_mobile_url  – Converted Gutenberg page (mobile)
+ *   _blockshift_ai_screenshot_status                – Generation status constant
+ *   _blockshift_ai_screenshot_generated_at          – Timestamp of last generation attempt
  */
 class AI_Remediation_Screenshot_Meta_Service {
 
-	const META_ELEMENTOR_URL        = '_metg_ai_elementor_screenshot_url';
-	const META_GUTENBERG_URL        = '_metg_ai_gutenberg_screenshot_url';
-	const META_ELEMENTOR_MOBILE_URL = '_metg_ai_elementor_screenshot_mobile_url';
-	const META_GUTENBERG_MOBILE_URL = '_metg_ai_gutenberg_screenshot_mobile_url';
-	const META_STATUS               = '_metg_ai_screenshot_status';
-	const META_GENERATED_AT         = '_metg_ai_screenshot_generated_at';
+	const META_ELEMENTOR_URL        = '_blockshift_ai_elementor_screenshot_url';
+	const META_GUTENBERG_URL        = '_blockshift_ai_gutenberg_screenshot_url';
+	const META_ELEMENTOR_MOBILE_URL = '_blockshift_ai_elementor_screenshot_mobile_url';
+	const META_GUTENBERG_MOBILE_URL = '_blockshift_ai_gutenberg_screenshot_mobile_url';
+	const META_STATUS               = '_blockshift_ai_screenshot_status';
+	const META_GENERATED_AT         = '_blockshift_ai_screenshot_generated_at';
 
 	const STATUS_SUCCESS       = 'success';
 	const STATUS_FAILED        = 'failed';
@@ -282,7 +282,7 @@ class AI_Remediation_Screenshot_Meta_Service {
 	 * @return string Public permalink of the preview page, or home_url('/') on failure.
 	 */
 	private static function get_or_create_preview_page_url(): string {
-		$option_key = '_metg_hf_preview_page_id';
+		$option_key = '_blockshift_hf_preview_page_id';
 		$page_id    = (int) get_option( $option_key, 0 );
 
 		if ( $page_id > 0 && 'publish' === get_post_status( $page_id ) ) {

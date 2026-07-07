@@ -38,7 +38,7 @@ class AI_Remediation_Screenshot_Api_Service {
 	/**
 	 * WordPress option key for screenshot settings.
 	 */
-	const SETTINGS_OPTION_KEY = 'metg_screenshot_settings';
+	const SETTINGS_OPTION_KEY = 'blockshift_screenshot_settings';
 
 	/**
 	 * Default request timeout in seconds.

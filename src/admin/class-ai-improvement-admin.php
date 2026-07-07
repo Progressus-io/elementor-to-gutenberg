@@ -63,10 +63,10 @@ use function wp_update_post;
 
 class AI_Improvement_Admin {
 
-	public const MENU_SLUG = 'metg-ai-improvement';
+	public const MENU_SLUG = 'blockshift-ai-improvement';
 
-	private const NONCE_AUTO_IMPROVE   = 'metg_ai_auto_improve';
-	private const NONCE_MOBILE_IMPROVE = 'metg_ai_mobile_improve';
+	private const NONCE_AUTO_IMPROVE   = 'blockshift_ai_auto_improve';
+	private const NONCE_MOBILE_IMPROVE = 'blockshift_ai_mobile_improve';
 
 	/**
 	 * Markers that wrap the AI mobile CSS block inside the external CSS file.
@@ -101,9 +101,9 @@ class AI_Improvement_Admin {
 	private function __construct() {
 		add_action( 'admin_menu', array( $this, 'register_menu' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
-		add_action( 'admin_post_metg_ai_auto_improve', array( $this, 'handle_auto_improve' ) );
-		add_action( 'admin_post_metg_ai_mobile_improve', array( $this, 'handle_mobile_improve' ) );
-		add_action( 'admin_post_metg_ai_regenerate_screenshots', array( $this, 'handle_regenerate_screenshots' ) );
+		add_action( 'admin_post_blockshift_ai_auto_improve', array( $this, 'handle_auto_improve' ) );
+		add_action( 'admin_post_blockshift_ai_mobile_improve', array( $this, 'handle_mobile_improve' ) );
+		add_action( 'admin_post_blockshift_ai_regenerate_screenshots', array( $this, 'handle_regenerate_screenshots' ) );
 	}
 
 	/**
@@ -122,14 +122,14 @@ class AI_Improvement_Admin {
 		$js_path  = BLOCKSHIFT_DIR_PATH . '/assets/js/ai-improve.js';
 
 		wp_enqueue_style(
-			'metg-ai-improve',
+			'blockshift-ai-improve',
 			plugins_url( 'assets/css/ai-improve.css', BLOCKSHIFT_MAIN_FILE ),
 			array(),
 			BLOCKSHIFT_DEBUG && file_exists( $css_path ) ? (string) filemtime( $css_path ) : BLOCKSHIFT_VERSION
 		);
 
 		wp_enqueue_script(
-			'metg-ai-improve',
+			'blockshift-ai-improve',
 			plugins_url( 'assets/js/ai-improve.js', BLOCKSHIFT_MAIN_FILE ),
 			array(),
 			BLOCKSHIFT_DEBUG && file_exists( $js_path ) ? (string) filemtime( $js_path ) : BLOCKSHIFT_VERSION,
@@ -140,8 +140,8 @@ class AI_Improvement_Admin {
 		$source_id_asset = isset( $_GET['source_id'] ) ? absint( wp_unslash( $_GET['source_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
 		wp_localize_script(
-			'metg-ai-improve',
-			'metgAiImprove',
+			'blockshift-ai-improve',
+			'blockshiftAiImprove',
 			array(
 				'processingLabel'     => __( 'Processing…', 'layoutbridge-block-migration' ),
 				'improvingLabel'      => __( 'Improving with AI…', 'layoutbridge-block-migration' ),
@@ -225,14 +225,14 @@ class AI_Improvement_Admin {
 		}
 
 		if ( $source_id <= 0 ) {
-			$source_id = (int) get_post_meta( $target_id, '_metg_source_id', true );
+			$source_id = (int) get_post_meta( $target_id, '_blockshift_source_id', true );
 		}
 
 		if ( $source_id <= 0 ) {
 			wp_die( esc_html__( 'Source Elementor page ID could not be resolved.', 'layoutbridge-block-migration' ) );
 		}
 
-		$stored_source_id = (int) get_post_meta( $target_id, '_metg_source_id', true );
+		$stored_source_id = (int) get_post_meta( $target_id, '_blockshift_source_id', true );
 		if ( $stored_source_id > 0 && $stored_source_id !== $source_id ) {
 			wp_die( esc_html__( 'The selected source and target page mapping is invalid.', 'layoutbridge-block-migration' ) );
 		}
@@ -289,7 +289,7 @@ class AI_Improvement_Admin {
 		);
 		AI_Workspace_Repository::save( $target_id, $workspace_to_save );
 
-		$notice_code = isset( $_GET['metg_ai_notice'] ) ? sanitize_text_field( wp_unslash( $_GET['metg_ai_notice'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$notice_code = isset( $_GET['blockshift_ai_notice'] ) ? sanitize_text_field( wp_unslash( $_GET['blockshift_ai_notice'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$this->render_notice( $notice_code, $target_id );
 		$this->render_form( $target_post, $source_post, AI_Workspace_Repository::get( $target_id ) );
 	}
@@ -315,7 +315,7 @@ class AI_Improvement_Admin {
 			wp_die( esc_html__( 'You do not have permission to edit this page.', 'layoutbridge-block-migration' ) );
 		}
 
-		$stored_source_id = (int) get_post_meta( $target_id, '_metg_source_id', true );
+		$stored_source_id = (int) get_post_meta( $target_id, '_blockshift_source_id', true );
 		if ( $stored_source_id > 0 && $stored_source_id !== $source_id ) {
 			$this->redirect_with_notice( $source_id, $target_id, 'invalid_mapping' );
 		}
@@ -325,7 +325,7 @@ class AI_Improvement_Admin {
 		if ( ! $result['success'] ) {
 			$notice = $result['notice'] ?? 'ai_failed';
 			// Store the concrete reason so the redirect target can show "why".
-			set_transient( 'metg_ai_error_' . $target_id, $result['error'], 60 );
+			set_transient( 'blockshift_ai_error_' . $target_id, $result['error'], 60 );
 			$this->redirect_with_notice( $source_id, $target_id, $notice );
 		}
 
@@ -486,7 +486,7 @@ class AI_Improvement_Admin {
 		$workspace['updated_at']             = current_time( 'mysql' );
 		AI_Workspace_Repository::save( $target_id, $workspace );
 
-		update_post_meta( $target_id, '_metg_last_ai_improved', current_time( 'mysql' ) );
+		update_post_meta( $target_id, '_blockshift_last_ai_improved', current_time( 'mysql' ) );
 
 		return array(
 			'success' => true,
@@ -557,7 +557,7 @@ class AI_Improvement_Admin {
 	 */
 	private static function log_improvement( array $data ): void {
 		$upload_dir = wp_upload_dir();
-		$log_file   = trailingslashit( $upload_dir['basedir'] ) . 'metg-claude-api.log';
+		$log_file   = trailingslashit( $upload_dir['basedir'] ) . 'blockshift-claude-api.log';
 
 		$entry = array_merge(
 			array(
@@ -720,7 +720,7 @@ class AI_Improvement_Admin {
 			wp_die( esc_html__( 'You do not have permission to edit this page.', 'layoutbridge-block-migration' ) );
 		}
 
-		$stored_source_id = (int) get_post_meta( $target_id, '_metg_source_id', true );
+		$stored_source_id = (int) get_post_meta( $target_id, '_blockshift_source_id', true );
 		if ( $stored_source_id > 0 && $stored_source_id !== $source_id ) {
 			$this->redirect_with_notice( $source_id, $target_id, 'invalid_mapping' );
 		}
@@ -729,7 +729,7 @@ class AI_Improvement_Admin {
 
 		if ( ! $result['success'] ) {
 			$notice = $result['notice'] ?? 'mobile_failed';
-			set_transient( 'metg_ai_error_' . $target_id, $result['error'], 60 );
+			set_transient( 'blockshift_ai_error_' . $target_id, $result['error'], 60 );
 			$this->redirect_with_notice( $source_id, $target_id, $notice );
 		}
 
@@ -851,7 +851,7 @@ class AI_Improvement_Admin {
 			External_CSS_Service::register_global_css_post( $target_id );
 		}
 
-		update_post_meta( $target_id, '_metg_last_ai_mobile_improved', current_time( 'mysql' ) );
+		update_post_meta( $target_id, '_blockshift_last_ai_mobile_improved', current_time( 'mysql' ) );
 
 		return array(
 			'success' => true,
@@ -895,7 +895,7 @@ class AI_Improvement_Admin {
 	/**
 	 * Correct the CSS namespace if Claude used the target ID instead of the source ID.
 	 *
-	 * The Gutenberg page HTML wrapper always uses metg-page-{source_id} as its class,
+	 * The Gutenberg page HTML wrapper always uses blockshift-page-{source_id} as its class,
 	 * so all CSS selectors must target that class. Claude sometimes uses the target ID
 	 * instead. This method replaces any wrong occurrences as a guaranteed safety net.
 	 *
@@ -910,8 +910,8 @@ class AI_Improvement_Admin {
 		}
 
 		return str_replace(
-			'metg-page-' . $target_id,
-			'metg-page-' . $source_id,
+			'blockshift-page-' . $target_id,
+			'blockshift-page-' . $source_id,
 			$css
 		);
 	}
@@ -949,7 +949,7 @@ class AI_Improvement_Admin {
 		$target_id = isset( $_POST['target_id'] ) ? absint( wp_unslash( $_POST['target_id'] ) ) : 0;
 		$source_id = isset( $_POST['source_id'] ) ? absint( wp_unslash( $_POST['source_id'] ) ) : 0;
 
-		check_admin_referer( 'metg_ai_regenerate_screenshots_' . $target_id );
+		check_admin_referer( 'blockshift_ai_regenerate_screenshots_' . $target_id );
 
 		if ( $target_id <= 0 || $source_id <= 0 ) {
 			wp_die( esc_html__( 'Source or target page is missing.', 'layoutbridge-block-migration' ) );
@@ -970,10 +970,10 @@ class AI_Improvement_Admin {
 	private function redirect_with_notice( int $source_id, int $target_id, string $notice_code ): void {
 		$url = add_query_arg(
 			array(
-				'page'           => self::MENU_SLUG,
-				'source_id'      => $source_id,
-				'target_id'      => $target_id,
-				'metg_ai_notice' => $notice_code,
+				'page'                 => self::MENU_SLUG,
+				'source_id'            => $source_id,
+				'target_id'            => $target_id,
+				'blockshift_ai_notice' => $notice_code,
 			),
 			admin_url( 'admin.php' )
 		);
@@ -1004,8 +1004,8 @@ class AI_Improvement_Admin {
 		if ( isset( $detail_prefixes[ $notice_code ] ) ) {
 			$ai_error = '';
 			if ( $target_id > 0 ) {
-				$ai_error = (string) get_transient( 'metg_ai_error_' . $target_id );
-				delete_transient( 'metg_ai_error_' . $target_id );
+				$ai_error = (string) get_transient( 'blockshift_ai_error_' . $target_id );
+				delete_transient( 'blockshift_ai_error_' . $target_id );
 			}
 			$prefix = $detail_prefixes[ $notice_code ];
 			$msg    = '' !== $ai_error
@@ -1062,8 +1062,8 @@ class AI_Improvement_Admin {
 		$screenshot_status       = AI_Remediation_Screenshot_Meta_Service::get_status( $target_id );
 		$screenshot_generated_at = (string) get_post_meta( $target_id, AI_Remediation_Screenshot_Meta_Service::META_GENERATED_AT, true );
 		$service_configured      = '' !== AI_Remediation_Screenshot_Api_Service::get_endpoint_url();
-		$last_improved           = (string) get_post_meta( $target_id, '_metg_last_ai_improved', true );
-		$last_mobile_improved    = (string) get_post_meta( $target_id, '_metg_last_ai_mobile_improved', true );
+		$last_improved           = (string) get_post_meta( $target_id, '_blockshift_last_ai_improved', true );
+		$last_mobile_improved    = (string) get_post_meta( $target_id, '_blockshift_last_ai_mobile_improved', true );
 		$has_mobile_shots        = ! empty( $elementor_mobile_shots ) && ! empty( $gutenberg_mobile_shots );
 
 		$pill_map = array(
@@ -1081,22 +1081,22 @@ class AI_Improvement_Admin {
 		$target_prev_url = \get_permalink( $target_id );
 
 		?>
-		<div class="metg-ai-page">
+		<div class="blockshift-ai-page">
 
-			<div class="metg-ai-header">
-				<div class="metg-ai-header-nav">
-					<a href="<?php echo esc_url( $enhancement_url ); ?>" class="metg-ai-back-link">&#8592; <?php esc_html_e( 'Back to AI Enhancement', 'layoutbridge-block-migration' ); ?></a>
+			<div class="blockshift-ai-header">
+				<div class="blockshift-ai-header-nav">
+					<a href="<?php echo esc_url( $enhancement_url ); ?>" class="blockshift-ai-back-link">&#8592; <?php esc_html_e( 'Back to AI Enhancement', 'layoutbridge-block-migration' ); ?></a>
 				</div>
-				<div class="metg-ai-header-main">
-					<div class="metg-ai-header-title">
+				<div class="blockshift-ai-header-main">
+					<div class="blockshift-ai-header-title">
 						<h1><?php esc_html_e( 'AI Enhancement', 'layoutbridge-block-migration' ); ?></h1>
-						<div class="metg-ai-header-path">
+						<div class="blockshift-ai-header-path">
 							<span><?php echo esc_html( $source_title ); ?></span>
-							<span class="metg-ai-arrow">&#8594;</span>
+							<span class="blockshift-ai-arrow">&#8594;</span>
 							<span><?php echo esc_html( $target_title ); ?></span>
 						</div>
 					</div>
-					<div class="metg-ai-header-actions">
+					<div class="blockshift-ai-header-actions">
 						<?php if ( $source_prev_url ) : ?>
 							<a href="<?php echo esc_url( $source_prev_url ); ?>" target="_blank" rel="noopener" class="button"><?php esc_html_e( 'View Source &#8599;', 'layoutbridge-block-migration' ); ?></a>
 						<?php endif; ?>
@@ -1104,107 +1104,107 @@ class AI_Improvement_Admin {
 							<a href="<?php echo esc_url( $target_prev_url ); ?>" target="_blank" rel="noopener" class="button"><?php esc_html_e( 'Preview &#8599;', 'layoutbridge-block-migration' ); ?></a>
 						<?php endif; ?>
 						<?php if ( '' !== $last_improved ) : ?>
-							<button type="button" id="metg-ai-feedback-btn" class="button"><?php esc_html_e( 'Send Feedback', 'layoutbridge-block-migration' ); ?></button>
+							<button type="button" id="blockshift-ai-feedback-btn" class="button"><?php esc_html_e( 'Send Feedback', 'layoutbridge-block-migration' ); ?></button>
 						<?php endif; ?>
 						<a href="<?php echo esc_url( $target_edit_url ); ?>" class="button button-primary"><?php esc_html_e( 'Edit in Gutenberg', 'layoutbridge-block-migration' ); ?></a>
 					</div>
 				</div>
 			</div>
 
-			<div class="metg-ai-layout">
+			<div class="blockshift-ai-layout">
 
-				<div class="metg-ai-main">
+				<div class="blockshift-ai-main">
 
-					<div class="metg-ai-card">
-						<div class="metg-ai-card-header">
+					<div class="blockshift-ai-card">
+						<div class="blockshift-ai-card-header">
 							<h2><?php esc_html_e( 'Screenshots', 'layoutbridge-block-migration' ); ?></h2>
-							<span class="metg-status-pill metg-status-pill--<?php echo esc_attr( $pill[0] ); ?>"><?php echo esc_html( $pill[1] ); ?></span>
-							<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="metg-inline-form">
-								<?php wp_nonce_field( 'metg_ai_regenerate_screenshots_' . $target_id ); ?>
-								<input type="hidden" name="action" value="metg_ai_regenerate_screenshots" />
+							<span class="blockshift-status-pill blockshift-status-pill--<?php echo esc_attr( $pill[0] ); ?>"><?php echo esc_html( $pill[1] ); ?></span>
+							<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="blockshift-inline-form">
+								<?php wp_nonce_field( 'blockshift_ai_regenerate_screenshots_' . $target_id ); ?>
+								<input type="hidden" name="action" value="blockshift_ai_regenerate_screenshots" />
 								<input type="hidden" name="target_id" value="<?php echo esc_attr( (string) $target_id ); ?>" />
 								<input type="hidden" name="source_id" value="<?php echo esc_attr( (string) $source_id ); ?>" />
 								<button type="submit" class="button button-small"><?php esc_html_e( 'Regenerate', 'layoutbridge-block-migration' ); ?></button>
 							</form>
 						</div>
 
-						<div class="metg-ai-tabs" role="tablist">
-							<button type="button" class="metg-ai-tab metg-ai-tab--active" role="tab" data-tab="desktop" aria-selected="true"><?php esc_html_e( 'Desktop', 'layoutbridge-block-migration' ); ?></button>
-							<button type="button" class="metg-ai-tab" role="tab" data-tab="mobile" aria-selected="false"><?php esc_html_e( 'Mobile', 'layoutbridge-block-migration' ); ?></button>
+						<div class="blockshift-ai-tabs" role="tablist">
+							<button type="button" class="blockshift-ai-tab blockshift-ai-tab--active" role="tab" data-tab="desktop" aria-selected="true"><?php esc_html_e( 'Desktop', 'layoutbridge-block-migration' ); ?></button>
+							<button type="button" class="blockshift-ai-tab" role="tab" data-tab="mobile" aria-selected="false"><?php esc_html_e( 'Mobile', 'layoutbridge-block-migration' ); ?></button>
 						</div>
 
-						<div class="metg-ai-tab-panel" data-panel="desktop">
-							<div class="metg-ai-compare-grid">
-								<div class="metg-compare-side">
-									<div class="metg-compare-label"><?php esc_html_e( 'Elementor (Original)', 'layoutbridge-block-migration' ); ?></div>
+						<div class="blockshift-ai-tab-panel" data-panel="desktop">
+							<div class="blockshift-ai-compare-grid">
+								<div class="blockshift-compare-side">
+									<div class="blockshift-compare-label"><?php esc_html_e( 'Elementor (Original)', 'layoutbridge-block-migration' ); ?></div>
 									<?php
 									$d_ele_urls  = array_values( array_filter( $elementor_shots, 'is_string' ) );
 									$d_ele_first = ! empty( $d_ele_urls ) ? $d_ele_urls[0] : '';
 									if ( $d_ele_first ) :
 										?>
-										<div class="metg-screenshot-thumb-wrap" data-urls="<?php echo esc_attr( wp_json_encode( $d_ele_urls ) ); ?>">
-											<img class="metg-screenshot-thumb" src="<?php echo esc_url( $d_ele_first ); ?>" alt="" loading="lazy" />
-											<button type="button" class="metg-screenshot-zoom-btn" aria-label="<?php esc_attr_e( 'View full screenshot', 'layoutbridge-block-migration' ); ?>">&#x2922;</button>
+										<div class="blockshift-screenshot-thumb-wrap" data-urls="<?php echo esc_attr( wp_json_encode( $d_ele_urls ) ); ?>">
+											<img class="blockshift-screenshot-thumb" src="<?php echo esc_url( $d_ele_first ); ?>" alt="" loading="lazy" />
+											<button type="button" class="blockshift-screenshot-zoom-btn" aria-label="<?php esc_attr_e( 'View full screenshot', 'layoutbridge-block-migration' ); ?>">&#x2922;</button>
 										</div>
 									<?php else : ?>
-										<div class="metg-screenshot-empty"><?php esc_html_e( 'No desktop screenshot yet', 'layoutbridge-block-migration' ); ?></div>
+										<div class="blockshift-screenshot-empty"><?php esc_html_e( 'No desktop screenshot yet', 'layoutbridge-block-migration' ); ?></div>
 									<?php endif; ?>
 								</div>
-								<div class="metg-compare-side">
-									<div class="metg-compare-label"><?php esc_html_e( 'Gutenberg (Converted)', 'layoutbridge-block-migration' ); ?></div>
+								<div class="blockshift-compare-side">
+									<div class="blockshift-compare-label"><?php esc_html_e( 'Gutenberg (Converted)', 'layoutbridge-block-migration' ); ?></div>
 									<?php
 									$d_gb_urls  = array_values( array_filter( $gutenberg_shots, 'is_string' ) );
 									$d_gb_first = ! empty( $d_gb_urls ) ? $d_gb_urls[0] : '';
 									if ( $d_gb_first ) :
 										?>
-										<div class="metg-screenshot-thumb-wrap" data-urls="<?php echo esc_attr( wp_json_encode( $d_gb_urls ) ); ?>">
-											<img class="metg-screenshot-thumb" src="<?php echo esc_url( $d_gb_first ); ?>" alt="" loading="lazy" />
-											<button type="button" class="metg-screenshot-zoom-btn" aria-label="<?php esc_attr_e( 'View full screenshot', 'layoutbridge-block-migration' ); ?>">&#x2922;</button>
+										<div class="blockshift-screenshot-thumb-wrap" data-urls="<?php echo esc_attr( wp_json_encode( $d_gb_urls ) ); ?>">
+											<img class="blockshift-screenshot-thumb" src="<?php echo esc_url( $d_gb_first ); ?>" alt="" loading="lazy" />
+											<button type="button" class="blockshift-screenshot-zoom-btn" aria-label="<?php esc_attr_e( 'View full screenshot', 'layoutbridge-block-migration' ); ?>">&#x2922;</button>
 										</div>
 									<?php else : ?>
-										<div class="metg-screenshot-empty"><?php esc_html_e( 'No desktop screenshot yet', 'layoutbridge-block-migration' ); ?></div>
+										<div class="blockshift-screenshot-empty"><?php esc_html_e( 'No desktop screenshot yet', 'layoutbridge-block-migration' ); ?></div>
 									<?php endif; ?>
 								</div>
 							</div>
 						</div>
 
-						<div class="metg-ai-tab-panel" data-panel="mobile" hidden>
-							<div class="metg-ai-compare-grid">
-								<div class="metg-compare-side">
-									<div class="metg-compare-label"><?php esc_html_e( 'Elementor Mobile', 'layoutbridge-block-migration' ); ?></div>
+						<div class="blockshift-ai-tab-panel" data-panel="mobile" hidden>
+							<div class="blockshift-ai-compare-grid">
+								<div class="blockshift-compare-side">
+									<div class="blockshift-compare-label"><?php esc_html_e( 'Elementor Mobile', 'layoutbridge-block-migration' ); ?></div>
 									<?php
 									$m_ele_urls  = array_values( array_filter( $elementor_mobile_shots, 'is_string' ) );
 									$m_ele_first = ! empty( $m_ele_urls ) ? $m_ele_urls[0] : '';
 									if ( $m_ele_first ) :
 										?>
-										<div class="metg-screenshot-thumb-wrap" data-urls="<?php echo esc_attr( wp_json_encode( $m_ele_urls ) ); ?>">
-											<img class="metg-screenshot-thumb" src="<?php echo esc_url( $m_ele_first ); ?>" alt="" loading="lazy" />
-											<button type="button" class="metg-screenshot-zoom-btn" aria-label="<?php esc_attr_e( 'View full screenshot', 'layoutbridge-block-migration' ); ?>">&#x2922;</button>
+										<div class="blockshift-screenshot-thumb-wrap" data-urls="<?php echo esc_attr( wp_json_encode( $m_ele_urls ) ); ?>">
+											<img class="blockshift-screenshot-thumb" src="<?php echo esc_url( $m_ele_first ); ?>" alt="" loading="lazy" />
+											<button type="button" class="blockshift-screenshot-zoom-btn" aria-label="<?php esc_attr_e( 'View full screenshot', 'layoutbridge-block-migration' ); ?>">&#x2922;</button>
 										</div>
 									<?php else : ?>
-										<div class="metg-screenshot-empty"><?php esc_html_e( 'No mobile screenshot yet', 'layoutbridge-block-migration' ); ?></div>
+										<div class="blockshift-screenshot-empty"><?php esc_html_e( 'No mobile screenshot yet', 'layoutbridge-block-migration' ); ?></div>
 									<?php endif; ?>
 								</div>
-								<div class="metg-compare-side">
-									<div class="metg-compare-label"><?php esc_html_e( 'Gutenberg Mobile', 'layoutbridge-block-migration' ); ?></div>
+								<div class="blockshift-compare-side">
+									<div class="blockshift-compare-label"><?php esc_html_e( 'Gutenberg Mobile', 'layoutbridge-block-migration' ); ?></div>
 									<?php
 									$m_gb_urls  = array_values( array_filter( $gutenberg_mobile_shots, 'is_string' ) );
 									$m_gb_first = ! empty( $m_gb_urls ) ? $m_gb_urls[0] : '';
 									if ( $m_gb_first ) :
 										?>
-										<div class="metg-screenshot-thumb-wrap" data-urls="<?php echo esc_attr( wp_json_encode( $m_gb_urls ) ); ?>">
-											<img class="metg-screenshot-thumb" src="<?php echo esc_url( $m_gb_first ); ?>" alt="" loading="lazy" />
-											<button type="button" class="metg-screenshot-zoom-btn" aria-label="<?php esc_attr_e( 'View full screenshot', 'layoutbridge-block-migration' ); ?>">&#x2922;</button>
+										<div class="blockshift-screenshot-thumb-wrap" data-urls="<?php echo esc_attr( wp_json_encode( $m_gb_urls ) ); ?>">
+											<img class="blockshift-screenshot-thumb" src="<?php echo esc_url( $m_gb_first ); ?>" alt="" loading="lazy" />
+											<button type="button" class="blockshift-screenshot-zoom-btn" aria-label="<?php esc_attr_e( 'View full screenshot', 'layoutbridge-block-migration' ); ?>">&#x2922;</button>
 										</div>
 									<?php else : ?>
-										<div class="metg-screenshot-empty"><?php esc_html_e( 'No mobile screenshot yet', 'layoutbridge-block-migration' ); ?></div>
+										<div class="blockshift-screenshot-empty"><?php esc_html_e( 'No mobile screenshot yet', 'layoutbridge-block-migration' ); ?></div>
 									<?php endif; ?>
 								</div>
 							</div>
 						</div>
 
 						<?php if ( '' !== $screenshot_generated_at || ! $service_configured ) : ?>
-						<div class="metg-ai-card-footer">
+						<div class="blockshift-ai-card-footer">
 							<?php if ( '' !== $screenshot_generated_at ) : ?>
 								<?php
 								/* translators: %s: date/time screenshots were captured */
@@ -1212,94 +1212,94 @@ class AI_Improvement_Admin {
 								?>
 							<?php endif; ?>
 							<?php if ( ! $service_configured ) : ?>
-								<span class="metg-warning-inline"><?php esc_html_e( 'Screenshot service not configured — see Settings.', 'layoutbridge-block-migration' ); ?></span>
+								<span class="blockshift-warning-inline"><?php esc_html_e( 'Screenshot service not configured — see Settings.', 'layoutbridge-block-migration' ); ?></span>
 							<?php endif; ?>
 						</div>
 						<?php endif; ?>
 					</div>
 
-					<div class="metg-ai-card">
+					<div class="blockshift-ai-card">
 						<?php if ( '' === $last_improved ) : ?>
-							<div class="metg-ai-card-header">
+							<div class="blockshift-ai-card-header">
 								<h2><?php esc_html_e( 'AI Improvement', 'layoutbridge-block-migration' ); ?></h2>
-								<span class="metg-status-pill metg-status-pill--neutral"><?php esc_html_e( 'Not yet run', 'layoutbridge-block-migration' ); ?></span>
+								<span class="blockshift-status-pill blockshift-status-pill--neutral"><?php esc_html_e( 'Not yet run', 'layoutbridge-block-migration' ); ?></span>
 							</div>
-							<div class="metg-ai-card-body">
-								<p class="metg-card-desc"><?php esc_html_e( 'Analyse and improve the converted page using AI. The page content and CSS will be updated automatically.', 'layoutbridge-block-migration' ); ?></p>
-								<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="metg-ai-improve-form">
+							<div class="blockshift-ai-card-body">
+								<p class="blockshift-card-desc"><?php esc_html_e( 'Analyse and improve the converted page using AI. The page content and CSS will be updated automatically.', 'layoutbridge-block-migration' ); ?></p>
+								<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="blockshift-ai-improve-form">
 									<?php wp_nonce_field( self::NONCE_AUTO_IMPROVE ); ?>
-									<input type="hidden" name="action" value="metg_ai_auto_improve" />
+									<input type="hidden" name="action" value="blockshift_ai_auto_improve" />
 									<input type="hidden" name="target_id" value="<?php echo esc_attr( (string) $target_id ); ?>" />
 									<input type="hidden" name="source_id" value="<?php echo esc_attr( (string) $source_id ); ?>" />
-									<?php submit_button( esc_html__( 'Improve with AI', 'layoutbridge-block-migration' ), 'primary', 'metg_auto_improve_submit', false ); ?>
+									<?php submit_button( esc_html__( 'Improve with AI', 'layoutbridge-block-migration' ), 'primary', 'blockshift_auto_improve_submit', false ); ?>
 								</form>
 							</div>
 						<?php else : ?>
-							<div class="metg-ai-card-header">
+							<div class="blockshift-ai-card-header">
 								<h2><?php esc_html_e( 'Improve with AI', 'layoutbridge-block-migration' ); ?></h2>
-								<span class="metg-status-pill metg-status-pill--success"><?php esc_html_e( 'Improved', 'layoutbridge-block-migration' ); ?></span>
+								<span class="blockshift-status-pill blockshift-status-pill--success"><?php esc_html_e( 'Improved', 'layoutbridge-block-migration' ); ?></span>
 							</div>
-							<div class="metg-ai-card-body">
-								<p class="metg-card-desc"><?php esc_html_e( 'Run another AI improvement pass. Fresh screenshots are captured automatically before each run, so it always works from the page\'s current state.', 'layoutbridge-block-migration' ); ?></p>
-								<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="metg-ai-improve-again-form">
+							<div class="blockshift-ai-card-body">
+								<p class="blockshift-card-desc"><?php esc_html_e( 'Run another AI improvement pass. Fresh screenshots are captured automatically before each run, so it always works from the page\'s current state.', 'layoutbridge-block-migration' ); ?></p>
+								<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="blockshift-ai-improve-again-form">
 									<?php wp_nonce_field( self::NONCE_AUTO_IMPROVE ); ?>
-									<input type="hidden" name="action" value="metg_ai_auto_improve" />
+									<input type="hidden" name="action" value="blockshift_ai_auto_improve" />
 									<input type="hidden" name="target_id" value="<?php echo esc_attr( (string) $target_id ); ?>" />
 									<input type="hidden" name="source_id" value="<?php echo esc_attr( (string) $source_id ); ?>" />
-									<?php submit_button( esc_html__( 'Improve Again with AI', 'layoutbridge-block-migration' ), 'primary', 'metg_auto_improve_submit', false ); ?>
+									<?php submit_button( esc_html__( 'Improve Again with AI', 'layoutbridge-block-migration' ), 'primary', 'blockshift_auto_improve_submit', false ); ?>
 								</form>
 							</div>
 						<?php endif; ?>
 					</div>
 
-					<div class="metg-ai-card">
-						<div class="metg-ai-card-header">
+					<div class="blockshift-ai-card">
+						<div class="blockshift-ai-card-header">
 							<h2><?php esc_html_e( 'Mobile Optimisation', 'layoutbridge-block-migration' ); ?></h2>
 							<?php if ( '' !== $last_mobile_improved ) : ?>
-								<span class="metg-status-pill metg-status-pill--success"><?php esc_html_e( 'Improved', 'layoutbridge-block-migration' ); ?></span>
+								<span class="blockshift-status-pill blockshift-status-pill--success"><?php esc_html_e( 'Improved', 'layoutbridge-block-migration' ); ?></span>
 							<?php else : ?>
-								<span class="metg-status-pill metg-status-pill--neutral"><?php esc_html_e( 'Not yet run', 'layoutbridge-block-migration' ); ?></span>
+								<span class="blockshift-status-pill blockshift-status-pill--neutral"><?php esc_html_e( 'Not yet run', 'layoutbridge-block-migration' ); ?></span>
 							<?php endif; ?>
 						</div>
-						<div class="metg-ai-card-body">
-							<p class="metg-card-desc"><?php esc_html_e( 'Compares mobile screenshots and generates @media query CSS. Desktop styles and block content are not modified.', 'layoutbridge-block-migration' ); ?></p>
+						<div class="blockshift-ai-card-body">
+							<p class="blockshift-card-desc"><?php esc_html_e( 'Compares mobile screenshots and generates @media query CSS. Desktop styles and block content are not modified.', 'layoutbridge-block-migration' ); ?></p>
 							<?php if ( ! $has_mobile_shots ) : ?>
-								<div class="metg-notice metg-notice--warning">
+								<div class="blockshift-notice blockshift-notice--warning">
 									<?php esc_html_e( 'Mobile screenshots are missing — click Regenerate in the Screenshots card above before running this pass.', 'layoutbridge-block-migration' ); ?>
 								</div>
 							<?php endif; ?>
-							<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="metg-ai-mobile-improve-form">
+							<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="blockshift-ai-mobile-improve-form">
 								<?php wp_nonce_field( self::NONCE_MOBILE_IMPROVE ); ?>
-								<input type="hidden" name="action" value="metg_ai_mobile_improve" />
+								<input type="hidden" name="action" value="blockshift_ai_mobile_improve" />
 								<input type="hidden" name="target_id" value="<?php echo esc_attr( (string) $target_id ); ?>" />
 								<input type="hidden" name="source_id" value="<?php echo esc_attr( (string) $source_id ); ?>" />
-								<?php submit_button( esc_html__( 'Improve Mobile with AI', 'layoutbridge-block-migration' ), 'secondary', 'metg_mobile_improve_submit', false ); ?>
+								<?php submit_button( esc_html__( 'Improve Mobile with AI', 'layoutbridge-block-migration' ), 'secondary', 'blockshift_mobile_improve_submit', false ); ?>
 							</form>
 						</div>
 					</div>
 
 				</div>
 
-				<aside class="metg-ai-sidebar">
+				<aside class="blockshift-ai-sidebar">
 
-					<div class="metg-ai-card">
-						<div class="metg-ai-card-header">
+					<div class="blockshift-ai-card">
+						<div class="blockshift-ai-card-header">
 							<h2><?php esc_html_e( 'Page Details', 'layoutbridge-block-migration' ); ?></h2>
 						</div>
-						<div class="metg-ai-card-body">
-							<dl class="metg-ai-dl">
+						<div class="blockshift-ai-card-body">
+							<dl class="blockshift-ai-dl">
 								<dt><?php esc_html_e( 'Source (Elementor)', 'layoutbridge-block-migration' ); ?></dt>
 								<dd>
 									<a href="<?php echo esc_url( $source_edit_url ); ?>"><?php echo esc_html( $source_title ); ?></a>
 									<?php if ( $source_prev_url ) : ?>
-										<a href="<?php echo esc_url( $source_prev_url ); ?>" target="_blank" rel="noopener" class="metg-ext-link" title="<?php esc_attr_e( 'Preview', 'layoutbridge-block-migration' ); ?>">&#8599;</a>
+										<a href="<?php echo esc_url( $source_prev_url ); ?>" target="_blank" rel="noopener" class="blockshift-ext-link" title="<?php esc_attr_e( 'Preview', 'layoutbridge-block-migration' ); ?>">&#8599;</a>
 									<?php endif; ?>
 								</dd>
 								<dt><?php esc_html_e( 'Target (Gutenberg)', 'layoutbridge-block-migration' ); ?></dt>
 								<dd>
 									<a href="<?php echo esc_url( $target_edit_url ); ?>"><?php echo esc_html( $target_title ); ?></a>
 									<?php if ( $target_prev_url ) : ?>
-										<a href="<?php echo esc_url( $target_prev_url ); ?>" target="_blank" rel="noopener" class="metg-ext-link" title="<?php esc_attr_e( 'Preview', 'layoutbridge-block-migration' ); ?>">&#8599;</a>
+										<a href="<?php echo esc_url( $target_prev_url ); ?>" target="_blank" rel="noopener" class="blockshift-ext-link" title="<?php esc_attr_e( 'Preview', 'layoutbridge-block-migration' ); ?>">&#8599;</a>
 									<?php endif; ?>
 								</dd>
 								<dt><?php esc_html_e( 'Source ID', 'layoutbridge-block-migration' ); ?></dt>
@@ -1310,18 +1310,18 @@ class AI_Improvement_Admin {
 						</div>
 					</div>
 
-					<div class="metg-ai-card">
-						<div class="metg-ai-card-header">
+					<div class="blockshift-ai-card">
+						<div class="blockshift-ai-card-header">
 							<h2><?php esc_html_e( 'AI Status', 'layoutbridge-block-migration' ); ?></h2>
 						</div>
-						<div class="metg-ai-card-body">
-							<dl class="metg-ai-dl">
+						<div class="blockshift-ai-card-body">
+							<dl class="blockshift-ai-dl">
 								<dt><?php esc_html_e( 'Desktop', 'layoutbridge-block-migration' ); ?></dt>
 								<dd>
 									<?php if ( '' !== $last_improved ) : ?>
 										<?php echo esc_html( $last_improved ); ?>
 									<?php else : ?>
-										<span class="metg-muted"><?php esc_html_e( 'Not yet run', 'layoutbridge-block-migration' ); ?></span>
+										<span class="blockshift-muted"><?php esc_html_e( 'Not yet run', 'layoutbridge-block-migration' ); ?></span>
 									<?php endif; ?>
 								</dd>
 								<dt><?php esc_html_e( 'Mobile', 'layoutbridge-block-migration' ); ?></dt>
@@ -1329,7 +1329,7 @@ class AI_Improvement_Admin {
 									<?php if ( '' !== $last_mobile_improved ) : ?>
 										<?php echo esc_html( $last_mobile_improved ); ?>
 									<?php else : ?>
-										<span class="metg-muted"><?php esc_html_e( 'Not yet run', 'layoutbridge-block-migration' ); ?></span>
+										<span class="blockshift-muted"><?php esc_html_e( 'Not yet run', 'layoutbridge-block-migration' ); ?></span>
 									<?php endif; ?>
 								</dd>
 							</dl>
@@ -1340,26 +1340,26 @@ class AI_Improvement_Admin {
 
 			</div>
 
-			<div id="metg-lightbox" class="metg-lightbox" hidden role="dialog" aria-modal="true" aria-label="<?php esc_attr_e( 'Screenshot viewer', 'layoutbridge-block-migration' ); ?>">
-				<div class="metg-lightbox-overlay" id="metg-lightbox-overlay"></div>
-				<div class="metg-lightbox-panel">
-					<div class="metg-lightbox-toolbar">
-						<a id="metg-lightbox-open" href="#" target="_blank" rel="noopener" class="metg-lightbox-open-link"><?php esc_html_e( 'Open full image &#8599;', 'layoutbridge-block-migration' ); ?></a>
-						<button type="button" id="metg-lightbox-close" class="metg-lightbox-close" aria-label="<?php esc_attr_e( 'Close', 'layoutbridge-block-migration' ); ?>">&#x2715;</button>
+			<div id="blockshift-lightbox" class="blockshift-lightbox" hidden role="dialog" aria-modal="true" aria-label="<?php esc_attr_e( 'Screenshot viewer', 'layoutbridge-block-migration' ); ?>">
+				<div class="blockshift-lightbox-overlay" id="blockshift-lightbox-overlay"></div>
+				<div class="blockshift-lightbox-panel">
+					<div class="blockshift-lightbox-toolbar">
+						<a id="blockshift-lightbox-open" href="#" target="_blank" rel="noopener" class="blockshift-lightbox-open-link"><?php esc_html_e( 'Open full image &#8599;', 'layoutbridge-block-migration' ); ?></a>
+						<button type="button" id="blockshift-lightbox-close" class="blockshift-lightbox-close" aria-label="<?php esc_attr_e( 'Close', 'layoutbridge-block-migration' ); ?>">&#x2715;</button>
 					</div>
-					<div id="metg-lightbox-images" class="metg-lightbox-images"></div>
+					<div id="blockshift-lightbox-images" class="blockshift-lightbox-images"></div>
 				</div>
 			</div>
 
-			<div id="metg-ai-loader" hidden>
-				<div class="metg-ai-loader-card">
-					<svg class="metg-ai-loader-spinner" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+			<div id="blockshift-ai-loader" hidden>
+				<div class="blockshift-ai-loader-card">
+					<svg class="blockshift-ai-loader-spinner" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
 						<circle class="track" cx="22" cy="22" r="20" fill="none" stroke="#2271b1" stroke-width="3" />
 						<circle class="arc"   cx="22" cy="22" r="20" fill="none" stroke="#2271b1" stroke-width="3" />
 					</svg>
 					<div>
-						<strong class="metg-ai-loader-title"><?php esc_html_e( 'Improving with AI&#8230;', 'layoutbridge-block-migration' ); ?></strong>
-						<span class="metg-ai-loader-message"><?php esc_html_e( 'Analysing page structure and generating improvements. This may take up to 2 minutes.', 'layoutbridge-block-migration' ); ?></span>
+						<strong class="blockshift-ai-loader-title"><?php esc_html_e( 'Improving with AI&#8230;', 'layoutbridge-block-migration' ); ?></strong>
+						<span class="blockshift-ai-loader-message"><?php esc_html_e( 'Analysing page structure and generating improvements. This may take up to 2 minutes.', 'layoutbridge-block-migration' ); ?></span>
 					</div>
 				</div>
 			</div>

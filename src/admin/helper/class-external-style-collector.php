@@ -124,7 +124,7 @@ class External_Style_Collector {
 	 * - Returns the mutated attrs.
 	 *
 	 * @param string $block_slug Block slug like "group", "columns", "button".
-	 * @param array $attrs Block attrs array (will be mutated).
+	 * @param array  $attrs Block attrs array (will be mutated).
 	 *
 	 * @return array
 	 */
@@ -193,7 +193,7 @@ class External_Style_Collector {
 
 		// Generate a stable-ish class per extracted set.
 		$fingerprint = md5( $block_slug . '|' . wp_json_encode( $extracted ) );
-		$class       = 'metg-ext-' . substr( $fingerprint, 0, 10 );
+		$class       = 'blockshift-ext-' . substr( $fingerprint, 0, 10 );
 
 		$attrs['className'] = $this->append_class( isset( $attrs['className'] ) ? (string) $attrs['className'] : '', $class );
 
@@ -212,7 +212,7 @@ class External_Style_Collector {
 	 * Externalize arbitrary declaration set and return generated class.
 	 *
 	 * @param string $block_slug Block slug.
-	 * @param array $declarations CSS declarations.
+	 * @param array  $declarations CSS declarations.
 	 *
 	 * @return string
 	 */
@@ -223,7 +223,7 @@ class External_Style_Collector {
 		}
 
 		$fingerprint = md5( $block_slug . '|' . wp_json_encode( $declarations ) );
-		$class       = 'metg-ext-' . substr( $fingerprint, 0, 10 );
+		$class       = 'blockshift-ext-' . substr( $fingerprint, 0, 10 );
 
 		$this->add_rule( '.' . $class, $declarations );
 		$this->inventory['externalized'][] = array(
@@ -239,7 +239,7 @@ class External_Style_Collector {
 	 * Register a custom rule with a selector, optionally tracking inventory.
 	 *
 	 * @param string $selector CSS selector.
-	 * @param array $declarations CSS declarations.
+	 * @param array  $declarations CSS declarations.
 	 * @param string $reason Optional reason label.
 	 *
 	 * @return void
@@ -269,8 +269,8 @@ class External_Style_Collector {
 	 * Add sanitized declarations to a provided rules bucket.
 	 *
 	 * @param array<string, array<string, string>> $bucket Rules bucket (by ref).
-	 * @param string $selector CSS selector.
-	 * @param array<string, mixed> $declarations Declarations to append.
+	 * @param string                               $selector CSS selector.
+	 * @param array<string, mixed>                 $declarations Declarations to append.
 	 *
 	 * @return void
 	 */
@@ -291,7 +291,7 @@ class External_Style_Collector {
 	 *
 	 * @param string $media_query Media query condition without @media wrapper.
 	 * @param string $selector CSS selector.
-	 * @param array $declarations CSS declarations.
+	 * @param array  $declarations CSS declarations.
 	 * @param string $reason Optional reason label.
 	 *
 	 * @return void
@@ -344,7 +344,7 @@ class External_Style_Collector {
 	 *
 	 * @param string $block_slug Block slug.
 	 * @param string $type Drop type.
-	 * @param array $payload Payload.
+	 * @param array  $payload Payload.
 	 *
 	 * @return void
 	 */
@@ -362,7 +362,7 @@ class External_Style_Collector {
 	 *
 	 * @param string $block_slug Block slug.
 	 * @param string $decision Decision code.
-	 * @param array $context Context array.
+	 * @param array  $context Context array.
 	 *
 	 * @return void
 	 */
@@ -506,7 +506,7 @@ class External_Style_Collector {
 	/**
 	 * Add sanitized declarations to the ruleset for a selector.
 	 *
-	 * @param string $selector CSS selector.
+	 * @param string               $selector CSS selector.
 	 * @param array<string, mixed> $declarations Declarations to append.
 	 *
 	 * @return void
@@ -527,7 +527,7 @@ class External_Style_Collector {
 	 * Read a style value from the nested style tree.
 	 *
 	 * @param array<string, mixed> $attrs Block attributes.
-	 * @param array<int, string> $path Style path segments.
+	 * @param array<int, string>   $path Style path segments.
 	 *
 	 * @return string
 	 */
@@ -555,7 +555,7 @@ class External_Style_Collector {
 	 * Remove a style leaf from the attributes tree.
 	 *
 	 * @param array<string, mixed> $attrs Block attributes.
-	 * @param array<int, string> $path Style path segments.
+	 * @param array<int, string>   $path Style path segments.
 	 *
 	 * @return array<string, mixed>
 	 */

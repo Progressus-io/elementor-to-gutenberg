@@ -109,7 +109,7 @@
 
 	// ── app ───────────────────────────────────────────────────────────────────
 
-	function EtgAiEnhancement( config ) {
+	function BlockshiftAiEnhancement( config ) {
 		this.config = config;
 		this.strings = config.strings || {};
 		this.pages = config.pages || [];
@@ -120,15 +120,15 @@
 		this.root = null;
 	}
 
-	EtgAiEnhancement.prototype.init = function () {
-		this.root = document.getElementById( 'metg-ai-enhancement-app' );
+	BlockshiftAiEnhancement.prototype.init = function () {
+		this.root = document.getElementById( 'blockshift-ai-enhancement-app' );
 		if ( ! this.root ) {
 			return;
 		}
 		this.render();
 	};
 
-	EtgAiEnhancement.prototype.render = function () {
+	BlockshiftAiEnhancement.prototype.render = function () {
 		if ( ! this.root ) {
 			return;
 		}
@@ -145,7 +145,7 @@
 		}
 	};
 
-	EtgAiEnhancement.prototype.pageTitle = function ( title, sub ) {
+	BlockshiftAiEnhancement.prototype.pageTitle = function ( title, sub ) {
 		const pt = cel( 'div', 'pgs-pagetitle' );
 		const box = cel( 'div' );
 		box.appendChild( cel( 'h1', '', title ) );
@@ -158,7 +158,7 @@
 
 	// ── stats bar ─────────────────────────────────────────────────────────────
 
-	EtgAiEnhancement.prototype.renderStatsBar = function () {
+	BlockshiftAiEnhancement.prototype.renderStatsBar = function () {
 		const pages = this.pages;
 		const total = pages.length;
 		const enhanced = pages.filter( function ( p ) {
@@ -201,7 +201,7 @@
 
 	// ── selection step ────────────────────────────────────────────────────────
 
-	EtgAiEnhancement.prototype.renderSelectionStep = function () {
+	BlockshiftAiEnhancement.prototype.renderSelectionStep = function () {
 		const self = this;
 		const wrap = cel( 'div', 'pgs-stack' );
 		wrap.style.gap = 'var(--gap-section)';
@@ -217,7 +217,7 @@
 		// Hidden no-API banner
 		if ( ! this.config.aiConfigured ) {
 			const notice = cel( 'div', 'pgs-banner pgs-banner--warning' );
-			notice.id = 'metg-no-api-notice';
+			notice.id = 'blockshift-no-api-notice';
 			notice.style.display = 'none';
 			notice.setAttribute( 'role', 'status' );
 			const ic = cel( 'span', 'pgs-banner__icon' );
@@ -277,7 +277,7 @@
 			'view-secondary'
 		);
 		bulkAiBtn.className = 'pgs-btn pgs-btn--subtle pgs-btn--sm';
-		bulkAiBtn.id = 'metg-bulk-enhance-btn';
+		bulkAiBtn.id = 'blockshift-bulk-enhance-btn';
 		bulkAiBtn.disabled = true;
 		bulkAiBtn.addEventListener( 'click', function () {
 			self.onBulkEnhanceClick();
@@ -295,7 +295,7 @@
 		const thCb = cel( 'th' );
 		thCb.style.width = '38px';
 		const masterCheck = pgsCheck();
-		masterCheck.input.id = 'metg-select-all';
+		masterCheck.input.id = 'blockshift-select-all';
 		masterCheck.input.addEventListener( 'change', function ( e ) {
 			self.onSelectAll( e.target.checked );
 		} );
@@ -410,7 +410,7 @@
 					'ai'
 				);
 				noKeyBtn.addEventListener( 'click', function () {
-					const n = document.getElementById( 'metg-no-api-notice' );
+					const n = document.getElementById( 'blockshift-no-api-notice' );
 					if ( n ) {
 						n.style.display = 'flex';
 						n.scrollIntoView( {
@@ -436,11 +436,11 @@
 
 	// ── select all / row check ────────────────────────────────────────────────
 
-	EtgAiEnhancement.prototype.onSelectAll = function ( checked ) {
+	BlockshiftAiEnhancement.prototype.onSelectAll = function ( checked ) {
 		this.state.selected.clear();
 		document
 			.querySelectorAll(
-				'#metg-ai-enhancement-app input[type=checkbox][data-page-id]'
+				'#blockshift-ai-enhancement-app input[type=checkbox][data-page-id]'
 			)
 			.forEach( function ( cb ) {
 				cb.checked = checked;
@@ -454,12 +454,12 @@
 		this.updateBulkButtons();
 	};
 
-	EtgAiEnhancement.prototype.onRowCheck = function () {
+	BlockshiftAiEnhancement.prototype.onRowCheck = function () {
 		const self = this;
 		this.state.selected.clear();
 		document
 			.querySelectorAll(
-				'#metg-ai-enhancement-app input[type=checkbox][data-page-id]'
+				'#blockshift-ai-enhancement-app input[type=checkbox][data-page-id]'
 			)
 			.forEach( function ( cb ) {
 				if ( cb.checked ) {
@@ -469,10 +469,10 @@
 		this.updateBulkButtons();
 	};
 
-	EtgAiEnhancement.prototype.updateBulkButtons = function () {
+	BlockshiftAiEnhancement.prototype.updateBulkButtons = function () {
 		const count = this.state.selected.size;
 
-		const aiBtn = document.getElementById( 'metg-bulk-enhance-btn' );
+		const aiBtn = document.getElementById( 'blockshift-bulk-enhance-btn' );
 		if ( aiBtn ) {
 			aiBtn.disabled = count === 0;
 			const aiLbl = aiBtn.querySelector( '.pgs-btn__label' );
@@ -492,9 +492,9 @@
 
 	// ── bulk AI improve flow ──────────────────────────────────────────────────
 
-	EtgAiEnhancement.prototype.onBulkEnhanceClick = function () {
+	BlockshiftAiEnhancement.prototype.onBulkEnhanceClick = function () {
 		if ( ! this.config.aiConfigured ) {
-			const notice = document.getElementById( 'metg-no-api-notice' );
+			const notice = document.getElementById( 'blockshift-no-api-notice' );
 			if ( notice ) {
 				notice.style.display = 'flex';
 				notice.scrollIntoView( {
@@ -510,7 +510,7 @@
 		this.initAiImprove();
 	};
 
-	EtgAiEnhancement.prototype.initAiImprove = function () {
+	BlockshiftAiEnhancement.prototype.initAiImprove = function () {
 		const selectedIds = this.state.selected;
 		const pages = this.pages
 			.filter( function ( p ) {
@@ -535,7 +535,7 @@
 		this.render();
 	};
 
-	EtgAiEnhancement.prototype.startAiImprove = function () {
+	BlockshiftAiEnhancement.prototype.startAiImprove = function () {
 		const ai = this.state.aiImprove;
 		if ( ! ai || ai.started ) {
 			return;
@@ -544,7 +544,7 @@
 		this.processAiImprovePage( 0 );
 	};
 
-	EtgAiEnhancement.prototype.processAiImprovePage = function ( index ) {
+	BlockshiftAiEnhancement.prototype.processAiImprovePage = function ( index ) {
 		const self = this;
 		const ai = this.state.aiImprove;
 		if ( ! ai || index >= ai.pages.length ) {
@@ -574,7 +574,7 @@
 		);
 
 		const fd = new FormData();
-		fd.append( 'action', 'metg_ai_improve_single' );
+		fd.append( 'action', 'blockshift_ai_improve_single' );
 		fd.append( 'nonce', this.config.aiImproveNonce );
 		fd.append( 'source_id', String( page.sourceId ) );
 		fd.append( 'target_id', String( page.targetId ) );
@@ -614,7 +614,7 @@
 			} );
 	};
 
-	EtgAiEnhancement.prototype.advanceAiImprove = function ( index ) {
+	BlockshiftAiEnhancement.prototype.advanceAiImprove = function ( index ) {
 		const ai = this.state.aiImprove;
 		const next = index + 1;
 		if ( ! ai || next >= ai.pages.length ) {
@@ -627,7 +627,7 @@
 		this.processAiImprovePage( next );
 	};
 
-	EtgAiEnhancement.prototype.skipAiImprovePage = function ( index ) {
+	BlockshiftAiEnhancement.prototype.skipAiImprovePage = function ( index ) {
 		const ai = this.state.aiImprove;
 		if ( ! ai ) {
 			return;
@@ -637,13 +637,13 @@
 		this.advanceAiImprove( index );
 	};
 
-	EtgAiEnhancement.prototype.retryAiImprovePage = function ( index ) {
+	BlockshiftAiEnhancement.prototype.retryAiImprovePage = function ( index ) {
 		this.processAiImprovePage( index );
 	};
 
 	// ── render AI improve step ────────────────────────────────────────────────
 
-	EtgAiEnhancement.prototype.renderAiImproveStep = function () {
+	BlockshiftAiEnhancement.prototype.renderAiImproveStep = function () {
 		const self = this;
 		const ai = this.state.aiImprove;
 		const wrap = cel( 'div', 'pgs-stack' );
@@ -987,7 +987,7 @@
 
 	// ── shared progress section renderer ──────────────────────────────────────
 
-	EtgAiEnhancement.prototype.renderProgressSection = function (
+	BlockshiftAiEnhancement.prototype.renderProgressSection = function (
 		done,
 		failed,
 		skipped,
@@ -1094,7 +1094,7 @@
 
 	// ── shared progress row actions ───────────────────────────────────────────
 
-	EtgAiEnhancement.prototype.makeProgressRowActions = function (
+	BlockshiftAiEnhancement.prototype.makeProgressRowActions = function (
 		status,
 		index
 	) {
@@ -1129,7 +1129,7 @@
 
 	// ── generic overlay ───────────────────────────────────────────────────────
 
-	EtgAiEnhancement.prototype.showOverlay = function (
+	BlockshiftAiEnhancement.prototype.showOverlay = function (
 		title,
 		subtitle,
 		current,
@@ -1138,17 +1138,17 @@
 	) {
 		this.hideOverlay();
 
-		if ( ! document.getElementById( 'metg-spin-style' ) ) {
+		if ( ! document.getElementById( 'blockshift-spin-style' ) ) {
 			const style = document.createElement( 'style' );
-			style.id = 'metg-spin-style';
+			style.id = 'blockshift-spin-style';
 			style.textContent =
-				'@keyframes metg-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}';
+				'@keyframes blockshift-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}';
 			document.head.appendChild( style );
 		}
 
 		const accentColor = '#4f44dd';
 		const overlay = document.createElement( 'div' );
-		overlay.id = 'metg-bulk-ai-overlay';
+		overlay.id = 'blockshift-bulk-ai-overlay';
 		overlay.style.cssText =
 			'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(12,16,24,0.55);z-index:999999;display:flex;align-items:center;justify-content:center;font-family:"Hanken Grotesk",system-ui,sans-serif;';
 
@@ -1164,7 +1164,7 @@
 		svg.setAttribute( 'height', '48' );
 		svg.setAttribute( 'viewBox', '0 0 24 24' );
 		svg.setAttribute( 'fill', 'none' );
-		svg.style.cssText = 'animation:metg-spin 1s linear infinite;';
+		svg.style.cssText = 'animation:blockshift-spin 1s linear infinite;';
 		const circle = document.createElementNS( svgNS, 'circle' );
 		circle.setAttribute( 'cx', '12' );
 		circle.setAttribute( 'cy', '12' );
@@ -1241,8 +1241,8 @@
 		document.body.appendChild( overlay );
 	};
 
-	EtgAiEnhancement.prototype.hideOverlay = function () {
-		const overlay = document.getElementById( 'metg-bulk-ai-overlay' );
+	BlockshiftAiEnhancement.prototype.hideOverlay = function () {
+		const overlay = document.getElementById( 'blockshift-bulk-ai-overlay' );
 		if ( ! overlay ) {
 			return;
 		}
@@ -1257,7 +1257,7 @@
 
 	// ── badge / spinner helpers ───────────────────────────────────────────────
 
-	EtgAiEnhancement.prototype.makeAiStatusBadge = function ( status, error ) {
+	BlockshiftAiEnhancement.prototype.makeAiStatusBadge = function ( status, error ) {
 		const labels = {
 			pending: this.strings.aiStatusPending || 'Pending',
 			processing: this.strings.aiStatusProcessing || 'Processing…',
@@ -1295,8 +1295,8 @@
 		return badge;
 	};
 
-	EtgAiEnhancement.prototype.makeRowSpinner = function () {
-		const wrap = cel( 'span', 'metg-row-spinner' );
+	BlockshiftAiEnhancement.prototype.makeRowSpinner = function () {
+		const wrap = cel( 'span', 'blockshift-row-spinner' );
 		const svgNS = 'http://www.w3.org/2000/svg';
 		const svg = document.createElementNS( svgNS, 'svg' );
 		svg.setAttribute( 'width', '16' );
@@ -1304,7 +1304,7 @@
 		svg.setAttribute( 'viewBox', '0 0 24 24' );
 		svg.setAttribute( 'fill', 'none' );
 		svg.style.cssText =
-			'animation:metg-spin 1s linear infinite;vertical-align:middle;';
+			'animation:blockshift-spin 1s linear infinite;vertical-align:middle;';
 		const c = document.createElementNS( svgNS, 'circle' );
 		c.setAttribute( 'cx', '12' );
 		c.setAttribute( 'cy', '12' );
@@ -1319,7 +1319,7 @@
 
 	// ── AI Enhancement feedback modal ─────────────────────────────────────────
 
-	EtgAiEnhancement.prototype.openAiFeedbackModal = function (
+	BlockshiftAiEnhancement.prototype.openAiFeedbackModal = function (
 		targetId,
 		sourceId,
 		title
@@ -1332,7 +1332,7 @@
 		const str = this.strings;
 
 		const overlay = document.createElement( 'div' );
-		overlay.id = 'metg-ae-feedback-overlay';
+		overlay.id = 'blockshift-ae-feedback-overlay';
 		overlay.style.cssText =
 			'position:fixed;top:0;left:0;right:0;bottom:0;z-index:100000;display:flex;align-items:center;justify-content:center;background:rgba(12,16,24,0.55);padding:20px;box-sizing:border-box;font-family:"Hanken Grotesk",system-ui,sans-serif;';
 
@@ -1490,7 +1490,7 @@
 			errSpan.textContent = '';
 
 			const fd = new FormData();
-			fd.append( 'action', 'metg_submit_ai_enhancement_feedback' );
+			fd.append( 'action', 'blockshift_submit_ai_enhancement_feedback' );
 			fd.append( 'nonce', self.config.feedbackNonce );
 			fd.append( 'target_id', String( targetId ) );
 			fd.append( 'source_id', String( sourceId || 0 ) );
@@ -1547,14 +1547,14 @@
 		} );
 	};
 
-	EtgAiEnhancement.prototype.closeAiFeedbackModal = function () {
+	BlockshiftAiEnhancement.prototype.closeAiFeedbackModal = function () {
 		if ( this._feedbackOverlay ) {
 			this._feedbackOverlay.remove();
 			this._feedbackOverlay = null;
 		}
 	};
 
-	EtgAiEnhancement.prototype.showAiFeedbackConfirm = function ( message ) {
+	BlockshiftAiEnhancement.prototype.showAiFeedbackConfirm = function ( message ) {
 		const notice = cel( 'div', null );
 		notice.style.cssText =
 			'position:fixed;bottom:24px;right:24px;z-index:99999;padding:12px 20px;background:#12a16d;color:#fff;border-radius:8px;font-size:13px;box-shadow:0 2px 12px rgba(12,16,24,0.18);max-width:360px;font-family:"Hanken Grotesk",system-ui,sans-serif;';
@@ -1570,10 +1570,10 @@
 	// ── boot ──────────────────────────────────────────────────────────────────
 
 	document.addEventListener( 'DOMContentLoaded', function () {
-		if ( typeof window.etgAiEnhancement === 'undefined' ) {
+		if ( typeof window.blockshiftAiEnhancement === 'undefined' ) {
 			return;
 		}
-		const app = new EtgAiEnhancement( window.etgAiEnhancement );
+		const app = new BlockshiftAiEnhancement( window.blockshiftAiEnhancement );
 		app.init();
 	} );
 } )();

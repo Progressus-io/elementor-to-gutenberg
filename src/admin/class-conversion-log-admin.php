@@ -38,8 +38,8 @@ defined( 'ABSPATH' ) || exit;
  */
 class Conversion_Log_Admin {
 
-	const MENU_SLUG    = 'metg-conversion-log';
-	const OPTION_LOG   = 'metg_conversion_log';
+	const MENU_SLUG    = 'blockshift-conversion-log';
+	const OPTION_LOG   = 'blockshift_conversion_log';
 	const MAX_ENTRIES  = 300;
 
 	/** Max JSONL lines shown in the log viewer on the page. */
@@ -56,7 +56,7 @@ class Conversion_Log_Admin {
 
 	public function __construct() {
 		add_action( 'admin_menu', array( $this, 'register_menu' ) );
-		add_action( 'admin_post_metg_clear_conversion_log', array( $this, 'handle_clear_log' ) );
+		add_action( 'admin_post_blockshift_clear_conversion_log', array( $this, 'handle_clear_log' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 	}
 
@@ -75,14 +75,14 @@ class Conversion_Log_Admin {
 		$icons_path = BLOCKSHIFT_DIR_PATH . '/assets/js/pgs-icons.js';
 
 		wp_enqueue_style(
-			'metg-pgs-admin',
+			'blockshift-pgs-admin',
 			plugins_url( 'assets/css/batch-wizard.css', BLOCKSHIFT_MAIN_FILE ),
 			array(),
 			BLOCKSHIFT_DEBUG && file_exists( $css_path ) ? (string) filemtime( $css_path ) : BLOCKSHIFT_VERSION
 		);
 
 		wp_enqueue_script(
-			'metg-pgs-icons',
+			'blockshift-pgs-icons',
 			plugins_url( 'assets/js/pgs-icons.js', BLOCKSHIFT_MAIN_FILE ),
 			array(),
 			BLOCKSHIFT_DEBUG && file_exists( $icons_path ) ? (string) filemtime( $icons_path ) : BLOCKSHIFT_VERSION,
@@ -92,7 +92,7 @@ class Conversion_Log_Admin {
 		$log_js_path = BLOCKSHIFT_DIR_PATH . '/assets/js/conversion-log.js';
 
 		wp_enqueue_script(
-			'metg-conversion-log',
+			'blockshift-conversion-log',
 			plugins_url( 'assets/js/conversion-log.js', BLOCKSHIFT_MAIN_FILE ),
 			array(),
 			BLOCKSHIFT_DEBUG && file_exists( $log_js_path ) ? (string) filemtime( $log_js_path ) : BLOCKSHIFT_VERSION,
@@ -100,8 +100,8 @@ class Conversion_Log_Admin {
 		);
 
 		wp_localize_script(
-			'metg-conversion-log',
-			'metgConversionLog',
+			'blockshift-conversion-log',
+			'blockshiftConversionLog',
 			array(
 				'copy'   => __( 'Copy', 'layoutbridge-block-migration' ),
 				'copied' => __( 'Copied', 'layoutbridge-block-migration' ),
@@ -125,7 +125,7 @@ class Conversion_Log_Admin {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'Unauthorized.', 'layoutbridge-block-migration' ) );
 		}
-		check_admin_referer( 'metg_clear_conversion_log' );
+		check_admin_referer( 'blockshift_clear_conversion_log' );
 
 		delete_option( self::OPTION_LOG );
 
@@ -145,7 +145,7 @@ class Conversion_Log_Admin {
 			add_query_arg(
 				array(
 					'page'        => self::MENU_SLUG,
-					'metg_cleared' => '1',
+					'blockshift_cleared' => '1',
 				),
 				admin_url( 'admin.php' )
 			)
@@ -197,7 +197,7 @@ class Conversion_Log_Admin {
 
 		$filter     = isset( $_GET['status'] ) ? sanitize_key( (string) $_GET['status'] ) : 'all'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$logging_on = Admin_Settings::is_logging_enabled();
-		$cleared    = isset( $_GET['metg_cleared'] ) && '1' === $_GET['metg_cleared']; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$cleared    = isset( $_GET['blockshift_cleared'] ) && '1' === $_GET['blockshift_cleared']; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
 		// Summary counts (computed before filter is applied).
 		$total_count = count( $log );
@@ -273,8 +273,8 @@ class Conversion_Log_Admin {
 						<div class="pgs-pagetitle__actions">
 							<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>"
 								  onsubmit="return confirm('<?php echo esc_js( __( 'Clear all log entries? This cannot be undone.', 'layoutbridge-block-migration' ) ); ?>');">
-								<?php wp_nonce_field( 'metg_clear_conversion_log' ); ?>
-								<input type="hidden" name="action" value="metg_clear_conversion_log" />
+								<?php wp_nonce_field( 'blockshift_clear_conversion_log' ); ?>
+								<input type="hidden" name="action" value="blockshift_clear_conversion_log" />
 								<button type="submit" class="pgs-btn pgs-btn--secondary pgs-btn--sm"><span class="pgs-btn__icon"><i data-icon="trash-2"></i></span><span><?php esc_html_e( 'Clear All Logs', 'layoutbridge-block-migration' ); ?></span></button>
 							</form>
 						</div>
@@ -520,9 +520,9 @@ class Conversion_Log_Admin {
 							<div class="pgs-code">
 								<div class="pgs-code__bar">
 									<span class="pgs-code__name"><i data-icon="braces"></i>conversion-log.jsonl</span>
-									<button type="button" class="pgs-code__copy" id="metg-jsonl-copy"><i data-icon="copy"></i><span><?php esc_html_e( 'Copy', 'layoutbridge-block-migration' ); ?></span></button>
+									<button type="button" class="pgs-code__copy" id="blockshift-jsonl-copy"><i data-icon="copy"></i><span><?php esc_html_e( 'Copy', 'layoutbridge-block-migration' ); ?></span></button>
 								</div>
-								<pre class="pgs-code__pre" id="metg-jsonl-log" style="--_maxh:340px;"><?php echo esc_html( implode( "\n", $jsonl_log_lines ) ); ?></pre>
+								<pre class="pgs-code__pre" id="blockshift-jsonl-log" style="--_maxh:340px;"><?php echo esc_html( implode( "\n", $jsonl_log_lines ) ); ?></pre>
 							</div>
 							<p class="pgs-muted" style="margin-top:10px;">
 								<?php

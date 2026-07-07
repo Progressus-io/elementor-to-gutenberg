@@ -1,14 +1,14 @@
-:where([class*="metg-page-"] [class*="metg-widget-"])
+:where([class*="blockshift-page-"] [class*="blockshift-widget-"])
 .woocommerce div.product .product_meta{
     position:relative
 }
 
-:where([class*="metg-page-"] [class*="metg-widget-"])
+:where([class*="blockshift-page-"] [class*="blockshift-widget-"])
 .woocommerce div.product .product_meta > span{
     font-weight:700
 }
 
-:where([class*="metg-page-"] [class*="metg-widget-"]).elementor-woo-meta--view-inline
+:where([class*="blockshift-page-"] [class*="blockshift-widget-"]).elementor-woo-meta--view-inline
 .woocommerce div.product .product_meta{
     display:flex;
     flex-wrap:wrap

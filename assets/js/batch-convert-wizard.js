@@ -2,12 +2,12 @@
 ( function ( window, document ) {
 	'use strict';
 
-	if ( ! window.metgBatchWizard ) {
+	if ( ! window.blockshiftBatchWizard ) {
 		return;
 	}
 
-	const data = window.metgBatchWizard;
-	const root = document.getElementById( 'metg-batch-convert-root' );
+	const data = window.blockshiftBatchWizard;
+	const root = document.getElementById( 'blockshift-batch-convert-root' );
 	if ( ! root ) {
 		return;
 	}
@@ -15,20 +15,20 @@
 	const STATUS_BADGES = {
 		converted: {
 			labelKey: 'statusConverted',
-			className: 'metg-status-converted',
+			className: 'blockshift-status-converted',
 		},
 		not_converted: {
 			labelKey: 'statusNotConverted',
-			className: 'metg-status-not_converted',
+			className: 'blockshift-status-not_converted',
 		},
 		partial: {
 			labelKey: 'statusPartial',
-			className: 'metg-status-partial',
+			className: 'blockshift-status-partial',
 		},
-		error: { labelKey: 'statusError', className: 'metg-status-error' },
+		error: { labelKey: 'statusError', className: 'blockshift-status-error' },
 		skipped: {
 			labelKey: 'statusSkipped',
-			className: 'metg-status-skipped',
+			className: 'blockshift-status-skipped',
 		},
 	};
 
@@ -589,7 +589,7 @@
 			}
 			this.stopPolling();
 			const poll = () => {
-				this.request( 'metg_poll_job', { jobId: this.state.job.id } )
+				this.request( 'blockshift_poll_job', { jobId: this.state.job.id } )
 					.then( ( response ) => {
 						if ( response && response.job ) {
 							this.state.job = response.job;
@@ -637,7 +637,7 @@
 
 			this.stopPolling();
 
-			this.request( 'metg_cancel_job', { jobId: this.state.job.id } )
+			this.request( 'blockshift_cancel_job', { jobId: this.state.job.id } )
 				.then( ( response ) => {
 					// If PHP returns the cancelled job, keep it for display; otherwise clear.
 					if ( response && response.job ) {
@@ -749,7 +749,7 @@
 			payload.defaultHeader = this.state.defaultHeaderId || 0;
 			payload.defaultFooter = this.state.defaultFooterId || 0;
 
-			this.request( 'metg_start_job', payload )
+			this.request( 'blockshift_start_job', payload )
 				.then( ( response ) => {
 					if ( response && response.job ) {
 						this.state.job = response.job;
@@ -805,7 +805,7 @@
 			this.render();
 
 			this.state.isSubmitting = true;
-			this.request( 'metg_start_job', payload )
+			this.request( 'blockshift_start_job', payload )
 				.then( ( response ) => {
 					if ( response && response.job ) {
 						this.state.job = response.job;
@@ -828,7 +828,7 @@
 
 		refreshPages() {
 			this.state.refreshing = true;
-			this.request( 'metg_pages', {} )
+			this.request( 'blockshift_pages', {} )
 				.then( ( response ) => {
 					if ( response && Array.isArray( response.pages ) ) {
 						this.pages = response.pages;
@@ -878,14 +878,14 @@
 		}
 
 		renderHeader() {
-			const header = createElement( 'div', 'metg-wizard-header' );
+			const header = createElement( 'div', 'blockshift-wizard-header' );
 			const steps = this.getStepSequence();
 			const currentIndex = Math.max(
 				0,
 				steps.indexOf( this.state.currentStep )
 			);
 
-			const stepper = createElement( 'div', 'metg-stepper' );
+			const stepper = createElement( 'div', 'blockshift-stepper' );
 			const svgNS = 'http://www.w3.org/2000/svg';
 
 			steps.forEach( ( step, i ) => {
@@ -898,13 +898,13 @@
 
 				const item = createElement(
 					'div',
-					'metg-stepper-item' + stateClass
+					'blockshift-stepper-item' + stateClass
 				);
 
-				const circle = createElement( 'div', 'metg-stepper-circle' );
+				const circle = createElement( 'div', 'blockshift-stepper-circle' );
 				if ( i < currentIndex ) {
 					const checkSvg = document.createElementNS( svgNS, 'svg' );
-					checkSvg.setAttribute( 'class', 'metg-stepper-check' );
+					checkSvg.setAttribute( 'class', 'blockshift-stepper-check' );
 					checkSvg.setAttribute( 'viewBox', '0 0 20 20' );
 					checkSvg.setAttribute( 'fill', 'currentColor' );
 					checkSvg.setAttribute( 'aria-hidden', 'true' );
@@ -923,7 +923,7 @@
 				item.appendChild(
 					createElement(
 						'span',
-						'metg-stepper-label',
+						'blockshift-stepper-label',
 						this.getStepShortLabel( step )
 					)
 				);
@@ -939,7 +939,7 @@
 				return null;
 			}
 			const className =
-				'metg-alert metg-alert-' + this.state.notice.type;
+				'blockshift-alert blockshift-alert-' + this.state.notice.type;
 			return createElement( 'div', className, this.state.notice.message );
 		}
 
@@ -948,12 +948,12 @@
 			container.appendChild(
 				createElement(
 					'h2',
-					'metg-wizard-step-title',
+					'blockshift-wizard-step-title',
 					this.strings.modeTitle || 'Choose Mode'
 				)
 			);
 
-			const grid = createElement( 'div', 'metg-mode-grid' );
+			const grid = createElement( 'div', 'blockshift-mode-grid' );
 			const modes = [
 				{
 					key: 'auto',
@@ -974,7 +974,7 @@
 			const svgNS = 'http://www.w3.org/2000/svg';
 
 			const makeIcon = function ( pathD ) {
-				const wrap = createElement( 'div', 'metg-mode-card-icon' );
+				const wrap = createElement( 'div', 'blockshift-mode-card-icon' );
 				const svg = document.createElementNS( svgNS, 'svg' );
 				svg.setAttribute( 'viewBox', '0 0 24 24' );
 				svg.setAttribute( 'fill', 'none' );
@@ -993,14 +993,14 @@
 			modes.forEach( ( mode ) => {
 				const card = createElement(
 					'label',
-					'metg-mode-card' +
+					'blockshift-mode-card' +
 						( this.state.modeSelection === mode.key
 							? ' is-active'
 							: '' )
 				);
 				const input = document.createElement( 'input' );
 				input.type = 'radio';
-				input.name = 'metg-mode';
+				input.name = 'blockshift-mode';
 				input.value = mode.key;
 				input.checked = this.state.modeSelection === mode.key;
 				input.className = 'screen-reader-text';
@@ -1027,7 +1027,7 @@
 				const subtext = this.strings[ subtextKey ];
 				if ( subtext ) {
 					card.appendChild(
-						createElement( 'p', 'metg-mode-subtext', subtext )
+						createElement( 'p', 'blockshift-mode-subtext', subtext )
 					);
 				}
 
@@ -1056,7 +1056,7 @@
 					card.appendChild(
 						createElement(
 							'small',
-							'metg-mode-context-line',
+							'blockshift-mode-context-line',
 							contextLine
 						)
 					);
@@ -1066,7 +1066,7 @@
 
 			container.appendChild( grid );
 
-			const buttons = createElement( 'div', 'metg-wizard-buttons' );
+			const buttons = createElement( 'div', 'blockshift-wizard-buttons' );
 			const continueBtn = createButton(
 				this.strings.continue || 'Continue',
 				'button button-primary'
@@ -1107,7 +1107,7 @@
 				return null;
 			}
 
-			const wrapper = createElement( 'div', 'metg-theme-warning-list' );
+			const wrapper = createElement( 'div', 'blockshift-theme-warning-list' );
 			warnings.forEach( ( warning ) => {
 				const message =
 					warning.message ||
@@ -1117,7 +1117,7 @@
 				wrapper.appendChild(
 					createElement(
 						'div',
-						'metg-alert metg-alert-warning',
+						'blockshift-alert blockshift-alert-warning',
 						message + details
 					)
 				);
@@ -1143,12 +1143,12 @@
 				!! theme.isActive || theme.slug === this.getCurrentThemeSlug();
 			const isInstalled = theme.isInstalled !== false;
 			const cardClass =
-				'metg-theme-browser-card' +
+				'blockshift-theme-browser-card' +
 				( isSelected ? ' is-selected' : '' ) +
-				( isActive ? ' metg-theme-card--current' : '' );
+				( isActive ? ' blockshift-theme-card--current' : '' );
 			const card = createElement( 'article', cardClass );
 
-			const preview = createElement( 'div', 'metg-theme-card-preview' );
+			const preview = createElement( 'div', 'blockshift-theme-card-preview' );
 			if ( theme.screenshot ) {
 				const image = document.createElement( 'img' );
 				image.src = theme.screenshot;
@@ -1158,13 +1158,13 @@
 				preview.appendChild(
 					createElement(
 						'div',
-						'metg-theme-card-no-preview',
+						'blockshift-theme-card-no-preview',
 						theme.name || theme.slug
 					)
 				);
 			}
 
-			const actions = createElement( 'div', 'metg-theme-card-actions' );
+			const actions = createElement( 'div', 'blockshift-theme-card-actions' );
 			let buttonLabel;
 			if ( isActive ) {
 				buttonLabel = this.strings.themeActionActive || 'Active';
@@ -1188,15 +1188,15 @@
 			preview.appendChild( actions );
 			card.appendChild( preview );
 
-			const body = createElement( 'div', 'metg-theme-card-body' );
+			const body = createElement( 'div', 'blockshift-theme-card-body' );
 			const titleRow = createElement(
 				'div',
-				'metg-theme-card-title-row'
+				'blockshift-theme-card-title-row'
 			);
 			titleRow.appendChild(
 				createElement(
 					'h3',
-					'metg-theme-card-title',
+					'blockshift-theme-card-title',
 					theme.name || theme.slug
 				)
 			);
@@ -1211,15 +1211,15 @@
 					this.strings.themeStatusNotInstalled || 'Not installed';
 			}
 			titleRow.appendChild(
-				createElement( 'span', 'metg-theme-status-pill', statusText )
+				createElement( 'span', 'blockshift-theme-status-pill', statusText )
 			);
 			body.appendChild( titleRow );
 
-			const labels = createElement( 'div', 'metg-theme-card-labels' );
+			const labels = createElement( 'div', 'blockshift-theme-card-labels' );
 			labels.appendChild(
 				createElement(
 					'span',
-					'metg-theme-chip',
+					'blockshift-theme-chip',
 					this.strings.themeBlockLabel || 'Block theme'
 				)
 			);
@@ -1227,7 +1227,7 @@
 				labels.appendChild(
 					createElement(
 						'span',
-						'metg-theme-chip metg-theme-chip-selected',
+						'blockshift-theme-chip blockshift-theme-chip-selected',
 						this.strings.themeSelected || 'Selected'
 					)
 				);
@@ -1236,7 +1236,7 @@
 
 			const selector = document.createElement( 'input' );
 			selector.type = 'radio';
-			selector.name = 'metg-theme-choice';
+			selector.name = 'blockshift-theme-choice';
 			selector.value = theme.slug;
 			selector.checked = isSelected;
 			selector.className = 'screen-reader-text';
@@ -1265,7 +1265,7 @@
 			container.appendChild(
 				createElement(
 					'h2',
-					'metg-wizard-step-title',
+					'blockshift-wizard-step-title',
 					this.strings.themeStepTitle || 'Theme compatibility'
 				)
 			);
@@ -1273,7 +1273,7 @@
 				container.appendChild(
 					createElement(
 						'p',
-						'metg-step-description',
+						'blockshift-step-description',
 						this.strings.themeStepDesc
 					)
 				);
@@ -1288,13 +1288,13 @@
 				container.appendChild(
 					createElement(
 						'p',
-						'metg-step-description',
+						'blockshift-step-description',
 						this.strings.themeCompatibilityNote
 					)
 				);
 			}
 
-			const browser = createElement( 'div', 'metg-theme-browser-grid' );
+			const browser = createElement( 'div', 'blockshift-theme-browser-grid' );
 			const currentTheme = {
 				slug: this.getCurrentThemeSlug(),
 				name: this.getCurrentThemeName(),
@@ -1331,7 +1331,7 @@
 				container.appendChild(
 					createElement(
 						'div',
-						'metg-alert metg-alert-warning metg-theme-change-warning',
+						'blockshift-alert blockshift-alert-warning blockshift-theme-change-warning',
 						this.strings.themeChangeWarning
 					)
 				);
@@ -1354,18 +1354,18 @@
 			container.appendChild(
 				createElement(
 					'p',
-					'metg-theme-selected-summary',
+					'blockshift-theme-selected-summary',
 					selectedSummary
 				)
 			);
 
 			const cssPanel = createElement(
 				'div',
-				'metg-theme-options-panel'
+				'blockshift-theme-options-panel'
 			);
 			if ( this.willChangeTheme() && this.state.mode === 'custom' ) {
 				const cssWrapper = document.createElement( 'label' );
-				cssWrapper.className = 'metg-inline-toggle';
+				cssWrapper.className = 'blockshift-inline-toggle';
 				const checkbox = document.createElement( 'input' );
 				checkbox.type = 'checkbox';
 				checkbox.checked = this.state.copyCustomCss;
@@ -1387,7 +1387,7 @@
 				cssPanel.appendChild(
 					createElement(
 						'p',
-						'metg-step-description',
+						'blockshift-step-description',
 						this.strings.copyAdditionalCss ||
 							'Copy Additional CSS from the current theme'
 					)
@@ -1397,7 +1397,7 @@
 				container.appendChild( cssPanel );
 			}
 
-			const buttons = createElement( 'div', 'metg-wizard-buttons' );
+			const buttons = createElement( 'div', 'blockshift-wizard-buttons' );
 			const backBtn = createButton(
 				this.strings.back || 'Back',
 				'button button-secondary'
@@ -1421,7 +1421,7 @@
 			container.appendChild(
 				createElement(
 					'h2',
-					'metg-wizard-step-title',
+					'blockshift-wizard-step-title',
 					this.strings.selectPagesTitle || 'Select Pages'
 				)
 			);
@@ -1437,7 +1437,7 @@
 				return container;
 			}
 
-			const toolbar = createElement( 'div', 'metg-select-toolbar' );
+			const toolbar = createElement( 'div', 'blockshift-select-toolbar' );
 
 			const searchInput = document.createElement( 'input' );
 			searchInput.type = 'text';
@@ -1488,14 +1488,14 @@
 
 			const bulkActions = createElement(
 				'div',
-				'metg-select-bulk-actions'
+				'blockshift-select-bulk-actions'
 			);
 			const selectedCount = this.state.selectedPageIds.size;
 			if ( selectedCount > 0 ) {
 				bulkActions.appendChild(
 					createElement(
 						'span',
-						'metg-selection-chip',
+						'blockshift-selection-chip',
 						formatString(
 							this.strings.selectionChip || '%1$d selected',
 							selectedCount
@@ -1534,13 +1534,13 @@
 			if ( this.postTypes.length > 1 ) {
 				const masterRow = createElement(
 					'div',
-					'metg-master-select-row'
+					'blockshift-master-select-row'
 				);
 				const masterLabel = document.createElement( 'label' );
-				masterLabel.className = 'metg-master-select-label';
+				masterLabel.className = 'blockshift-master-select-label';
 				const masterCheckbox = document.createElement( 'input' );
 				masterCheckbox.type = 'checkbox';
-				masterCheckbox.className = 'metg-master-select-checkbox';
+				masterCheckbox.className = 'blockshift-master-select-checkbox';
 				const allPageIds = this.pages.map( ( p ) => p.id );
 				masterCheckbox.checked =
 					allPageIds.length > 0 &&
@@ -1569,13 +1569,13 @@
 				masterRow.appendChild( masterLabel );
 				container.appendChild( masterRow );
 
-				const tabStrip = createElement( 'div', 'metg-tab-strip' );
+				const tabStrip = createElement( 'div', 'blockshift-tab-strip' );
 				const tabCountTpl = this.strings.tabCountLabel || '%1$s (%2$d)';
 				this.postTypes.forEach( ( pt ) => {
 					const tab = document.createElement( 'button' );
 					tab.type = 'button';
 					tab.className =
-						'metg-tab' +
+						'blockshift-tab' +
 						( this.state.activeTab === pt.slug
 							? ' is-active'
 							: '' );
@@ -1597,10 +1597,10 @@
 				container.appendChild( tabStrip );
 			}
 
-			const tableWrapper = createElement( 'div', 'metg-table-wrapper' );
+			const tableWrapper = createElement( 'div', 'blockshift-table-wrapper' );
 			const table = createElement(
 				'table',
-				'metg-wizard-table widefat fixed striped'
+				'blockshift-wizard-table widefat fixed striped'
 			);
 			const thead = document.createElement( 'thead' );
 			const headRow = document.createElement( 'tr' );
@@ -1671,7 +1671,7 @@
 					STATUS_BADGES.not_converted;
 				const badge = createElement(
 					'span',
-					'metg-status-badge ' +
+					'blockshift-status-badge ' +
 						( badgeInfo ? badgeInfo.className : '' )
 				);
 				badge.textContent = this.getPageStatusLabel(
@@ -1685,7 +1685,7 @@
 				tr.appendChild( lastTd );
 
 				const compatTd = document.createElement( 'td' );
-				compatTd.className = 'metg-compat-cell';
+				compatTd.className = 'blockshift-compat-cell';
 				const warnings = page.warnings || {};
 				const unsupported = warnings.unsupportedWidgets || {};
 				const unsupTypes = Object.keys( unsupported );
@@ -1696,7 +1696,7 @@
 				if ( hasAnyWarning ) {
 					const trigger = document.createElement( 'button' );
 					trigger.type = 'button';
-					trigger.className = 'metg-compat-trigger';
+					trigger.className = 'blockshift-compat-trigger';
 					trigger.setAttribute(
 						'aria-label',
 						this.strings.compatShowDetails ||
@@ -1709,7 +1709,7 @@
 						);
 						const unsupportedBadge = createElement(
 							'span',
-							'metg-warn-badge metg-warn-badge--unsupported'
+							'blockshift-warn-badge blockshift-warn-badge--unsupported'
 						);
 						unsupportedBadge.textContent = '⚠ ' + totalCount;
 						trigger.appendChild( unsupportedBadge );
@@ -1717,7 +1717,7 @@
 					if ( warnings.hasDynamic ) {
 						const dynamicBadge = createElement(
 							'span',
-							'metg-warn-badge metg-warn-badge--dynamic'
+							'blockshift-warn-badge blockshift-warn-badge--dynamic'
 						);
 						dynamicBadge.textContent = '◎';
 						trigger.appendChild( dynamicBadge );
@@ -1725,7 +1725,7 @@
 					if ( warnings.hasAnimation ) {
 						const animationBadge = createElement(
 							'span',
-							'metg-warn-badge metg-warn-badge--animation'
+							'blockshift-warn-badge blockshift-warn-badge--animation'
 						);
 						animationBadge.textContent = '✶';
 						trigger.appendChild( animationBadge );
@@ -1760,18 +1760,18 @@
 			if ( this.shouldShowSkipConvertedOption() ) {
 				const skipWrapper = createElement(
 					'div',
-					'metg-skip-converted-wrapper'
+					'blockshift-skip-converted-wrapper'
 				);
 				const skipCheckbox = document.createElement( 'input' );
 				skipCheckbox.type = 'checkbox';
 				skipCheckbox.checked = this.state.skipConverted;
-				skipCheckbox.id = 'metg-skip-converted';
+				skipCheckbox.id = 'blockshift-skip-converted';
 				skipCheckbox.addEventListener( 'change', () => {
 					this.state.skipConverted = skipCheckbox.checked;
 					this.render();
 				} );
 				const skipLabel = document.createElement( 'label' );
-				skipLabel.htmlFor = 'metg-skip-converted';
+				skipLabel.htmlFor = 'blockshift-skip-converted';
 				skipLabel.textContent =
 					this.strings.skipConverted ||
 					'Skip pages that were already converted';
@@ -1780,7 +1780,7 @@
 				container.appendChild( skipWrapper );
 			}
 
-			const buttons = createElement( 'div', 'metg-wizard-buttons' );
+			const buttons = createElement( 'div', 'blockshift-wizard-buttons' );
 			const backBtn = createButton(
 				this.strings.back || 'Back',
 				'button button-secondary'
@@ -1812,7 +1812,7 @@
 		}
 
 		renderTemplatesGroup( type, label ) {
-			const container = createElement( 'div', 'metg-template-group' );
+			const container = createElement( 'div', 'blockshift-template-group' );
 			if ( label ) {
 				container.appendChild( createElement( 'h3', null, label ) );
 			}
@@ -1835,15 +1835,15 @@
 						: this.strings.noFootersFound ||
 						  'No footer templates detected.';
 				container.appendChild(
-					createElement( 'p', 'metg-step-description', noneMessage )
+					createElement( 'p', 'blockshift-step-description', noneMessage )
 				);
 				return container;
 			}
 
-			const tableWrapper = createElement( 'div', 'metg-table-wrapper' );
+			const tableWrapper = createElement( 'div', 'blockshift-table-wrapper' );
 			const table = createElement(
 				'table',
-				'metg-wizard-table widefat fixed striped'
+				'blockshift-wizard-table widefat fixed striped'
 			);
 			const thead = document.createElement( 'thead' );
 			const headRow = document.createElement( 'tr' );
@@ -1882,7 +1882,7 @@
 				const titleTd = document.createElement( 'td' );
 				const titleWrapper = createElement(
 					'div',
-					'metg-template-title',
+					'blockshift-template-title',
 					template.title
 				);
 				titleTd.appendChild( titleWrapper );
@@ -1903,7 +1903,7 @@
 					titleTd.appendChild(
 						createElement(
 							'div',
-							'metg-template-meta',
+							'blockshift-template-meta',
 							metaParts.join( ' · ' )
 						)
 					);
@@ -1912,7 +1912,7 @@
 					titleTd.appendChild(
 						createElement(
 							'span',
-							'metg-template-flag',
+							'blockshift-template-flag',
 							this.strings.likelyGlobal || 'Likely global'
 						)
 					);
@@ -1928,7 +1928,7 @@
 					: this.strings.statusUnknown || 'Unknown';
 				const badge = createElement(
 					'span',
-					'metg-status-badge ' +
+					'blockshift-status-badge ' +
 						( badgeInfo ? badgeInfo.className : '' ),
 					badgeLabel
 				);
@@ -1937,7 +1937,7 @@
 					statusTd.appendChild(
 						createElement(
 							'div',
-							'metg-template-message',
+							'blockshift-template-message',
 							template.lastResultMessage
 						)
 					);
@@ -1957,7 +1957,7 @@
 
 			const defaultWrapper = createElement(
 				'div',
-				'metg-default-selection'
+				'blockshift-default-selection'
 			);
 			const labelText =
 				type === 'header'
@@ -1966,10 +1966,10 @@
 					: this.strings.defaultFooterLabel ||
 					  'Default footer after conversion';
 			defaultWrapper.appendChild(
-				createElement( 'p', 'metg-step-description', labelText )
+				createElement( 'p', 'blockshift-step-description', labelText )
 			);
 
-			const options = createElement( 'div', 'metg-default-options' );
+			const options = createElement( 'div', 'blockshift-default-options' );
 			const selectedTemplates = templates.filter( ( template ) =>
 				selectedSet.has( Number( template.id ) )
 			);
@@ -1981,8 +1981,8 @@
 					input.type = 'radio';
 					input.name =
 						type === 'header'
-							? 'metg-default-header'
-							: 'metg-default-footer';
+							? 'blockshift-default-header'
+							: 'blockshift-default-footer';
 					input.value = id;
 					input.checked = defaultId === id;
 					input.addEventListener( 'change', () => {
@@ -2002,7 +2002,7 @@
 						: this.strings.noFootersSelected ||
 						  'No footers selected for conversion.';
 				options.appendChild(
-					createElement( 'p', 'metg-step-description', message )
+					createElement( 'p', 'blockshift-step-description', message )
 				);
 			}
 
@@ -2017,7 +2017,7 @@
 			container.appendChild(
 				createElement(
 					'h2',
-					'metg-wizard-step-title',
+					'blockshift-wizard-step-title',
 					this.strings.headerFooterStepTitle ||
 						'Header & Footer Templates'
 				)
@@ -2025,12 +2025,12 @@
 
 			const headerSection = createElement(
 				'div',
-				'metg-template-section metg-template-section--header'
+				'blockshift-template-section blockshift-template-section--header'
 			);
 			headerSection.appendChild(
 				createElement(
 					'p',
-					'metg-template-section-heading',
+					'blockshift-template-section-heading',
 					this.strings.headersLabel || 'Headers'
 				)
 			);
@@ -2040,17 +2040,17 @@
 			container.appendChild( headerSection );
 
 			container.appendChild(
-				createElement( 'hr', 'metg-template-section-divider' )
+				createElement( 'hr', 'blockshift-template-section-divider' )
 			);
 
 			const footerSection = createElement(
 				'div',
-				'metg-template-section metg-template-section--footer'
+				'blockshift-template-section blockshift-template-section--footer'
 			);
 			footerSection.appendChild(
 				createElement(
 					'p',
-					'metg-template-section-heading',
+					'blockshift-template-section-heading',
 					this.strings.footersLabel || 'Footers'
 				)
 			);
@@ -2059,7 +2059,7 @@
 			);
 			container.appendChild( footerSection );
 
-			const buttons = createElement( 'div', 'metg-wizard-buttons' );
+			const buttons = createElement( 'div', 'blockshift-wizard-buttons' );
 			const backBtn = createButton(
 				this.strings.back || 'Back',
 				'button button-secondary'
@@ -2089,7 +2089,7 @@
 			if ( totalPages <= 1 ) {
 				return null;
 			}
-			const pagination = createElement( 'div', 'metg-pagination' );
+			const pagination = createElement( 'div', 'blockshift-pagination' );
 			const prev = createButton( '‹', 'button button-secondary' );
 			prev.disabled = this.state.tablePage <= 1;
 			prev.addEventListener( 'click', () => {
@@ -2203,7 +2203,7 @@
 			container.appendChild(
 				createElement(
 					'h2',
-					'metg-wizard-step-title',
+					'blockshift-wizard-step-title',
 					this.strings.conflictsTitle || 'Resolve Conflicts'
 				)
 			);
@@ -2214,7 +2214,7 @@
 				count
 			);
 			container.appendChild(
-				createElement( 'p', 'metg-step-description', summary )
+				createElement( 'p', 'blockshift-step-description', summary )
 			);
 
 			const options = [
@@ -2241,12 +2241,12 @@
 				this.state.conflictPolicy = 'overwrite';
 			}
 
-			const wrapper = createElement( 'div', 'metg-conflict-options' );
+			const wrapper = createElement( 'div', 'blockshift-conflict-options' );
 			options.forEach( ( option ) => {
 				const label = document.createElement( 'label' );
 				const input = document.createElement( 'input' );
 				input.type = 'radio';
-				input.name = 'metg-conflict-policy';
+				input.name = 'blockshift-conflict-policy';
 				input.value = option.key;
 				input.checked = this.state.conflictPolicy === option.key;
 				input.addEventListener( 'change', () => {
@@ -2260,7 +2260,7 @@
 			} );
 			container.appendChild( wrapper );
 
-			const buttons = createElement( 'div', 'metg-wizard-buttons' );
+			const buttons = createElement( 'div', 'blockshift-wizard-buttons' );
 			const backBtn = createButton(
 				this.strings.back || 'Back',
 				'button button-secondary'
@@ -2280,33 +2280,33 @@
 		}
 
 		buildReviewStatTile( value, label ) {
-			const tile = createElement( 'div', 'metg-review-stat' );
+			const tile = createElement( 'div', 'blockshift-review-stat' );
 			tile.appendChild(
 				createElement(
 					'div',
-					'metg-review-stat-value',
+					'blockshift-review-stat-value',
 					String( value )
 				)
 			);
 			tile.appendChild(
-				createElement( 'div', 'metg-review-stat-label', label )
+				createElement( 'div', 'blockshift-review-stat-label', label )
 			);
 			return tile;
 		}
 
 		buildReviewSection( title, editStep, bodyBuilder ) {
-			const section = createElement( 'div', 'metg-review-section' );
+			const section = createElement( 'div', 'blockshift-review-section' );
 			const header = createElement(
 				'div',
-				'metg-review-section-header'
+				'blockshift-review-section-header'
 			);
 			header.appendChild(
-				createElement( 'h3', 'metg-review-section-title', title )
+				createElement( 'h3', 'blockshift-review-section-title', title )
 			);
 			if ( editStep ) {
 				const edit = document.createElement( 'a' );
 				edit.href = '#';
-				edit.className = 'metg-review-section-edit';
+				edit.className = 'blockshift-review-section-edit';
 				edit.textContent = this.strings.editSection || 'Edit';
 				edit.addEventListener( 'click', ( e ) => {
 					e.preventDefault();
@@ -2315,7 +2315,7 @@
 				header.appendChild( edit );
 			}
 			section.appendChild( header );
-			const body = createElement( 'div', 'metg-review-section-body' );
+			const body = createElement( 'div', 'blockshift-review-section-body' );
 			bodyBuilder( body );
 			section.appendChild( body );
 			return section;
@@ -2326,14 +2326,14 @@
 			container.appendChild(
 				createElement(
 					'h2',
-					'metg-wizard-step-title',
+					'blockshift-wizard-step-title',
 					this.strings.reviewTitle || 'Review & Confirm'
 				)
 			);
 			container.appendChild(
 				createElement(
 					'p',
-					'metg-step-description',
+					'blockshift-step-description',
 					this.strings.reviewDesc ||
 						'Double-check the plan below before starting. You can edit any section from here.'
 				)
@@ -2355,10 +2355,10 @@
 			const headerCount = this.state.selectedHeaderIds.size;
 			const footerCount = this.state.selectedFooterIds.size;
 
-			const dashboard = createElement( 'div', 'metg-review-dashboard' );
+			const dashboard = createElement( 'div', 'blockshift-review-dashboard' );
 
 			// Stat tiles row
-			const stats = createElement( 'div', 'metg-review-stats' );
+			const stats = createElement( 'div', 'blockshift-review-stats' );
 			stats.appendChild(
 				this.buildReviewStatTile(
 					convertCount,
@@ -2560,9 +2560,9 @@
 			container.appendChild( dashboard );
 
 			// Safety note
-			const safety = createElement( 'div', 'metg-safety-note' );
+			const safety = createElement( 'div', 'blockshift-safety-note' );
 			safety.appendChild(
-				createElement( 'span', 'metg-safety-note-icon', '\u{1F6E1}' )
+				createElement( 'span', 'blockshift-safety-note-icon', '\u{1F6E1}' )
 			);
 			safety.appendChild(
 				createElement(
@@ -2574,7 +2574,7 @@
 			);
 			container.appendChild( safety );
 
-			const buttons = createElement( 'div', 'metg-wizard-buttons' );
+			const buttons = createElement( 'div', 'blockshift-wizard-buttons' );
 			const backBtn = createButton(
 				this.strings.back || 'Back',
 				'button button-secondary'
@@ -2582,14 +2582,14 @@
 			backBtn.addEventListener( 'click', () => this.goToPrevious() );
 			const buttonsLeft = createElement(
 				'div',
-				'metg-wizard-buttons-left'
+				'blockshift-wizard-buttons-left'
 			);
 			buttonsLeft.appendChild( backBtn );
 			buttons.appendChild( buttonsLeft );
 
 			const buttonsRight = createElement(
 				'div',
-				'metg-wizard-buttons-right'
+				'blockshift-wizard-buttons-right'
 			);
 			const startBtn = createButton(
 				this.strings.startConversion || 'Start Conversion',
@@ -2613,7 +2613,7 @@
 			container.appendChild(
 				createElement(
 					'h2',
-					'metg-wizard-step-title',
+					'blockshift-wizard-step-title',
 					this.strings.progressTitle || 'Progress & Results'
 				)
 			);
@@ -2633,7 +2633,7 @@
 				container.appendChild(
 					createElement(
 						'div',
-						'metg-alert metg-alert-info',
+						'blockshift-alert blockshift-alert-info',
 						this.strings.resumeJob ||
 							'Resuming an active conversion job.'
 					)
@@ -2648,7 +2648,7 @@
 			const job = this.state.job;
 			const progressBar = createElement(
 				'div',
-				'metg-progress-bar metg-progress-bar-large'
+				'blockshift-progress-bar blockshift-progress-bar-large'
 			);
 			const percent = job.total
 				? Math.min(
@@ -2661,7 +2661,7 @@
 			progressBar.appendChild( bar );
 			container.appendChild( progressBar );
 
-			const summary = createElement( 'div', 'metg-progress-summary' );
+			const summary = createElement( 'div', 'blockshift-progress-summary' );
 			const successCount =
 				job.counts && job.counts.success ? job.counts.success : 0;
 			const skippedCount =
@@ -2672,18 +2672,18 @@
 			const makeTile = function ( value, label, modifier ) {
 				const tile = createElement(
 					'div',
-					'metg-stat-tile' +
-						( modifier ? ' metg-stat-tile--' + modifier : '' )
+					'blockshift-stat-tile' +
+						( modifier ? ' blockshift-stat-tile--' + modifier : '' )
 				);
 				tile.appendChild(
 					createElement(
 						'div',
-						'metg-stat-tile-value',
+						'blockshift-stat-tile-value',
 						String( value )
 					)
 				);
 				tile.appendChild(
-					createElement( 'div', 'metg-stat-tile-label', label )
+					createElement( 'div', 'blockshift-stat-tile-label', label )
 				);
 				return tile;
 			};
@@ -2721,7 +2721,7 @@
 			if ( job.status === 'completed' && this.config.feedbackEnabled ) {
 				const fbRunRow = createElement(
 					'div',
-					'metg-feedback-run-row'
+					'blockshift-feedback-run-row'
 				);
 				const fbRunBtn = this.buildActionPill( {
 					variant: 'feedback',
@@ -2760,7 +2760,7 @@
 				message = this.strings.jobRunning || 'Conversion in progress…';
 			}
 			container.appendChild(
-				createElement( 'p', 'metg-step-description', message )
+				createElement( 'p', 'blockshift-step-description', message )
 			);
 
 			const resultsTable = this.renderResultsTable();
@@ -2768,7 +2768,7 @@
 				container.appendChild( resultsTable );
 			}
 
-			const actions = createElement( 'div', 'metg-results-actions' );
+			const actions = createElement( 'div', 'blockshift-results-actions' );
 			if ( job.status !== 'completed' ) {
 				const cancelBtn = createButton(
 					this.strings.cancel || 'Cancel',
@@ -2819,7 +2819,7 @@
 				? document.createElement( 'a' )
 				: document.createElement( 'button' );
 			el.className =
-				'metg-action-pill metg-action-pill--' +
+				'blockshift-action-pill blockshift-action-pill--' +
 				( opts.variant || 'default' );
 			if ( opts.href ) {
 				el.href = opts.href;
@@ -2838,7 +2838,7 @@
 			}
 			if ( opts.iconPath ) {
 				const svg = document.createElementNS( svgNS, 'svg' );
-				svg.setAttribute( 'class', 'metg-action-pill-icon' );
+				svg.setAttribute( 'class', 'blockshift-action-pill-icon' );
 				svg.setAttribute( 'viewBox', '0 0 24 24' );
 				svg.setAttribute( 'fill', 'none' );
 				svg.setAttribute( 'stroke', 'currentColor' );
@@ -2863,7 +2863,7 @@
 				el.appendChild(
 					createElement(
 						'span',
-						'metg-action-pill-label',
+						'blockshift-action-pill-label',
 						opts.label
 					)
 				);
@@ -2874,9 +2874,9 @@
 		buildResultsTable( results ) {
 			const wrapper = createElement(
 				'div',
-				'metg-results-table metg-table-wrapper'
+				'blockshift-results-table blockshift-table-wrapper'
 			);
-			const table = createElement( 'table', 'metg-wizard-table' );
+			const table = createElement( 'table', 'blockshift-wizard-table' );
 			const thead = document.createElement( 'thead' );
 			const headRow = document.createElement( 'tr' );
 			// Checkbox column for multi-item feedback selection
@@ -2957,7 +2957,7 @@
 					titleTd.appendChild(
 						createElement(
 							'div',
-							'metg-result-meta',
+							'blockshift-result-meta',
 							metaParts.join( ' · ' )
 						)
 					);
@@ -2975,7 +2975,7 @@
 					STATUS_BADGES.not_converted;
 				const badge = createElement(
 					'span',
-					'metg-status-badge ' + badgeInfo.className,
+					'blockshift-status-badge ' + badgeInfo.className,
 					this.strings[ resultConfig.labelKey ] || result.status
 				);
 				statusTd.appendChild( badge );
@@ -2998,7 +2998,7 @@
 				actionsTd.className = 'actions';
 				const actionGroup = createElement(
 					'div',
-					'metg-action-group'
+					'blockshift-action-group'
 				);
 
 				if ( result.viewUrl ) {
@@ -3090,7 +3090,7 @@
 			const successes = results.filter( function ( r ) {
 				return r.status === 'success' || r.status === 'skipped';
 			} );
-			const container = createElement( 'div', 'metg-results-sections' );
+			const container = createElement( 'div', 'blockshift-results-sections' );
 
 			// Multi-item feedback selection bar — shown when any checkboxes are checked
 			const checkedCount = this.state.feedbackCheckedIds.size;
@@ -3101,7 +3101,7 @@
 			) {
 				const bar = createElement(
 					'div',
-					'metg-feedback-selection-bar'
+					'blockshift-feedback-selection-bar'
 				);
 				const selLabel = formatString(
 					this.strings.feedbackButtonSelected ||
@@ -3110,7 +3110,7 @@
 				);
 				const selBtn = createButton(
 					selLabel,
-					'button button-primary metg-feedback-sel-btn'
+					'button button-primary blockshift-feedback-sel-btn'
 				);
 				selBtn.addEventListener( 'click', () => {
 					const ids = Array.from( this.state.feedbackCheckedIds );
@@ -3119,7 +3119,7 @@
 				bar.appendChild( selBtn );
 				const clearBtn = document.createElement( 'button' );
 				clearBtn.type = 'button';
-				clearBtn.className = 'button-link metg-feedback-clear-btn';
+				clearBtn.className = 'button-link blockshift-feedback-clear-btn';
 				clearBtn.textContent =
 					this.strings.clearSelection || 'Clear selection';
 				clearBtn.addEventListener( 'click', () => {
@@ -3134,7 +3134,7 @@
 				container.appendChild(
 					createElement(
 						'h3',
-						'metg-results-section-title metg-results-section-title--error',
+						'blockshift-results-section-title blockshift-results-section-title--error',
 						this.strings.resultsNeedsAttention || 'Needs attention'
 					)
 				);
@@ -3144,7 +3144,7 @@
 				container.appendChild(
 					createElement(
 						'h3',
-						'metg-results-section-title metg-results-section-title--success',
+						'blockshift-results-section-title blockshift-results-section-title--success',
 						this.strings.resultsCompleted ||
 							'Completed successfully'
 					)
@@ -3170,7 +3170,7 @@
 			const jobId = String( job.id || '' );
 
 			const overlay = document.createElement( 'div' );
-			overlay.id = 'metg-feedback-overlay';
+			overlay.id = 'blockshift-feedback-overlay';
 			overlay.style.cssText =
 				'position:fixed;top:0;left:0;right:0;bottom:0;z-index:100000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.55);padding:20px;box-sizing:border-box;';
 
@@ -3345,7 +3345,7 @@
 				errSpan.textContent = '';
 
 				const fd = new FormData();
-				fd.append( 'action', 'metg_submit_feedback' );
+				fd.append( 'action', 'blockshift_submit_feedback' );
 				fd.append( 'nonce', self.config.feedbackNonce );
 				fd.append( 'job_id', jobId );
 				fd.append( 'consent_given', 'true' );
@@ -3427,7 +3427,7 @@
 			}
 
 			const overlay = document.createElement( 'div' );
-			overlay.id = 'metg-feedback-overlay';
+			overlay.id = 'blockshift-feedback-overlay';
 			overlay.style.cssText =
 				'position:fixed;top:0;left:0;right:0;bottom:0;z-index:100000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.55);padding:20px;box-sizing:border-box;';
 
@@ -3538,7 +3538,7 @@
 				errSpan.textContent = '';
 
 				const fd = new FormData();
-				fd.append( 'action', 'metg_submit_feedback' );
+				fd.append( 'action', 'blockshift_submit_feedback' );
 				fd.append( 'nonce', self.config.feedbackNonce );
 				fd.append( 'job_id', jobId || '' );
 				fd.append( 'consent_given', 'true' );
@@ -3697,7 +3697,7 @@
 			);
 
 			const formData = new FormData();
-			formData.append( 'action', 'metg_ai_improve_single' );
+			formData.append( 'action', 'blockshift_ai_improve_single' );
 			formData.append( 'nonce', this.config.aiImproveNonce );
 			formData.append( 'source_id', String( page.sourceId ) );
 			formData.append( 'target_id', String( page.targetId ) );
@@ -3740,7 +3740,7 @@
 
 			// Overlay — inline styles guarantee visibility regardless of CSS load order
 			const overlay = document.createElement( 'div' );
-			overlay.id = 'metg-bulk-ai-overlay';
+			overlay.id = 'blockshift-bulk-ai-overlay';
 			overlay.style.cssText = [
 				'position:fixed',
 				'top:0',
@@ -3773,7 +3773,7 @@
 			// Spinner SVG — uses CSS class for animation only
 			const svgNS = 'http://www.w3.org/2000/svg';
 			const svg = document.createElementNS( svgNS, 'svg' );
-			svg.setAttribute( 'class', 'metg-bulk-ai-overlay-spinner' );
+			svg.setAttribute( 'class', 'blockshift-bulk-ai-overlay-spinner' );
 			svg.setAttribute( 'viewBox', '0 0 44 44' );
 			svg.setAttribute( 'aria-hidden', 'true' );
 			svg.style.cssText = 'width:64px;height:64px;flex-shrink:0;';
@@ -3884,7 +3884,7 @@
 
 		hideAiOverlay() {
 			const existing = document.getElementById(
-				'metg-bulk-ai-overlay'
+				'blockshift-bulk-ai-overlay'
 			);
 			if ( existing ) {
 				try {
@@ -3926,12 +3926,12 @@
 
 		renderAiImproveStep() {
 			const ai = this.state.aiImprove;
-			const container = createElement( 'div', 'metg-ai-improve-step' );
+			const container = createElement( 'div', 'blockshift-ai-improve-step' );
 
 			container.appendChild(
 				createElement(
 					'h2',
-					'metg-wizard-step-title',
+					'blockshift-wizard-step-title',
 					this.strings.aiImproveTitle || 'AI Improvement'
 				)
 			);
@@ -3944,16 +3944,16 @@
 
 				const panel = createElement(
 					'div',
-					'metg-ai-readiness-panel'
+					'blockshift-ai-readiness-panel'
 				);
 				const panelHeader = createElement(
 					'div',
-					'metg-ai-readiness-header'
+					'blockshift-ai-readiness-header'
 				);
 				panelHeader.appendChild(
 					createElement(
 						'h3',
-						'metg-ai-readiness-title',
+						'blockshift-ai-readiness-title',
 						this.strings.aiReadinessTitle || 'Pre-flight checklist'
 					)
 				);
@@ -3961,7 +3961,7 @@
 					panelHeader.appendChild(
 						createElement(
 							'span',
-							'metg-ai-readiness-all-ready',
+							'blockshift-ai-readiness-all-ready',
 							this.strings.aiReadinessAllReady ||
 								'\u2713 Ready to start'
 						)
@@ -3972,11 +3972,11 @@
 				const makeRow = function ( ok, label ) {
 					const row = createElement(
 						'div',
-						'metg-ai-readiness-row'
+						'blockshift-ai-readiness-row'
 					);
 					const icon = createElement(
 						'div',
-						'metg-ai-readiness-icon metg-ai-readiness-icon--' +
+						'blockshift-ai-readiness-icon blockshift-ai-readiness-icon--' +
 							( ok ? 'ok' : 'error' ),
 						ok ? '\u2713' : '\u00D7'
 					);
@@ -3984,7 +3984,7 @@
 					row.appendChild(
 						createElement(
 							'span',
-							'metg-ai-readiness-status' +
+							'blockshift-ai-readiness-status' +
 								( ok ? '' : ' is-invalid' ),
 							label
 						)
@@ -3994,11 +3994,11 @@
 				const makeInfoRow = function ( label ) {
 					const row = createElement(
 						'div',
-						'metg-ai-readiness-row'
+						'blockshift-ai-readiness-row'
 					);
 					const icon = createElement(
 						'div',
-						'metg-ai-readiness-icon metg-ai-readiness-icon--info',
+						'blockshift-ai-readiness-icon blockshift-ai-readiness-icon--info',
 						'i'
 					);
 					row.appendChild( icon );
@@ -4040,7 +4040,7 @@
 				if ( ! apiConfigured ) {
 					const apiAlert = createElement(
 						'div',
-						'metg-alert metg-alert-error'
+						'blockshift-alert blockshift-alert-error'
 					);
 					apiAlert.appendChild(
 						document.createTextNode(
@@ -4058,14 +4058,14 @@
 
 				const warning = createElement(
 					'div',
-					'metg-ai-warning-notice'
+					'blockshift-ai-warning-notice'
 				);
 				const icon = createElement(
 					'span',
-					'metg-ai-warning-icon',
+					'blockshift-ai-warning-icon',
 					'\u26A0'
 				);
-				const text = createElement( 'div', 'metg-ai-warning-text' );
+				const text = createElement( 'div', 'blockshift-ai-warning-text' );
 				text.appendChild(
 					createElement(
 						'strong',
@@ -4091,7 +4091,7 @@
 				container.appendChild(
 					createElement(
 						'p',
-						'metg-step-description',
+						'blockshift-step-description',
 						this.strings.aiImproveNone ||
 							'No successfully converted items found in this session.'
 					)
@@ -4117,14 +4117,14 @@
 
 				const progressHeader = createElement(
 					'div',
-					'metg-ai-progress-header'
+					'blockshift-ai-progress-header'
 				);
 
 				// Bar + label row
-				const barRow = createElement( 'div', 'metg-ai-bar-row' );
+				const barRow = createElement( 'div', 'blockshift-ai-bar-row' );
 				const bar = createElement(
 					'div',
-					'metg-progress-bar metg-progress-bar-large'
+					'blockshift-progress-bar blockshift-progress-bar-large'
 				);
 				const fill = document.createElement( 'span' );
 				fill.style.width = pct + '%';
@@ -4132,14 +4132,14 @@
 				barRow.appendChild( bar );
 				const label = createElement(
 					'span',
-					'metg-ai-bar-label',
+					'blockshift-ai-bar-label',
 					settled + ' / ' + total
 				);
 				barRow.appendChild( label );
 				progressHeader.appendChild( barRow );
 
 				// Stat chips
-				const chips = createElement( 'div', 'metg-ai-chips' );
+				const chips = createElement( 'div', 'blockshift-ai-chips' );
 				const chipData = [
 					{
 						count: done,
@@ -4165,7 +4165,7 @@
 				chipData.forEach( ( { count, label: chipLabel, cls } ) => {
 					const chip = createElement(
 						'span',
-						'metg-ai-chip ' + cls
+						'blockshift-ai-chip ' + cls
 					);
 					chip.appendChild(
 						createElement( 'strong', null, String( count ) )
@@ -4182,7 +4182,7 @@
 					progressHeader.appendChild(
 						createElement(
 							'p',
-							'metg-ai-paused-notice',
+							'blockshift-ai-paused-notice',
 							this.strings.aiImprovePaused ||
 								'Paused — review the failed item below, then choose Skip or Retry to continue.'
 						)
@@ -4195,11 +4195,11 @@
 			// ── Items table ──────────────────────────────────────────────────
 			const tableWrapper = createElement(
 				'div',
-				'metg-results-table metg-table-wrapper'
+				'blockshift-results-table blockshift-table-wrapper'
 			);
 			const table = createElement(
 				'table',
-				'metg-wizard-table metg-ai-table'
+				'blockshift-wizard-table blockshift-ai-table'
 			);
 			const thead = document.createElement( 'thead' );
 			const headRow = document.createElement( 'tr' );
@@ -4219,17 +4219,17 @@
 			const tbody = document.createElement( 'tbody' );
 			ai.pages.forEach( ( page, i ) => {
 				const tr = document.createElement( 'tr' );
-				tr.className = 'metg-ai-row metg-ai-row--' + page.status;
+				tr.className = 'blockshift-ai-row blockshift-ai-row--' + page.status;
 
 				// Title — strike-through when skipped
 				const titleTd = document.createElement( 'td' );
-				titleTd.className = 'metg-ai-title-cell';
+				titleTd.className = 'blockshift-ai-title-cell';
 				titleTd.textContent = page.title;
 				tr.appendChild( titleTd );
 
 				// Type
 				const typeTd = document.createElement( 'td' );
-				typeTd.className = 'metg-ai-type-cell';
+				typeTd.className = 'blockshift-ai-type-cell';
 				typeTd.textContent = page.type
 					? page.type.charAt( 0 ).toUpperCase() + page.type.slice( 1 )
 					: '';
@@ -4237,7 +4237,7 @@
 
 				// Status
 				const statusTd = document.createElement( 'td' );
-				statusTd.className = 'status metg-ai-status-cell';
+				statusTd.className = 'status blockshift-ai-status-cell';
 
 				if ( page.status === 'pending' ) {
 					statusTd.appendChild(
@@ -4249,7 +4249,7 @@
 				} else if ( page.status === 'processing' ) {
 					const wrapper = createElement(
 						'span',
-						'metg-ai-processing'
+						'blockshift-ai-processing'
 					);
 					wrapper.appendChild( this.makeRowSpinner() );
 					wrapper.appendChild(
@@ -4278,7 +4278,7 @@
 						statusTd.appendChild(
 							createElement(
 								'p',
-								'metg-ai-error-msg',
+								'blockshift-ai-error-msg',
 								page.error
 							)
 						);
@@ -4295,7 +4295,7 @@
 
 				// Actions — Skip / Retry only on failed rows
 				const actionsTd = document.createElement( 'td' );
-				actionsTd.className = 'actions metg-ai-actions-cell';
+				actionsTd.className = 'actions blockshift-ai-actions-cell';
 				if ( page.status === 'failed' ) {
 					const skipBtn = createButton(
 						this.strings.skip || 'Skip',
@@ -4336,10 +4336,10 @@
 				const allGood = failed === 0;
 				const summary = createElement(
 					'div',
-					'metg-ai-completion ' +
+					'blockshift-ai-completion ' +
 						( allGood
-							? 'metg-ai-completion--success'
-							: 'metg-ai-completion--partial' )
+							? 'blockshift-ai-completion--success'
+							: 'blockshift-ai-completion--partial' )
 				);
 				summary.appendChild(
 					createElement(
@@ -4354,7 +4354,7 @@
 				);
 				const detail = createElement(
 					'span',
-					'metg-ai-completion-detail',
+					'blockshift-ai-completion-detail',
 					' ' +
 						done +
 						' done · ' +
@@ -4368,7 +4368,7 @@
 			}
 
 			// ── Bottom actions ───────────────────────────────────────────────
-			const actions = createElement( 'div', 'metg-results-actions' );
+			const actions = createElement( 'div', 'blockshift-results-actions' );
 			if ( ! ai.started ) {
 				const startBtn = createButton(
 					this.strings.aiImproveStart || 'Start AI Improvement',
@@ -4404,15 +4404,15 @@
 
 		makeAiStatusBadge( status, label ) {
 			const map = {
-				pending: 'metg-status-not_converted',
-				processing: 'metg-status-not_converted',
-				done: 'metg-status-converted',
-				failed: 'metg-status-error',
-				skipped: 'metg-status-skipped',
+				pending: 'blockshift-status-not_converted',
+				processing: 'blockshift-status-not_converted',
+				done: 'blockshift-status-converted',
+				failed: 'blockshift-status-error',
+				skipped: 'blockshift-status-skipped',
 			};
 			return createElement(
 				'span',
-				'metg-status-badge ' + ( map[ status ] || '' ),
+				'blockshift-status-badge ' + ( map[ status ] || '' ),
 				label
 			);
 		}
@@ -4420,7 +4420,7 @@
 		makeRowSpinner() {
 			const svgNS = 'http://www.w3.org/2000/svg';
 			const svg = document.createElementNS( svgNS, 'svg' );
-			svg.setAttribute( 'class', 'metg-row-spinner' );
+			svg.setAttribute( 'class', 'blockshift-row-spinner' );
 			svg.setAttribute( 'viewBox', '0 0 24 24' );
 			svg.setAttribute( 'aria-hidden', 'true' );
 
@@ -4518,18 +4518,18 @@
 
 		buildWarningPopover( page ) {
 			const warnings = page.warnings || {};
-			const pop = createElement( 'div', 'metg-warn-popover' );
+			const pop = createElement( 'div', 'blockshift-warn-popover' );
 
 			// Header
-			const hdr = createElement( 'div', 'metg-warn-popover-header' );
+			const hdr = createElement( 'div', 'blockshift-warn-popover-header' );
 			const hTitle = createElement(
 				'span',
-				'metg-warn-popover-title',
+				'blockshift-warn-popover-title',
 				this.strings.compatPopoverTitle || 'Compatibility Notes'
 			);
 			const closeBtn = document.createElement( 'button' );
 			closeBtn.type = 'button';
-			closeBtn.className = 'metg-warn-popover-close';
+			closeBtn.className = 'blockshift-warn-popover-close';
 			closeBtn.setAttribute( 'aria-label', 'Close' );
 			closeBtn.textContent = '×';
 			closeBtn.addEventListener( 'click', () =>
@@ -4542,12 +4542,12 @@
 			// Page name
 			const pageName = createElement(
 				'div',
-				'metg-warn-popover-page',
+				'blockshift-warn-popover-page',
 				page.title
 			);
 			pop.appendChild( pageName );
 
-			const body = createElement( 'div', 'metg-warn-popover-body' );
+			const body = createElement( 'div', 'blockshift-warn-popover-body' );
 			let first = true;
 
 			// Unsupported widgets section
@@ -4556,17 +4556,17 @@
 			if ( unsupTypes.length > 0 ) {
 				if ( ! first ) {
 					body.appendChild(
-						createElement( 'hr', 'metg-warn-popover-divider' )
+						createElement( 'hr', 'blockshift-warn-popover-divider' )
 					);
 				}
 				first = false;
 				const sec = createElement(
 					'div',
-					'metg-warn-popover-section'
+					'blockshift-warn-popover-section'
 				);
 				const sTitle = createElement(
 					'div',
-					'metg-warn-popover-section-title metg-warn-popover-section-title--error'
+					'blockshift-warn-popover-section-title blockshift-warn-popover-section-title--error'
 				);
 				sTitle.textContent =
 					'⚠ ' +
@@ -4575,22 +4575,22 @@
 				sec.appendChild( sTitle );
 				const desc = createElement(
 					'p',
-					'metg-warn-popover-desc',
+					'blockshift-warn-popover-desc',
 					this.strings.warnDescUnsupported ||
 						'These widgets will become placeholder blocks after conversion.'
 				);
 				sec.appendChild( desc );
-				const list = createElement( 'ul', 'metg-warn-popover-list' );
+				const list = createElement( 'ul', 'blockshift-warn-popover-list' );
 				unsupTypes.forEach( ( type ) => {
 					const li = document.createElement( 'li' );
-					li.className = 'metg-warn-popover-list-item';
+					li.className = 'blockshift-warn-popover-list-item';
 					const code = document.createElement( 'code' );
 					code.textContent = type;
 					li.appendChild( code );
 					li.appendChild(
 						createElement(
 							'span',
-							'metg-warn-popover-count',
+							'blockshift-warn-popover-count',
 							'×' + unsupported[ type ]
 						)
 					);
@@ -4604,17 +4604,17 @@
 			if ( warnings.hasDynamic ) {
 				if ( ! first ) {
 					body.appendChild(
-						createElement( 'hr', 'metg-warn-popover-divider' )
+						createElement( 'hr', 'blockshift-warn-popover-divider' )
 					);
 				}
 				first = false;
 				const sec = createElement(
 					'div',
-					'metg-warn-popover-section'
+					'blockshift-warn-popover-section'
 				);
 				const sTitle = createElement(
 					'div',
-					'metg-warn-popover-section-title metg-warn-popover-section-title--info'
+					'blockshift-warn-popover-section-title blockshift-warn-popover-section-title--info'
 				);
 				sTitle.textContent =
 					'◎ ' +
@@ -4623,7 +4623,7 @@
 				sec.appendChild(
 					createElement(
 						'p',
-						'metg-warn-popover-desc',
+						'blockshift-warn-popover-desc',
 						this.strings.warnDescDynamic ||
 							'This page uses Elementor dynamic tags. Connections to external data will be lost — manual reconnection in Gutenberg is needed.'
 					)
@@ -4635,16 +4635,16 @@
 			if ( warnings.hasAnimation ) {
 				if ( ! first ) {
 					body.appendChild(
-						createElement( 'hr', 'metg-warn-popover-divider' )
+						createElement( 'hr', 'blockshift-warn-popover-divider' )
 					);
 				}
 				const sec = createElement(
 					'div',
-					'metg-warn-popover-section'
+					'blockshift-warn-popover-section'
 				);
 				const sTitle = createElement(
 					'div',
-					'metg-warn-popover-section-title metg-warn-popover-section-title--warning'
+					'blockshift-warn-popover-section-title blockshift-warn-popover-section-title--warning'
 				);
 				sTitle.textContent =
 					'✶ ' + ( this.strings.warnTitleAnimation || 'Animations' );
@@ -4652,7 +4652,7 @@
 				sec.appendChild(
 					createElement(
 						'p',
-						'metg-warn-popover-desc',
+						'blockshift-warn-popover-desc',
 						this.strings.warnDescAnimation ||
 							'Entrance animations will not carry over to Gutenberg and must be re-applied manually.'
 					)

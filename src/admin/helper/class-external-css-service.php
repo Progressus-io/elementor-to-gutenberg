@@ -32,7 +32,7 @@ defined( 'ABSPATH' ) || exit;
 
 class External_CSS_Service {
 
-	const META_KEY = '_metg_external_css';
+	const META_KEY = '_blockshift_external_css';
 
 	private static function resolve_post_id( int $post_id ): int {
 		$parent_id = wp_is_post_revision( $post_id );
@@ -51,7 +51,7 @@ class External_CSS_Service {
 	/**
 	 * Save a CSS string as an external file in uploads and store reference in post meta.
 	 *
-	 * @param int $post_id Post ID.
+	 * @param int    $post_id Post ID.
 	 * @param string $css CSS content.
 	 *
 	 * @return array|null Meta payload on success, null on failure or empty CSS.
@@ -71,7 +71,7 @@ class External_CSS_Service {
 			return null;
 		}
 
-		$dir_rel  = 'metg';
+		$dir_rel  = 'blockshift';
 		$base_dir = trailingslashit( (string) $upload['basedir'] );
 		$base_url = trailingslashit( (string) $upload['baseurl'] );
 
@@ -81,7 +81,7 @@ class External_CSS_Service {
 		}
 
 		$hash     = substr( md5( $css ), 0, 12 );
-		$filename = 'metg-page-' . (string) $post_id . '.css';
+		$filename = 'blockshift-page-' . (string) $post_id . '.css';
 
 		$path = trailingslashit( $target_dir ) . $filename;
 		$url  = trailingslashit( $base_url . $dir_rel ) . $filename;
@@ -155,7 +155,7 @@ class External_CSS_Service {
 	/**
 	 * Append CSS to an already generated external CSS file for a post.
 	 *
-	 * @param int $post_id Post ID.
+	 * @param int    $post_id Post ID.
 	 * @param string $css CSS to append.
 	 *
 	 * @return bool|\WP_Error
@@ -171,7 +171,7 @@ class External_CSS_Service {
 		$meta = self::get_post_css_meta( $post_id );
 		if ( ! is_array( $meta ) || empty( $meta['path'] ) ) {
 			return new \WP_Error(
-				'metg_missing_css_file',
+				'blockshift_missing_css_file',
 				'External CSS file reference could not be resolved for this page.'
 			);
 		}
@@ -179,7 +179,7 @@ class External_CSS_Service {
 		$path = self::normalize_fs_path( (string) $meta['path'] );
 		if ( ! file_exists( $path ) || ! is_readable( $path ) ) {
 			return new \WP_Error(
-				'metg_css_file_not_found',
+				'blockshift_css_file_not_found',
 				'External CSS file does not exist or is not readable.'
 			);
 		}
@@ -197,7 +197,7 @@ class External_CSS_Service {
 
 		if ( ! self::write_file( $path, $updated_css ) ) {
 			return new \WP_Error(
-				'metg_css_write_failed',
+				'blockshift_css_write_failed',
 				'Failed to append CSS to external stylesheet file.'
 			);
 		}
@@ -260,7 +260,7 @@ class External_CSS_Service {
 				$base_dir  = trailingslashit( wp_normalize_path( (string) $upload['basedir'] ) );
 				$base_dir  = str_replace( '/', DIRECTORY_SEPARATOR, $base_dir );
 				$filename  = basename( wp_normalize_path( $path ) );
-				$candidate = $base_dir . 'metg' . DIRECTORY_SEPARATOR . $filename;
+				$candidate = $base_dir . 'blockshift' . DIRECTORY_SEPARATOR . $filename;
 
 				if ( file_exists( $candidate ) ) {
 					$path = $candidate;
@@ -274,7 +274,7 @@ class External_CSS_Service {
 
 		$hash = isset( $meta['hash'] ) ? (string) $meta['hash'] : '';
 		$ver  = '' !== $hash ? $hash : (string) filemtime( $path );
-		$hdl  = 'metg-page-css-' . (string) $post_id;
+		$hdl  = 'blockshift-page-css-' . (string) $post_id;
 
 		wp_enqueue_style( $hdl, $url, array(), $ver );
 	}
@@ -393,11 +393,11 @@ class External_CSS_Service {
 	 */
 	public static function register_global_css_post( int $post_id ): void {
 		$post_id = self::resolve_post_id( $post_id );
-		$ids     = (array) get_option( '_metg_global_css_post_ids', array() );
+		$ids     = (array) get_option( '_blockshift_global_css_post_ids', array() );
 
 		if ( ! in_array( $post_id, $ids, true ) ) {
 			$ids[] = $post_id;
-			update_option( '_metg_global_css_post_ids', $ids, false );
+			update_option( '_blockshift_global_css_post_ids', $ids, false );
 		}
 	}
 
@@ -429,7 +429,7 @@ class External_CSS_Service {
 			self::enqueue_post_css( $post_id );
 		}
 
-		$global_ids = (array) get_option( '_metg_global_css_post_ids', array() );
+		$global_ids = (array) get_option( '_blockshift_global_css_post_ids', array() );
 		foreach ( $global_ids as $global_id ) {
 			$global_id = (int) $global_id;
 			if ( $global_id > 0 ) {

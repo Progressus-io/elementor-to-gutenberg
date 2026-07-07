@@ -4,7 +4,7 @@
  *
  * Earlier versions of the plugin stored data under the `ele2gb`/`etg`/
  * `progressus_gutenberg` prefixes and the `etg-*` CSS scope. This migration
- * renames that data to the unified `metg` scheme so pages converted before the
+ * renames that data to the unified `blockshift` scheme so pages converted before the
  * rename keep rendering and the admin tools keep finding their settings:
  *
  * - post meta keys      `_ele2gb_*`, `_etg_*`, `_progressus_gutenberg_external_css`
@@ -12,7 +12,7 @@
  * - option names        `etg_*`, `_etg_*`, `progressus_gutenberg_font_requirements`
  * - page template slug  `templates/etg-full-width-page.php`, `progressus-etg//full-width-page`
  * - post_content scope   `etg-page-*`, `etg-widget-*`, `etg-full-width-page`
- * - external CSS files   uploads/etg/etg-page-*.css -> uploads/metg/metg-page-*.css
+ * - external CSS files   uploads/etg/etg-page-*.css -> uploads/blockshift/blockshift-page-*.css
  *
  * The whole pass is guarded by an option so it runs at most once per site.
  *
@@ -36,19 +36,19 @@ use function WP_Filesystem;
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Renames pre-rename data to the unified `metg` scheme.
+ * Renames pre-rename data to the unified `blockshift` scheme.
  */
 class Data_Migration {
 
 	/**
 	 * Option used to record that the rename migration has completed.
 	 */
-	const VERSION_OPTION = 'metg_data_version';
+	const VERSION_OPTION = 'blockshift_data_version';
 
 	/**
 	 * Marker stored once the migration has run for the rename.
 	 */
-	const TARGET_VERSION = '2024-rename-metg';
+	const TARGET_VERSION = '2024-rename-blockshift';
 
 	/**
 	 * Run the migration once, in the admin, for users who can manage options.
@@ -84,7 +84,7 @@ class Data_Migration {
 	}
 
 	/**
-	 * Rename legacy post meta key prefixes to `_metg_`.
+	 * Rename legacy post meta key prefixes to `_blockshift_`.
 	 *
 	 * @return void
 	 */
@@ -92,12 +92,12 @@ class Data_Migration {
 		global $wpdb;
 
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery
-		$wpdb->query( "UPDATE {$wpdb->postmeta} SET meta_key = REPLACE( meta_key, '_ele2gb_', '_metg_' ) WHERE meta_key LIKE '\_ele2gb\_%'" );
-		$wpdb->query( "UPDATE {$wpdb->postmeta} SET meta_key = REPLACE( meta_key, '_etg_', '_metg_' ) WHERE meta_key LIKE '\_etg\_%'" );
+		$wpdb->query( "UPDATE {$wpdb->postmeta} SET meta_key = REPLACE( meta_key, '_ele2gb_', '_blockshift_' ) WHERE meta_key LIKE '\_ele2gb\_%'" );
+		$wpdb->query( "UPDATE {$wpdb->postmeta} SET meta_key = REPLACE( meta_key, '_etg_', '_blockshift_' ) WHERE meta_key LIKE '\_etg\_%'" );
 		$wpdb->query(
 			$wpdb->prepare(
 				"UPDATE {$wpdb->postmeta} SET meta_key = %s WHERE meta_key = %s",
-				'_metg_external_css',
+				'_blockshift_external_css',
 				'_progressus_gutenberg_external_css'
 			)
 		);
@@ -105,7 +105,7 @@ class Data_Migration {
 	}
 
 	/**
-	 * Rename legacy user meta key prefixes to `_metg_`.
+	 * Rename legacy user meta key prefixes to `_blockshift_`.
 	 *
 	 * @return void
 	 */
@@ -113,11 +113,11 @@ class Data_Migration {
 		global $wpdb;
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->query( "UPDATE {$wpdb->usermeta} SET meta_key = REPLACE( meta_key, '_ele2gb_', '_metg_' ) WHERE meta_key LIKE '\_ele2gb\_%'" );
+		$wpdb->query( "UPDATE {$wpdb->usermeta} SET meta_key = REPLACE( meta_key, '_ele2gb_', '_blockshift_' ) WHERE meta_key LIKE '\_ele2gb\_%'" );
 	}
 
 	/**
-	 * Rename legacy option names to the `metg` scheme.
+	 * Rename legacy option names to the `blockshift` scheme.
 	 *
 	 * @return void
 	 */
@@ -125,12 +125,12 @@ class Data_Migration {
 		global $wpdb;
 
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery
-		$wpdb->query( "UPDATE {$wpdb->options} SET option_name = REPLACE( option_name, '_etg_', '_metg_' ) WHERE option_name LIKE '\_etg\_%'" );
-		$wpdb->query( "UPDATE {$wpdb->options} SET option_name = REPLACE( option_name, 'etg_', 'metg_' ) WHERE option_name LIKE 'etg\_%'" );
+		$wpdb->query( "UPDATE {$wpdb->options} SET option_name = REPLACE( option_name, '_etg_', '_blockshift_' ) WHERE option_name LIKE '\_etg\_%'" );
+		$wpdb->query( "UPDATE {$wpdb->options} SET option_name = REPLACE( option_name, 'etg_', 'blockshift_' ) WHERE option_name LIKE 'etg\_%'" );
 		$wpdb->query(
 			$wpdb->prepare(
 				"UPDATE {$wpdb->options} SET option_name = %s WHERE option_name = %s",
-				'metg_font_requirements',
+				'blockshift_font_requirements',
 				'progressus_gutenberg_font_requirements'
 			)
 		);
@@ -153,14 +153,14 @@ class Data_Migration {
 		$wpdb->query(
 			$wpdb->prepare(
 				"UPDATE {$wpdb->postmeta} SET meta_value = %s WHERE meta_key = '_wp_page_template' AND meta_value = %s",
-				'templates/metg-full-width-page.php',
+				'templates/blockshift-full-width-page.php',
 				'templates/etg-full-width-page.php'
 			)
 		);
 		$wpdb->query(
 			$wpdb->prepare(
 				"UPDATE {$wpdb->postmeta} SET meta_value = %s WHERE meta_key = '_wp_page_template' AND meta_value = %s",
-				'progressus-metg//full-width-page',
+				'progressus-blockshift//full-width-page',
 				'progressus-etg//full-width-page'
 			)
 		);
@@ -189,12 +189,12 @@ class Data_Migration {
 		}
 
 		// strtr() does a single, non-overlapping pass (longest key wins), so the
-		// inserted `metg-*` values are never re-scanned by a shorter `etg-*` key.
+		// inserted `blockshift-*` values are never re-scanned by a shorter `etg-*` key.
 		$map = array(
-			'etg-page-'           => 'metg-page-',
-			'etg-widget-'         => 'metg-widget-',
-			'etg-full-width-page' => 'metg-full-width-page',
-			'progressus-etg//'    => 'progressus-metg//',
+			'etg-page-'           => 'blockshift-page-',
+			'etg-widget-'         => 'blockshift-widget-',
+			'etg-full-width-page' => 'blockshift-full-width-page',
+			'progressus-etg//'    => 'progressus-blockshift//',
 		);
 
 		foreach ( $rows as $row ) {
@@ -229,7 +229,7 @@ class Data_Migration {
 
 			$base    = trailingslashit( (string) $upload['basedir'] );
 			$old_dir = $base . 'etg';
-			$new_dir = $base . 'metg';
+			$new_dir = $base . 'blockshift';
 
 			if ( $wp_filesystem && is_dir( $old_dir ) && ! is_dir( $new_dir ) ) {
 				$wp_filesystem->move( $old_dir, $new_dir );
@@ -237,7 +237,7 @@ class Data_Migration {
 
 			if ( $wp_filesystem && is_dir( $new_dir ) ) {
 				foreach ( (array) glob( $new_dir . '/etg-page-*.css' ) as $old_file ) {
-					$new_file = $new_dir . '/' . str_replace( 'etg-page-', 'metg-page-', basename( $old_file ) );
+					$new_file = $new_dir . '/' . str_replace( 'etg-page-', 'blockshift-page-', basename( $old_file ) );
 					if ( ! file_exists( $new_file ) ) {
 						$wp_filesystem->move( $old_file, $new_file );
 					}
@@ -250,8 +250,8 @@ class Data_Migration {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		$wpdb->query(
 			"UPDATE {$wpdb->postmeta}
-			 SET meta_value = REPLACE( REPLACE( meta_value, '/etg/', '/metg/' ), 'etg-page-', 'metg-page-' )
-			 WHERE meta_key = '_metg_external_css'"
+			 SET meta_value = REPLACE( REPLACE( meta_value, '/etg/', '/blockshift/' ), 'etg-page-', 'blockshift-page-' )
+			 WHERE meta_key = '_blockshift_external_css'"
 		);
 	}
 }

@@ -1,5 +1,5 @@
 /*! ETG compat - translated from elementor-pro */
-:where([class*="metg-page-"] [class*="metg-widget-"])
+:where([class*="blockshift-page-"] [class*="blockshift-widget-"])
 :is(ul.products, ul.wc-block-grid__products, .wc-block-product-template){
     display:grid;
     margin:0;
@@ -7,7 +7,7 @@
     grid-row-gap:40px
 }
 
-:where([class*="metg-page-"] [class*="metg-widget-"])
+:where([class*="blockshift-page-"] [class*="blockshift-widget-"])
 :is(
   ul.products li.product,
   ul.wc-block-grid__products li,
@@ -20,12 +20,12 @@
     width:auto
 }
 
-:where([class*="metg-page-"] [class*="metg-widget-"])
+:where([class*="blockshift-page-"] [class*="blockshift-widget-"])
 nav.woocommerce-pagination{
     margin-top:40px
 }
 
-:where([class*="metg-page-"] [class*="metg-widget-"])
+:where([class*="blockshift-page-"] [class*="blockshift-widget-"])
 :not(.show-heading-yes)
 :is(.products, ul.wc-block-grid__products, .wc-block-product-template) > h2{
     display:none

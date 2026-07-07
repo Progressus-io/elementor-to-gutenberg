@@ -25,18 +25,18 @@ use Progressus\BlockShift\Admin\Helper\Style_Parser;
  * @package Progressus\BlockShift
  */
 class Gutenberg {
-	public const FULL_WIDTH_TEMPLATE_ID = 'progressus-metg//full-width-page';
+	public const FULL_WIDTH_TEMPLATE_ID = 'progressus-blockshift//full-width-page';
 
 	/**
 	 * Slug used as the value of `_wp_page_template` for converted pages on
-	 * classic themes. Matches the file name of templates/metg-full-width-page.php.
+	 * classic themes. Matches the file name of templates/blockshift-full-width-page.php.
 	 */
-	public const FULL_WIDTH_PAGE_TEMPLATE_SLUG = 'templates/metg-full-width-page.php';
+	public const FULL_WIDTH_PAGE_TEMPLATE_SLUG = 'templates/blockshift-full-width-page.php';
 
 	/**
 	 * CSS handle for the global stylesheet that styles the template.
 	 */
-	public const FULL_WIDTH_CSS_HANDLE = 'metg-full-width-page';
+	public const FULL_WIDTH_CSS_HANDLE = 'blockshift-full-width-page';
 
 
 	/**
@@ -59,8 +59,8 @@ class Gutenberg {
 	 */
 	public function __construct() {
 		add_action( 'init', array( $this, 'load_plugin' ), 0 );
-		add_action( 'metg_activated', array( $this, 'activation_hooks' ) );
-		add_action( 'metg_deactivated', array( $this, 'deactivation_hooks' ) );
+		add_action( 'blockshift_activated', array( $this, 'activation_hooks' ) );
+		add_action( 'blockshift_deactivated', array( $this, 'deactivation_hooks' ) );
 		add_action( 'init', array( $this, 'register_blocks' ) );
 
 		add_filter( 'theme_page_templates', array( $this, 'register_classic_page_template' ), 10, 4 );
@@ -139,7 +139,7 @@ class Gutenberg {
 		}
 
 		if ( $this->is_full_width_template_active( get_queried_object_id() ) ) {
-			$classes[] = 'metg-full-width-page-active';
+			$classes[] = 'blockshift-full-width-page-active';
 		}
 
 		return $classes;
@@ -160,7 +160,7 @@ class Gutenberg {
 
 		wp_enqueue_style(
 			self::FULL_WIDTH_CSS_HANDLE,
-			trailingslashit( BLOCKSHIFT_DIR_URL ) . 'assets/css/metg-full-width-page.css',
+			trailingslashit( BLOCKSHIFT_DIR_URL ) . 'assets/css/blockshift-full-width-page.css',
 			array(),
 			defined( 'BLOCKSHIFT_VERSION' ) ? BLOCKSHIFT_VERSION : null
 		);
@@ -270,7 +270,7 @@ class Gutenberg {
 	 */
 	public function enqueue_editor_assets(): void {
 		wp_enqueue_style(
-			'metg-layout-fixes',
+			'blockshift-layout-fixes',
 			BLOCKSHIFT_DIR_URL . '/assets/css/layout-fixes.css',
 			array(),
 			BLOCKSHIFT_VERSION
@@ -291,7 +291,7 @@ class Gutenberg {
 		);
 
 		wp_enqueue_style(
-			'metg-layout-fixes-admin',
+			'blockshift-layout-fixes-admin',
 			BLOCKSHIFT_DIR_URL . '/assets/css/layout-fixes.css',
 			array(),
 			BLOCKSHIFT_VERSION
@@ -310,14 +310,14 @@ class Gutenberg {
 		);
 
 		wp_enqueue_style(
-			'metg-layout-fixes',
+			'blockshift-layout-fixes',
 			BLOCKSHIFT_DIR_URL . '/assets/css/layout-fixes.css',
 			array(),
 			BLOCKSHIFT_VERSION
 		);
 
 		wp_enqueue_script(
-			'metg-scripts',
+			'blockshift-scripts',
 			BLOCKSHIFT_DIR_URL . '/assets/js/scripts.js',
 			array( 'jquery' ),
 			BLOCKSHIFT_VERSION,
@@ -353,7 +353,7 @@ class Gutenberg {
 		// Enqueue form submission script if form block is present
 		if ( has_block( 'progressus/form' ) ) {
 			wp_localize_script(
-				'metg-scripts',
+				'blockshift-scripts',
 				'progressusFormData',
 				array(
 					'ajaxUrl' => admin_url( 'admin-ajax.php' ),
@@ -389,7 +389,7 @@ class Gutenberg {
 			return;
 		}
 
-		$handle = 'metg-google-fonts-' . md5( $url );
+		$handle = 'blockshift-google-fonts-' . md5( $url );
 		if ( isset( $this->enqueued_font_handles[ $handle ] ) ) {
 			return;
 		}
@@ -401,7 +401,7 @@ class Gutenberg {
 	/**
 	 * Add Google Fonts preconnect hints.
 	 *
-	 * @param array $urls Existing hint entries.
+	 * @param array  $urls Existing hint entries.
 	 * @param string $relation_type Relation type.
 	 *
 	 * @return array
@@ -483,8 +483,8 @@ class Gutenberg {
 				'post_types'  => array( 'page' ),
 				'content'     => sprintf(
 					'<!-- wp:template-part {"slug":"header","theme":"%1$s","tagName":"header"} /-->' . "\n\n" .
-					'<!-- wp:group {"tagName":"main","className":"metg-full-width-page"} -->' . "\n" .
-					'<main class="wp-block-group metg-full-width-page"><!-- wp:post-content /--></main>' . "\n" .
+					'<!-- wp:group {"tagName":"main","className":"blockshift-full-width-page"} -->' . "\n" .
+					'<main class="wp-block-group blockshift-full-width-page"><!-- wp:post-content /--></main>' . "\n" .
 					'<!-- /wp:group -->' . "\n\n" .
 					'<!-- wp:template-part {"slug":"footer","theme":"%1$s","tagName":"footer"} /-->',
 					get_stylesheet()
@@ -611,7 +611,7 @@ class Gutenberg {
 	private function get_required_woocommerce_style_handles( string $content ): array {
 
 		$required      = array();
-		$handle_prefix = 'metg-wc-';
+		$handle_prefix = 'blockshift-wc-';
 
 		if ( has_block( 'woocommerce/product-button', get_the_ID() )
 			|| has_block( 'woocommerce/add-to-cart-form', get_the_ID() )

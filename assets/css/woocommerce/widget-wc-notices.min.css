@@ -1,32 +1,32 @@
-:where(.editor-styles-wrapper, .wp-site-blocks, [class*="metg-page-"])
+:where(.editor-styles-wrapper, .wp-site-blocks, [class*="blockshift-page-"])
 .woocommerce-notices-wrapper{
     padding:2em 2em .3em
 }
 
-:where(.editor-styles-wrapper, .wp-site-blocks, [class*="metg-page-"])
+:where(.editor-styles-wrapper, .wp-site-blocks, [class*="blockshift-page-"])
 .woocommerce-notices-wrapper.elementor-loading{
     opacity:.3
 }
 
-:where([class*="metg-page-"] [class*="metg-widget-"])
+:where([class*="blockshift-page-"] [class*="blockshift-widget-"])
 .woocommerce-message{
     background:#fafbf5;
     border-top:3px solid var(--message-message-icon-color,#95ac3c)
 }
 
-:where([class*="metg-page-"] [class*="metg-widget-"])
+:where([class*="blockshift-page-"] [class*="blockshift-widget-"])
 .woocommerce-info{
     background:#f6f9fb;
     border-top:3px solid var(--info-message-icon-color,#3f84b9)
 }
 
-:where([class*="metg-page-"] [class*="metg-widget-"])
+:where([class*="blockshift-page-"] [class*="blockshift-widget-"])
 .woocommerce-error{
     background:#f9f2f5;
     border-top:3px solid var(--error-message-icon-color,#b81c23)
 }
 
-:where([class*="metg-page-"] [class*="metg-widget-"])
+:where([class*="blockshift-page-"] [class*="blockshift-widget-"])
 div.wc-block-components-notice-banner{
     display:flex;
     padding:16px;
@@ -35,17 +35,17 @@ div.wc-block-components-notice-banner{
     background:#fff
 }
 
-:where([class*="metg-page-"] [class*="metg-widget-"])
+:where([class*="blockshift-page-"] [class*="blockshift-widget-"])
 div.wc-block-components-notice-banner.is-success{
     background:#f4fff7
 }
 
-:where([class*="metg-page-"] [class*="metg-widget-"])
+:where([class*="blockshift-page-"] [class*="blockshift-widget-"])
 div.wc-block-components-notice-banner.is-error{
     background:#fff0f0
 }
 
-:where([class*="metg-page-"] [class*="metg-widget-"])
+:where([class*="blockshift-page-"] [class*="blockshift-widget-"])
 div.wc-block-components-notice-banner.is-info{
     background:#f4f8ff
 }

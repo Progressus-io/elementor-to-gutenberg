@@ -1,0 +1,75 @@
+body.page-template-templates-blockshift-full-width-page-php,
+body.blockshift-full-width-page-active {
+	margin: 0 !important;
+	padding: 0 !important;
+}
+
+body.page-template-templates-blockshift-full-width-page-php,
+body.blockshift-full-width-page-active {
+	--wp--style--root--padding-top: 0;
+	--wp--style--root--padding-right: 0;
+	--wp--style--root--padding-bottom: 0;
+	--wp--style--root--padding-left: 0;
+	--wp--style--block-gap: 0;
+}
+
+body.page-template-templates-blockshift-full-width-page-php .has-global-padding,
+body.blockshift-full-width-page-active .has-global-padding {
+	padding-left: 0 !important;
+	padding-right: 0 !important;
+}
+
+body.page-template-templates-blockshift-full-width-page-php .wp-block-group.is-layout-constrained,
+body.blockshift-full-width-page-active .wp-block-group.is-layout-constrained {
+	margin-top: 0 !important;
+	margin-bottom: 0 !important;
+}
+
+body.page-template-templates-blockshift-full-width-page-php main,
+body.blockshift-full-width-page-active main {
+	margin: 0 !important;
+	padding: 0 !important;
+	max-width: none !important;
+}
+
+.blockshift-full-width-page {
+	width: 100%;
+	max-width: none !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	box-sizing: border-box;
+}
+
+.blockshift-full-width-page > .entry-content,
+.blockshift-full-width-page .entry-content {
+	max-width: none;
+	margin: 0;
+	padding: 0;
+}
+
+.blockshift-full-width-page > .wp-block-group,
+.blockshift-full-width-page > .wp-block-group.alignfull {
+	margin-top: 0;
+	margin-bottom: 0;
+}
+
+.blockshift-full-width-page .alignfull {
+	margin-left: calc(50% - 50vw);
+	margin-right: calc(50% - 50vw);
+	max-width: 100vw;
+	box-sizing: border-box;
+}
+
+
+.blockshift-full-width-page {
+	--wp--style--block-gap: 0;
+}
+
+body.page-template-templates-blockshift-full-width-page-php .entry-title,
+body.page-template-templates-blockshift-full-width-page-php .page-title,
+body.page-template-templates-blockshift-full-width-page-php .wp-block-post-title,
+body.blockshift-full-width-page-active .entry-title,
+body.blockshift-full-width-page-active .page-title,
+body.blockshift-full-width-page-active .wp-block-post-title {
+	display: none;
+}

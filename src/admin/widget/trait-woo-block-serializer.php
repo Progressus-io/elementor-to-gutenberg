@@ -44,9 +44,9 @@ trait Woo_Block_Serializer_Trait {
 	/**
 	 * Serialize a block with attributes and inner HTML.
 	 *
-	 * @param string $block_name Block type name.
+	 * @param string               $block_name Block type name.
 	 * @param array<string, mixed> $attrs Block attributes.
-	 * @param string $inner_html Inner HTML.
+	 * @param string               $inner_html Inner HTML.
 	 *
 	 * @return string
 	 */
@@ -86,8 +86,8 @@ trait Woo_Block_Serializer_Trait {
 	/**
 	 * Serialize a preferred block or fallback to a shortcode block.
 	 *
-	 * @param string $preferred_block Preferred block type.
-	 * @param string $fallback_shortcode Fallback shortcode.
+	 * @param string               $preferred_block Preferred block type.
+	 * @param string               $fallback_shortcode Fallback shortcode.
 	 * @param array<string, mixed> $attrs Block attributes.
 	 *
 	 * @return string
@@ -103,9 +103,9 @@ trait Woo_Block_Serializer_Trait {
 	/**
 	 * Serialize the first registered block from a list.
 	 *
-	 * @param array<int, string> $candidates Candidate block types.
+	 * @param array<int, string>   $candidates Candidate block types.
 	 * @param array<string, mixed> $attrs Block attributes.
-	 * @param string $inner_html Inner HTML.
+	 * @param string               $inner_html Inner HTML.
 	 *
 	 * @return string
 	 */
@@ -146,7 +146,7 @@ trait Woo_Block_Serializer_Trait {
 	 * Build wrapper class names for a widget instance.
 	 *
 	 * @param array<string, mixed> $element Elementor widget data.
-	 * @param string $widget_prefix Widget class prefix.
+	 * @param string               $widget_prefix Widget class prefix.
 	 *
 	 * @return array{widget_class:string,className:string}
 	 */
@@ -158,9 +158,9 @@ trait Woo_Block_Serializer_Trait {
 			$id = 'unknown';
 		}
 
-		$widget_class = 'metg-widget-' . $id;
-		$specific     = 'metg-' . $widget_prefix . '-' . $id;
-		$combined     = trim( 'metg-widget ' . $widget_class . ' ' . $specific );
+		$widget_class = 'blockshift-widget-' . $id;
+		$specific     = 'blockshift-' . $widget_prefix . '-' . $id;
+		$combined     = trim( 'blockshift-widget ' . $widget_class . ' ' . $specific );
 
 		return array(
 			'widget_class' => $widget_class,

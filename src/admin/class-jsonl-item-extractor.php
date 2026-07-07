@@ -24,7 +24,7 @@ class JSONL_Item_Extractor {
 	 * can span a rotation boundary.  Events from both files are merged and
 	 * sorted by timestamp ascending.
 	 *
-	 * @param string $run_id    The run identifier (metg_YYYYMMDD_HHMMSS_XXXXXX).
+	 * @param string $run_id    The run identifier (blockshift_YYYYMMDD_HHMMSS_XXXXXX).
 	 * @param int    $source_id The source Elementor post ID.
 	 *
 	 * @return array<int,array<string,mixed>>

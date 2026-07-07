@@ -28,7 +28,7 @@ class AI_Prompt_Builder {
 		$current_css       = isset( $context['current_css'] ) ? trim( (string) $context['current_css'] ) : '';
 		$template_type     = isset( $context['template_type'] ) ? trim( (string) $context['template_type'] ) : '';
 
-		$css_namespace = 'metg-page-' . $source_id;
+		$css_namespace = 'blockshift-page-' . $source_id;
 
 		$sections = array();
 
@@ -66,7 +66,7 @@ class AI_Prompt_Builder {
 		$current_css       = isset( $context['current_css'] ) ? trim( (string) $context['current_css'] ) : '';
 		$template_type     = isset( $context['template_type'] ) ? trim( (string) $context['template_type'] ) : '';
 
-		$css_namespace = 'metg-page-' . $source_id;
+		$css_namespace = 'blockshift-page-' . $source_id;
 
 		$sections = array();
 

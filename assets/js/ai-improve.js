@@ -1,19 +1,19 @@
 ( function ( window, document ) {
 	'use strict';
 
-	if ( ! window.metgAiImprove ) {
+	if ( ! window.blockshiftAiImprove ) {
 		return;
 	}
 
-	const config = window.metgAiImprove;
-	const loader = document.getElementById( 'metg-ai-loader' );
+	const config = window.blockshiftAiImprove;
+	const loader = document.getElementById( 'blockshift-ai-loader' );
 	const loaderTitle = loader
-		? loader.querySelector( '.metg-ai-loader-title' )
+		? loader.querySelector( '.blockshift-ai-loader-title' )
 		: null;
 
 	// ── Round 1: Improve with AI ──────────────────────────────────────────────
-	const improveForm = document.getElementById( 'metg-ai-improve-form' );
-	const improveBtn = document.getElementById( 'metg_auto_improve_submit' );
+	const improveForm = document.getElementById( 'blockshift-ai-improve-form' );
+	const improveBtn = document.getElementById( 'blockshift_auto_improve_submit' );
 
 	if ( improveForm && improveBtn && loader ) {
 		improveForm.addEventListener( 'submit', function () {
@@ -29,9 +29,9 @@
 
 	// ── Mobile improvement: separate AI pass on mobile screenshots ───────────
 	const mobileForm = document.getElementById(
-		'metg-ai-mobile-improve-form'
+		'blockshift-ai-mobile-improve-form'
 	);
-	const mobileBtn = document.getElementById( 'metg_mobile_improve_submit' );
+	const mobileBtn = document.getElementById( 'blockshift_mobile_improve_submit' );
 
 	if ( mobileForm && mobileBtn && loader ) {
 		mobileForm.addEventListener( 'submit', function () {
@@ -48,15 +48,15 @@
 	}
 
 	// ── Screenshot tabs ────────────────────────────────────────────────────────
-	const tabBtns = document.querySelectorAll( '.metg-ai-tab' );
-	const tabPanels = document.querySelectorAll( '.metg-ai-tab-panel' );
+	const tabBtns = document.querySelectorAll( '.blockshift-ai-tab' );
+	const tabPanels = document.querySelectorAll( '.blockshift-ai-tab-panel' );
 
 	tabBtns.forEach( function ( btn ) {
 		btn.addEventListener( 'click', function () {
 			const target = btn.getAttribute( 'data-tab' );
 
 			tabBtns.forEach( function ( b ) {
-				b.classList.toggle( 'metg-ai-tab--active', b === btn );
+				b.classList.toggle( 'blockshift-ai-tab--active', b === btn );
 				b.setAttribute( 'aria-selected', b === btn ? 'true' : 'false' );
 			} );
 
@@ -71,11 +71,11 @@
 	} );
 
 	// ── Lightbox ───────────────────────────────────────────────────────────────
-	const lightbox = document.getElementById( 'metg-lightbox' );
-	const lbOverlay = document.getElementById( 'metg-lightbox-overlay' );
-	const lbClose = document.getElementById( 'metg-lightbox-close' );
-	const lbOpenLink = document.getElementById( 'metg-lightbox-open' );
-	const lbImages = document.getElementById( 'metg-lightbox-images' );
+	const lightbox = document.getElementById( 'blockshift-lightbox' );
+	const lbOverlay = document.getElementById( 'blockshift-lightbox-overlay' );
+	const lbClose = document.getElementById( 'blockshift-lightbox-close' );
+	const lbOpenLink = document.getElementById( 'blockshift-lightbox-open' );
+	const lbImages = document.getElementById( 'blockshift-lightbox-images' );
 
 	function openLightbox( urls ) {
 		if ( ! lightbox || ! lbImages ) {
@@ -113,7 +113,7 @@
 	}
 
 	document
-		.querySelectorAll( '.metg-screenshot-thumb-wrap' )
+		.querySelectorAll( '.blockshift-screenshot-thumb-wrap' )
 		.forEach( function ( wrap ) {
 			wrap.addEventListener( 'click', function ( e ) {
 				if ( e.target.tagName === 'A' ) {
@@ -150,18 +150,18 @@
 
 	// ── Feedback modal ────────────────────────────────────────────────────────
 
-	const feedbackBtn = document.getElementById( 'metg-ai-feedback-btn' );
+	const feedbackBtn = document.getElementById( 'blockshift-ai-feedback-btn' );
 
 	function openFeedbackModal() {
 		const existing = document.getElementById(
-			'metg-ai-improve-feedback-overlay'
+			'blockshift-ai-improve-feedback-overlay'
 		);
 		if ( existing ) {
 			existing.remove();
 		}
 
 		const overlay = document.createElement( 'div' );
-		overlay.id = 'metg-ai-improve-feedback-overlay';
+		overlay.id = 'blockshift-ai-improve-feedback-overlay';
 		overlay.style.cssText =
 			'position:fixed;top:0;left:0;right:0;bottom:0;z-index:100000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.55);padding:20px;box-sizing:border-box;';
 
@@ -291,7 +291,7 @@
 			errSpan.textContent = '';
 
 			const fd = new FormData();
-			fd.append( 'action', 'metg_submit_ai_enhancement_feedback' );
+			fd.append( 'action', 'blockshift_submit_ai_enhancement_feedback' );
 			fd.append( 'nonce', config.feedbackNonce || '' );
 			fd.append( 'target_id', String( config.targetId || 0 ) );
 			fd.append( 'source_id', String( config.sourceId || 0 ) );

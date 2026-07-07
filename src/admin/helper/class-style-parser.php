@@ -164,7 +164,7 @@ class Style_Parser {
 			return '';
 		}
 
-		return 'metg-el-' . $id;
+		return 'blockshift-el-' . $id;
 	}
 
 	/**
@@ -203,7 +203,7 @@ class Style_Parser {
 	}
 
 	/**
-	 * Build a combined widget className string of "metg-el-{id} {author_classes}".
+	 * Build a combined widget className string of "blockshift-el-{id} {author_classes}".
 	 *
 	 * Widget handlers that build their own className string can call this
 	 * instead of `get_element_unique_class()` to also include the author's
@@ -311,7 +311,7 @@ class Style_Parser {
 	/**
 	 * Extract safe text color for specific widget setting key.
 	 *
-	 * @param array $settings Elementor settings.
+	 * @param array  $settings Elementor settings.
 	 * @param string $key Color setting key.
 	 *
 	 * @return array{color:string,safe:bool}
@@ -2091,7 +2091,7 @@ class Style_Parser {
 	/**
 	 * Normalize Elementor dimension value.
 	 *
-	 * @param mixed $value Raw value.
+	 * @param mixed  $value Raw value.
 	 * @param string $default_unit Default unit when missing.
 	 */
 	private static function normalize_dimension( $value, string $default_unit ): ?string {
@@ -2127,7 +2127,7 @@ class Style_Parser {
 	/**
 	 * Extract padding/margin side values.
 	 *
-	 * @param array $data Elementor box model array.
+	 * @param array  $data Elementor box model array.
 	 * @param string $side Side to extract.
 	 */
 	private static function extract_box_value( array $data, string $side ): ?string {

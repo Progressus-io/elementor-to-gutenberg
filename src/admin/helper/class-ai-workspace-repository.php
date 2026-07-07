@@ -15,7 +15,7 @@ defined( 'ABSPATH' ) || exit;
 
 class AI_Workspace_Repository {
 
-	const META_KEY = '_metg_ai_workspace';
+	const META_KEY = '_blockshift_ai_workspace';
 
 	/**
 	 * Load workspace data by target page id.
@@ -34,7 +34,7 @@ class AI_Workspace_Repository {
 	/**
 	 * Save workspace data by target page id.
 	 *
-	 * @param int $target_id Target page ID.
+	 * @param int   $target_id Target page ID.
 	 * @param array $workspace Workspace payload.
 	 */
 	public static function save( int $target_id, array $workspace ): void {

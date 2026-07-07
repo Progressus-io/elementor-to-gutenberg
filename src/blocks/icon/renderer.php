@@ -9,7 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-function metg_render_icon_block( $attributes ) {
+function blockshift_render_icon_block( $attributes ) {
 	$defaults   = array(
 		'icon'                 => 'star-filled',
 		'iconStyle'            => 'fas',
