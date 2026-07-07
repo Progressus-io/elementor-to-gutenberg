@@ -201,7 +201,7 @@ Used to capture screenshots of the original Elementor page and the converted Gut
 
 When you run an AI improvement pass, the plugin sends the public URL of the page being captured and a device flag ("desktop" or "mobile") to https://webshot.lvendr.com. The service returns image URLs, which are then referenced in the request to the Anthropic API above.
 
-This service is operated by Progressus. Terms: https://progressus.io/terms — Privacy policy: https://progressus.io/privacy
+This service is operated by Progressus. Privacy policy: https://progressus.io/privacy-policy
 
 = Feedback service =
 
@@ -209,7 +209,7 @@ Used only if you choose to send feedback about a conversion to the plugin develo
 
 When you submit feedback, the plugin sends a feedback package to https://etgm.lvendr.com/wp-json/metg-feedback/v1/submit, authenticated with a per-site client ID/secret generated and stored on your site. The package contains: environment data (site domain, a hashed site URL, plugin/WordPress/PHP versions, active theme, locale), your browser/screen details, the conversion run data and summary, your rating and notes, and the converted content and artifacts (such as screenshots) for the pages you select.
 
-This service is operated by Progressus. Terms: https://progressus.io/terms — Privacy policy: https://progressus.io/privacy
+This service is operated by Progressus. Privacy policy: https://progressus.io/privacy-policy
 
 = Google Fonts =
 
