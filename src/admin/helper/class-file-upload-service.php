@@ -37,7 +37,7 @@ class File_Upload_Service {
 			$data = json_decode( $content, true );
 			if ( JSON_ERROR_NONE !== json_last_error() ) {
 				add_settings_error(
-					'gutenberg_json_data',
+					'blockshift_json_data',
 					'json_upload_error',
 					esc_html__( 'Invalid JSON file uploaded.', 'layoutbridge-block-migration' ),
 					'error'
@@ -54,7 +54,7 @@ class File_Upload_Service {
 		$attachment_id = media_handle_sideload( $file_array, 0 );
 		if ( is_wp_error( $attachment_id ) ) {
 			add_settings_error(
-				'gutenberg_json_data',
+				'blockshift_json_data',
 				'json_upload_error',
 				esc_html__( 'Failed to upload file.', 'layoutbridge-block-migration' ),
 				'error'

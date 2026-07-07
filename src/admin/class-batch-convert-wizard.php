@@ -196,7 +196,7 @@ class Batch_Convert_Wizard {
 	 */
 	public function register_menu(): void {
 		add_submenu_page(
-			'gutenberg-settings',
+			'blockshift-settings',
 			esc_html__( 'Conversion Wizard', 'layoutbridge-block-migration' ),
 			esc_html__( 'Conversion Wizard', 'layoutbridge-block-migration' ),
 			'edit_pages',

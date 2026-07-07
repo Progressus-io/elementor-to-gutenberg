@@ -57,7 +57,7 @@ class AI_Enhancement_Admin {
 
 	public function register_menu(): void {
 		add_submenu_page(
-			'gutenberg-settings',
+			'blockshift-settings',
 			esc_html__( 'AI Enhancement', 'layoutbridge-block-migration' ),
 			esc_html__( 'AI Enhancement', 'layoutbridge-block-migration' ),
 			'edit_pages',
@@ -116,7 +116,7 @@ class AI_Enhancement_Admin {
 				'feedbackNonce'    => wp_create_nonce( self::FEEDBACK_NONCE ),
 				'feedbackEnabled'  => true,
 				'aiConfigured'     => '' !== Claude_Api_Service::get_api_key(),
-				'settingsUrl'      => admin_url( 'admin.php?page=gutenberg-settings' ),
+				'settingsUrl'      => admin_url( 'admin.php?page=blockshift-settings' ),
 				'editBaseUrl'      => admin_url( 'post.php?post=' ),
 				'aiImproveBaseUrl' => admin_url( 'admin.php?page=' . AI_Improvement_Admin::MENU_SLUG ),
 				'pages'            => $this->get_converted_pages_data(),

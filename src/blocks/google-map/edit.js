@@ -334,7 +334,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 							'blockshift-migrate-from-elementor'
 						) }{ ' ' }
 						<a
-							href="/wp-admin/admin.php?page=gutenberg-settings"
+							href="/wp-admin/admin.php?page=blockshift-settings"
 							target="_blank"
 							rel="noopener noreferrer"
 						>

@@ -4049,7 +4049,7 @@
 						)
 					);
 					const settingsLink = document.createElement( 'a' );
-					settingsLink.href = 'admin.php?page=gutenberg-settings';
+					settingsLink.href = 'admin.php?page=blockshift-settings';
 					settingsLink.textContent =
 						this.strings.goToSettings || 'Go to Settings \u2192';
 					apiAlert.appendChild( settingsLink );

@@ -111,7 +111,7 @@ class Conversion_Log_Admin {
 
 	public function register_menu(): void {
 		add_submenu_page(
-			'gutenberg-settings',
+			'blockshift-settings',
 			esc_html__( 'Conversion Log', 'layoutbridge-block-migration' ),
 			esc_html__( 'Conversion Log', 'layoutbridge-block-migration' ),
 			'manage_options',
@@ -302,7 +302,7 @@ class Conversion_Log_Admin {
 										'a'      => array( 'href' => array() ),
 									)
 								),
-								esc_url( admin_url( 'admin.php?page=gutenberg-settings' ) )
+								esc_url( admin_url( 'admin.php?page=blockshift-settings' ) )
 							);
 							?>
 						</span></div>

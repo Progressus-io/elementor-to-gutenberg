@@ -166,7 +166,7 @@ class Admin_Settings {
 	 * <i data-icon> placeholders are replaced with inline SVG.
 	 */
 	public function enqueue_assets(): void {
-		if ( empty( $_GET['page'] ) || 'gutenberg-settings' !== sanitize_key( wp_unslash( $_GET['page'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( empty( $_GET['page'] ) || 'blockshift-settings' !== sanitize_key( wp_unslash( $_GET['page'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			return;
 		}
 
@@ -234,7 +234,7 @@ class Admin_Settings {
 		wp_safe_redirect(
 			add_query_arg(
 				array(
-					'page'               => 'gutenberg-settings',
+					'page'               => 'blockshift-settings',
 					'blockshift_settings_saved' => '1',
 				),
 				admin_url( 'admin.php' )
@@ -411,18 +411,18 @@ class Admin_Settings {
 			esc_html__( 'BlockShift – Migrate from Elementor', 'layoutbridge-block-migration' ),
 			esc_html__( 'BlockShift – Migrate from Elementor', 'layoutbridge-block-migration' ),
 			'manage_options',
-			'gutenberg-settings',
+			'blockshift-settings',
 			array( $this, 'settings_page_content' ),
 			'dashicons-migrate',
 			76
 		);
 
 		add_submenu_page(
-			'gutenberg-settings',
+			'blockshift-settings',
 			esc_html__( 'Settings', 'layoutbridge-block-migration' ),
 			esc_html__( 'Settings', 'layoutbridge-block-migration' ),
 			'manage_options',
-			'gutenberg-settings',
+			'blockshift-settings',
 			array( $this, 'settings_page_content' )
 		);
 
@@ -434,7 +434,7 @@ class Admin_Settings {
 	 */
 	public function reorder_submenu(): void {
 		global $submenu;
-		if ( ! isset( $submenu['gutenberg-settings'] ) || ! is_array( $submenu['gutenberg-settings'] ) ) {
+		if ( ! isset( $submenu['blockshift-settings'] ) || ! is_array( $submenu['blockshift-settings'] ) ) {
 			return;
 		}
 
@@ -442,12 +442,12 @@ class Admin_Settings {
 			Batch_Convert_Wizard::MENU_SLUG,
 			AI_Enhancement_Admin::MENU_SLUG,
 			Conversion_Log_Admin::MENU_SLUG,
-			'gutenberg-settings',
+			'blockshift-settings',
 		);
 
 		$indexed   = array();
 		$remaining = array();
-		foreach ( $submenu['gutenberg-settings'] as $item ) {
+		foreach ( $submenu['blockshift-settings'] as $item ) {
 			$slug = isset( $item[2] ) ? (string) $item[2] : '';
 			$pos  = array_search( $slug, $desired, true );
 			if ( false !== $pos ) {
@@ -458,7 +458,7 @@ class Admin_Settings {
 		}
 
 		ksort( $indexed );
-		$submenu['gutenberg-settings'] = array_values( array_merge( $indexed, $remaining ) );
+		$submenu['blockshift-settings'] = array_values( array_merge( $indexed, $remaining ) );
 	}
 
 	/**
@@ -493,12 +493,12 @@ class Admin_Settings {
 				return $option;
 			}
 
-			return get_option( 'gutenberg_json_data', '' );
+			return get_option( 'blockshift_json_data', '' );
 		}
 
 		$json_content = File_Upload_Service::upload_file( $_FILES['json_upload'], 'json' ); // phpcs:ignore WordPress.Security.NonceVerification.Missing
 		if ( null === $json_content ) {
-			return get_option( 'gutenberg_json_data', '' );
+			return get_option( 'blockshift_json_data', '' );
 		}
 
 		$data              = json_decode( $json_content, true );
@@ -533,17 +533,17 @@ class Admin_Settings {
 
 		if ( is_wp_error( $new_post_id ) ) {
 			add_settings_error(
-				'gutenberg_json_data',
+				'blockshift_json_data',
 				'json_upload_error',
 				esc_html__( 'Failed to create new page.', 'layoutbridge-block-migration' ),
 				'error'
 			);
 
-			return get_option( 'gutenberg_json_data', '' );
+			return get_option( 'blockshift_json_data', '' );
 		}
 
 		add_settings_error(
-			'gutenberg_json_data',
+			'blockshift_json_data',
 			'json_upload_success',
 			esc_html__( 'JSON file uploaded and page created successfully!', 'layoutbridge-block-migration' ),
 			'updated'
@@ -583,7 +583,7 @@ class Admin_Settings {
 		wp_safe_redirect(
 			add_query_arg(
 				array(
-					'page'               => 'gutenberg-settings',
+					'page'               => 'blockshift-settings',
 					'blockshift_settings_saved' => '1',
 				),
 				admin_url( 'admin.php' )
