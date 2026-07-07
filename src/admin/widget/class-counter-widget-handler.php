@@ -123,7 +123,7 @@ class Counter_Widget_Handler implements Widget_Handler_Interface {
 
 		// Generate block content
 		$block_content = sprintf(
-			'<div class="wp-block-progressus-counter"><div class="counter-preview" style="%s" data-start="%d" data-end="%d" data-duration="%d"><span class="prefix">%s</span><span class="counter-value">%d</span><span class="suffix">%s</span></div>',
+			'<div class="wp-block-blockshift-counter"><div class="counter-preview" style="%s" data-start="%d" data-end="%d" data-duration="%d"><span class="prefix">%s</span><span class="counter-value">%d</span><span class="suffix">%s</span></div>',
 			$counter_style,
 			$starting_number,
 			$ending_number,
@@ -146,7 +146,7 @@ class Counter_Widget_Handler implements Widget_Handler_Interface {
 
 		// Generate complete Gutenberg block
 		return sprintf(
-			'<!-- wp:progressus/counter %s -->%s<!-- /wp:progressus/counter -->',
+			'<!-- wp:blockshift/counter %s -->%s<!-- /wp:blockshift/counter -->',
 			$attrs_json,
 			$block_content
 		);

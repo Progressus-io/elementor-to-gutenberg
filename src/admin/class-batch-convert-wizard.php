@@ -90,17 +90,17 @@ use const HOUR_IN_SECONDS;
  * Class Batch_Convert_Wizard
  */
 class Batch_Convert_Wizard {
-	public const MENU_SLUG = 'metg-batch-convert';
+	public const MENU_SLUG = 'blockshift-batch-convert';
 
-	private const NONCE_ACTION = 'metg_batch_convert';
+	private const NONCE_ACTION = 'blockshift_batch_convert';
 
 	private const NONCE_NAME = 'nonce';
 
-	private const AI_IMPROVE_NONCE_ACTION = 'metg_ai_improve';
+	private const AI_IMPROVE_NONCE_ACTION = 'blockshift_ai_improve';
 
-	private const FEEDBACK_NONCE_ACTION = 'metg_feedback_nonce';
+	private const FEEDBACK_NONCE_ACTION = 'blockshift_feedback_nonce';
 
-	private const JOB_TRANSIENT_PREFIX = 'metg_job_';
+	private const JOB_TRANSIENT_PREFIX = 'blockshift_job_';
 
 	private const JOB_TRANSIENT_TTL = 6 * HOUR_IN_SECONDS;
 
@@ -183,12 +183,12 @@ class Batch_Convert_Wizard {
 	private function __construct() {
 		add_action( 'admin_menu', array( $this, 'register_menu' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
-		add_action( 'wp_ajax_metg_pages', array( $this, 'ajax_get_pages' ) );
-		add_action( 'wp_ajax_metg_start_job', array( $this, 'ajax_start_job' ) );
-		add_action( 'wp_ajax_metg_poll_job', array( $this, 'ajax_poll_job' ) );
-		add_action( 'wp_ajax_metg_cancel_job', array( $this, 'ajax_cancel_job' ) );
-		add_action( 'wp_ajax_metg_ai_improve_single', array( $this, 'ajax_ai_improve_single' ) );
-		add_action( 'wp_ajax_metg_submit_feedback', array( $this, 'ajax_submit_feedback' ) );
+		add_action( 'wp_ajax_blockshift_pages', array( $this, 'ajax_get_pages' ) );
+		add_action( 'wp_ajax_blockshift_start_job', array( $this, 'ajax_start_job' ) );
+		add_action( 'wp_ajax_blockshift_poll_job', array( $this, 'ajax_poll_job' ) );
+		add_action( 'wp_ajax_blockshift_cancel_job', array( $this, 'ajax_cancel_job' ) );
+		add_action( 'wp_ajax_blockshift_ai_improve_single', array( $this, 'ajax_ai_improve_single' ) );
+		add_action( 'wp_ajax_blockshift_submit_feedback', array( $this, 'ajax_submit_feedback' ) );
 	}
 
 	/**
@@ -196,7 +196,7 @@ class Batch_Convert_Wizard {
 	 */
 	public function register_menu(): void {
 		add_submenu_page(
-			'gutenberg-settings',
+			'blockshift-settings',
 			esc_html__( 'Conversion Wizard', 'blockshift-migrate-from-elementor' ),
 			esc_html__( 'Conversion Wizard', 'blockshift-migrate-from-elementor' ),
 			'edit_pages',
@@ -219,14 +219,14 @@ class Batch_Convert_Wizard {
 		$js_path  = BLOCKSHIFT_DIR_PATH . '/assets/js/batch-convert-wizard.js';
 
 		wp_enqueue_style(
-			'metg-batch-wizard',
+			'blockshift-batch-wizard',
 			plugins_url( 'assets/css/batch-wizard.css', BLOCKSHIFT_MAIN_FILE ),
 			array(),
 			BLOCKSHIFT_DEBUG && file_exists( $css_path ) ? (string) filemtime( $css_path ) : BLOCKSHIFT_VERSION
 		);
 
 		wp_enqueue_script(
-			'metg-batch-wizard',
+			'blockshift-batch-wizard',
 			plugins_url( 'assets/js/batch-convert-wizard.js', BLOCKSHIFT_MAIN_FILE ),
 			array(),
 			BLOCKSHIFT_DEBUG && file_exists( $js_path ) ? (string) filemtime( $js_path ) : BLOCKSHIFT_VERSION,
@@ -236,8 +236,8 @@ class Batch_Convert_Wizard {
 		$pages_data = $this->get_elementor_pages_data();
 
 		wp_localize_script(
-			'metg-batch-wizard',
-			'metgBatchWizard',
+			'blockshift-batch-wizard',
+			'blockshiftBatchWizard',
 			array(
 				'ajaxUrl'          => admin_url( 'admin-ajax.php' ),
 				'aiImproveBaseUrl' => admin_url( 'admin.php?page=' . AI_Improvement_Admin::MENU_SLUG ),
@@ -274,10 +274,10 @@ class Batch_Convert_Wizard {
 			</header>
 			<hr class="wp-header-end" style="margin:0;border:0;">
 		</div>
-		<div class="wrap metg-wizard-wrap">
+		<div class="wrap blockshift-wizard-wrap">
 			<h1 class="wp-heading-inline"><?php esc_html_e( 'Gutenberg Conversion Wizard', 'blockshift-migrate-from-elementor' ); ?></h1>
 			<p class="description"><?php esc_html_e( 'Convert Elementor pages to Gutenberg blocks.', 'blockshift-migrate-from-elementor' ); ?></p>
-			<div id="metg-batch-convert-root" class="metg-wizard-root" aria-live="polite"></div>
+			<div id="blockshift-batch-convert-root" class="blockshift-wizard-root" aria-live="polite"></div>
 		</div>
 		<?php
 	}
@@ -393,7 +393,7 @@ class Batch_Convert_Wizard {
 
 		$options = $this->build_job_options( $mode, $conflict_policy, $skip_converted );
 
-		$job_id = uniqid( 'metg_', true );
+		$job_id = uniqid( 'blockshift_', true );
 
 		$job = array(
 			'id'              => $job_id,
@@ -435,7 +435,7 @@ class Batch_Convert_Wizard {
 
 		$this->store_job( $job );
 
-		update_user_meta( get_current_user_id(), '_metg_job', $job_id );
+		update_user_meta( get_current_user_id(), '_blockshift_job', $job_id );
 
 		wp_send_json_success(
 			array(
@@ -816,7 +816,7 @@ class Batch_Convert_Wizard {
 		if ( $job['processed'] >= $total_items ) {
 			$job['status']       = 'completed';
 			$job['completed_at'] = time();
-			delete_user_meta( get_current_user_id(), '_metg_job' );
+			delete_user_meta( get_current_user_id(), '_blockshift_job' );
 
 			// JSONL: run_summary + run_end.
 			if ( '' !== $run_id && Admin_Settings::is_logging_enabled() ) {
@@ -1354,7 +1354,7 @@ class Batch_Convert_Wizard {
 			$target_pages = $targets['pages'] ?? array();
 		}
 
-		$last_result = get_post_meta( $post->ID, '_metg_last_result', true );
+		$last_result = get_post_meta( $post->ID, '_blockshift_last_result', true );
 		$status_key  = is_array( $last_result ) && isset( $last_result['status'] ) ? (string) $last_result['status'] : '';
 		$last_time   = is_array( $last_result ) && ! empty( $last_result['time'] ) ? (string) $last_result['time'] : '';
 
@@ -1647,7 +1647,7 @@ class Batch_Convert_Wizard {
 	 * @param WP_Post $post Post object.
 	 */
 	private function map_page_to_array( WP_Post $post ): array {
-		$last_result = get_post_meta( $post->ID, '_metg_last_result', true );
+		$last_result = get_post_meta( $post->ID, '_blockshift_last_result', true );
 
 		if ( is_array( $last_result ) ) {
 			$last_result = $this->clean_invalid_converted_target_meta( (int) $post->ID, $last_result );
@@ -1994,11 +1994,11 @@ class Batch_Convert_Wizard {
 		);
 
 		if ( empty( $last_result ) ) {
-			delete_post_meta( $source_id, '_metg_last_result' );
+			delete_post_meta( $source_id, '_blockshift_last_result' );
 			return array();
 		}
 
-		update_post_meta( $source_id, '_metg_last_result', $last_result );
+		update_post_meta( $source_id, '_blockshift_last_result', $last_result );
 
 		return $last_result;
 	}
@@ -2006,9 +2006,9 @@ class Batch_Convert_Wizard {
 	/**
 	 * Handle requested theme switch and optional Additional CSS migration.
 	 *
-	 * @param bool $change_theme Whether a theme switch was requested.
+	 * @param bool   $change_theme Whether a theme switch was requested.
 	 * @param string $new_theme Target theme slug/stylesheet.
-	 * @param bool $copy_custom_css Whether to copy Additional CSS.
+	 * @param bool   $copy_custom_css Whether to copy Additional CSS.
 	 * @param string $mode Wizard mode (auto/custom).
 	 */
 	private function maybe_switch_theme( bool $change_theme, string $new_theme, bool $copy_custom_css, string $mode ) {
@@ -2036,14 +2036,14 @@ class Batch_Convert_Wizard {
 			}
 			$themes = wp_get_themes();
 			if ( ! isset( $themes[ $new_theme ] ) ) {
-				return new WP_Error( 'metg-theme-missing', esc_html__( 'The selected theme is not available.', 'blockshift-migrate-from-elementor' ) );
+				return new WP_Error( 'blockshift-theme-missing', esc_html__( 'The selected theme is not available.', 'blockshift-migrate-from-elementor' ) );
 			}
 		}
 
 		switch_theme( $new_theme );
 
 		if ( get_stylesheet() !== $new_theme ) {
-			return new WP_Error( 'metg-theme-switch-failed', esc_html__( 'Unable to switch to the selected theme.', 'blockshift-migrate-from-elementor' ) );
+			return new WP_Error( 'blockshift-theme-switch-failed', esc_html__( 'Unable to switch to the selected theme.', 'blockshift-migrate-from-elementor' ) );
 		}
 
 		if ( $should_copy_css && '' !== trim( $existing_css ) ) {
@@ -2113,7 +2113,7 @@ class Batch_Convert_Wizard {
 
 		if ( ! current_user_can( 'install_themes' ) ) {
 			return new WP_Error(
-				'metg-theme-install-permissions',
+				'blockshift-theme-install-permissions',
 				esc_html__( 'You do not have permission to install themes.', 'blockshift-migrate-from-elementor' )
 			);
 		}
@@ -2125,7 +2125,7 @@ class Batch_Convert_Wizard {
 
 		if ( ! function_exists( 'themes_api' ) ) {
 			return new WP_Error(
-				'metg-theme-install-missing-api',
+				'blockshift-theme-install-missing-api',
 				esc_html__( 'Theme installation API is not available on this site.', 'blockshift-migrate-from-elementor' )
 			);
 		}
@@ -2147,14 +2147,14 @@ class Batch_Convert_Wizard {
 
 		if ( ! empty( $api->requires ) && version_compare( get_bloginfo( 'version' ), (string) $api->requires, '<' ) ) {
 			return new WP_Error(
-				'metg-theme-incompatible-wp',
+				'blockshift-theme-incompatible-wp',
 				esc_html__( 'This theme requires a newer WordPress version.', 'blockshift-migrate-from-elementor' )
 			);
 		}
 
 		if ( empty( $api->download_link ) ) {
 			return new WP_Error(
-				'metg-theme-install-no-download',
+				'blockshift-theme-install-no-download',
 				esc_html__( 'Could not find a download link for the selected theme.', 'blockshift-migrate-from-elementor' )
 			);
 		}
@@ -2170,7 +2170,7 @@ class Batch_Convert_Wizard {
 
 		if ( ! $result ) {
 			return new WP_Error(
-				'metg-theme-install-failed',
+				'blockshift-theme-install-failed',
 				esc_html__( 'Theme installation failed.', 'blockshift-migrate-from-elementor' )
 			);
 		}
@@ -2186,7 +2186,7 @@ class Batch_Convert_Wizard {
 	/**
 	 * Process a single page conversion.
 	 *
-	 * @param int $post_id Post ID.
+	 * @param int   $post_id Post ID.
 	 * @param array $options Conversion options.
 	 */
 	public function process_single_post( int $post_id, array $options ): array {
@@ -2322,7 +2322,7 @@ class Batch_Convert_Wizard {
 		$this->clear_elementor_render_meta( $write_id );
 
 		// Link the target to its source for future resolution.
-		update_post_meta( $write_id, '_metg_source_id', $source_id );
+		update_post_meta( $write_id, '_blockshift_source_id', $source_id );
 
 		if ( ! $this->is_overwrite_conversion_sane( $write_id ) ) {
 			$result['status']  = 'error';
@@ -2383,8 +2383,8 @@ class Batch_Convert_Wizard {
 	/**
 	 * Copy non-Elementor meta values to the target post.
 	 *
-	 * @param int $source_id Source post ID.
-	 * @param int $target_id Target post ID.
+	 * @param int  $source_id Source post ID.
+	 * @param int  $target_id Target post ID.
 	 * @param bool $update_mode Whether we are updating the same post.
 	 */
 	private function copy_post_meta( int $source_id, int $target_id, bool $update_mode = false ): void {
@@ -2413,7 +2413,7 @@ class Batch_Convert_Wizard {
 			if ( 0 === strpos( $key, '_elementor_' ) ) {
 				continue;
 			}
-			if ( 0 === strpos( $key, '_metg_' ) ) {
+			if ( 0 === strpos( $key, '_blockshift_' ) ) {
 				continue;
 			}
 			if ( in_array( $key, $skip_keys, true ) ) {
@@ -2448,11 +2448,11 @@ class Batch_Convert_Wizard {
 		$converted_time = '';
 
 		if ( $target_id > 0 ) {
-			$converted_time = get_post_meta( $target_id, '_metg_last_converted', true );
+			$converted_time = get_post_meta( $target_id, '_blockshift_last_converted', true );
 		}
 
 		if ( empty( $converted_time ) ) {
-			$converted_time = get_post_meta( $post_id, '_metg_last_converted', true );
+			$converted_time = get_post_meta( $post_id, '_blockshift_last_converted', true );
 		}
 
 		return ! empty( $converted_time );
@@ -2464,7 +2464,7 @@ class Batch_Convert_Wizard {
 	 * @param int $post_id Source post ID.
 	 */
 	private function get_existing_target_id( int $post_id ): int {
-		$last_result = get_post_meta( $post_id, '_metg_last_result', true );
+		$last_result = get_post_meta( $post_id, '_blockshift_last_result', true );
 		if ( is_array( $last_result ) && ! empty( $last_result['converted_post_id'] ) ) {
 			return absint( $last_result['converted_post_id'] );
 		}
@@ -2496,7 +2496,7 @@ class Batch_Convert_Wizard {
 
 		$existing_target = $this->find_existing_template_part( (int) $template_info['id'], (string) $template_info['source'] );
 
-		$last_result = get_post_meta( $post->ID, '_metg_last_result', true );
+		$last_result = get_post_meta( $post->ID, '_blockshift_last_result', true );
 		if ( ! $existing_target && is_array( $last_result ) && ! empty( $last_result['target'] ) ) {
 			$existing_target = absint( $last_result['target'] );
 		}
@@ -2674,9 +2674,9 @@ class Batch_Convert_Wizard {
 	 * Persist meta for a converted template part.
 	 */
 	private function store_template_part_meta( int $target_id, array $template_info ): void {
-		update_post_meta( $target_id, '_metg_source_id', (int) $template_info['id'] );
-		update_post_meta( $target_id, '_metg_source_type', (string) $template_info['source'] );
-		update_post_meta( $target_id, '_metg_template_kind', (string) $template_info['type'] );
+		update_post_meta( $target_id, '_blockshift_source_id', (int) $template_info['id'] );
+		update_post_meta( $target_id, '_blockshift_source_type', (string) $template_info['source'] );
+		update_post_meta( $target_id, '_blockshift_template_kind', (string) $template_info['type'] );
 	}
 
 	/**
@@ -2691,7 +2691,7 @@ class Batch_Convert_Wizard {
 			$this->clear_existing_template_role( $target_id, $role, $type );
 		}
 
-		update_post_meta( $target_id, '_metg_template_role', $role );
+		update_post_meta( $target_id, '_blockshift_template_role', $role );
 	}
 
 	/**
@@ -2748,7 +2748,7 @@ class Batch_Convert_Wizard {
 					continue;
 				}
 
-				update_post_meta( $existing_id, '_metg_template_role', self::TEMPLATE_ROLE_EXTRA );
+				update_post_meta( $existing_id, '_blockshift_template_role', self::TEMPLATE_ROLE_EXTRA );
 			}
 		}
 
@@ -2814,7 +2814,7 @@ class Batch_Convert_Wizard {
 					continue;
 				}
 
-				update_post_meta( $existing_id, '_metg_template_role', self::TEMPLATE_ROLE_EXTRA );
+				update_post_meta( $existing_id, '_blockshift_template_role', self::TEMPLATE_ROLE_EXTRA );
 			}
 		}
 
@@ -2831,7 +2831,7 @@ class Batch_Convert_Wizard {
 	/**
 	 * Link a template part to specific converted pages via page templates.
 	 *
-	 * @param int $target_id Template part post ID.
+	 * @param int   $target_id Template part post ID.
 	 * @param array $template_info Template info array.
 	 */
 	private function link_template_part_to_target_pages( int $target_id, array $template_info ): void {
@@ -2860,16 +2860,16 @@ class Batch_Convert_Wizard {
 		}
 
 		if ( ! empty( $linked_pages ) ) {
-			update_post_meta( $target_id, '_metg_linked_pages', array_values( array_unique( $linked_pages ) ) );
+			update_post_meta( $target_id, '_blockshift_linked_pages', array_values( array_unique( $linked_pages ) ) );
 		}
 	}
 
 	/**
 	 * Create or update a page-specific template for a converted page.
 	 *
-	 * @param int $converted_page_id Converted Gutenberg page ID.
+	 * @param int   $converted_page_id Converted Gutenberg page ID.
 	 * @param array $template_info Template info array.
-	 * @param int $target_id Template part ID to link.
+	 * @param int   $target_id Template part ID to link.
 	 */
 	private function ensure_page_template_for_page( int $converted_page_id, array $template_info, int $target_id ): int {
 		$theme = get_stylesheet();
@@ -2877,8 +2877,8 @@ class Batch_Convert_Wizard {
 
 		$existing_id = $this->find_page_template_for_page( $slug, $theme );
 
-		$header_part_id = $existing_id ? (int) get_post_meta( $existing_id, '_metg_header_part', true ) : 0;
-		$footer_part_id = $existing_id ? (int) get_post_meta( $existing_id, '_metg_footer_part', true ) : 0;
+		$header_part_id = $existing_id ? (int) get_post_meta( $existing_id, '_blockshift_header_part', true ) : 0;
+		$footer_part_id = $existing_id ? (int) get_post_meta( $existing_id, '_blockshift_footer_part', true ) : 0;
 
 		if ( 'header' === $template_info['type'] ) {
 			$header_part_id = $target_id;
@@ -2921,9 +2921,9 @@ class Batch_Convert_Wizard {
 			wp_set_post_terms( $template_id, array( $theme ), 'wp_theme', false );
 		}
 
-		update_post_meta( $template_id, '_metg_header_part', $header_part_id );
-		update_post_meta( $template_id, '_metg_footer_part', $footer_part_id );
-		update_post_meta( $template_id, '_metg_page_id', $converted_page_id );
+		update_post_meta( $template_id, '_blockshift_header_part', $header_part_id );
+		update_post_meta( $template_id, '_blockshift_footer_part', $footer_part_id );
+		update_post_meta( $template_id, '_blockshift_page_id', $converted_page_id );
 
 		update_post_meta( $converted_page_id, '_wp_page_template', $slug );
 
@@ -3008,11 +3008,11 @@ class Batch_Convert_Wizard {
 				// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 				'meta_query'     => array(
 					array(
-						'key'   => '_metg_template_role',
+						'key'   => '_blockshift_template_role',
 						'value' => $role,
 					),
 					array(
-						'key'   => '_metg_template_kind',
+						'key'   => '_blockshift_template_kind',
 						'value' => $type,
 					),
 				),
@@ -3025,7 +3025,7 @@ class Batch_Convert_Wizard {
 				continue;
 			}
 
-			update_post_meta( $other_id, '_metg_template_role', self::TEMPLATE_ROLE_EXTRA );
+			update_post_meta( $other_id, '_blockshift_template_role', self::TEMPLATE_ROLE_EXTRA );
 		}
 
 		wp_reset_postdata();
@@ -3044,11 +3044,11 @@ class Batch_Convert_Wizard {
 				// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 				'meta_query'     => array(
 					array(
-						'key'   => '_metg_source_id',
+						'key'   => '_blockshift_source_id',
 						'value' => $source_id,
 					),
 					array(
-						'key'   => '_metg_source_type',
+						'key'   => '_blockshift_source_type',
 						'value' => $source_type,
 					),
 				),
@@ -3455,14 +3455,14 @@ class Batch_Convert_Wizard {
 	 * Retrieve active job info for current user if any.
 	 */
 	private function get_active_job_for_user(): array {
-		$job_id = get_user_meta( get_current_user_id(), '_metg_job', true );
+		$job_id = get_user_meta( get_current_user_id(), '_blockshift_job', true );
 		if ( empty( $job_id ) ) {
 			return array();
 		}
 
 		$job = $this->get_job( (string) $job_id );
 		if ( empty( $job ) ) {
-			delete_user_meta( get_current_user_id(), '_metg_job' );
+			delete_user_meta( get_current_user_id(), '_blockshift_job' );
 
 			return array();
 		}
@@ -3489,7 +3489,7 @@ class Batch_Convert_Wizard {
 		$job_id = isset( $_POST['jobId'] ) ? sanitize_text_field( wp_unslash( $_POST['jobId'] ) ) : '';
 
 		if ( '' === $job_id ) {
-			$job_id = (string) get_user_meta( get_current_user_id(), '_metg_job', true );
+			$job_id = (string) get_user_meta( get_current_user_id(), '_blockshift_job', true );
 		}
 
 		if ( '' === $job_id ) {
@@ -3513,7 +3513,7 @@ class Batch_Convert_Wizard {
 		$job['completed_at'] = time();
 
 		$this->store_job( $job );
-		delete_user_meta( get_current_user_id(), '_metg_job' );
+		delete_user_meta( get_current_user_id(), '_blockshift_job' );
 		$this->delete_job( $job_id );
 
 		wp_send_json_success(
@@ -3567,7 +3567,7 @@ class Batch_Convert_Wizard {
 	/**
 	 * Store conversion result meta for a normal page.
 	 *
-	 * @param int $source_id Source Elementor page ID.
+	 * @param int   $source_id Source Elementor page ID.
 	 * @param array $result_entry Result entry from the job.
 	 */
 	private function store_page_conversion_result( int $source_id, array $result_entry ): void {
@@ -3586,19 +3586,19 @@ class Batch_Convert_Wizard {
 		);
 
 		// Store on the original Elementor page.
-		update_post_meta( $source_id, '_metg_last_result', $data );
+		update_post_meta( $source_id, '_blockshift_last_result', $data );
 
 		// Store also on the converted page (if any).
 		if ( $converted_post_id > 0 ) {
-			update_post_meta( $converted_post_id, '_metg_last_result', $data );
+			update_post_meta( $converted_post_id, '_blockshift_last_result', $data );
 		}
 
 		// Mark as "converted" only when success.
 		if ( 'success' === $result_entry['status'] ) {
-			update_post_meta( $source_id, '_metg_last_converted', $time );
+			update_post_meta( $source_id, '_blockshift_last_converted', $time );
 
 			if ( $converted_post_id > 0 ) {
-				update_post_meta( $converted_post_id, '_metg_last_converted', $time );
+				update_post_meta( $converted_post_id, '_blockshift_last_converted', $time );
 			}
 		}
 
@@ -3622,7 +3622,7 @@ class Batch_Convert_Wizard {
 	/**
 	 * Determine the final target template slug for a converted page.
 	 *
-	 * @param int $source_id Source Elementor page ID.
+	 * @param int  $source_id Source Elementor page ID.
 	 * @param bool $is_full_width_source Whether source page should be treated as full-width.
 	 */
 	private function determine_target_template_slug( int $source_id, bool $is_full_width_source ): string {
@@ -3680,7 +3680,7 @@ class Batch_Convert_Wizard {
 	/**
 	 * Apply page template metadata to the converted target page only.
 	 *
-	 * @param int $target_id Target Gutenberg page ID.
+	 * @param int    $target_id Target Gutenberg page ID.
 	 * @param string $template_slug Template slug or template ID.
 	 */
 	private function apply_target_page_template( int $target_id, string $template_slug ): void {
@@ -3707,8 +3707,8 @@ class Batch_Convert_Wizard {
 	/**
 	 * Detect whether a source Elementor page should be treated as full-width.
 	 *
-	 * @param int $source_id Source page ID.
-	 * @param mixed $decoded Elementor JSON decoded payload.
+	 * @param int    $source_id Source page ID.
+	 * @param mixed  $decoded Elementor JSON decoded payload.
 	 * @param string $json_data Raw Elementor JSON string.
 	 */
 	private function is_full_width_source_page( int $source_id, $decoded, string $json_data ): bool {
@@ -3764,7 +3764,7 @@ class Batch_Convert_Wizard {
 	/**
 	 * Store conversion result meta for a header/footer template.
 	 *
-	 * @param int $template_id Source Elementor template ID.
+	 * @param int   $template_id Source Elementor template ID.
 	 * @param array $result_entry Result entry from the job.
 	 */
 	private function store_template_conversion_result( int $template_id, array $result_entry ): void {
@@ -3780,10 +3780,10 @@ class Batch_Convert_Wizard {
 			'unsupported_by_type' => $widget_log['unsupported_by_type'] ?? array(),
 		);
 
-		update_post_meta( $template_id, '_metg_last_result', $data );
+		update_post_meta( $template_id, '_blockshift_last_result', $data );
 
 		if ( 'success' === $result_entry['status'] ) {
-			update_post_meta( $template_id, '_metg_last_converted', $time );
+			update_post_meta( $template_id, '_blockshift_last_converted', $time );
 		}
 
 		// Append to the global conversion log for the UI.
@@ -3822,7 +3822,7 @@ class Batch_Convert_Wizard {
 
 	/**
 	 * Handle AJAX feedback submission from the wizard results step.
-	 * Action: metg_submit_feedback (logged-in users only).
+	 * Action: blockshift_submit_feedback (logged-in users only).
 	 */
 	public function ajax_submit_feedback(): void {
 		check_ajax_referer( self::FEEDBACK_NONCE_ACTION, 'nonce' );

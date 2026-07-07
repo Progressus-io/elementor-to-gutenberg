@@ -6,64 +6,64 @@
    (indigo brand, emerald success, slate neutrals, brand fonts).
    ============================================================ */
 
-.metg-wizard-wrap {
-    --metg-primary: #4f44dd;
-    --metg-primary-hover: #4035bd;
-    --metg-primary-soft: #eef0ff;
-    --metg-primary-soft-border: #c6caff;
+.blockshift-wizard-wrap {
+    --blockshift-primary: #4f44dd;
+    --blockshift-primary-hover: #4035bd;
+    --blockshift-primary-soft: #eef0ff;
+    --blockshift-primary-soft-border: #c6caff;
 
-    --metg-success: #12a16d;
-    --metg-success-hover: #096748;
-    --metg-success-soft: #e9fbf2;
-    --metg-success-soft-border: #97e8c4;
+    --blockshift-success: #12a16d;
+    --blockshift-success-hover: #096748;
+    --blockshift-success-soft: #e9fbf2;
+    --blockshift-success-soft-border: #97e8c4;
 
-    --metg-warning: #dd8408;
-    --metg-warning-soft: #fff8eb;
-    --metg-warning-soft-border: #fcd989;
+    --blockshift-warning: #dd8408;
+    --blockshift-warning-soft: #fff8eb;
+    --blockshift-warning-soft-border: #fcd989;
 
-    --metg-error: #e0463d;
-    --metg-error-soft: #fef3f2;
-    --metg-error-soft-border: #fbcdc9;
+    --blockshift-error: #e0463d;
+    --blockshift-error-soft: #fef3f2;
+    --blockshift-error-soft-border: #fbcdc9;
 
-    --metg-text: #151b26;
-    --metg-text-secondary: #36404f;
-    --metg-text-tertiary: #677489;
-    --metg-text-on-primary: #fff;
+    --blockshift-text: #151b26;
+    --blockshift-text-secondary: #36404f;
+    --blockshift-text-tertiary: #677489;
+    --blockshift-text-on-primary: #fff;
 
-    --metg-border: #e1e7f0;
-    --metg-border-strong: #cdd6e4;
-    --metg-surface: #fff;
-    --metg-surface-alt: #f7f9fc;
-    --metg-surface-muted: #eef2f7;
+    --blockshift-border: #e1e7f0;
+    --blockshift-border-strong: #cdd6e4;
+    --blockshift-surface: #fff;
+    --blockshift-surface-alt: #f7f9fc;
+    --blockshift-surface-muted: #eef2f7;
 
-    --metg-radius-sm: 6px;
-    --metg-radius-md: 9px;
-    --metg-radius-lg: 12px;
-    --metg-radius-xl: 14px;
-    --metg-radius-pill: 999px;
+    --blockshift-radius-sm: 6px;
+    --blockshift-radius-md: 9px;
+    --blockshift-radius-lg: 12px;
+    --blockshift-radius-xl: 14px;
+    --blockshift-radius-pill: 999px;
 
-    --metg-shadow-sm: 0 1px 2px hsl(220 30% 16% / 0.06), 0 1px 1px hsl(220 30% 16% / 0.04);
-    --metg-shadow-md: 0 2px 4px hsl(220 30% 16% / 0.06), 0 4px 12px hsl(220 30% 16% / 0.08);
-    --metg-shadow-lg: 0 8px 24px hsl(220 30% 16% / 0.10), 0 2px 6px hsl(220 30% 16% / 0.06);
-    --metg-shadow-ring: 0 0 0 3px rgba(99, 91, 237, 0.35);
+    --blockshift-shadow-sm: 0 1px 2px hsl(220 30% 16% / 0.06), 0 1px 1px hsl(220 30% 16% / 0.04);
+    --blockshift-shadow-md: 0 2px 4px hsl(220 30% 16% / 0.06), 0 4px 12px hsl(220 30% 16% / 0.08);
+    --blockshift-shadow-lg: 0 8px 24px hsl(220 30% 16% / 0.10), 0 2px 6px hsl(220 30% 16% / 0.06);
+    --blockshift-shadow-ring: 0 0 0 3px rgba(99, 91, 237, 0.35);
 
-    --metg-font-display: "Schibsted Grotesk", "Hanken Grotesk", system-ui, sans-serif;
-    --metg-font-sans: "Hanken Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
-    --metg-font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+    --blockshift-font-display: "Schibsted Grotesk", "Hanken Grotesk", system-ui, sans-serif;
+    --blockshift-font-sans: "Hanken Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --blockshift-font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
 
-    --metg-transition: 150ms ease;
-    --metg-transition-slow: 250ms ease;
+    --blockshift-transition: 150ms ease;
+    --blockshift-transition-slow: 250ms ease;
 
     max-width: 1180px;
-    font-family: var(--metg-font-sans);
+    font-family: var(--blockshift-font-sans);
 }
 
-.metg-wizard-wrap h1,
-.metg-wizard-wrap h2,
-.metg-wizard-wrap h3,
-.metg-wizard-wrap h4,
-.metg-wizard-step-title {
-    font-family: var(--metg-font-display);
+.blockshift-wizard-wrap h1,
+.blockshift-wizard-wrap h2,
+.blockshift-wizard-wrap h3,
+.blockshift-wizard-wrap h4,
+.blockshift-wizard-step-title {
+    font-family: var(--blockshift-font-display);
     letter-spacing: -0.02em;
 }
 
@@ -71,26 +71,26 @@
    ROOT CONTAINER
    ============================================================ */
 
-.metg-wizard-root {
-    background: var(--metg-surface);
-    border: 1px solid var(--metg-border);
-    border-radius: var(--metg-radius-lg);
+.blockshift-wizard-root {
+    background: var(--blockshift-surface);
+    border: 1px solid var(--blockshift-border);
+    border-radius: var(--blockshift-radius-lg);
     padding: 32px;
     margin-top: 24px;
-    box-shadow: var(--metg-shadow-sm);
+    box-shadow: var(--blockshift-shadow-sm);
 }
 
 /* ============================================================
    VISUAL STEPPER HEADER
    ============================================================ */
 
-.metg-wizard-header {
+.blockshift-wizard-header {
     margin-bottom: 32px;
     padding-bottom: 28px;
-    border-bottom: 1px solid var(--metg-border);
+    border-bottom: 1px solid var(--blockshift-border);
 }
 
-.metg-stepper {
+.blockshift-stepper {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
@@ -98,7 +98,7 @@
     position: relative;
 }
 
-.metg-stepper-item {
+.blockshift-stepper-item {
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -108,29 +108,29 @@
     min-width: 0;
 }
 
-.metg-stepper-item + .metg-stepper-item::before {
+.blockshift-stepper-item + .blockshift-stepper-item::before {
     content: '';
     position: absolute;
     top: 16px;
     left: calc(-50% + 20px);
     right: calc(50% + 20px);
     height: 2px;
-    background: var(--metg-border);
+    background: var(--blockshift-border);
     z-index: 0;
 }
 
-.metg-stepper-item.is-completed + .metg-stepper-item::before,
-.metg-stepper-item.is-current + .metg-stepper-item::before {
-    background: var(--metg-primary);
+.blockshift-stepper-item.is-completed + .blockshift-stepper-item::before,
+.blockshift-stepper-item.is-current + .blockshift-stepper-item::before {
+    background: var(--blockshift-primary);
 }
 
-.metg-stepper-circle {
+.blockshift-stepper-circle {
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    background: var(--metg-surface);
-    border: 2px solid var(--metg-border);
-    color: var(--metg-text-tertiary);
+    background: var(--blockshift-surface);
+    border: 2px solid var(--blockshift-border);
+    color: var(--blockshift-text-tertiary);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -138,41 +138,41 @@
     font-weight: 600;
     position: relative;
     z-index: 1;
-    transition: all var(--metg-transition);
+    transition: all var(--blockshift-transition);
 }
 
-.metg-stepper-item.is-current .metg-stepper-circle {
-    background: var(--metg-primary);
-    border-color: var(--metg-primary);
-    color: var(--metg-text-on-primary);
-    box-shadow: var(--metg-shadow-ring);
+.blockshift-stepper-item.is-current .blockshift-stepper-circle {
+    background: var(--blockshift-primary);
+    border-color: var(--blockshift-primary);
+    color: var(--blockshift-text-on-primary);
+    box-shadow: var(--blockshift-shadow-ring);
 }
 
-.metg-stepper-item.is-completed .metg-stepper-circle {
-    background: var(--metg-primary);
-    border-color: var(--metg-primary);
-    color: var(--metg-text-on-primary);
+.blockshift-stepper-item.is-completed .blockshift-stepper-circle {
+    background: var(--blockshift-primary);
+    border-color: var(--blockshift-primary);
+    color: var(--blockshift-text-on-primary);
 }
 
-.metg-stepper-label {
+.blockshift-stepper-label {
     font-size: 12px;
     font-weight: 500;
-    color: var(--metg-text-tertiary);
+    color: var(--blockshift-text-tertiary);
     text-align: center;
     line-height: 1.3;
     max-width: 120px;
 }
 
-.metg-stepper-item.is-current .metg-stepper-label {
-    color: var(--metg-text);
+.blockshift-stepper-item.is-current .blockshift-stepper-label {
+    color: var(--blockshift-text);
     font-weight: 600;
 }
 
-.metg-stepper-item.is-completed .metg-stepper-label {
-    color: var(--metg-text-secondary);
+.blockshift-stepper-item.is-completed .blockshift-stepper-label {
+    color: var(--blockshift-text-secondary);
 }
 
-.metg-stepper-check {
+.blockshift-stepper-check {
     width: 16px;
     height: 16px;
     display: block;
@@ -182,16 +182,16 @@
    STEP TITLE + INTRO
    ============================================================ */
 
-.metg-wizard-step-title {
+.blockshift-wizard-step-title {
     margin: 0 0 8px;
     font-size: 24px;
     font-weight: 700;
-    color: var(--metg-text);
+    color: var(--blockshift-text);
     letter-spacing: -0.01em;
 }
 
-.metg-step-description {
-    color: var(--metg-text-secondary);
+.blockshift-step-description {
+    color: var(--blockshift-text-secondary);
     font-size: 14px;
     line-height: 1.55;
     margin: 0 0 24px;
@@ -201,43 +201,43 @@
    ALERTS / NOTICES
    ============================================================ */
 
-.metg-alert {
+.blockshift-alert {
     display: flex;
     align-items: flex-start;
     gap: 12px;
     padding: 14px 16px;
-    border-radius: var(--metg-radius-md);
+    border-radius: var(--blockshift-radius-md);
     margin-bottom: 20px;
     border: 1px solid transparent;
     font-size: 13px;
     line-height: 1.5;
 }
 
-.metg-alert-info {
-    background: var(--metg-primary-soft);
-    border-color: var(--metg-primary-soft-border);
+.blockshift-alert-info {
+    background: var(--blockshift-primary-soft);
+    border-color: var(--blockshift-primary-soft-border);
     color: #352e98;
 }
 
-.metg-alert-warning {
-    background: var(--metg-warning-soft);
-    border-color: var(--metg-warning-soft-border);
+.blockshift-alert-warning {
+    background: var(--blockshift-warning-soft);
+    border-color: var(--blockshift-warning-soft-border);
     color: #934b08;
 }
 
-.metg-alert-error {
-    background: var(--metg-error-soft);
-    border-color: var(--metg-error-soft-border);
+.blockshift-alert-error {
+    background: var(--blockshift-error-soft);
+    border-color: var(--blockshift-error-soft-border);
     color: #a32420;
 }
 
-.metg-alert-success {
-    background: var(--metg-success-soft);
-    border-color: var(--metg-success-soft-border);
+.blockshift-alert-success {
+    background: var(--blockshift-success-soft);
+    border-color: var(--blockshift-success-soft-border);
     color: #096748;
 }
 
-.metg-alert a {
+.blockshift-alert a {
     color: inherit;
     text-decoration: underline;
     font-weight: 600;
@@ -247,40 +247,40 @@
    MODE SELECTION CARDS
    ============================================================ */
 
-.metg-mode-grid {
+.blockshift-mode-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 16px;
     margin-bottom: 32px;
 }
 
-.metg-mode-card {
+.blockshift-mode-card {
     position: relative;
-    border: 2px solid var(--metg-border);
-    border-radius: var(--metg-radius-lg);
+    border: 2px solid var(--blockshift-border);
+    border-radius: var(--blockshift-radius-lg);
     padding: 24px;
-    background: var(--metg-surface);
+    background: var(--blockshift-surface);
     cursor: pointer;
-    transition: all var(--metg-transition);
+    transition: all var(--blockshift-transition);
     display: flex;
     flex-direction: column;
     gap: 12px;
 }
 
-.metg-mode-card:hover {
-    border-color: var(--metg-primary-soft-border);
-    background: var(--metg-surface-alt);
+.blockshift-mode-card:hover {
+    border-color: var(--blockshift-primary-soft-border);
+    background: var(--blockshift-surface-alt);
     transform: translateY(-1px);
-    box-shadow: var(--metg-shadow-md);
+    box-shadow: var(--blockshift-shadow-md);
 }
 
-.metg-mode-card.is-active {
-    border-color: var(--metg-primary);
-    background: var(--metg-primary-soft);
-    box-shadow: var(--metg-shadow-ring);
+.blockshift-mode-card.is-active {
+    border-color: var(--blockshift-primary);
+    background: var(--blockshift-primary-soft);
+    box-shadow: var(--blockshift-shadow-ring);
 }
 
-.metg-mode-card.is-active::after {
+.blockshift-mode-card.is-active::after {
     content: '';
     position: absolute;
     top: 14px;
@@ -288,60 +288,60 @@
     width: 22px;
     height: 22px;
     border-radius: 50%;
-    background: var(--metg-primary);
+    background: var(--blockshift-primary);
     background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='white'%3E%3Cpath d='M7.5 13.5L4 10l1.4-1.4 2.1 2.1 5.1-5.1L14 7z'/%3E%3C/svg%3E");
     background-size: 18px;
     background-position: center;
     background-repeat: no-repeat;
 }
 
-.metg-mode-card input[type="radio"] {
+.blockshift-mode-card input[type="radio"] {
     position: absolute;
     opacity: 0;
     width: 0;
     height: 0;
 }
 
-.metg-mode-card-icon {
+.blockshift-mode-card-icon {
     width: 44px;
     height: 44px;
-    border-radius: var(--metg-radius-md);
-    background: var(--metg-primary-soft);
-    color: var(--metg-primary);
+    border-radius: var(--blockshift-radius-md);
+    background: var(--blockshift-primary-soft);
+    color: var(--blockshift-primary);
     display: flex;
     align-items: center;
     justify-content: center;
     margin-bottom: 4px;
 }
 
-.metg-mode-card-icon svg {
+.blockshift-mode-card-icon svg {
     width: 24px;
     height: 24px;
 }
 
-.metg-mode-card h3 {
+.blockshift-mode-card h3 {
     margin: 0;
     font-size: 17px;
     font-weight: 700;
-    color: var(--metg-text);
+    color: var(--blockshift-text);
     letter-spacing: -0.005em;
 }
 
-.metg-mode-card > p {
+.blockshift-mode-card > p {
     margin: 0;
-    color: var(--metg-text-secondary);
+    color: var(--blockshift-text-secondary);
     font-size: 13px;
     line-height: 1.55;
 }
 
-.metg-mode-subtext {
+.blockshift-mode-subtext {
     display: inline-flex;
     align-items: center;
     gap: 6px;
     padding: 4px 10px;
-    border-radius: var(--metg-radius-pill);
-    background: var(--metg-primary-soft);
-    color: var(--metg-primary);
+    border-radius: var(--blockshift-radius-pill);
+    background: var(--blockshift-primary-soft);
+    color: var(--blockshift-primary);
     font-size: 11px;
     font-weight: 600;
     text-transform: uppercase;
@@ -350,48 +350,48 @@
     width: fit-content;
 }
 
-.metg-mode-context-line {
+.blockshift-mode-context-line {
     display: block;
     margin-top: auto;
     padding-top: 8px;
     font-size: 12px;
-    color: var(--metg-text-tertiary);
-    border-top: 1px dashed var(--metg-border);
+    color: var(--blockshift-text-tertiary);
+    border-top: 1px dashed var(--blockshift-border);
 }
 
 /* ============================================================
    BUTTONS / FOOTER ACTIONS
    ============================================================ */
 
-.metg-wizard-buttons {
+.blockshift-wizard-buttons {
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 12px;
     margin-top: 32px;
     padding-top: 20px;
-    border-top: 1px solid var(--metg-border);
+    border-top: 1px solid var(--blockshift-border);
 }
 
-.metg-wizard-buttons .button {
+.blockshift-wizard-buttons .button {
     min-height: 36px;
     padding: 0 16px;
-    border-radius: var(--metg-radius-md);
+    border-radius: var(--blockshift-radius-md);
     font-weight: 500;
 }
 
-.metg-wizard-buttons .button-primary {
+.blockshift-wizard-buttons .button-primary {
     min-height: 38px;
     font-weight: 600;
 }
 
-.metg-wizard-buttons .button.button-primary[disabled] {
+.blockshift-wizard-buttons .button.button-primary[disabled] {
     opacity: 0.5;
     cursor: not-allowed;
 }
 
-.metg-wizard-buttons-left,
-.metg-wizard-buttons-right {
+.blockshift-wizard-buttons-left,
+.blockshift-wizard-buttons-right {
     display: flex;
     gap: 10px;
     align-items: center;
@@ -401,24 +401,24 @@
    SELECT STEP TOOLBAR
    ============================================================ */
 
-.metg-select-toolbar {
+.blockshift-select-toolbar {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
     gap: 10px;
     margin-bottom: 16px;
     padding: 12px 14px;
-    background: var(--metg-surface-alt);
-    border: 1px solid var(--metg-border);
-    border-radius: var(--metg-radius-md);
+    background: var(--blockshift-surface-alt);
+    border: 1px solid var(--blockshift-border);
+    border-radius: var(--blockshift-radius-md);
 }
 
-.metg-select-toolbar input[type="text"] {
+.blockshift-select-toolbar input[type="text"] {
     flex: 1 1 220px;
     min-width: 180px;
     height: 34px;
-    border-radius: var(--metg-radius-sm);
-    border-color: var(--metg-border-strong);
+    border-radius: var(--blockshift-radius-sm);
+    border-color: var(--blockshift-border-strong);
     padding-left: 32px;
     background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%23787c82' stroke-width='2'%3E%3Ccircle cx='9' cy='9' r='6'/%3E%3Cpath d='M14 14l4 4'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
@@ -426,14 +426,14 @@
     background-size: 15px;
 }
 
-.metg-select-toolbar select {
+.blockshift-select-toolbar select {
     height: 34px;
-    border-radius: var(--metg-radius-sm);
-    border-color: var(--metg-border-strong);
+    border-radius: var(--blockshift-radius-sm);
+    border-color: var(--blockshift-border-strong);
     min-width: 140px;
 }
 
-.metg-select-bulk-actions {
+.blockshift-select-bulk-actions {
     display: flex;
     gap: 14px;
     font-size: 13px;
@@ -441,24 +441,24 @@
     margin-left: auto;
 }
 
-.metg-select-bulk-actions a {
+.blockshift-select-bulk-actions a {
     text-decoration: none;
-    color: var(--metg-primary);
+    color: var(--blockshift-primary);
     font-weight: 500;
 }
 
-.metg-select-bulk-actions a:hover {
+.blockshift-select-bulk-actions a:hover {
     text-decoration: underline;
 }
 
-.metg-selection-chip {
+.blockshift-selection-chip {
     display: inline-flex;
     align-items: center;
     gap: 6px;
     padding: 4px 10px;
-    border-radius: var(--metg-radius-pill);
-    background: var(--metg-primary-soft);
-    color: var(--metg-primary);
+    border-radius: var(--blockshift-radius-pill);
+    background: var(--blockshift-primary-soft);
+    color: var(--blockshift-primary);
     font-size: 12px;
     font-weight: 600;
 }
@@ -467,58 +467,58 @@
    POST-TYPE TABS & MASTER SELECT
    ============================================================ */
 
-.metg-master-select-row {
+.blockshift-master-select-row {
     display: flex;
     align-items: center;
     margin: 12px 0 6px;
 }
 
-.metg-master-select-label {
+.blockshift-master-select-label {
     display: inline-flex;
     align-items: center;
     gap: 8px;
     font-weight: 600;
-    color: var(--metg-text);
+    color: var(--blockshift-text);
     cursor: pointer;
 }
 
-.metg-master-select-checkbox {
+.blockshift-master-select-checkbox {
     margin: 0;
 }
 
-.metg-tab-strip {
+.blockshift-tab-strip {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
     margin: 8px 0 14px;
-    border-bottom: 1px solid var(--metg-border);
+    border-bottom: 1px solid var(--blockshift-border);
     padding-bottom: 0;
 }
 
-.metg-tab {
+.blockshift-tab {
     appearance: none;
     background: transparent;
     border: 1px solid transparent;
     border-bottom: none;
-    border-radius: var(--metg-radius-md) var(--metg-radius-md) 0 0;
+    border-radius: var(--blockshift-radius-md) var(--blockshift-radius-md) 0 0;
     padding: 8px 14px;
     cursor: pointer;
     font-size: 13px;
     font-weight: 500;
-    color: var(--metg-text-muted, #36404f);
+    color: var(--blockshift-text-muted, #36404f);
     margin-bottom: -1px;
 }
 
-.metg-tab:hover {
-    color: var(--metg-text);
-    background: var(--metg-surface-alt);
+.blockshift-tab:hover {
+    color: var(--blockshift-text);
+    background: var(--blockshift-surface-alt);
 }
 
-.metg-tab.is-active {
-    color: var(--metg-primary);
-    background: var(--metg-surface);
-    border-color: var(--metg-border);
-    border-bottom-color: var(--metg-surface);
+.blockshift-tab.is-active {
+    color: var(--blockshift-primary);
+    background: var(--blockshift-surface);
+    border-color: var(--blockshift-border);
+    border-bottom-color: var(--blockshift-surface);
     font-weight: 600;
 }
 
@@ -526,57 +526,57 @@
    TABLES
    ============================================================ */
 
-.metg-table-wrapper {
-    border: 1px solid var(--metg-border);
-    border-radius: var(--metg-radius-md);
+.blockshift-table-wrapper {
+    border: 1px solid var(--blockshift-border);
+    border-radius: var(--blockshift-radius-md);
     overflow: hidden;
-    background: var(--metg-surface);
+    background: var(--blockshift-surface);
 }
 
-.metg-wizard-table {
+.blockshift-wizard-table {
     width: 100%;
     border-collapse: collapse;
     margin: 0;
 }
 
-.metg-wizard-table thead {
-    background: var(--metg-surface-alt);
+.blockshift-wizard-table thead {
+    background: var(--blockshift-surface-alt);
 }
 
-.metg-wizard-table th {
+.blockshift-wizard-table th {
     padding: 10px 14px;
-    border-bottom: 1px solid var(--metg-border);
+    border-bottom: 1px solid var(--blockshift-border);
     text-align: left;
     font-size: 11px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: var(--metg-text-tertiary);
+    color: var(--blockshift-text-tertiary);
     vertical-align: middle;
 }
 
-.metg-wizard-table td {
+.blockshift-wizard-table td {
     padding: 14px;
-    border-bottom: 1px solid var(--metg-surface-muted);
+    border-bottom: 1px solid var(--blockshift-surface-muted);
     text-align: left;
     vertical-align: middle;
     font-size: 13px;
-    color: var(--metg-text);
+    color: var(--blockshift-text);
 }
 
-.metg-wizard-table tbody tr:last-child td {
+.blockshift-wizard-table tbody tr:last-child td {
     border-bottom: none;
 }
 
-.metg-wizard-table tbody tr {
-    transition: background-color var(--metg-transition);
+.blockshift-wizard-table tbody tr {
+    transition: background-color var(--blockshift-transition);
 }
 
-.metg-wizard-table tbody tr:hover {
-    background: var(--metg-surface-alt);
+.blockshift-wizard-table tbody tr:hover {
+    background: var(--blockshift-surface-alt);
 }
 
-.metg-wizard-table input[type="checkbox"] {
+.blockshift-wizard-table input[type="checkbox"] {
     width: 16px;
     height: 16px;
     cursor: pointer;
@@ -586,18 +586,18 @@
    STATUS BADGES
    ============================================================ */
 
-.metg-status-badge {
+.blockshift-status-badge {
     display: inline-flex;
     align-items: center;
     padding: 3px 10px;
-    border-radius: var(--metg-radius-pill);
+    border-radius: var(--blockshift-radius-pill);
     font-size: 11px;
     font-weight: 600;
     gap: 5px;
     line-height: 1.5;
 }
 
-.metg-status-badge::before {
+.blockshift-status-badge::before {
     content: '';
     width: 6px;
     height: 6px;
@@ -606,56 +606,56 @@
     opacity: 0.7;
 }
 
-.metg-status-converted {
-    background: var(--metg-success-soft);
+.blockshift-status-converted {
+    background: var(--blockshift-success-soft);
     color: #096748;
 }
 
-.metg-status-not_converted {
-    background: var(--metg-surface-muted);
-    color: var(--metg-text);
+.blockshift-status-not_converted {
+    background: var(--blockshift-surface-muted);
+    color: var(--blockshift-text);
 }
 
-.metg-status-partial {
-    background: var(--metg-warning-soft);
+.blockshift-status-partial {
+    background: var(--blockshift-warning-soft);
     color: #934b08;
 }
 
-.metg-status-error {
-    background: var(--metg-error-soft);
+.blockshift-status-error {
+    background: var(--blockshift-error-soft);
     color: #a32420;
 }
 
-.metg-status-skipped {
-    background: var(--metg-surface-muted);
-    color: var(--metg-text-secondary);
+.blockshift-status-skipped {
+    background: var(--blockshift-surface-muted);
+    color: var(--blockshift-text-secondary);
 }
 
 /* ============================================================
    INLINE TOGGLE / SKIP LINE
    ============================================================ */
 
-.metg-inline-toggle {
+.blockshift-inline-toggle {
     display: inline-flex;
     align-items: center;
     gap: 8px;
     font-size: 13px;
-    color: var(--metg-text-secondary);
+    color: var(--blockshift-text-secondary);
     cursor: pointer;
 }
 
-.metg-inline-toggle input[type="checkbox"] {
+.blockshift-inline-toggle input[type="checkbox"] {
     cursor: pointer;
 }
 
-.metg-skip-converted-wrapper {
+.blockshift-skip-converted-wrapper {
     display: flex;
     align-items: center;
     gap: 10px;
     padding: 12px 14px;
-    background: var(--metg-primary-soft);
-    border: 1px solid var(--metg-primary-soft-border);
-    border-radius: var(--metg-radius-md);
+    background: var(--blockshift-primary-soft);
+    border: 1px solid var(--blockshift-primary-soft-border);
+    border-radius: var(--blockshift-radius-md);
     margin-top: 16px;
     font-size: 13px;
 }
@@ -664,36 +664,36 @@
    PAGINATION
    ============================================================ */
 
-.metg-pagination {
+.blockshift-pagination {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-top: 16px;
     padding: 10px 0;
-    color: var(--metg-text-secondary);
+    color: var(--blockshift-text-secondary);
     font-size: 13px;
 }
 
-.metg-pagination button {
+.blockshift-pagination button {
     min-width: 34px;
     min-height: 34px;
     padding: 0 10px;
-    border-radius: var(--metg-radius-sm);
-    border: 1px solid var(--metg-border-strong);
-    background: var(--metg-surface);
-    color: var(--metg-text);
+    border-radius: var(--blockshift-radius-sm);
+    border: 1px solid var(--blockshift-border-strong);
+    background: var(--blockshift-surface);
+    color: var(--blockshift-text);
     cursor: pointer;
-    transition: all var(--metg-transition);
+    transition: all var(--blockshift-transition);
     font-weight: 500;
 }
 
-.metg-pagination button:hover:not([disabled]) {
-    border-color: var(--metg-primary);
-    color: var(--metg-primary);
-    background: var(--metg-primary-soft);
+.blockshift-pagination button:hover:not([disabled]) {
+    border-color: var(--blockshift-primary);
+    color: var(--blockshift-primary);
+    background: var(--blockshift-primary-soft);
 }
 
-.metg-pagination button[disabled] {
+.blockshift-pagination button[disabled] {
     opacity: 0.4;
     cursor: not-allowed;
 }
@@ -702,47 +702,47 @@
    THEME CARDS
    ============================================================ */
 
-.metg-theme-browser-grid {
+.blockshift-theme-browser-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
     gap: 16px;
     margin-bottom: 20px;
 }
 
-.metg-theme-browser-card {
+.blockshift-theme-browser-card {
     position: relative;
-    border: 2px solid var(--metg-border);
-    border-radius: var(--metg-radius-lg);
+    border: 2px solid var(--blockshift-border);
+    border-radius: var(--blockshift-radius-lg);
     overflow: hidden;
-    background: var(--metg-surface);
+    background: var(--blockshift-surface);
     cursor: pointer;
-    transition: all var(--metg-transition);
+    transition: all var(--blockshift-transition);
 }
 
-.metg-theme-browser-card:hover {
-    border-color: var(--metg-primary-soft-border);
+.blockshift-theme-browser-card:hover {
+    border-color: var(--blockshift-primary-soft-border);
     transform: translateY(-2px);
-    box-shadow: var(--metg-shadow-md);
+    box-shadow: var(--blockshift-shadow-md);
 }
 
-.metg-theme-browser-card.is-selected {
-    border-color: var(--metg-primary);
-    box-shadow: var(--metg-shadow-ring);
+.blockshift-theme-browser-card.is-selected {
+    border-color: var(--blockshift-primary);
+    box-shadow: var(--blockshift-shadow-ring);
 }
 
-.metg-theme-card--current {
-    border-color: var(--metg-success) !important;
+.blockshift-theme-card--current {
+    border-color: var(--blockshift-success) !important;
 }
 
-.metg-theme-card--current::before {
+.blockshift-theme-card--current::before {
     content: 'Current';
     position: absolute;
     top: 10px;
     left: 10px;
-    background: var(--metg-success);
+    background: var(--blockshift-success);
     color: #fff;
     padding: 3px 9px;
-    border-radius: var(--metg-radius-pill);
+    border-radius: var(--blockshift-radius-pill);
     font-size: 10px;
     font-weight: 700;
     text-transform: uppercase;
@@ -750,33 +750,33 @@
     z-index: 2;
 }
 
-.metg-theme-card-preview {
+.blockshift-theme-card-preview {
     position: relative;
     aspect-ratio: 16 / 9;
-    background: var(--metg-surface-muted);
+    background: var(--blockshift-surface-muted);
     overflow: hidden;
 }
 
-.metg-theme-card-preview img {
+.blockshift-theme-card-preview img {
     width: 100%;
     height: 100%;
     object-fit: cover;
     display: block;
 }
 
-.metg-theme-card-no-preview {
+.blockshift-theme-card-no-preview {
     width: 100%;
     height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--metg-text-tertiary);
+    color: var(--blockshift-text-tertiary);
     font-size: 13px;
     font-weight: 600;
     background: linear-gradient(135deg, #eef2f7 0%, #e1e7f0 100%);
 }
 
-.metg-theme-card-actions {
+.blockshift-theme-card-actions {
     position: absolute;
     inset: 0;
     display: flex;
@@ -784,18 +784,18 @@
     justify-content: center;
     background: rgba(17, 24, 39, 0.6);
     opacity: 0;
-    transition: opacity var(--metg-transition);
+    transition: opacity var(--blockshift-transition);
 }
 
-.metg-theme-browser-card:hover .metg-theme-card-actions {
+.blockshift-theme-browser-card:hover .blockshift-theme-card-actions {
     opacity: 1;
 }
 
-.metg-theme-card-body {
+.blockshift-theme-card-body {
     padding: 14px 16px;
 }
 
-.metg-theme-card-title-row {
+.blockshift-theme-card-title-row {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
@@ -803,62 +803,62 @@
     margin-bottom: 8px;
 }
 
-.metg-theme-card-title {
+.blockshift-theme-card-title {
     margin: 0;
     font-size: 14px;
     font-weight: 600;
-    color: var(--metg-text);
+    color: var(--blockshift-text);
 }
 
-.metg-theme-status-pill {
+.blockshift-theme-status-pill {
     font-size: 10px;
     padding: 2px 8px;
-    border-radius: var(--metg-radius-pill);
-    background: var(--metg-surface-muted);
-    color: var(--metg-text-secondary);
+    border-radius: var(--blockshift-radius-pill);
+    background: var(--blockshift-surface-muted);
+    color: var(--blockshift-text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.04em;
     font-weight: 600;
     white-space: nowrap;
 }
 
-.metg-theme-card-labels {
+.blockshift-theme-card-labels {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
 }
 
-.metg-theme-chip {
+.blockshift-theme-chip {
     display: inline-block;
     font-size: 11px;
     padding: 2px 8px;
-    border-radius: var(--metg-radius-pill);
-    background: var(--metg-surface-muted);
-    color: var(--metg-text-secondary);
+    border-radius: var(--blockshift-radius-pill);
+    background: var(--blockshift-surface-muted);
+    color: var(--blockshift-text-secondary);
     font-weight: 500;
 }
 
-.metg-theme-chip-selected {
-    background: var(--metg-primary-soft);
-    color: var(--metg-primary);
+.blockshift-theme-chip-selected {
+    background: var(--blockshift-primary-soft);
+    color: var(--blockshift-primary);
     font-weight: 600;
 }
 
-.metg-theme-selected-summary {
+.blockshift-theme-selected-summary {
     padding: 12px 14px;
-    background: var(--metg-surface-alt);
-    border: 1px solid var(--metg-border);
-    border-radius: var(--metg-radius-md);
+    background: var(--blockshift-surface-alt);
+    border: 1px solid var(--blockshift-border);
+    border-radius: var(--blockshift-radius-md);
     margin-top: 16px;
     font-size: 13px;
-    color: var(--metg-text-secondary);
+    color: var(--blockshift-text-secondary);
 }
 
-.metg-theme-options-panel {
+.blockshift-theme-options-panel {
     margin-top: 12px;
 }
 
-.metg-theme-change-warning {
+.blockshift-theme-change-warning {
     margin-bottom: 20px;
 }
 
@@ -866,138 +866,138 @@
    TEMPLATES (Headers/Footers)
    ============================================================ */
 
-.metg-template-section {
+.blockshift-template-section {
     margin-bottom: 28px;
 }
 
-.metg-template-section-divider {
+.blockshift-template-section-divider {
     margin: 28px 0;
     border: none;
-    border-top: 1px dashed var(--metg-border);
+    border-top: 1px dashed var(--blockshift-border);
 }
 
-.metg-template-section-heading {
+.blockshift-template-section-heading {
     display: flex;
     align-items: center;
     gap: 8px;
     font-size: 12px;
     font-weight: 700;
-    color: var(--metg-text-tertiary);
+    color: var(--blockshift-text-tertiary);
     text-transform: uppercase;
     letter-spacing: 0.06em;
     margin: 0 0 12px;
 }
 
-.metg-template-section-heading::before {
+.blockshift-template-section-heading::before {
     content: '';
     width: 4px;
     height: 16px;
-    background: var(--metg-primary);
+    background: var(--blockshift-primary);
     border-radius: 2px;
 }
 
-.metg-template-title {
+.blockshift-template-title {
     font-weight: 600;
-    color: var(--metg-text);
+    color: var(--blockshift-text);
     margin-bottom: 4px;
 }
 
-.metg-template-meta {
+.blockshift-template-meta {
     font-size: 12px;
-    color: var(--metg-text-tertiary);
+    color: var(--blockshift-text-tertiary);
     line-height: 1.5;
 }
 
-.metg-template-flag {
+.blockshift-template-flag {
     display: inline-block;
     margin-top: 4px;
     font-size: 10px;
     padding: 2px 8px;
-    border-radius: var(--metg-radius-pill);
-    background: var(--metg-warning-soft);
+    border-radius: var(--blockshift-radius-pill);
+    background: var(--blockshift-warning-soft);
     color: #934b08;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.04em;
 }
 
-.metg-template-message {
+.blockshift-template-message {
     font-size: 12px;
     margin-top: 4px;
-    color: var(--metg-text-secondary);
+    color: var(--blockshift-text-secondary);
 }
 
-.metg-default-selection {
+.blockshift-default-selection {
     margin-top: 16px;
     padding: 14px 16px;
-    background: var(--metg-surface-alt);
-    border: 1px solid var(--metg-border);
-    border-radius: var(--metg-radius-md);
+    background: var(--blockshift-surface-alt);
+    border: 1px solid var(--blockshift-border);
+    border-radius: var(--blockshift-radius-md);
 }
 
-.metg-default-selection > p {
+.blockshift-default-selection > p {
     margin: 0 0 10px !important;
     font-size: 12px;
     font-weight: 600;
-    color: var(--metg-text-tertiary);
+    color: var(--blockshift-text-tertiary);
     text-transform: uppercase;
     letter-spacing: 0.04em;
 }
 
-.metg-default-options {
+.blockshift-default-options {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
 }
 
-.metg-default-options label {
+.blockshift-default-options label {
     display: inline-flex;
     align-items: center;
     gap: 6px;
     padding: 6px 12px;
-    background: var(--metg-surface);
-    border: 1px solid var(--metg-border);
-    border-radius: var(--metg-radius-md);
+    background: var(--blockshift-surface);
+    border: 1px solid var(--blockshift-border);
+    border-radius: var(--blockshift-radius-md);
     cursor: pointer;
     font-size: 13px;
-    transition: all var(--metg-transition);
+    transition: all var(--blockshift-transition);
 }
 
-.metg-default-options label:hover {
-    border-color: var(--metg-primary-soft-border);
-    background: var(--metg-primary-soft);
+.blockshift-default-options label:hover {
+    border-color: var(--blockshift-primary-soft-border);
+    background: var(--blockshift-primary-soft);
 }
 
 /* ============================================================
    CONFLICT / OPTIONS
    ============================================================ */
 
-.metg-conflict-options {
+.blockshift-conflict-options {
     display: flex;
     flex-direction: column;
     gap: 10px;
     margin-bottom: 20px;
 }
 
-.metg-conflict-options label {
+.blockshift-conflict-options label {
     display: flex;
     align-items: center;
     gap: 10px;
     padding: 14px 16px;
-    border: 1px solid var(--metg-border);
-    border-radius: var(--metg-radius-md);
+    border: 1px solid var(--blockshift-border);
+    border-radius: var(--blockshift-radius-md);
     cursor: pointer;
-    transition: all var(--metg-transition);
-    background: var(--metg-surface);
+    transition: all var(--blockshift-transition);
+    background: var(--blockshift-surface);
 }
 
-.metg-conflict-options label:hover {
-    border-color: var(--metg-primary-soft-border);
-    background: var(--metg-surface-alt);
+.blockshift-conflict-options label:hover {
+    border-color: var(--blockshift-primary-soft-border);
+    background: var(--blockshift-surface-alt);
 }
 
-.metg-conflict-options input[type="radio"]:checked + span {
-    color: var(--metg-primary);
+.blockshift-conflict-options input[type="radio"]:checked + span {
+    color: var(--blockshift-primary);
     font-weight: 600;
 }
 
@@ -1005,125 +1005,125 @@
    REVIEW DASHBOARD
    ============================================================ */
 
-.metg-review-dashboard {
+.blockshift-review-dashboard {
     display: flex;
     flex-direction: column;
     gap: 20px;
 }
 
-.metg-review-stats {
+.blockshift-review-stats {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 12px;
 }
 
-.metg-review-stat {
-    background: var(--metg-surface);
-    border: 1px solid var(--metg-border);
-    border-radius: var(--metg-radius-md);
+.blockshift-review-stat {
+    background: var(--blockshift-surface);
+    border: 1px solid var(--blockshift-border);
+    border-radius: var(--blockshift-radius-md);
     padding: 16px 18px;
 }
 
-.metg-review-stat-value {
+.blockshift-review-stat-value {
     font-size: 28px;
     font-weight: 700;
-    color: var(--metg-text);
+    color: var(--blockshift-text);
     letter-spacing: -0.02em;
     line-height: 1.1;
 }
 
-.metg-review-stat-label {
+.blockshift-review-stat-label {
     font-size: 11px;
-    color: var(--metg-text-tertiary);
+    color: var(--blockshift-text-tertiary);
     text-transform: uppercase;
     letter-spacing: 0.06em;
     font-weight: 600;
     margin-top: 4px;
 }
 
-.metg-review-section {
-    background: var(--metg-surface);
-    border: 1px solid var(--metg-border);
-    border-radius: var(--metg-radius-md);
+.blockshift-review-section {
+    background: var(--blockshift-surface);
+    border: 1px solid var(--blockshift-border);
+    border-radius: var(--blockshift-radius-md);
     padding: 16px 20px;
 }
 
-.metg-review-section-header {
+.blockshift-review-section-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 10px;
     padding-bottom: 10px;
-    border-bottom: 1px solid var(--metg-surface-muted);
+    border-bottom: 1px solid var(--blockshift-surface-muted);
 }
 
-.metg-review-section-title {
+.blockshift-review-section-title {
     display: flex;
     align-items: center;
     gap: 8px;
     font-size: 12px;
     font-weight: 700;
-    color: var(--metg-text-tertiary);
+    color: var(--blockshift-text-tertiary);
     text-transform: uppercase;
     letter-spacing: 0.06em;
     margin: 0;
 }
 
-.metg-review-section-edit {
+.blockshift-review-section-edit {
     font-size: 12px;
-    color: var(--metg-primary);
+    color: var(--blockshift-primary);
     text-decoration: none;
     font-weight: 500;
 }
 
-.metg-review-section-edit:hover {
+.blockshift-review-section-edit:hover {
     text-decoration: underline;
 }
 
-.metg-review-section-body {
+.blockshift-review-section-body {
     font-size: 14px;
-    color: var(--metg-text);
+    color: var(--blockshift-text);
     line-height: 1.6;
 }
 
-.metg-review-section-body ul {
+.blockshift-review-section-body ul {
     margin: 0;
     padding: 0;
     list-style: none;
 }
 
-.metg-review-section-body li {
+.blockshift-review-section-body li {
     padding: 4px 0;
     display: flex;
     align-items: center;
     gap: 8px;
 }
 
-.metg-review-section-body li::before {
+.blockshift-review-section-body li::before {
     content: '';
     width: 5px;
     height: 5px;
     border-radius: 50%;
-    background: var(--metg-text-tertiary);
+    background: var(--blockshift-text-tertiary);
     flex-shrink: 0;
 }
 
-.metg-safety-note {
+.blockshift-safety-note {
     display: flex;
     align-items: flex-start;
     gap: 10px;
     padding: 12px 14px;
-    background: var(--metg-primary-soft);
-    border: 1px solid var(--metg-primary-soft-border);
-    border-radius: var(--metg-radius-md);
+    background: var(--blockshift-primary-soft);
+    border: 1px solid var(--blockshift-primary-soft-border);
+    border-radius: var(--blockshift-radius-md);
     font-size: 13px;
     color: #352e98;
     line-height: 1.5;
 }
 
-.metg-safety-note-icon {
+.blockshift-safety-note-icon {
     flex-shrink: 0;
-    color: var(--metg-primary);
+    color: var(--blockshift-primary);
     font-size: 18px;
     line-height: 1;
 }
@@ -1132,99 +1132,99 @@
    PROGRESS & RESULTS
    ============================================================ */
 
-.metg-progress-bar {
+.blockshift-progress-bar {
     position: relative;
     height: 6px;
     border-radius: 999px;
-    background: var(--metg-surface-muted);
+    background: var(--blockshift-surface-muted);
     overflow: hidden;
 }
 
-.metg-progress-bar > span {
+.blockshift-progress-bar > span {
     position: absolute;
     left: 0;
     top: 0;
     bottom: 0;
     width: 0;
     border-radius: inherit;
-    background: linear-gradient(90deg, var(--metg-primary) 0%, #635bed 100%);
+    background: linear-gradient(90deg, var(--blockshift-primary) 0%, #635bed 100%);
     transition: width 0.3s ease;
 }
 
-.metg-progress-bar-large {
+.blockshift-progress-bar-large {
     height: 10px;
 }
 
-.metg-progress-summary {
+.blockshift-progress-summary {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
     gap: 12px;
     margin: 20px 0;
 }
 
-.metg-stat-tile {
-    background: var(--metg-surface);
-    border: 1px solid var(--metg-border);
-    border-radius: var(--metg-radius-md);
+.blockshift-stat-tile {
+    background: var(--blockshift-surface);
+    border: 1px solid var(--blockshift-border);
+    border-radius: var(--blockshift-radius-md);
     padding: 14px 16px;
     display: flex;
     flex-direction: column;
     gap: 2px;
 }
 
-.metg-stat-tile--success {
-    border-color: var(--metg-success-soft-border);
-    background: var(--metg-success-soft);
+.blockshift-stat-tile--success {
+    border-color: var(--blockshift-success-soft-border);
+    background: var(--blockshift-success-soft);
 }
 
-.metg-stat-tile--error {
-    border-color: var(--metg-error-soft-border);
-    background: var(--metg-error-soft);
+.blockshift-stat-tile--error {
+    border-color: var(--blockshift-error-soft-border);
+    background: var(--blockshift-error-soft);
 }
 
-.metg-stat-tile--muted {
-    background: var(--metg-surface-alt);
+.blockshift-stat-tile--muted {
+    background: var(--blockshift-surface-alt);
 }
 
-.metg-stat-tile-value {
+.blockshift-stat-tile-value {
     font-size: 26px;
     font-weight: 700;
     line-height: 1.1;
     letter-spacing: -0.02em;
-    color: var(--metg-text);
+    color: var(--blockshift-text);
 }
 
-.metg-stat-tile--success .metg-stat-tile-value {
+.blockshift-stat-tile--success .blockshift-stat-tile-value {
     color: #096748;
 }
 
-.metg-stat-tile--error .metg-stat-tile-value {
+.blockshift-stat-tile--error .blockshift-stat-tile-value {
     color: #a32420;
 }
 
-.metg-stat-tile-label {
+.blockshift-stat-tile-label {
     font-size: 11px;
     font-weight: 600;
-    color: var(--metg-text-tertiary);
+    color: var(--blockshift-text-tertiary);
     text-transform: uppercase;
     letter-spacing: 0.06em;
 }
 
-.metg-stat-tile--success .metg-stat-tile-label {
+.blockshift-stat-tile--success .blockshift-stat-tile-label {
     color: #096748;
     opacity: 0.85;
 }
 
-.metg-stat-tile--error .metg-stat-tile-label {
+.blockshift-stat-tile--error .blockshift-stat-tile-label {
     color: #a32420;
     opacity: 0.85;
 }
 
-.metg-results-sections {
+.blockshift-results-sections {
     margin-top: 20px;
 }
 
-.metg-results-section-title {
+.blockshift-results-section-title {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -1232,24 +1232,24 @@
     font-weight: 700;
     margin: 24px 0 12px;
     padding: 10px 14px;
-    border-radius: var(--metg-radius-md);
+    border-radius: var(--blockshift-radius-md);
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
 
-.metg-results-section-title--error {
-    background: var(--metg-error-soft);
+.blockshift-results-section-title--error {
+    background: var(--blockshift-error-soft);
     color: #a32420;
-    border: 1px solid var(--metg-error-soft-border);
+    border: 1px solid var(--blockshift-error-soft-border);
 }
 
-.metg-results-section-title--success {
-    background: var(--metg-success-soft);
+.blockshift-results-section-title--success {
+    background: var(--blockshift-success-soft);
     color: #096748;
-    border: 1px solid var(--metg-success-soft-border);
+    border: 1px solid var(--blockshift-success-soft-border);
 }
 
-.metg-results-section-title::before {
+.blockshift-results-section-title::before {
     content: '';
     width: 18px;
     height: 18px;
@@ -1258,44 +1258,44 @@
     opacity: 0.15;
 }
 
-.metg-results-table {
+.blockshift-results-table {
     margin-top: 0;
 }
 
-.metg-result-meta {
+.blockshift-result-meta {
     font-size: 12px;
-    color: var(--metg-text-tertiary);
+    color: var(--blockshift-text-tertiary);
     margin-top: 2px;
 }
 
-.metg-results-actions {
+.blockshift-results-actions {
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
     justify-content: flex-end;
     margin-top: 24px;
     padding-top: 20px;
-    border-top: 1px solid var(--metg-border);
+    border-top: 1px solid var(--blockshift-border);
 }
 
 /* ============================================================
    ACTION PILLS (row actions + footer actions)
    ============================================================ */
 
-.metg-action-group {
+.blockshift-action-group {
     display: inline-flex;
     flex-wrap: wrap;
     gap: 6px;
     align-items: center;
 }
 
-.metg-action-pill {
+.blockshift-action-pill {
     display: inline-flex;
     align-items: center;
     gap: 6px;
     padding: 5px 11px;
     height: 30px;
-    border-radius: var(--metg-radius-md);
+    border-radius: var(--blockshift-radius-md);
     border: 1px solid transparent;
     font-size: 12px;
     font-weight: 600;
@@ -1303,155 +1303,155 @@
     cursor: pointer;
     text-decoration: none;
     white-space: nowrap;
-    transition: all var(--metg-transition);
-    background: var(--metg-surface);
-    color: var(--metg-text);
+    transition: all var(--blockshift-transition);
+    background: var(--blockshift-surface);
+    color: var(--blockshift-text);
     font-family: inherit;
 }
 
-.metg-action-pill:focus-visible {
+.blockshift-action-pill:focus-visible {
     outline: none;
-    box-shadow: var(--metg-shadow-ring);
+    box-shadow: var(--blockshift-shadow-ring);
 }
 
-.metg-action-pill-icon {
+.blockshift-action-pill-icon {
     width: 14px;
     height: 14px;
     flex-shrink: 0;
 }
 
-.metg-action-pill-label {
+.blockshift-action-pill-label {
     line-height: 1;
 }
 
 /* View: neutral slate */
-.metg-action-pill--view {
-    border-color: var(--metg-border-strong);
-    color: var(--metg-text-secondary);
+.blockshift-action-pill--view {
+    border-color: var(--blockshift-border-strong);
+    color: var(--blockshift-text-secondary);
 }
-.metg-action-pill--view:hover {
-    border-color: var(--metg-primary);
-    color: var(--metg-primary);
-    background: var(--metg-primary-soft);
+.blockshift-action-pill--view:hover {
+    border-color: var(--blockshift-primary);
+    color: var(--blockshift-primary);
+    background: var(--blockshift-primary-soft);
 }
 
 /* AI: primary-tinted secondary */
-.metg-action-pill--ai {
-    background: var(--metg-primary-soft);
-    border-color: var(--metg-primary-soft-border);
-    color: var(--metg-primary);
+.blockshift-action-pill--ai {
+    background: var(--blockshift-primary-soft);
+    border-color: var(--blockshift-primary-soft-border);
+    color: var(--blockshift-primary);
 }
-.metg-action-pill--ai:hover {
-    background: var(--metg-primary);
-    border-color: var(--metg-primary);
+.blockshift-action-pill--ai:hover {
+    background: var(--blockshift-primary);
+    border-color: var(--blockshift-primary);
     color: #fff;
 }
-.metg-action-pill--ai .metg-action-pill-icon {
+.blockshift-action-pill--ai .blockshift-action-pill-icon {
     color: currentColor;
 }
 
 /* AI primary variant — used in bottom action bar */
-.metg-action-pill--ai-primary {
+.blockshift-action-pill--ai-primary {
     height: 38px;
     padding: 0 18px;
     font-size: 13px;
-    background: var(--metg-primary);
-    border-color: var(--metg-primary);
+    background: var(--blockshift-primary);
+    border-color: var(--blockshift-primary);
     color: #fff;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 }
-.metg-action-pill--ai-primary:hover {
-    background: var(--metg-primary-hover);
-    border-color: var(--metg-primary-hover);
+.blockshift-action-pill--ai-primary:hover {
+    background: var(--blockshift-primary-hover);
+    border-color: var(--blockshift-primary-hover);
     color: #fff;
 }
-.metg-action-pill--ai-primary:disabled {
+.blockshift-action-pill--ai-primary:disabled {
     opacity: 0.5;
     cursor: not-allowed;
 }
-.metg-action-pill--ai-primary .metg-action-pill-icon {
+.blockshift-action-pill--ai-primary .blockshift-action-pill-icon {
     width: 16px;
     height: 16px;
 }
 
 /* Retry: neutral secondary */
-.metg-action-pill--retry {
-    background: var(--metg-surface);
-    border-color: var(--metg-border-strong);
-    color: var(--metg-text-secondary);
+.blockshift-action-pill--retry {
+    background: var(--blockshift-surface);
+    border-color: var(--blockshift-border-strong);
+    color: var(--blockshift-text-secondary);
 }
-.metg-action-pill--retry:hover {
-    background: var(--metg-surface-alt);
-    border-color: var(--metg-text-tertiary);
-    color: var(--metg-text);
+.blockshift-action-pill--retry:hover {
+    background: var(--blockshift-surface-alt);
+    border-color: var(--blockshift-text-tertiary);
+    color: var(--blockshift-text);
 }
 
 /* Feedback: neutral secondary — same weight as View */
-.metg-action-pill--feedback {
-    background: var(--metg-surface);
-    border-color: var(--metg-border-strong);
-    color: var(--metg-text-secondary);
+.blockshift-action-pill--feedback {
+    background: var(--blockshift-surface);
+    border-color: var(--blockshift-border-strong);
+    color: var(--blockshift-text-secondary);
 }
-.metg-action-pill--feedback:hover {
-    border-color: var(--metg-primary);
-    color: var(--metg-primary);
-    background: var(--metg-primary-soft);
+.blockshift-action-pill--feedback:hover {
+    border-color: var(--blockshift-primary);
+    color: var(--blockshift-primary);
+    background: var(--blockshift-primary-soft);
 }
 
 /* View secondary: footer bar ghost button */
-.metg-action-pill--view-secondary {
+.blockshift-action-pill--view-secondary {
     height: 38px;
     padding: 0 16px;
     font-size: 13px;
-    border-color: var(--metg-border-strong);
-    color: var(--metg-text);
+    border-color: var(--blockshift-border-strong);
+    color: var(--blockshift-text);
 }
-.metg-action-pill--view-secondary:hover {
-    border-color: var(--metg-primary);
-    color: var(--metg-primary);
-    background: var(--metg-primary-soft);
+.blockshift-action-pill--view-secondary:hover {
+    border-color: var(--blockshift-primary);
+    color: var(--blockshift-primary);
+    background: var(--blockshift-primary-soft);
 }
-.metg-action-pill--view-secondary .metg-action-pill-icon {
+.blockshift-action-pill--view-secondary .blockshift-action-pill-icon {
     width: 16px;
     height: 16px;
 }
 
 /* Neutral (start new) */
-.metg-action-pill--neutral {
+.blockshift-action-pill--neutral {
     height: 38px;
     padding: 0 16px;
     font-size: 13px;
-    background: var(--metg-surface-alt);
-    border-color: var(--metg-border);
-    color: var(--metg-text-secondary);
+    background: var(--blockshift-surface-alt);
+    border-color: var(--blockshift-border);
+    color: var(--blockshift-text-secondary);
 }
-.metg-action-pill--neutral:hover {
-    background: var(--metg-surface);
-    border-color: var(--metg-text-tertiary);
-    color: var(--metg-text);
+.blockshift-action-pill--neutral:hover {
+    background: var(--blockshift-surface);
+    border-color: var(--blockshift-text-tertiary);
+    color: var(--blockshift-text);
 }
-.metg-action-pill--neutral .metg-action-pill-icon {
+.blockshift-action-pill--neutral .blockshift-action-pill-icon {
     width: 16px;
     height: 16px;
 }
 
 /* Default fallback */
-.metg-action-pill--default {
-    border-color: var(--metg-border-strong);
-    color: var(--metg-text);
+.blockshift-action-pill--default {
+    border-color: var(--blockshift-border-strong);
+    color: var(--blockshift-text);
 }
-.metg-action-pill--default:hover {
-    background: var(--metg-surface-alt);
+.blockshift-action-pill--default:hover {
+    background: var(--blockshift-surface-alt);
 }
 
 /* ============================================================
    AI READINESS CHECKLIST
    ============================================================ */
 
-.metg-ai-readiness-panel {
-    background: var(--metg-surface);
-    border: 1px solid var(--metg-border);
-    border-radius: var(--metg-radius-md);
+.blockshift-ai-readiness-panel {
+    background: var(--blockshift-surface);
+    border: 1px solid var(--blockshift-border);
+    border-radius: var(--blockshift-radius-md);
     padding: 18px 20px;
     margin-bottom: 20px;
     display: flex;
@@ -1459,37 +1459,37 @@
     gap: 12px;
 }
 
-.metg-ai-readiness-header {
+.blockshift-ai-readiness-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     margin-bottom: 4px;
 }
 
-.metg-ai-readiness-title {
+.blockshift-ai-readiness-title {
     font-size: 13px;
     font-weight: 700;
-    color: var(--metg-text);
+    color: var(--blockshift-text);
     text-transform: uppercase;
     letter-spacing: 0.06em;
     margin: 0;
 }
 
-.metg-ai-readiness-all-ready {
+.blockshift-ai-readiness-all-ready {
     font-size: 12px;
-    color: var(--metg-success);
+    color: var(--blockshift-success);
     font-weight: 600;
 }
 
-.metg-ai-readiness-row {
+.blockshift-ai-readiness-row {
     display: flex;
     align-items: center;
     gap: 10px;
     font-size: 13px;
-    color: var(--metg-text);
+    color: var(--blockshift-text);
 }
 
-.metg-ai-readiness-icon {
+.blockshift-ai-readiness-icon {
     width: 22px;
     height: 22px;
     border-radius: 50%;
@@ -1501,53 +1501,53 @@
     font-weight: 700;
 }
 
-.metg-ai-readiness-icon--ok {
-    background: var(--metg-success);
+.blockshift-ai-readiness-icon--ok {
+    background: var(--blockshift-success);
     color: #fff;
 }
 
-.metg-ai-readiness-icon--error {
-    background: var(--metg-error);
+.blockshift-ai-readiness-icon--error {
+    background: var(--blockshift-error);
     color: #fff;
 }
 
-.metg-ai-readiness-icon--info {
-    background: var(--metg-primary);
+.blockshift-ai-readiness-icon--info {
+    background: var(--blockshift-primary);
     color: #fff;
 }
 
-.metg-ai-readiness-status {
+.blockshift-ai-readiness-status {
     font-weight: 500;
 }
 
-.metg-ai-readiness-status.is-invalid {
-    color: var(--metg-error);
+.blockshift-ai-readiness-status.is-invalid {
+    color: var(--blockshift-error);
     font-weight: 600;
 }
 
-.metg-ai-warning-notice {
+.blockshift-ai-warning-notice {
     display: flex;
     align-items: flex-start;
     gap: 12px;
     padding: 14px 16px;
-    background: var(--metg-warning-soft);
-    border: 1px solid var(--metg-warning-soft-border);
-    border-radius: var(--metg-radius-md);
+    background: var(--blockshift-warning-soft);
+    border: 1px solid var(--blockshift-warning-soft-border);
+    border-radius: var(--blockshift-radius-md);
     margin-bottom: 20px;
 }
 
-.metg-ai-warning-icon {
+.blockshift-ai-warning-icon {
     font-size: 20px;
     line-height: 1;
     flex-shrink: 0;
-    color: var(--metg-warning);
+    color: var(--blockshift-warning);
 }
 
-.metg-ai-warning-text {
+.blockshift-ai-warning-text {
     flex: 1;
 }
 
-.metg-ai-warning-text strong {
+.blockshift-ai-warning-text strong {
     display: block;
     font-size: 13px;
     font-weight: 700;
@@ -1555,7 +1555,7 @@
     margin-bottom: 2px;
 }
 
-.metg-ai-warning-text p {
+.blockshift-ai-warning-text p {
     margin: 0;
     font-size: 13px;
     color: #934b08;
@@ -1566,153 +1566,153 @@
    AI PROGRESS & TABLE
    ============================================================ */
 
-.metg-ai-progress-header {
-    background: var(--metg-surface);
-    border: 1px solid var(--metg-border);
-    border-radius: var(--metg-radius-md);
+.blockshift-ai-progress-header {
+    background: var(--blockshift-surface);
+    border: 1px solid var(--blockshift-border);
+    border-radius: var(--blockshift-radius-md);
     padding: 18px 20px;
     margin-bottom: 20px;
 }
 
-.metg-ai-bar-row {
+.blockshift-ai-bar-row {
     display: flex;
     align-items: center;
     gap: 14px;
     margin-bottom: 14px;
 }
 
-.metg-ai-bar-row .metg-progress-bar {
+.blockshift-ai-bar-row .blockshift-progress-bar {
     flex: 1;
 }
 
-.metg-ai-bar-label {
+.blockshift-ai-bar-label {
     font-size: 13px;
     font-weight: 600;
-    color: var(--metg-text);
+    color: var(--blockshift-text);
     white-space: nowrap;
 }
 
-.metg-ai-chips {
+.blockshift-ai-chips {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
 }
 
-.metg-ai-chip {
+.blockshift-ai-chip {
     display: inline-flex;
     align-items: center;
     gap: 6px;
     padding: 4px 12px;
-    border-radius: var(--metg-radius-pill);
+    border-radius: var(--blockshift-radius-pill);
     font-size: 12px;
     font-weight: 500;
-    background: var(--metg-surface-muted);
-    color: var(--metg-text-secondary);
+    background: var(--blockshift-surface-muted);
+    color: var(--blockshift-text-secondary);
 }
 
-.metg-ai-chip strong {
+.blockshift-ai-chip strong {
     font-weight: 700;
-    color: var(--metg-text);
+    color: var(--blockshift-text);
 }
 
-.metg-ai-chip.chip-done {
-    background: var(--metg-success-soft);
+.blockshift-ai-chip.chip-done {
+    background: var(--blockshift-success-soft);
     color: #096748;
 }
 
-.metg-ai-chip.chip-failed {
-    background: var(--metg-error-soft);
+.blockshift-ai-chip.chip-failed {
+    background: var(--blockshift-error-soft);
     color: #a32420;
 }
 
-.metg-ai-chip.chip-skipped {
-    background: var(--metg-surface-muted);
-    color: var(--metg-text-secondary);
+.blockshift-ai-chip.chip-skipped {
+    background: var(--blockshift-surface-muted);
+    color: var(--blockshift-text-secondary);
 }
 
-.metg-ai-chip.chip-pending {
-    background: var(--metg-primary-soft);
-    color: var(--metg-primary);
+.blockshift-ai-chip.chip-pending {
+    background: var(--blockshift-primary-soft);
+    color: var(--blockshift-primary);
 }
 
-.metg-ai-paused-notice {
+.blockshift-ai-paused-notice {
     margin: 14px 0 0;
     padding: 10px 14px;
-    background: var(--metg-warning-soft);
-    border: 1px solid var(--metg-warning-soft-border);
-    border-radius: var(--metg-radius-sm);
+    background: var(--blockshift-warning-soft);
+    border: 1px solid var(--blockshift-warning-soft-border);
+    border-radius: var(--blockshift-radius-sm);
     color: #934b08;
     font-size: 12px;
     font-weight: 500;
 }
 
-.metg-ai-row--pending {
+.blockshift-ai-row--pending {
     background: transparent;
 }
 
-.metg-ai-row--processing {
-    background: var(--metg-primary-soft);
+.blockshift-ai-row--processing {
+    background: var(--blockshift-primary-soft);
 }
 
-.metg-ai-row--done {
-    background: var(--metg-success-soft);
+.blockshift-ai-row--done {
+    background: var(--blockshift-success-soft);
 }
 
-.metg-ai-row--failed {
-    background: var(--metg-error-soft);
+.blockshift-ai-row--failed {
+    background: var(--blockshift-error-soft);
 }
 
-.metg-ai-row--skipped {
+.blockshift-ai-row--skipped {
     opacity: 0.7;
 }
 
-.metg-ai-row--skipped .metg-ai-title-cell {
+.blockshift-ai-row--skipped .blockshift-ai-title-cell {
     text-decoration: line-through;
 }
 
-.metg-ai-error-msg {
+.blockshift-ai-error-msg {
     font-size: 12px;
     color: #a32420;
     margin: 4px 0 0;
     line-height: 1.4;
 }
 
-.metg-ai-processing {
+.blockshift-ai-processing {
     display: inline-flex;
     align-items: center;
     gap: 8px;
     font-size: 12px;
-    color: var(--metg-primary);
+    color: var(--blockshift-primary);
     font-weight: 500;
 }
 
-.metg-ai-completion {
+.blockshift-ai-completion {
     margin-top: 20px;
     padding: 18px 20px;
-    border-radius: var(--metg-radius-md);
+    border-radius: var(--blockshift-radius-md);
     border: 1px solid transparent;
 }
 
-.metg-ai-completion--success {
-    background: var(--metg-success-soft);
-    border-color: var(--metg-success-soft-border);
+.blockshift-ai-completion--success {
+    background: var(--blockshift-success-soft);
+    border-color: var(--blockshift-success-soft-border);
     color: #096748;
 }
 
-.metg-ai-completion--partial {
-    background: var(--metg-warning-soft);
-    border-color: var(--metg-warning-soft-border);
+.blockshift-ai-completion--partial {
+    background: var(--blockshift-warning-soft);
+    border-color: var(--blockshift-warning-soft-border);
     color: #934b08;
 }
 
-.metg-ai-completion strong {
+.blockshift-ai-completion strong {
     display: block;
     font-size: 15px;
     font-weight: 700;
     margin-bottom: 4px;
 }
 
-.metg-ai-completion-detail {
+.blockshift-ai-completion-detail {
     font-size: 13px;
 }
 
@@ -1720,13 +1720,13 @@
    OVERLAY SPINNER
    ============================================================ */
 
-.metg-bulk-ai-overlay-spinner .arc {
+.blockshift-bulk-ai-overlay-spinner .arc {
     stroke-dasharray: 60 200;
-    animation: metg-spin 1.2s linear infinite;
+    animation: blockshift-spin 1.2s linear infinite;
     transform-origin: center;
 }
 
-@keyframes metg-spin {
+@keyframes blockshift-spin {
     0%   { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
@@ -1735,7 +1735,7 @@
    THEME WARNING LIST
    ============================================================ */
 
-.metg-theme-warning-list {
+.blockshift-theme-warning-list {
     margin-bottom: 20px;
     display: flex;
     flex-direction: column;
@@ -1750,18 +1750,18 @@
    SELECTION TABLE — SCREENSHOT THUMBNAIL CELL
    ============================================================ */
 
-.metg-row-thumb-wrap {
+.blockshift-row-thumb-wrap {
     width: 60px;
     height: 40px;
-    border-radius: var(--metg-radius-sm);
+    border-radius: var(--blockshift-radius-sm);
     overflow: hidden;
-    border: 1px solid var(--metg-border);
-    background: var(--metg-surface-muted);
+    border: 1px solid var(--blockshift-border);
+    background: var(--blockshift-surface-muted);
     margin-bottom: 6px;
     flex-shrink: 0;
 }
 
-.metg-row-thumb {
+.blockshift-row-thumb {
     display: block;
     width: 100%;
     height: 100%;
@@ -1771,18 +1771,18 @@
 
 /* Screenshot status badge (selection table + pre-flight) */
 
-.metg-shot-status {
+.blockshift-shot-status {
     display: inline-flex;
     align-items: center;
     gap: 4px;
     font-size: 11px;
     font-weight: 600;
     padding: 2px 8px;
-    border-radius: var(--metg-radius-pill);
+    border-radius: var(--blockshift-radius-pill);
     white-space: nowrap;
 }
 
-.metg-shot-status::before {
+.blockshift-shot-status::before {
     content: '';
     width: 6px;
     height: 6px;
@@ -1790,52 +1790,52 @@
     flex-shrink: 0;
 }
 
-.metg-shot-status--generated {
-    background: var(--metg-success-soft);
+.blockshift-shot-status--generated {
+    background: var(--blockshift-success-soft);
     color: #096748;
 }
 
-.metg-shot-status--generated::before { background: var(--metg-success); }
+.blockshift-shot-status--generated::before { background: var(--blockshift-success); }
 
-.metg-shot-status--failed {
-    background: var(--metg-error-soft);
+.blockshift-shot-status--failed {
+    background: var(--blockshift-error-soft);
     color: #a32420;
 }
 
-.metg-shot-status--failed::before { background: var(--metg-error); }
+.blockshift-shot-status--failed::before { background: var(--blockshift-error); }
 
-.metg-shot-status--pending {
-    background: var(--metg-warning-soft);
+.blockshift-shot-status--pending {
+    background: var(--blockshift-warning-soft);
     color: #934b08;
 }
 
-.metg-shot-status--pending::before { background: var(--metg-warning); }
+.blockshift-shot-status--pending::before { background: var(--blockshift-warning); }
 
-.metg-shot-status--none {
-    background: var(--metg-surface-muted);
-    color: var(--metg-text-tertiary);
+.blockshift-shot-status--none {
+    background: var(--blockshift-surface-muted);
+    color: var(--blockshift-text-tertiary);
 }
 
-.metg-shot-status--none::before { background: var(--metg-border-strong); }
+.blockshift-shot-status--none::before { background: var(--blockshift-border-strong); }
 
 /* ============================================================
    PRE-FLIGHT PAGE CARDS
    ============================================================ */
 
-.metg-preflight-pages-section {
+.blockshift-preflight-pages-section {
     margin-bottom: 20px;
 }
 
-.metg-preflight-section-label {
+.blockshift-preflight-section-label {
     font-size: 11px;
     font-weight: 700;
-    color: var(--metg-text-tertiary);
+    color: var(--blockshift-text-tertiary);
     text-transform: uppercase;
     letter-spacing: 0.06em;
     margin: 0 0 10px;
 }
 
-.metg-preflight-pages {
+.blockshift-preflight-pages {
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -1844,32 +1844,32 @@
     padding-right: 2px;
 }
 
-.metg-preflight-page-card {
+.blockshift-preflight-page-card {
     display: flex;
     align-items: flex-start;
     gap: 14px;
     padding: 14px 16px;
-    background: var(--metg-surface);
-    border: 1px solid var(--metg-border);
-    border-radius: var(--metg-radius-md);
-    transition: border-color var(--metg-transition);
+    background: var(--blockshift-surface);
+    border: 1px solid var(--blockshift-border);
+    border-radius: var(--blockshift-radius-md);
+    transition: border-color var(--blockshift-transition);
 }
 
-.metg-preflight-page-card:hover {
-    border-color: var(--metg-primary-soft-border);
+.blockshift-preflight-page-card:hover {
+    border-color: var(--blockshift-primary-soft-border);
 }
 
-.metg-preflight-thumb {
+.blockshift-preflight-thumb {
     width: 72px;
     height: 52px;
     flex-shrink: 0;
-    border-radius: var(--metg-radius-sm);
+    border-radius: var(--blockshift-radius-sm);
     overflow: hidden;
-    border: 1px solid var(--metg-border);
-    background: var(--metg-surface-muted);
+    border: 1px solid var(--blockshift-border);
+    background: var(--blockshift-surface-muted);
 }
 
-.metg-preflight-thumb-img {
+.blockshift-preflight-thumb-img {
     display: block;
     width: 100%;
     height: 100%;
@@ -1877,96 +1877,96 @@
     object-position: top center;
 }
 
-.metg-preflight-thumb--empty {
+.blockshift-preflight-thumb--empty {
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--metg-text-tertiary);
+    color: var(--blockshift-text-tertiary);
     font-size: 20px;
     background: linear-gradient(135deg, #eef2f7 0%, #e1e7f0 100%);
 }
 
-.metg-preflight-page-body {
+.blockshift-preflight-page-body {
     flex: 1;
     min-width: 0;
 }
 
-.metg-preflight-page-title {
+.blockshift-preflight-page-title {
     display: flex;
     align-items: center;
     gap: 8px;
     flex-wrap: wrap;
     font-size: 13px;
     font-weight: 600;
-    color: var(--metg-text);
+    color: var(--blockshift-text);
     margin-bottom: 3px;
 }
 
-.metg-preflight-page-title a {
-    color: var(--metg-text);
+.blockshift-preflight-page-title a {
+    color: var(--blockshift-text);
     text-decoration: none;
 }
 
-.metg-preflight-page-title a:hover {
-    color: var(--metg-primary);
+.blockshift-preflight-page-title a:hover {
+    color: var(--blockshift-primary);
     text-decoration: underline;
 }
 
-.metg-preflight-improved-badge {
+.blockshift-preflight-improved-badge {
     display: inline-flex;
     align-items: center;
     padding: 1px 7px;
-    border-radius: var(--metg-radius-pill);
+    border-radius: var(--blockshift-radius-pill);
     font-size: 10px;
     font-weight: 700;
-    background: var(--metg-success-soft);
+    background: var(--blockshift-success-soft);
     color: #096748;
     letter-spacing: 0.02em;
 }
 
-.metg-preflight-page-source {
+.blockshift-preflight-page-source {
     font-size: 12px;
-    color: var(--metg-text-tertiary);
+    color: var(--blockshift-text-tertiary);
     margin-bottom: 8px;
 }
 
-.metg-preflight-page-source a {
-    color: var(--metg-text-secondary);
+.blockshift-preflight-page-source a {
+    color: var(--blockshift-text-secondary);
     text-decoration: none;
 }
 
-.metg-preflight-page-source a:hover {
+.blockshift-preflight-page-source a:hover {
     text-decoration: underline;
 }
 
-.metg-preflight-page-meta {
+.blockshift-preflight-page-meta {
     margin-bottom: 8px;
 }
 
-.metg-preflight-page-links {
+.blockshift-preflight-page-links {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
 }
 
 @media (max-width: 782px) {
-    .metg-wizard-root {
+    .blockshift-wizard-root {
         padding: 20px;
     }
-    .metg-stepper-label {
+    .blockshift-stepper-label {
         display: none;
     }
-    .metg-mode-grid {
+    .blockshift-mode-grid {
         grid-template-columns: 1fr;
     }
-    .metg-theme-browser-grid {
+    .blockshift-theme-browser-grid {
         grid-template-columns: 1fr 1fr;
     }
-    .metg-select-toolbar {
+    .blockshift-select-toolbar {
         flex-direction: column;
         align-items: stretch;
     }
-    .metg-select-bulk-actions {
+    .blockshift-select-bulk-actions {
         margin-left: 0;
     }
 }
@@ -1975,45 +1975,45 @@
    AI ENHANCEMENT PAGE — STATS BAR
    ============================================================ */
 
-.metg-enhancement-stats {
+.blockshift-enhancement-stats {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 12px;
     margin: 8px 0 16px;
 }
 
-.metg-enhancement-stat {
-    background: var(--metg-surface);
-    border: 1px solid var(--metg-border);
-    border-radius: var(--metg-radius-md);
+.blockshift-enhancement-stat {
+    background: var(--blockshift-surface);
+    border: 1px solid var(--blockshift-border);
+    border-radius: var(--blockshift-radius-md);
     padding: 14px 18px;
     display: flex;
     flex-direction: column;
     gap: 4px;
-    transition: border-color var(--metg-transition);
+    transition: border-color var(--blockshift-transition);
 }
 
-.metg-enhancement-stat--success {
-    border-color: var(--metg-success-soft-border);
-    background: var(--metg-success-soft);
+.blockshift-enhancement-stat--success {
+    border-color: var(--blockshift-success-soft-border);
+    background: var(--blockshift-success-soft);
 }
 
-.metg-enhancement-stat-value {
+.blockshift-enhancement-stat-value {
     font-size: 26px;
     font-weight: 700;
-    color: var(--metg-text);
+    color: var(--blockshift-text);
     line-height: 1;
     letter-spacing: -0.02em;
 }
 
-.metg-enhancement-stat--success .metg-enhancement-stat-value {
+.blockshift-enhancement-stat--success .blockshift-enhancement-stat-value {
     color: #096748;
 }
 
-.metg-enhancement-stat-label {
+.blockshift-enhancement-stat-label {
     font-size: 11px;
     font-weight: 600;
-    color: var(--metg-text-tertiary);
+    color: var(--blockshift-text-tertiary);
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
@@ -2022,7 +2022,7 @@
    AI ENHANCEMENT PAGE — TOOLBAR RIGHT GROUP
    ============================================================ */
 
-.metg-toolbar-right {
+.blockshift-toolbar-right {
     display: flex;
     gap: 8px;
     margin-left: auto;
@@ -2035,41 +2035,41 @@
    ============================================================ */
 
 /* Screenshot inline button — WP secondary style */
-.metg-action-pill--screenshot {
-    background: var(--metg-surface);
-    border-color: var(--metg-border-strong);
-    color: var(--metg-text-secondary);
+.blockshift-action-pill--screenshot {
+    background: var(--blockshift-surface);
+    border-color: var(--blockshift-border-strong);
+    color: var(--blockshift-text-secondary);
 }
-.metg-action-pill--screenshot:hover {
-    background: var(--metg-surface-alt);
-    border-color: var(--metg-primary);
-    color: var(--metg-primary);
+.blockshift-action-pill--screenshot:hover {
+    background: var(--blockshift-surface-alt);
+    border-color: var(--blockshift-primary);
+    color: var(--blockshift-primary);
 }
-.metg-action-pill--screenshot:disabled {
+.blockshift-action-pill--screenshot:disabled {
     opacity: 0.5;
     cursor: not-allowed;
 }
 
 /* Screenshot toolbar button — WP primary style */
-.metg-action-pill--screenshot-primary {
+.blockshift-action-pill--screenshot-primary {
     height: 38px;
     padding: 0 18px;
     font-size: 13px;
-    background: var(--metg-primary);
-    border-color: var(--metg-primary);
+    background: var(--blockshift-primary);
+    border-color: var(--blockshift-primary);
     color: #fff;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 }
-.metg-action-pill--screenshot-primary:hover {
-    background: var(--metg-primary-hover);
-    border-color: var(--metg-primary-hover);
+.blockshift-action-pill--screenshot-primary:hover {
+    background: var(--blockshift-primary-hover);
+    border-color: var(--blockshift-primary-hover);
     color: #fff;
 }
-.metg-action-pill--screenshot-primary:disabled {
+.blockshift-action-pill--screenshot-primary:disabled {
     opacity: 0.45;
     cursor: not-allowed;
 }
-.metg-action-pill--screenshot-primary .metg-action-pill-icon {
+.blockshift-action-pill--screenshot-primary .blockshift-action-pill-icon {
     width: 16px;
     height: 16px;
 }
@@ -2078,27 +2078,27 @@
    SCREENSHOT CELL (in selection table)
    ============================================================ */
 
-.metg-shot-cell-inner {
+.blockshift-shot-cell-inner {
     display: flex;
     flex-direction: column;
     gap: 6px;
     align-items: flex-start;
 }
 
-.metg-shot-generating {
+.blockshift-shot-generating {
     display: inline-flex;
     align-items: center;
     gap: 6px;
     padding: 4px 0;
 }
 
-.metg-shot-generating-label {
+.blockshift-shot-generating-label {
     font-size: 12px;
-    color: var(--metg-primary);
+    color: var(--blockshift-primary);
     font-weight: 500;
 }
 
-.metg-shot-error-msg {
+.blockshift-shot-error-msg {
     font-size: 11px;
     color: #a32420;
     max-width: 170px;
@@ -2111,8 +2111,8 @@
    AI-ENHANCED META LABEL
    ============================================================ */
 
-.metg-result-meta--enhanced {
-    color: var(--metg-success);
+.blockshift-result-meta--enhanced {
+    color: var(--blockshift-success);
     font-weight: 600;
 }
 
@@ -2120,54 +2120,54 @@
    PROGRESS SECTION (progress bar + chips)
    ============================================================ */
 
-.metg-progress-section {
+.blockshift-progress-section {
     margin-bottom: 20px;
 }
 
-.metg-progress-fill {
+.blockshift-progress-fill {
     position: absolute;
     left: 0;
     top: 0;
     bottom: 0;
     height: 100%;
     border-radius: inherit;
-    background: var(--metg-primary);
+    background: var(--blockshift-primary);
     transition: width 0.4s ease;
 }
 
-.metg-status-chips {
+.blockshift-status-chips {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
     margin-top: 10px;
 }
 
-.metg-status-chip {
+.blockshift-status-chip {
     display: inline-flex;
     align-items: center;
     padding: 3px 10px;
-    border-radius: var(--metg-radius-pill);
+    border-radius: var(--blockshift-radius-pill);
     font-size: 12px;
     font-weight: 600;
 }
 
-.metg-status-chip--done    { background: var(--metg-success-soft); color: #096748; }
-.metg-status-chip--failed  { background: var(--metg-error-soft);   color: #a32420; }
-.metg-status-chip--skipped { background: var(--metg-surface-muted); color: var(--metg-text-secondary); }
-.metg-status-chip--pending { background: var(--metg-primary-soft); color: var(--metg-primary); }
+.blockshift-status-chip--done    { background: var(--blockshift-success-soft); color: #096748; }
+.blockshift-status-chip--failed  { background: var(--blockshift-error-soft);   color: #a32420; }
+.blockshift-status-chip--skipped { background: var(--blockshift-surface-muted); color: var(--blockshift-text-secondary); }
+.blockshift-status-chip--pending { background: var(--blockshift-primary-soft); color: var(--blockshift-primary); }
 
-.metg-paused-notice {
+.blockshift-paused-notice {
     margin: 14px 0 0;
     padding: 10px 14px;
-    background: var(--metg-warning-soft);
-    border: 1px solid var(--metg-warning-soft-border);
-    border-radius: var(--metg-radius-sm);
+    background: var(--blockshift-warning-soft);
+    border: 1px solid var(--blockshift-warning-soft-border);
+    border-radius: var(--blockshift-radius-sm);
     color: #934b08;
     font-size: 12px;
     font-weight: 500;
 }
 
-.metg-paused-notice p {
+.blockshift-paused-notice p {
     margin: 0;
 }
 
@@ -2175,44 +2175,44 @@
    AI STATUS BADGES (bulk progress table)
    ============================================================ */
 
-.metg-ai-badge {
+.blockshift-ai-badge {
     display: inline-flex;
     align-items: center;
     padding: 3px 10px;
-    border-radius: var(--metg-radius-pill);
+    border-radius: var(--blockshift-radius-pill);
     font-size: 11px;
     font-weight: 600;
     gap: 5px;
 }
 
-.metg-ai-badge--pending    { background: var(--metg-surface-muted);  color: var(--metg-text-secondary); }
-.metg-ai-badge--processing { background: var(--metg-primary-soft);   color: var(--metg-primary); }
-.metg-ai-badge--done       { background: var(--metg-success-soft);   color: #096748; }
-.metg-ai-badge--failed     { background: var(--metg-error-soft);     color: #a32420; }
-.metg-ai-badge--skipped    { background: var(--metg-surface-muted);  color: var(--metg-text-secondary); opacity: 0.7; }
+.blockshift-ai-badge--pending    { background: var(--blockshift-surface-muted);  color: var(--blockshift-text-secondary); }
+.blockshift-ai-badge--processing { background: var(--blockshift-primary-soft);   color: var(--blockshift-primary); }
+.blockshift-ai-badge--done       { background: var(--blockshift-success-soft);   color: #096748; }
+.blockshift-ai-badge--failed     { background: var(--blockshift-error-soft);     color: #a32420; }
+.blockshift-ai-badge--skipped    { background: var(--blockshift-surface-muted);  color: var(--blockshift-text-secondary); opacity: 0.7; }
 
-.metg-ai-badge-error {
+.blockshift-ai-badge-error {
     font-size: 11px;
     font-weight: 400;
 }
 
 /* Row-level status tinting for the progress table */
 
-.metg-ai-row--processing td { background: var(--metg-primary-soft) !important; }
-.metg-ai-row--done       td { background: var(--metg-success-soft)  !important; }
-.metg-ai-row--failed     td { background: var(--metg-error-soft)    !important; }
-.metg-ai-row--skipped    td { opacity: 0.65; }
-.metg-ai-row--skipped    .metg-ai-title-cell { text-decoration: line-through; }
+.blockshift-ai-row--processing td { background: var(--blockshift-primary-soft) !important; }
+.blockshift-ai-row--done       td { background: var(--blockshift-success-soft)  !important; }
+.blockshift-ai-row--failed     td { background: var(--blockshift-error-soft)    !important; }
+.blockshift-ai-row--skipped    td { opacity: 0.65; }
+.blockshift-ai-row--skipped    .blockshift-ai-title-cell { text-decoration: line-through; }
 
 /* ============================================================
    SCREENSHOT CAMERA ICON IN PREFLIGHT THUMB
    ============================================================ */
 
-.metg-preflight-thumb-icon {
+.blockshift-preflight-thumb-icon {
     display: block;
     width: 22px;
     height: 22px;
-    background: var(--metg-text-tertiary);
+    background: var(--blockshift-text-tertiary);
     mask-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M2 7a2 2 0 012-2h1l1.5-2h7L15 5h1a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V7z' stroke='currentColor' stroke-width='1.5' stroke-linejoin='round'/%3E%3Ccircle cx='10' cy='11' r='2.5' stroke='currentColor' stroke-width='1.5'/%3E%3C/svg%3E");
     mask-size: contain;
     mask-repeat: no-repeat;
@@ -2224,12 +2224,12 @@
 }
 
 /* Warning icon variant for screenshots */
-.metg-ai-warning-icon--shot::before {
+.blockshift-ai-warning-icon--shot::before {
     content: '';
     display: block;
     width: 22px;
     height: 22px;
-    background: var(--metg-warning);
+    background: var(--blockshift-warning);
     mask-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M2 7a2 2 0 012-2h1l1.5-2h7L15 5h1a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V7z' stroke='currentColor' stroke-width='1.5' stroke-linejoin='round'/%3E%3Ccircle cx='10' cy='11' r='2.5' stroke='currentColor' stroke-width='1.5'/%3E%3C/svg%3E");
     mask-size: contain;
     mask-repeat: no-repeat;
@@ -2244,11 +2244,11 @@
    COMPATIBILITY WARNING BADGES (selection table)
    ============================================================ */
 
-.metg-compat-cell {
+.blockshift-compat-cell {
     white-space: nowrap;
 }
 
-.metg-compat-trigger {
+.blockshift-compat-trigger {
     background: transparent;
     border: none;
     padding: 2px 4px;
@@ -2256,98 +2256,98 @@
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    border-radius: var(--metg-radius-sm);
-    transition: opacity var(--metg-transition);
+    border-radius: var(--blockshift-radius-sm);
+    transition: opacity var(--blockshift-transition);
     font-family: inherit;
 }
 
-.metg-compat-trigger:hover {
+.blockshift-compat-trigger:hover {
     opacity: 0.75;
 }
 
-.metg-compat-trigger:focus-visible {
-    outline: 2px solid var(--metg-primary);
+.blockshift-compat-trigger:focus-visible {
+    outline: 2px solid var(--blockshift-primary);
     outline-offset: 2px;
 }
 
-.metg-warn-badge {
+.blockshift-warn-badge {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     padding: 2px 7px;
-    border-radius: var(--metg-radius-pill);
+    border-radius: var(--blockshift-radius-pill);
     font-size: 11px;
     font-weight: 600;
     line-height: 1.5;
     white-space: nowrap;
 }
 
-.metg-warn-badge--unsupported {
-    background: var(--metg-error-soft);
+.blockshift-warn-badge--unsupported {
+    background: var(--blockshift-error-soft);
     color: #a32420;
-    border: 1px solid var(--metg-error-soft-border);
+    border: 1px solid var(--blockshift-error-soft-border);
 }
 
-.metg-warn-badge--dynamic {
-    background: var(--metg-primary-soft);
-    color: var(--metg-primary);
-    border: 1px solid var(--metg-primary-soft-border);
+.blockshift-warn-badge--dynamic {
+    background: var(--blockshift-primary-soft);
+    color: var(--blockshift-primary);
+    border: 1px solid var(--blockshift-primary-soft-border);
 }
 
-.metg-warn-badge--animation {
-    background: var(--metg-warning-soft);
+.blockshift-warn-badge--animation {
+    background: var(--blockshift-warning-soft);
     color: #934b08;
-    border: 1px solid var(--metg-warning-soft-border);
+    border: 1px solid var(--blockshift-warning-soft-border);
 }
 
 /* ============================================================
    COMPATIBILITY WARNING POPOVER
    ============================================================ */
 
-.metg-warn-popover {
+.blockshift-warn-popover {
     position: fixed;
     z-index: 99999;
     width: 300px;
-    background: var(--metg-surface, #fff);
-    border: 1px solid var(--metg-border-strong, #cdd6e4);
-    border-radius: var(--metg-radius-lg, 10px);
+    background: var(--blockshift-surface, #fff);
+    border: 1px solid var(--blockshift-border-strong, #cdd6e4);
+    border-radius: var(--blockshift-radius-lg, 10px);
     box-shadow: 0 8px 24px rgba(17,24,39,.12), 0 2px 6px rgba(17,24,39,.06);
     font-family: inherit;
     font-size: 13px;
-    color: var(--metg-text, #151b26);
+    color: var(--blockshift-text, #151b26);
     overflow: hidden;
-    animation: metg-popover-in 140ms ease;
+    animation: blockshift-popover-in 140ms ease;
 }
 
-@keyframes metg-popover-in {
+@keyframes blockshift-popover-in {
     from { opacity: 0; transform: translateY(-4px) scale(.98); }
     to   { opacity: 1; transform: translateY(0)   scale(1); }
 }
 
-.metg-warn-popover-header {
+.blockshift-warn-popover-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 10px 14px;
-    background: var(--metg-surface-alt, #f7f9fc);
-    border-bottom: 1px solid var(--metg-border, #e1e7f0);
+    background: var(--blockshift-surface-alt, #f7f9fc);
+    border-bottom: 1px solid var(--blockshift-border, #e1e7f0);
 }
 
-.metg-warn-popover-title {
+.blockshift-warn-popover-title {
     font-size: 10px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.07em;
-    color: var(--metg-text-tertiary, #677489);
+    color: var(--blockshift-text-tertiary, #677489);
 }
 
-.metg-warn-popover-close {
+.blockshift-warn-popover-close {
     width: 22px;
     height: 22px;
     border-radius: 50%;
     border: none;
     background: transparent;
-    color: var(--metg-text-tertiary, #677489);
+    color: var(--blockshift-text-tertiary, #677489);
     cursor: pointer;
     font-size: 17px;
     line-height: 1;
@@ -2355,64 +2355,64 @@
     align-items: center;
     justify-content: center;
     padding: 0;
-    transition: background var(--metg-transition, 150ms ease), color var(--metg-transition, 150ms ease);
+    transition: background var(--blockshift-transition, 150ms ease), color var(--blockshift-transition, 150ms ease);
     font-family: inherit;
 }
 
-.metg-warn-popover-close:hover {
-    background: var(--metg-surface-muted, #eef2f7);
-    color: var(--metg-text, #151b26);
+.blockshift-warn-popover-close:hover {
+    background: var(--blockshift-surface-muted, #eef2f7);
+    color: var(--blockshift-text, #151b26);
 }
 
-.metg-warn-popover-page {
+.blockshift-warn-popover-page {
     padding: 9px 14px;
     font-size: 13px;
     font-weight: 600;
-    color: var(--metg-text, #151b26);
-    border-bottom: 1px solid var(--metg-border, #e1e7f0);
+    color: var(--blockshift-text, #151b26);
+    border-bottom: 1px solid var(--blockshift-border, #e1e7f0);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    background: var(--metg-surface, #fff);
+    background: var(--blockshift-surface, #fff);
 }
 
-.metg-warn-popover-body {
+.blockshift-warn-popover-body {
     max-height: 380px;
     overflow-y: auto;
 }
 
-.metg-warn-popover-section {
+.blockshift-warn-popover-section {
     padding: 12px 14px;
 }
 
-.metg-warn-popover-divider {
+.blockshift-warn-popover-divider {
     margin: 0;
     border: none;
-    border-top: 1px solid var(--metg-border, #e1e7f0);
+    border-top: 1px solid var(--blockshift-border, #e1e7f0);
 }
 
-.metg-warn-popover-section-title {
+.blockshift-warn-popover-section-title {
     font-size: 12px;
     font-weight: 700;
     margin: 0 0 6px;
 }
 
-.metg-warn-popover-section-title--error   { color: #a32420; }
-.metg-warn-popover-section-title--info    { color: var(--metg-primary, #4f44dd); }
-.metg-warn-popover-section-title--warning { color: #934b08; }
+.blockshift-warn-popover-section-title--error   { color: #a32420; }
+.blockshift-warn-popover-section-title--info    { color: var(--blockshift-primary, #4f44dd); }
+.blockshift-warn-popover-section-title--warning { color: #934b08; }
 
-.metg-warn-popover-desc {
+.blockshift-warn-popover-desc {
     font-size: 12px;
-    color: var(--metg-text-secondary, #36404f);
+    color: var(--blockshift-text-secondary, #36404f);
     line-height: 1.55;
     margin: 0 0 8px;
 }
 
-.metg-warn-popover-desc:last-child {
+.blockshift-warn-popover-desc:last-child {
     margin-bottom: 0;
 }
 
-.metg-warn-popover-list {
+.blockshift-warn-popover-list {
     list-style: none;
     margin: 0;
     padding: 0;
@@ -2421,32 +2421,32 @@
     gap: 3px;
 }
 
-.metg-warn-popover-list-item {
+.blockshift-warn-popover-list-item {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 4px 8px;
-    background: var(--metg-surface-muted, #eef2f7);
-    border-radius: var(--metg-radius-sm, 4px);
+    background: var(--blockshift-surface-muted, #eef2f7);
+    border-radius: var(--blockshift-radius-sm, 4px);
     font-size: 12px;
 }
 
-.metg-warn-popover-list-item code {
+.blockshift-warn-popover-list-item code {
     font-size: 11px;
     background: transparent;
-    color: var(--metg-text, #151b26);
+    color: var(--blockshift-text, #151b26);
     padding: 0;
     font-family: monospace;
 }
 
-.metg-warn-popover-count {
+.blockshift-warn-popover-count {
     font-size: 11px;
     font-weight: 600;
-    color: var(--metg-text-tertiary, #677489);
-    background: var(--metg-surface, #fff);
+    color: var(--blockshift-text-tertiary, #677489);
+    background: var(--blockshift-surface, #fff);
     padding: 1px 6px;
-    border-radius: var(--metg-radius-pill, 999px);
-    border: 1px solid var(--metg-border, #e1e7f0);
+    border-radius: var(--blockshift-radius-pill, 999px);
+    border: 1px solid var(--blockshift-border, #e1e7f0);
 }
 
 /* ============================================================
@@ -2457,31 +2457,31 @@
    FEEDBACK FEATURE
    ============================================================ */
 
-.metg-action-pill--feedback .metg-action-pill-icon {
+.blockshift-action-pill--feedback .blockshift-action-pill-icon {
     width: 14px;
     height: 14px;
 }
 
 /* "Send Feedback" row below the progress summary tiles */
-.metg-feedback-run-row {
+.blockshift-feedback-run-row {
     display: flex;
     justify-content: flex-end;
     margin-top: 10px;
 }
 
 /* Multi-item selection bar (shown above results tables when checkboxes are checked) */
-.metg-feedback-selection-bar {
+.blockshift-feedback-selection-bar {
     display: flex;
     align-items: center;
     gap: 12px;
     padding: 10px 14px;
-    background: var(--metg-primary-soft);
-    border: 1px solid var(--metg-primary-soft-border);
+    background: var(--blockshift-primary-soft);
+    border: 1px solid var(--blockshift-primary-soft-border);
     border-radius: 6px;
     margin-bottom: 14px;
 }
 
-.metg-feedback-clear-btn {
+.blockshift-feedback-clear-btn {
     background: none;
     border: none;
     color: #677489;
@@ -2491,15 +2491,15 @@
     padding: 0;
 }
 
-.metg-feedback-clear-btn:hover {
+.blockshift-feedback-clear-btn:hover {
     color: #151b26;
 }
 
 @media (max-width: 782px) {
-    .metg-enhancement-stats {
+    .blockshift-enhancement-stats {
         grid-template-columns: 1fr 1fr;
     }
-    .metg-toolbar-right {
+    .blockshift-toolbar-right {
         margin-left: 0;
         width: 100%;
         justify-content: flex-start;

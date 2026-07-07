@@ -3,12 +3,12 @@
  *
  * Adds copy-to-clipboard behaviour for the diagnostic JSONL log viewer.
  * Translated button labels are provided via wp_localize_script as
- * window.metgConversionLog.
+ * window.blockshiftConversionLog.
  */
 ( function () {
-	var data = window.metgConversionLog || {};
-	var pre = document.getElementById( 'metg-jsonl-log' );
-	var btn = document.getElementById( 'metg-jsonl-copy' );
+	var data = window.blockshiftConversionLog || {};
+	var pre = document.getElementById( 'blockshift-jsonl-log' );
+	var btn = document.getElementById( 'blockshift-jsonl-copy' );
 
 	if ( ! pre || ! btn ) {
 		return;

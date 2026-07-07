@@ -36,7 +36,7 @@ class Feedback_Builder {
 		array $user_feedback,
 		array $client_info
 	): ?array {
-		$job = get_transient( 'metg_job_' . $job_id );
+		$job = get_transient( 'blockshift_job_' . $job_id );
 		if ( empty( $job ) || ! is_array( $job ) ) {
 			return null;
 		}
@@ -222,10 +222,10 @@ class Feedback_Builder {
 			$jsonl_status = Diagnostic_Logger::derive_status( $raw_status, $widget_log );
 
 			// Screenshots from post meta — all four types are stored on the target post.
-			$src_urls        = $target_id > 0 ? self::get_screenshot_urls( $target_id, '_metg_ai_elementor_screenshot_url' ) : array();
-			$src_mob_urls    = $target_id > 0 ? self::get_screenshot_urls( $target_id, '_metg_ai_elementor_screenshot_mobile_url' ) : array();
-			$gb_urls         = $target_id > 0 ? self::get_screenshot_urls( $target_id, '_metg_ai_gutenberg_screenshot_url' ) : array();
-			$gb_mob_urls     = $target_id > 0 ? self::get_screenshot_urls( $target_id, '_metg_ai_gutenberg_screenshot_mobile_url' ) : array();
+			$src_urls        = $target_id > 0 ? self::get_screenshot_urls( $target_id, '_blockshift_ai_elementor_screenshot_url' ) : array();
+			$src_mob_urls    = $target_id > 0 ? self::get_screenshot_urls( $target_id, '_blockshift_ai_elementor_screenshot_mobile_url' ) : array();
+			$gb_urls         = $target_id > 0 ? self::get_screenshot_urls( $target_id, '_blockshift_ai_gutenberg_screenshot_url' ) : array();
+			$gb_mob_urls     = $target_id > 0 ? self::get_screenshot_urls( $target_id, '_blockshift_ai_gutenberg_screenshot_mobile_url' ) : array();
 
 			// Elementor JSON.
 			$elementor_json = self::get_elementor_json( $source_id );
@@ -331,7 +331,7 @@ class Feedback_Builder {
 			return null;
 		}
 
-		$workspace = get_post_meta( $source_id, '_metg_ai_workspace', true );
+		$workspace = get_post_meta( $source_id, '_blockshift_ai_workspace', true );
 		if ( is_array( $workspace ) && ! empty( $workspace['elementor_json_snapshot'] ) ) {
 			return (string) $workspace['elementor_json_snapshot'];
 		}
@@ -353,7 +353,7 @@ class Feedback_Builder {
 			return null;
 		}
 
-		$workspace = get_post_meta( $target_id, '_metg_ai_workspace', true );
+		$workspace = get_post_meta( $target_id, '_blockshift_ai_workspace', true );
 		if ( is_array( $workspace ) && ! empty( $workspace['gutenberg_snapshot'] ) ) {
 			return (string) $workspace['gutenberg_snapshot'];
 		}

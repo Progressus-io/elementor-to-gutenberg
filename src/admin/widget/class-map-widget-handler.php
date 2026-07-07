@@ -13,7 +13,7 @@ use Progressus\BlockShift\Admin\Helper\Style_Parser;
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Converts an Elementor map widget into the `progressus/google-map` block.
+ * Converts an Elementor map widget into the `blockshift/google-map` block.
  */
 class Map_Widget_Handler implements Widget_Handler_Interface {
 
@@ -134,15 +134,15 @@ class Map_Widget_Handler implements Widget_Handler_Interface {
 		}
 		$style_attr = implode( ';', $style_parts );
 
-		$open  = '<!-- wp:progressus/google-map ' . $attrs_json . ' -->';
+		$open  = '<!-- wp:blockshift/google-map ' . $attrs_json . ' -->';
 		$inner = '';
 		if ( ! $src ) {
-			$inner = sprintf( '<div class="wp-block-progressus-google-map" style="%1$s"><div style="height:%2$spx;background:#f3f3f3;border:1px solid #ddd"></div></div>', esc_attr( $style_attr ), esc_attr( $height ) );
+			$inner = sprintf( '<div class="wp-block-blockshift-google-map" style="%1$s"><div style="height:%2$spx;background:#f3f3f3;border:1px solid #ddd"></div></div>', esc_attr( $style_attr ), esc_attr( $height ) );
 		} else {
-			$inner = sprintf( '<div class="wp-block-progressus-google-map" style="%1$s"><iframe src="%2$s" style="width:100%%;height:%3$spx;border:0" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe></div>', esc_attr( $style_attr ), esc_attr( $src ), esc_attr( $height ) );
+			$inner = sprintf( '<div class="wp-block-blockshift-google-map" style="%1$s"><iframe src="%2$s" style="width:100%%;height:%3$spx;border:0" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe></div>', esc_attr( $style_attr ), esc_attr( $src ), esc_attr( $height ) );
 		}
 
-		$close = '<!-- /wp:progressus/google-map -->';
+		$close = '<!-- /wp:blockshift/google-map -->';
 
 		return $open . "\n" . $inner . "\n" . $close . "\n";
 	}

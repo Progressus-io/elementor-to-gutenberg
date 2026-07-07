@@ -43,7 +43,6 @@ use function is_wp_error;
 use function plugins_url;
 use function sanitize_key;
 use function sanitize_text_field;
-use function sanitize_textarea_field;
 use function trim;
 use function set_transient;
 use function sprintf;
@@ -57,17 +56,17 @@ use function wp_nonce_field;
 use function wp_parse_url;
 use function wp_remote_get;
 use function wp_remote_retrieve_response_code;
+use function wp_kses_post;
 use function wp_safe_redirect;
 use function wp_unslash;
 use function wp_update_post;
 
 class AI_Improvement_Admin {
 
-	public const MENU_SLUG = 'metg-ai-improvement';
+	public const MENU_SLUG = 'blockshift-ai-improvement';
 
-	private const NONCE_AUTO_IMPROVE   = 'metg_ai_auto_improve';
-	private const NONCE_REFINE         = 'metg_ai_refine';
-	private const NONCE_MOBILE_IMPROVE = 'metg_ai_mobile_improve';
+	private const NONCE_AUTO_IMPROVE   = 'blockshift_ai_auto_improve';
+	private const NONCE_MOBILE_IMPROVE = 'blockshift_ai_mobile_improve';
 
 	/**
 	 * Markers that wrap the AI mobile CSS block inside the external CSS file.
@@ -102,10 +101,9 @@ class AI_Improvement_Admin {
 	private function __construct() {
 		add_action( 'admin_menu', array( $this, 'register_menu' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
-		add_action( 'admin_post_metg_ai_auto_improve', array( $this, 'handle_auto_improve' ) );
-		add_action( 'admin_post_metg_ai_refine', array( $this, 'handle_refine' ) );
-		add_action( 'admin_post_metg_ai_mobile_improve', array( $this, 'handle_mobile_improve' ) );
-		add_action( 'admin_post_metg_ai_regenerate_screenshots', array( $this, 'handle_regenerate_screenshots' ) );
+		add_action( 'admin_post_blockshift_ai_auto_improve', array( $this, 'handle_auto_improve' ) );
+		add_action( 'admin_post_blockshift_ai_mobile_improve', array( $this, 'handle_mobile_improve' ) );
+		add_action( 'admin_post_blockshift_ai_regenerate_screenshots', array( $this, 'handle_regenerate_screenshots' ) );
 	}
 
 	/**
@@ -124,14 +122,14 @@ class AI_Improvement_Admin {
 		$js_path  = BLOCKSHIFT_DIR_PATH . '/assets/js/ai-improve.js';
 
 		wp_enqueue_style(
-			'metg-ai-improve',
+			'blockshift-ai-improve',
 			plugins_url( 'assets/css/ai-improve.css', BLOCKSHIFT_MAIN_FILE ),
 			array(),
 			BLOCKSHIFT_DEBUG && file_exists( $css_path ) ? (string) filemtime( $css_path ) : BLOCKSHIFT_VERSION
 		);
 
 		wp_enqueue_script(
-			'metg-ai-improve',
+			'blockshift-ai-improve',
 			plugins_url( 'assets/js/ai-improve.js', BLOCKSHIFT_MAIN_FILE ),
 			array(),
 			BLOCKSHIFT_DEBUG && file_exists( $js_path ) ? (string) filemtime( $js_path ) : BLOCKSHIFT_VERSION,
@@ -142,12 +140,11 @@ class AI_Improvement_Admin {
 		$source_id_asset = isset( $_GET['source_id'] ) ? absint( wp_unslash( $_GET['source_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
 		wp_localize_script(
-			'metg-ai-improve',
-			'metgAiImprove',
+			'blockshift-ai-improve',
+			'blockshiftAiImprove',
 			array(
 				'processingLabel'     => __( 'Processing…', 'blockshift-migrate-from-elementor' ),
 				'improvingLabel'      => __( 'Improving with AI…', 'blockshift-migrate-from-elementor' ),
-				'refiningLabel'       => __( 'Refining with AI…', 'blockshift-migrate-from-elementor' ),
 				'mobileLabel'         => __( 'Improving mobile with AI…', 'blockshift-migrate-from-elementor' ),
 				'ajaxUrl'             => admin_url( 'admin-ajax.php' ),
 				'feedbackNonce'       => wp_create_nonce( AI_Enhancement_Admin::FEEDBACK_NONCE ),
@@ -228,14 +225,14 @@ class AI_Improvement_Admin {
 		}
 
 		if ( $source_id <= 0 ) {
-			$source_id = (int) get_post_meta( $target_id, '_metg_source_id', true );
+			$source_id = (int) get_post_meta( $target_id, '_blockshift_source_id', true );
 		}
 
 		if ( $source_id <= 0 ) {
 			wp_die( esc_html__( 'Source Elementor page ID could not be resolved.', 'blockshift-migrate-from-elementor' ) );
 		}
 
-		$stored_source_id = (int) get_post_meta( $target_id, '_metg_source_id', true );
+		$stored_source_id = (int) get_post_meta( $target_id, '_blockshift_source_id', true );
 		if ( $stored_source_id > 0 && $stored_source_id !== $source_id ) {
 			wp_die( esc_html__( 'The selected source and target page mapping is invalid.', 'blockshift-migrate-from-elementor' ) );
 		}
@@ -292,7 +289,7 @@ class AI_Improvement_Admin {
 		);
 		AI_Workspace_Repository::save( $target_id, $workspace_to_save );
 
-		$notice_code = isset( $_GET['metg_ai_notice'] ) ? sanitize_text_field( wp_unslash( $_GET['metg_ai_notice'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$notice_code = isset( $_GET['blockshift_ai_notice'] ) ? sanitize_text_field( wp_unslash( $_GET['blockshift_ai_notice'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$this->render_notice( $notice_code, $target_id );
 		$this->render_form( $target_post, $source_post, AI_Workspace_Repository::get( $target_id ) );
 	}
@@ -318,7 +315,7 @@ class AI_Improvement_Admin {
 			wp_die( esc_html__( 'You do not have permission to edit this page.', 'blockshift-migrate-from-elementor' ) );
 		}
 
-		$stored_source_id = (int) get_post_meta( $target_id, '_metg_source_id', true );
+		$stored_source_id = (int) get_post_meta( $target_id, '_blockshift_source_id', true );
 		if ( $stored_source_id > 0 && $stored_source_id !== $source_id ) {
 			$this->redirect_with_notice( $source_id, $target_id, 'invalid_mapping' );
 		}
@@ -328,7 +325,7 @@ class AI_Improvement_Admin {
 		if ( ! $result['success'] ) {
 			$notice = $result['notice'] ?? 'ai_failed';
 			// Store the concrete reason so the redirect target can show "why".
-			set_transient( 'metg_ai_error_' . $target_id, $result['error'], 60 );
+			set_transient( 'blockshift_ai_error_' . $target_id, $result['error'], 60 );
 			$this->redirect_with_notice( $source_id, $target_id, $notice );
 		}
 
@@ -421,7 +418,7 @@ class AI_Improvement_Admin {
 
 		$parsed           = Claude_Api_Service::parse_response( $api_result['content'] );
 		$css_result       = self::fix_css_namespace( $parsed['css'], $source_id, $target_id );
-		$gutenberg_result = $parsed['gutenberg'];
+		$gutenberg_result = self::sanitize_block_content( $parsed['gutenberg'] );
 
 		self::log_improvement(
 			array(
@@ -489,7 +486,7 @@ class AI_Improvement_Admin {
 		$workspace['updated_at']             = current_time( 'mysql' );
 		AI_Workspace_Repository::save( $target_id, $workspace );
 
-		update_post_meta( $target_id, '_metg_last_ai_improved', current_time( 'mysql' ) );
+		update_post_meta( $target_id, '_blockshift_last_ai_improved', current_time( 'mysql' ) );
 
 		return array(
 			'success' => true,
@@ -499,13 +496,68 @@ class AI_Improvement_Admin {
 	}
 
 	/**
+	 * Sanitize AI-generated block content before it is persisted as post_content.
+	 *
+	 * Two layers: (1) executable constructs (scripts, inline event handlers,
+	 * script: URIs) are stripped for EVERY user — the AI response is untrusted
+	 * input and such markup never belongs in converted block content, so this
+	 * closes the gap even for users who can post unfiltered HTML; (2) users who
+	 * cannot post unfiltered HTML additionally get the same wp_kses_post() filter
+	 * WordPress core applies to post_content on save. Block-delimiter comments and
+	 * ordinary block markup (including form/embed elements) are preserved.
+	 *
+	 * @param string $content Raw Gutenberg content returned by the AI.
+	 *
+	 * @return string Sanitized block content.
+	 */
+	private static function sanitize_block_content( string $content ): string {
+		$content = self::strip_executable_markup( $content );
+
+		if ( ! current_user_can( 'unfiltered_html' ) ) {
+			$content = wp_kses_post( $content );
+		}
+
+		return $content;
+	}
+
+	/**
+	 * Remove script-execution vectors from a markup string without disturbing
+	 * legitimate block markup or block-delimiter comments.
+	 *
+	 * @param string $content Markup to clean.
+	 *
+	 * @return string Markup with scripts, inline event handlers and script: URIs removed.
+	 */
+	private static function strip_executable_markup( string $content ): string {
+		$patterns = array(
+			// Paired <script>…</script> blocks including their contents.
+			'#<\s*script\b[^>]*>.*?<\s*/\s*script\s*>#is' => '',
+			// Stray or unpaired <script> tags.
+			'#<\s*/?\s*script\b[^>]*>#i'                  => '',
+			// Inline event-handler attributes (onclick=, onerror=, …).
+			'#\son[a-z]+\s*=\s*(?:"[^"]*"|\'[^\']*\'|[^\s>]+)#i' => '',
+			// Script protocols in attribute values.
+			'#(=\s*["\']?)\s*(?:javascript|vbscript)\s*:#i' => '$1',
+		);
+
+		foreach ( $patterns as $pattern => $replacement ) {
+			$result = preg_replace( $pattern, $replacement, $content );
+			if ( null !== $result ) {
+				$content = $result;
+			}
+		}
+
+		return $content;
+	}
+
+	/**
 	 * Append a diagnostic log entry to the same log file used by Claude_Api_Service.
 	 *
 	 * @param array $data Associative array of fields to log.
 	 */
 	private static function log_improvement( array $data ): void {
 		$upload_dir = wp_upload_dir();
-		$log_file   = trailingslashit( $upload_dir['basedir'] ) . 'metg-claude-api.log';
+		$log_file   = trailingslashit( $upload_dir['basedir'] ) . 'blockshift-claude-api.log';
 
 		$entry = array_merge(
 			array(
@@ -643,209 +695,6 @@ class AI_Improvement_Admin {
 	}
 
 	/**
-	 * Handle the "Refine with AI" action (Round 2+).
-	 *
-	 * Takes fresh screenshots, then sends the current page state plus the user's
-	 * focus instruction to Claude for a targeted refinement pass.
-	 */
-	public function handle_refine(): void {
-		if ( ! current_user_can( 'edit_pages' ) ) {
-			wp_die( esc_html__( 'You do not have permission to perform this action.', 'blockshift-migrate-from-elementor' ) );
-		}
-
-		check_admin_referer( self::NONCE_REFINE );
-
-		$target_id         = isset( $_POST['target_id'] ) ? absint( wp_unslash( $_POST['target_id'] ) ) : 0;
-		$source_id         = isset( $_POST['source_id'] ) ? absint( wp_unslash( $_POST['source_id'] ) ) : 0;
-		$focus_instruction = isset( $_POST['focus_instruction'] ) ? sanitize_textarea_field( wp_unslash( $_POST['focus_instruction'] ) ) : '';
-
-		if ( $target_id <= 0 || $source_id <= 0 ) {
-			wp_die( esc_html__( 'Source or target page is missing.', 'blockshift-migrate-from-elementor' ) );
-		}
-
-		if ( ! current_user_can( 'edit_post', $target_id ) ) {
-			wp_die( esc_html__( 'You do not have permission to edit this page.', 'blockshift-migrate-from-elementor' ) );
-		}
-
-		$stored_source_id = (int) get_post_meta( $target_id, '_metg_source_id', true );
-		if ( $stored_source_id > 0 && $stored_source_id !== $source_id ) {
-			$this->redirect_with_notice( $source_id, $target_id, 'invalid_mapping' );
-		}
-
-		$result = self::run_refinement( $source_id, $target_id, $focus_instruction );
-
-		if ( ! $result['success'] ) {
-			$notice = $result['notice'] ?? 'ai_failed';
-			set_transient( 'metg_ai_error_' . $target_id, $result['error'], 60 );
-			$this->redirect_with_notice( $source_id, $target_id, $notice );
-		}
-
-		$this->redirect_with_notice( $source_id, $target_id, 'refined' );
-	}
-
-	/**
-	 * Core refinement logic — Round 2+ targeted improvement.
-	 *
-	 * Sends the current page state, fresh screenshots, and user's focus instruction
-	 * to Claude using the refinement system prompt. The full CSS file is replaced
-	 * with the result on every run.
-	 *
-	 * @param int    $source_id         Elementor source post ID.
-	 * @param int    $target_id         Converted Gutenberg post ID.
-	 * @param string $focus_instruction User's instruction on what to fix.
-	 * @return array{success: bool, error: string, notice: string}
-	 */
-	public static function run_refinement( int $source_id, int $target_id, string $focus_instruction ): array {
-		$failure = static function ( string $error, string $notice = 'ai_failed' ): array {
-			return array(
-				'success' => false,
-				'error'   => $error,
-				'notice'  => $notice,
-			);
-		};
-
-		// Pre-flight: block the AI call if the page is not publicly reachable.
-		$access = self::check_page_accessibility( $source_id, $target_id );
-		if ( ! $access['accessible'] ) {
-			return $failure( $access['reason'], 'page_inaccessible' );
-		}
-
-		// Take fresh screenshots right before sending to Claude; do not send the
-		// AI request if they could not be captured.
-		$screenshot_result = AI_Remediation_Screenshot_Meta_Service::generate_and_store( $source_id, $target_id, true );
-		if ( ! $screenshot_result['success'] ) {
-			return $failure(
-				sprintf(
-					/* translators: %s: screenshot error details */
-					__( 'Screenshots could not be generated, so AI refinement was not run: %s', 'blockshift-migrate-from-elementor' ),
-					$screenshot_result['error']
-				),
-				'screenshot_failed'
-			);
-		}
-
-		$gutenberg_content = (string) get_post_field( 'post_content', $target_id );
-		$elementor_json    = get_post_meta( $source_id, '_elementor_data', true );
-		if ( is_array( $elementor_json ) ) {
-			$elementor_json = wp_json_encode( $elementor_json, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
-		}
-		$elementor_json = (string) $elementor_json;
-
-		$current_css = self::fix_css_namespace( self::read_post_css( $target_id ), $source_id, $target_id );
-
-		$template_type = '';
-		if ( 'elementor_library' === get_post_type( $source_id ) ) {
-			$template_type = (string) get_post_meta( $source_id, '_elementor_template_type', true );
-		}
-
-		$prompt = AI_Prompt_Builder::build_refinement(
-			array(
-				'source_id'         => $source_id,
-				'target_id'         => $target_id,
-				'source_title'      => get_the_title( $source_id ),
-				'target_title'      => get_the_title( $target_id ),
-				'elementor_json'    => $elementor_json,
-				'gutenberg_content' => $gutenberg_content,
-				'current_css'       => $current_css,
-				'focus_instruction' => $focus_instruction,
-				'template_type'     => $template_type,
-			)
-		);
-
-		$elementor_shots = AI_Remediation_Screenshot_Meta_Service::get_elementor_urls( $target_id );
-		$gutenberg_shots = AI_Remediation_Screenshot_Meta_Service::get_gutenberg_urls( $target_id );
-
-		$api_result = Claude_Api_Service::send(
-			$prompt,
-			$elementor_shots,
-			$gutenberg_shots,
-			Claude_Api_Service::get_refinement_system_prompt()
-		);
-
-		if ( ! $api_result['success'] ) {
-			self::log_improvement(
-				array(
-					'step'      => 'refine_api_failed',
-					'target_id' => $target_id,
-					'error'     => $api_result['error'],
-				)
-			);
-			return $failure( $api_result['error'], 'ai_failed' );
-		}
-
-		$parsed           = Claude_Api_Service::parse_response( $api_result['content'] );
-		$css_result       = self::fix_css_namespace( $parsed['css'], $source_id, $target_id );
-		$gutenberg_result = $parsed['gutenberg'];
-
-		self::log_improvement(
-			array(
-				'step'              => 'refine_parse_complete',
-				'target_id'         => $target_id,
-				'css_length'        => strlen( $css_result ),
-				'gutenberg_length'  => strlen( $gutenberg_result ),
-				'gutenberg_preview' => substr( $gutenberg_result, 0, 120 ),
-			)
-		);
-
-		if ( '' === trim( $gutenberg_result ) ) {
-			self::log_improvement(
-				array(
-					'step'      => 'refine_parse_failed_empty_gutenberg',
-					'target_id' => $target_id,
-				)
-			);
-			return $failure(
-				__( 'No valid Gutenberg content could be parsed from the AI refinement response.', 'blockshift-migrate-from-elementor' ),
-				'ai_parse_failed'
-			);
-		}
-
-		$update_result = wp_update_post(
-			array(
-				'ID'           => $target_id,
-				'post_content' => $gutenberg_result,
-			),
-			true
-		);
-
-		if ( is_wp_error( $update_result ) ) {
-			self::log_improvement(
-				array(
-					'step'      => 'refine_wp_update_post_failed',
-					'target_id' => $target_id,
-					'error'     => $update_result->get_error_message(),
-				)
-			);
-			return $failure( $update_result->get_error_message(), 'update_failed' );
-		}
-
-		// Replace the full CSS file on every refinement run.
-		if ( '' !== trim( $css_result ) ) {
-			External_CSS_Service::save_post_css( $target_id, $css_result );
-		}
-
-		if ( 'elementor_library' === get_post_type( $source_id ) ) {
-			External_CSS_Service::register_global_css_post( $target_id );
-		}
-
-		$workspace                           = AI_Workspace_Repository::get( $target_id );
-		$workspace['target_post_id']         = $target_id;
-		$workspace['source_post_id']         = $source_id;
-		$workspace['css_result_draft']       = $css_result;
-		$workspace['gutenberg_result_draft'] = $gutenberg_result;
-		$workspace['updated_at']             = current_time( 'mysql' );
-		AI_Workspace_Repository::save( $target_id, $workspace );
-
-		update_post_meta( $target_id, '_metg_last_ai_improved', current_time( 'mysql' ) );
-
-		return array(
-			'success' => true,
-			'error'   => '',
-			'notice'  => 'refined',
-		);
-	}
-
-	/**
 	 * Handle the "Improve Mobile with AI" action.
 	 *
 	 * A separate AI pass that uses ONLY the mobile screenshots and instructs Claude
@@ -871,7 +720,7 @@ class AI_Improvement_Admin {
 			wp_die( esc_html__( 'You do not have permission to edit this page.', 'blockshift-migrate-from-elementor' ) );
 		}
 
-		$stored_source_id = (int) get_post_meta( $target_id, '_metg_source_id', true );
+		$stored_source_id = (int) get_post_meta( $target_id, '_blockshift_source_id', true );
 		if ( $stored_source_id > 0 && $stored_source_id !== $source_id ) {
 			$this->redirect_with_notice( $source_id, $target_id, 'invalid_mapping' );
 		}
@@ -880,7 +729,7 @@ class AI_Improvement_Admin {
 
 		if ( ! $result['success'] ) {
 			$notice = $result['notice'] ?? 'mobile_failed';
-			set_transient( 'metg_ai_error_' . $target_id, $result['error'], 60 );
+			set_transient( 'blockshift_ai_error_' . $target_id, $result['error'], 60 );
 			$this->redirect_with_notice( $source_id, $target_id, $notice );
 		}
 
@@ -1002,7 +851,7 @@ class AI_Improvement_Admin {
 			External_CSS_Service::register_global_css_post( $target_id );
 		}
 
-		update_post_meta( $target_id, '_metg_last_ai_mobile_improved', current_time( 'mysql' ) );
+		update_post_meta( $target_id, '_blockshift_last_ai_mobile_improved', current_time( 'mysql' ) );
 
 		return array(
 			'success' => true,
@@ -1046,7 +895,7 @@ class AI_Improvement_Admin {
 	/**
 	 * Correct the CSS namespace if Claude used the target ID instead of the source ID.
 	 *
-	 * The Gutenberg page HTML wrapper always uses metg-page-{source_id} as its class,
+	 * The Gutenberg page HTML wrapper always uses blockshift-page-{source_id} as its class,
 	 * so all CSS selectors must target that class. Claude sometimes uses the target ID
 	 * instead. This method replaces any wrong occurrences as a guaranteed safety net.
 	 *
@@ -1061,8 +910,8 @@ class AI_Improvement_Admin {
 		}
 
 		return str_replace(
-			'metg-page-' . $target_id,
-			'metg-page-' . $source_id,
+			'blockshift-page-' . $target_id,
+			'blockshift-page-' . $source_id,
 			$css
 		);
 	}
@@ -1100,7 +949,7 @@ class AI_Improvement_Admin {
 		$target_id = isset( $_POST['target_id'] ) ? absint( wp_unslash( $_POST['target_id'] ) ) : 0;
 		$source_id = isset( $_POST['source_id'] ) ? absint( wp_unslash( $_POST['source_id'] ) ) : 0;
 
-		check_admin_referer( 'metg_ai_regenerate_screenshots_' . $target_id );
+		check_admin_referer( 'blockshift_ai_regenerate_screenshots_' . $target_id );
 
 		if ( $target_id <= 0 || $source_id <= 0 ) {
 			wp_die( esc_html__( 'Source or target page is missing.', 'blockshift-migrate-from-elementor' ) );
@@ -1121,10 +970,10 @@ class AI_Improvement_Admin {
 	private function redirect_with_notice( int $source_id, int $target_id, string $notice_code ): void {
 		$url = add_query_arg(
 			array(
-				'page'           => self::MENU_SLUG,
-				'source_id'      => $source_id,
-				'target_id'      => $target_id,
-				'metg_ai_notice' => $notice_code,
+				'page'                 => self::MENU_SLUG,
+				'source_id'            => $source_id,
+				'target_id'            => $target_id,
+				'blockshift_ai_notice' => $notice_code,
 			),
 			admin_url( 'admin.php' )
 		);
@@ -1155,8 +1004,8 @@ class AI_Improvement_Admin {
 		if ( isset( $detail_prefixes[ $notice_code ] ) ) {
 			$ai_error = '';
 			if ( $target_id > 0 ) {
-				$ai_error = (string) get_transient( 'metg_ai_error_' . $target_id );
-				delete_transient( 'metg_ai_error_' . $target_id );
+				$ai_error = (string) get_transient( 'blockshift_ai_error_' . $target_id );
+				delete_transient( 'blockshift_ai_error_' . $target_id );
 			}
 			$prefix = $detail_prefixes[ $notice_code ];
 			$msg    = '' !== $ai_error
@@ -1178,7 +1027,6 @@ class AI_Improvement_Admin {
 			'screenshots_regenerated' => array( 'success', esc_html__( 'Screenshots regenerated successfully.', 'blockshift-migrate-from-elementor' ) ),
 			'screenshots_failed'      => array( 'error', esc_html__( 'Screenshot regeneration failed. Check the screenshot service settings and connectivity.', 'blockshift-migrate-from-elementor' ) ),
 			'ai_parse_failed'         => array( 'error', esc_html__( 'Claude returned a response but no valid Gutenberg content could be parsed.', 'blockshift-migrate-from-elementor' ) ),
-			'refined'                 => array( 'success', esc_html__( 'Page refined successfully. Fresh screenshots were captured before this run.', 'blockshift-migrate-from-elementor' ) ),
 			'mobile_improved'         => array( 'success', esc_html__( 'Mobile CSS improved successfully. Desktop styles were not modified.', 'blockshift-migrate-from-elementor' ) ),
 			'mobile_failed'           => array( 'error', esc_html__( 'Mobile improvement failed. Check the screenshot service and Claude API settings.', 'blockshift-migrate-from-elementor' ) ),
 		);
@@ -1214,8 +1062,8 @@ class AI_Improvement_Admin {
 		$screenshot_status       = AI_Remediation_Screenshot_Meta_Service::get_status( $target_id );
 		$screenshot_generated_at = (string) get_post_meta( $target_id, AI_Remediation_Screenshot_Meta_Service::META_GENERATED_AT, true );
 		$service_configured      = '' !== AI_Remediation_Screenshot_Api_Service::get_endpoint_url();
-		$last_improved           = (string) get_post_meta( $target_id, '_metg_last_ai_improved', true );
-		$last_mobile_improved    = (string) get_post_meta( $target_id, '_metg_last_ai_mobile_improved', true );
+		$last_improved           = (string) get_post_meta( $target_id, '_blockshift_last_ai_improved', true );
+		$last_mobile_improved    = (string) get_post_meta( $target_id, '_blockshift_last_ai_mobile_improved', true );
 		$has_mobile_shots        = ! empty( $elementor_mobile_shots ) && ! empty( $gutenberg_mobile_shots );
 
 		$pill_map = array(
@@ -1232,34 +1080,23 @@ class AI_Improvement_Admin {
 		$source_prev_url = \get_permalink( $source_id );
 		$target_prev_url = \get_permalink( $target_id );
 
-		$suggestions = array(
-			__( 'Fix hero section spacing and alignment', 'blockshift-migrate-from-elementor' ),
-			__( 'Match typography — font sizes and weights', 'blockshift-migrate-from-elementor' ),
-			__( 'Improve button styles and colors', 'blockshift-migrate-from-elementor' ),
-			__( 'Fix colors and contrast', 'blockshift-migrate-from-elementor' ),
-			__( 'Fix image sizing and alignment', 'blockshift-migrate-from-elementor' ),
-			__( 'Fix section padding and spacing', 'blockshift-migrate-from-elementor' ),
-			__( 'Improve heading styles', 'blockshift-migrate-from-elementor' ),
-			__( 'Fix navigation menu styling', 'blockshift-migrate-from-elementor' ),
-		);
-
 		?>
-		<div class="metg-ai-page">
+		<div class="blockshift-ai-page">
 
-			<div class="metg-ai-header">
-				<div class="metg-ai-header-nav">
-					<a href="<?php echo esc_url( $enhancement_url ); ?>" class="metg-ai-back-link">&#8592; <?php esc_html_e( 'Back to AI Enhancement', 'blockshift-migrate-from-elementor' ); ?></a>
+			<div class="blockshift-ai-header">
+				<div class="blockshift-ai-header-nav">
+					<a href="<?php echo esc_url( $enhancement_url ); ?>" class="blockshift-ai-back-link">&#8592; <?php esc_html_e( 'Back to AI Enhancement', 'blockshift-migrate-from-elementor' ); ?></a>
 				</div>
-				<div class="metg-ai-header-main">
-					<div class="metg-ai-header-title">
+				<div class="blockshift-ai-header-main">
+					<div class="blockshift-ai-header-title">
 						<h1><?php esc_html_e( 'AI Enhancement', 'blockshift-migrate-from-elementor' ); ?></h1>
-						<div class="metg-ai-header-path">
+						<div class="blockshift-ai-header-path">
 							<span><?php echo esc_html( $source_title ); ?></span>
-							<span class="metg-ai-arrow">&#8594;</span>
+							<span class="blockshift-ai-arrow">&#8594;</span>
 							<span><?php echo esc_html( $target_title ); ?></span>
 						</div>
 					</div>
-					<div class="metg-ai-header-actions">
+					<div class="blockshift-ai-header-actions">
 						<?php if ( $source_prev_url ) : ?>
 							<a href="<?php echo esc_url( $source_prev_url ); ?>" target="_blank" rel="noopener" class="button"><?php esc_html_e( 'View Source &#8599;', 'blockshift-migrate-from-elementor' ); ?></a>
 						<?php endif; ?>
@@ -1267,107 +1104,107 @@ class AI_Improvement_Admin {
 							<a href="<?php echo esc_url( $target_prev_url ); ?>" target="_blank" rel="noopener" class="button"><?php esc_html_e( 'Preview &#8599;', 'blockshift-migrate-from-elementor' ); ?></a>
 						<?php endif; ?>
 						<?php if ( '' !== $last_improved ) : ?>
-							<button type="button" id="metg-ai-feedback-btn" class="button"><?php esc_html_e( 'Send Feedback', 'blockshift-migrate-from-elementor' ); ?></button>
+							<button type="button" id="blockshift-ai-feedback-btn" class="button"><?php esc_html_e( 'Send Feedback', 'blockshift-migrate-from-elementor' ); ?></button>
 						<?php endif; ?>
 						<a href="<?php echo esc_url( $target_edit_url ); ?>" class="button button-primary"><?php esc_html_e( 'Edit in Gutenberg', 'blockshift-migrate-from-elementor' ); ?></a>
 					</div>
 				</div>
 			</div>
 
-			<div class="metg-ai-layout">
+			<div class="blockshift-ai-layout">
 
-				<div class="metg-ai-main">
+				<div class="blockshift-ai-main">
 
-					<div class="metg-ai-card">
-						<div class="metg-ai-card-header">
+					<div class="blockshift-ai-card">
+						<div class="blockshift-ai-card-header">
 							<h2><?php esc_html_e( 'Screenshots', 'blockshift-migrate-from-elementor' ); ?></h2>
-							<span class="metg-status-pill metg-status-pill--<?php echo esc_attr( $pill[0] ); ?>"><?php echo esc_html( $pill[1] ); ?></span>
-							<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="metg-inline-form">
-								<?php wp_nonce_field( 'metg_ai_regenerate_screenshots_' . $target_id ); ?>
-								<input type="hidden" name="action" value="metg_ai_regenerate_screenshots" />
+							<span class="blockshift-status-pill blockshift-status-pill--<?php echo esc_attr( $pill[0] ); ?>"><?php echo esc_html( $pill[1] ); ?></span>
+							<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="blockshift-inline-form">
+								<?php wp_nonce_field( 'blockshift_ai_regenerate_screenshots_' . $target_id ); ?>
+								<input type="hidden" name="action" value="blockshift_ai_regenerate_screenshots" />
 								<input type="hidden" name="target_id" value="<?php echo esc_attr( (string) $target_id ); ?>" />
 								<input type="hidden" name="source_id" value="<?php echo esc_attr( (string) $source_id ); ?>" />
 								<button type="submit" class="button button-small"><?php esc_html_e( 'Regenerate', 'blockshift-migrate-from-elementor' ); ?></button>
 							</form>
 						</div>
 
-						<div class="metg-ai-tabs" role="tablist">
-							<button type="button" class="metg-ai-tab metg-ai-tab--active" role="tab" data-tab="desktop" aria-selected="true"><?php esc_html_e( 'Desktop', 'blockshift-migrate-from-elementor' ); ?></button>
-							<button type="button" class="metg-ai-tab" role="tab" data-tab="mobile" aria-selected="false"><?php esc_html_e( 'Mobile', 'blockshift-migrate-from-elementor' ); ?></button>
+						<div class="blockshift-ai-tabs" role="tablist">
+							<button type="button" class="blockshift-ai-tab blockshift-ai-tab--active" role="tab" data-tab="desktop" aria-selected="true"><?php esc_html_e( 'Desktop', 'blockshift-migrate-from-elementor' ); ?></button>
+							<button type="button" class="blockshift-ai-tab" role="tab" data-tab="mobile" aria-selected="false"><?php esc_html_e( 'Mobile', 'blockshift-migrate-from-elementor' ); ?></button>
 						</div>
 
-						<div class="metg-ai-tab-panel" data-panel="desktop">
-							<div class="metg-ai-compare-grid">
-								<div class="metg-compare-side">
-									<div class="metg-compare-label"><?php esc_html_e( 'Elementor (Original)', 'blockshift-migrate-from-elementor' ); ?></div>
+						<div class="blockshift-ai-tab-panel" data-panel="desktop">
+							<div class="blockshift-ai-compare-grid">
+								<div class="blockshift-compare-side">
+									<div class="blockshift-compare-label"><?php esc_html_e( 'Elementor (Original)', 'blockshift-migrate-from-elementor' ); ?></div>
 									<?php
 									$d_ele_urls  = array_values( array_filter( $elementor_shots, 'is_string' ) );
 									$d_ele_first = ! empty( $d_ele_urls ) ? $d_ele_urls[0] : '';
 									if ( $d_ele_first ) :
 										?>
-										<div class="metg-screenshot-thumb-wrap" data-urls="<?php echo esc_attr( wp_json_encode( $d_ele_urls ) ); ?>">
-											<img class="metg-screenshot-thumb" src="<?php echo esc_url( $d_ele_first ); ?>" alt="" loading="lazy" />
-											<button type="button" class="metg-screenshot-zoom-btn" aria-label="<?php esc_attr_e( 'View full screenshot', 'blockshift-migrate-from-elementor' ); ?>">&#x2922;</button>
+										<div class="blockshift-screenshot-thumb-wrap" data-urls="<?php echo esc_attr( wp_json_encode( $d_ele_urls ) ); ?>">
+											<img class="blockshift-screenshot-thumb" src="<?php echo esc_url( $d_ele_first ); ?>" alt="" loading="lazy" />
+											<button type="button" class="blockshift-screenshot-zoom-btn" aria-label="<?php esc_attr_e( 'View full screenshot', 'blockshift-migrate-from-elementor' ); ?>">&#x2922;</button>
 										</div>
 									<?php else : ?>
-										<div class="metg-screenshot-empty"><?php esc_html_e( 'No desktop screenshot yet', 'blockshift-migrate-from-elementor' ); ?></div>
+										<div class="blockshift-screenshot-empty"><?php esc_html_e( 'No desktop screenshot yet', 'blockshift-migrate-from-elementor' ); ?></div>
 									<?php endif; ?>
 								</div>
-								<div class="metg-compare-side">
-									<div class="metg-compare-label"><?php esc_html_e( 'Gutenberg (Converted)', 'blockshift-migrate-from-elementor' ); ?></div>
+								<div class="blockshift-compare-side">
+									<div class="blockshift-compare-label"><?php esc_html_e( 'Gutenberg (Converted)', 'blockshift-migrate-from-elementor' ); ?></div>
 									<?php
 									$d_gb_urls  = array_values( array_filter( $gutenberg_shots, 'is_string' ) );
 									$d_gb_first = ! empty( $d_gb_urls ) ? $d_gb_urls[0] : '';
 									if ( $d_gb_first ) :
 										?>
-										<div class="metg-screenshot-thumb-wrap" data-urls="<?php echo esc_attr( wp_json_encode( $d_gb_urls ) ); ?>">
-											<img class="metg-screenshot-thumb" src="<?php echo esc_url( $d_gb_first ); ?>" alt="" loading="lazy" />
-											<button type="button" class="metg-screenshot-zoom-btn" aria-label="<?php esc_attr_e( 'View full screenshot', 'blockshift-migrate-from-elementor' ); ?>">&#x2922;</button>
+										<div class="blockshift-screenshot-thumb-wrap" data-urls="<?php echo esc_attr( wp_json_encode( $d_gb_urls ) ); ?>">
+											<img class="blockshift-screenshot-thumb" src="<?php echo esc_url( $d_gb_first ); ?>" alt="" loading="lazy" />
+											<button type="button" class="blockshift-screenshot-zoom-btn" aria-label="<?php esc_attr_e( 'View full screenshot', 'blockshift-migrate-from-elementor' ); ?>">&#x2922;</button>
 										</div>
 									<?php else : ?>
-										<div class="metg-screenshot-empty"><?php esc_html_e( 'No desktop screenshot yet', 'blockshift-migrate-from-elementor' ); ?></div>
+										<div class="blockshift-screenshot-empty"><?php esc_html_e( 'No desktop screenshot yet', 'blockshift-migrate-from-elementor' ); ?></div>
 									<?php endif; ?>
 								</div>
 							</div>
 						</div>
 
-						<div class="metg-ai-tab-panel" data-panel="mobile" hidden>
-							<div class="metg-ai-compare-grid">
-								<div class="metg-compare-side">
-									<div class="metg-compare-label"><?php esc_html_e( 'Elementor Mobile', 'blockshift-migrate-from-elementor' ); ?></div>
+						<div class="blockshift-ai-tab-panel" data-panel="mobile" hidden>
+							<div class="blockshift-ai-compare-grid">
+								<div class="blockshift-compare-side">
+									<div class="blockshift-compare-label"><?php esc_html_e( 'Elementor Mobile', 'blockshift-migrate-from-elementor' ); ?></div>
 									<?php
 									$m_ele_urls  = array_values( array_filter( $elementor_mobile_shots, 'is_string' ) );
 									$m_ele_first = ! empty( $m_ele_urls ) ? $m_ele_urls[0] : '';
 									if ( $m_ele_first ) :
 										?>
-										<div class="metg-screenshot-thumb-wrap" data-urls="<?php echo esc_attr( wp_json_encode( $m_ele_urls ) ); ?>">
-											<img class="metg-screenshot-thumb" src="<?php echo esc_url( $m_ele_first ); ?>" alt="" loading="lazy" />
-											<button type="button" class="metg-screenshot-zoom-btn" aria-label="<?php esc_attr_e( 'View full screenshot', 'blockshift-migrate-from-elementor' ); ?>">&#x2922;</button>
+										<div class="blockshift-screenshot-thumb-wrap" data-urls="<?php echo esc_attr( wp_json_encode( $m_ele_urls ) ); ?>">
+											<img class="blockshift-screenshot-thumb" src="<?php echo esc_url( $m_ele_first ); ?>" alt="" loading="lazy" />
+											<button type="button" class="blockshift-screenshot-zoom-btn" aria-label="<?php esc_attr_e( 'View full screenshot', 'blockshift-migrate-from-elementor' ); ?>">&#x2922;</button>
 										</div>
 									<?php else : ?>
-										<div class="metg-screenshot-empty"><?php esc_html_e( 'No mobile screenshot yet', 'blockshift-migrate-from-elementor' ); ?></div>
+										<div class="blockshift-screenshot-empty"><?php esc_html_e( 'No mobile screenshot yet', 'blockshift-migrate-from-elementor' ); ?></div>
 									<?php endif; ?>
 								</div>
-								<div class="metg-compare-side">
-									<div class="metg-compare-label"><?php esc_html_e( 'Gutenberg Mobile', 'blockshift-migrate-from-elementor' ); ?></div>
+								<div class="blockshift-compare-side">
+									<div class="blockshift-compare-label"><?php esc_html_e( 'Gutenberg Mobile', 'blockshift-migrate-from-elementor' ); ?></div>
 									<?php
 									$m_gb_urls  = array_values( array_filter( $gutenberg_mobile_shots, 'is_string' ) );
 									$m_gb_first = ! empty( $m_gb_urls ) ? $m_gb_urls[0] : '';
 									if ( $m_gb_first ) :
 										?>
-										<div class="metg-screenshot-thumb-wrap" data-urls="<?php echo esc_attr( wp_json_encode( $m_gb_urls ) ); ?>">
-											<img class="metg-screenshot-thumb" src="<?php echo esc_url( $m_gb_first ); ?>" alt="" loading="lazy" />
-											<button type="button" class="metg-screenshot-zoom-btn" aria-label="<?php esc_attr_e( 'View full screenshot', 'blockshift-migrate-from-elementor' ); ?>">&#x2922;</button>
+										<div class="blockshift-screenshot-thumb-wrap" data-urls="<?php echo esc_attr( wp_json_encode( $m_gb_urls ) ); ?>">
+											<img class="blockshift-screenshot-thumb" src="<?php echo esc_url( $m_gb_first ); ?>" alt="" loading="lazy" />
+											<button type="button" class="blockshift-screenshot-zoom-btn" aria-label="<?php esc_attr_e( 'View full screenshot', 'blockshift-migrate-from-elementor' ); ?>">&#x2922;</button>
 										</div>
 									<?php else : ?>
-										<div class="metg-screenshot-empty"><?php esc_html_e( 'No mobile screenshot yet', 'blockshift-migrate-from-elementor' ); ?></div>
+										<div class="blockshift-screenshot-empty"><?php esc_html_e( 'No mobile screenshot yet', 'blockshift-migrate-from-elementor' ); ?></div>
 									<?php endif; ?>
 								</div>
 							</div>
 						</div>
 
 						<?php if ( '' !== $screenshot_generated_at || ! $service_configured ) : ?>
-						<div class="metg-ai-card-footer">
+						<div class="blockshift-ai-card-footer">
 							<?php if ( '' !== $screenshot_generated_at ) : ?>
 								<?php
 								/* translators: %s: date/time screenshots were captured */
@@ -1375,107 +1212,94 @@ class AI_Improvement_Admin {
 								?>
 							<?php endif; ?>
 							<?php if ( ! $service_configured ) : ?>
-								<span class="metg-warning-inline"><?php esc_html_e( 'Screenshot service not configured — see Settings.', 'blockshift-migrate-from-elementor' ); ?></span>
+								<span class="blockshift-warning-inline"><?php esc_html_e( 'Screenshot service not configured — see Settings.', 'blockshift-migrate-from-elementor' ); ?></span>
 							<?php endif; ?>
 						</div>
 						<?php endif; ?>
 					</div>
 
-					<div class="metg-ai-card">
+					<div class="blockshift-ai-card">
 						<?php if ( '' === $last_improved ) : ?>
-							<div class="metg-ai-card-header">
+							<div class="blockshift-ai-card-header">
 								<h2><?php esc_html_e( 'AI Improvement', 'blockshift-migrate-from-elementor' ); ?></h2>
-								<span class="metg-status-pill metg-status-pill--neutral"><?php esc_html_e( 'Not yet run', 'blockshift-migrate-from-elementor' ); ?></span>
+								<span class="blockshift-status-pill blockshift-status-pill--neutral"><?php esc_html_e( 'Not yet run', 'blockshift-migrate-from-elementor' ); ?></span>
 							</div>
-							<div class="metg-ai-card-body">
-								<p class="metg-card-desc"><?php esc_html_e( 'Analyse and improve the converted page using AI. The page content and CSS will be updated automatically.', 'blockshift-migrate-from-elementor' ); ?></p>
-								<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="metg-ai-improve-form">
+							<div class="blockshift-ai-card-body">
+								<p class="blockshift-card-desc"><?php esc_html_e( 'Analyse and improve the converted page using AI. The page content and CSS will be updated automatically.', 'blockshift-migrate-from-elementor' ); ?></p>
+								<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="blockshift-ai-improve-form">
 									<?php wp_nonce_field( self::NONCE_AUTO_IMPROVE ); ?>
-									<input type="hidden" name="action" value="metg_ai_auto_improve" />
+									<input type="hidden" name="action" value="blockshift_ai_auto_improve" />
 									<input type="hidden" name="target_id" value="<?php echo esc_attr( (string) $target_id ); ?>" />
 									<input type="hidden" name="source_id" value="<?php echo esc_attr( (string) $source_id ); ?>" />
-									<?php submit_button( esc_html__( 'Improve with AI', 'blockshift-migrate-from-elementor' ), 'primary', 'metg_auto_improve_submit', false ); ?>
+									<?php submit_button( esc_html__( 'Improve with AI', 'blockshift-migrate-from-elementor' ), 'primary', 'blockshift_auto_improve_submit', false ); ?>
 								</form>
 							</div>
 						<?php else : ?>
-							<div class="metg-ai-card-header">
-								<h2><?php esc_html_e( 'Refine with AI', 'blockshift-migrate-from-elementor' ); ?></h2>
-								<span class="metg-status-pill metg-status-pill--success"><?php esc_html_e( 'Improved', 'blockshift-migrate-from-elementor' ); ?></span>
+							<div class="blockshift-ai-card-header">
+								<h2><?php esc_html_e( 'Improve with AI', 'blockshift-migrate-from-elementor' ); ?></h2>
+								<span class="blockshift-status-pill blockshift-status-pill--success"><?php esc_html_e( 'Improved', 'blockshift-migrate-from-elementor' ); ?></span>
 							</div>
-							<div class="metg-ai-card-body">
-								<p class="metg-card-desc"><?php esc_html_e( 'Tell AI exactly what to focus on. Fresh screenshots are captured automatically before each run.', 'blockshift-migrate-from-elementor' ); ?></p>
-								<div class="metg-refine-suggestions">
-									<span class="metg-refine-suggestions-label"><?php esc_html_e( 'Quick suggestions:', 'blockshift-migrate-from-elementor' ); ?></span>
-									<?php foreach ( $suggestions as $suggestion ) : ?>
-										<button type="button" class="metg-suggestion-chip" data-suggestion="<?php echo esc_attr( $suggestion ); ?>"><?php echo esc_html( $suggestion ); ?></button>
-									<?php endforeach; ?>
-								</div>
-								<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="metg-ai-refine-form">
-									<?php wp_nonce_field( self::NONCE_REFINE ); ?>
-									<input type="hidden" name="action" value="metg_ai_refine" />
+							<div class="blockshift-ai-card-body">
+								<p class="blockshift-card-desc"><?php esc_html_e( 'Run another AI improvement pass. Fresh screenshots are captured automatically before each run, so it always works from the page\'s current state.', 'blockshift-migrate-from-elementor' ); ?></p>
+								<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="blockshift-ai-improve-again-form">
+									<?php wp_nonce_field( self::NONCE_AUTO_IMPROVE ); ?>
+									<input type="hidden" name="action" value="blockshift_ai_auto_improve" />
 									<input type="hidden" name="target_id" value="<?php echo esc_attr( (string) $target_id ); ?>" />
 									<input type="hidden" name="source_id" value="<?php echo esc_attr( (string) $source_id ); ?>" />
-									<textarea
-										name="focus_instruction"
-										id="metg-focus-instruction"
-										rows="4"
-										placeholder="<?php echo esc_attr__( 'Describe what needs fixing, e.g. "The hero section spacing is too tight and the heading font is too small"', 'blockshift-migrate-from-elementor' ); ?>"
-										class="metg-refine-textarea"
-									></textarea>
-									<?php submit_button( esc_html__( 'Refine with AI', 'blockshift-migrate-from-elementor' ), 'primary', 'metg_refine_submit', false ); ?>
+									<?php submit_button( esc_html__( 'Improve Again with AI', 'blockshift-migrate-from-elementor' ), 'primary', 'blockshift_auto_improve_submit', false ); ?>
 								</form>
 							</div>
 						<?php endif; ?>
 					</div>
 
-					<div class="metg-ai-card">
-						<div class="metg-ai-card-header">
+					<div class="blockshift-ai-card">
+						<div class="blockshift-ai-card-header">
 							<h2><?php esc_html_e( 'Mobile Optimisation', 'blockshift-migrate-from-elementor' ); ?></h2>
 							<?php if ( '' !== $last_mobile_improved ) : ?>
-								<span class="metg-status-pill metg-status-pill--success"><?php esc_html_e( 'Improved', 'blockshift-migrate-from-elementor' ); ?></span>
+								<span class="blockshift-status-pill blockshift-status-pill--success"><?php esc_html_e( 'Improved', 'blockshift-migrate-from-elementor' ); ?></span>
 							<?php else : ?>
-								<span class="metg-status-pill metg-status-pill--neutral"><?php esc_html_e( 'Not yet run', 'blockshift-migrate-from-elementor' ); ?></span>
+								<span class="blockshift-status-pill blockshift-status-pill--neutral"><?php esc_html_e( 'Not yet run', 'blockshift-migrate-from-elementor' ); ?></span>
 							<?php endif; ?>
 						</div>
-						<div class="metg-ai-card-body">
-							<p class="metg-card-desc"><?php esc_html_e( 'Compares mobile screenshots and generates @media query CSS. Desktop styles and block content are not modified.', 'blockshift-migrate-from-elementor' ); ?></p>
+						<div class="blockshift-ai-card-body">
+							<p class="blockshift-card-desc"><?php esc_html_e( 'Compares mobile screenshots and generates @media query CSS. Desktop styles and block content are not modified.', 'blockshift-migrate-from-elementor' ); ?></p>
 							<?php if ( ! $has_mobile_shots ) : ?>
-								<div class="metg-notice metg-notice--warning">
+								<div class="blockshift-notice blockshift-notice--warning">
 									<?php esc_html_e( 'Mobile screenshots are missing — click Regenerate in the Screenshots card above before running this pass.', 'blockshift-migrate-from-elementor' ); ?>
 								</div>
 							<?php endif; ?>
-							<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="metg-ai-mobile-improve-form">
+							<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="blockshift-ai-mobile-improve-form">
 								<?php wp_nonce_field( self::NONCE_MOBILE_IMPROVE ); ?>
-								<input type="hidden" name="action" value="metg_ai_mobile_improve" />
+								<input type="hidden" name="action" value="blockshift_ai_mobile_improve" />
 								<input type="hidden" name="target_id" value="<?php echo esc_attr( (string) $target_id ); ?>" />
 								<input type="hidden" name="source_id" value="<?php echo esc_attr( (string) $source_id ); ?>" />
-								<?php submit_button( esc_html__( 'Improve Mobile with AI', 'blockshift-migrate-from-elementor' ), 'secondary', 'metg_mobile_improve_submit', false ); ?>
+								<?php submit_button( esc_html__( 'Improve Mobile with AI', 'blockshift-migrate-from-elementor' ), 'secondary', 'blockshift_mobile_improve_submit', false ); ?>
 							</form>
 						</div>
 					</div>
 
 				</div>
 
-				<aside class="metg-ai-sidebar">
+				<aside class="blockshift-ai-sidebar">
 
-					<div class="metg-ai-card">
-						<div class="metg-ai-card-header">
+					<div class="blockshift-ai-card">
+						<div class="blockshift-ai-card-header">
 							<h2><?php esc_html_e( 'Page Details', 'blockshift-migrate-from-elementor' ); ?></h2>
 						</div>
-						<div class="metg-ai-card-body">
-							<dl class="metg-ai-dl">
+						<div class="blockshift-ai-card-body">
+							<dl class="blockshift-ai-dl">
 								<dt><?php esc_html_e( 'Source (Elementor)', 'blockshift-migrate-from-elementor' ); ?></dt>
 								<dd>
 									<a href="<?php echo esc_url( $source_edit_url ); ?>"><?php echo esc_html( $source_title ); ?></a>
 									<?php if ( $source_prev_url ) : ?>
-										<a href="<?php echo esc_url( $source_prev_url ); ?>" target="_blank" rel="noopener" class="metg-ext-link" title="<?php esc_attr_e( 'Preview', 'blockshift-migrate-from-elementor' ); ?>">&#8599;</a>
+										<a href="<?php echo esc_url( $source_prev_url ); ?>" target="_blank" rel="noopener" class="blockshift-ext-link" title="<?php esc_attr_e( 'Preview', 'blockshift-migrate-from-elementor' ); ?>">&#8599;</a>
 									<?php endif; ?>
 								</dd>
 								<dt><?php esc_html_e( 'Target (Gutenberg)', 'blockshift-migrate-from-elementor' ); ?></dt>
 								<dd>
 									<a href="<?php echo esc_url( $target_edit_url ); ?>"><?php echo esc_html( $target_title ); ?></a>
 									<?php if ( $target_prev_url ) : ?>
-										<a href="<?php echo esc_url( $target_prev_url ); ?>" target="_blank" rel="noopener" class="metg-ext-link" title="<?php esc_attr_e( 'Preview', 'blockshift-migrate-from-elementor' ); ?>">&#8599;</a>
+										<a href="<?php echo esc_url( $target_prev_url ); ?>" target="_blank" rel="noopener" class="blockshift-ext-link" title="<?php esc_attr_e( 'Preview', 'blockshift-migrate-from-elementor' ); ?>">&#8599;</a>
 									<?php endif; ?>
 								</dd>
 								<dt><?php esc_html_e( 'Source ID', 'blockshift-migrate-from-elementor' ); ?></dt>
@@ -1486,18 +1310,18 @@ class AI_Improvement_Admin {
 						</div>
 					</div>
 
-					<div class="metg-ai-card">
-						<div class="metg-ai-card-header">
+					<div class="blockshift-ai-card">
+						<div class="blockshift-ai-card-header">
 							<h2><?php esc_html_e( 'AI Status', 'blockshift-migrate-from-elementor' ); ?></h2>
 						</div>
-						<div class="metg-ai-card-body">
-							<dl class="metg-ai-dl">
+						<div class="blockshift-ai-card-body">
+							<dl class="blockshift-ai-dl">
 								<dt><?php esc_html_e( 'Desktop', 'blockshift-migrate-from-elementor' ); ?></dt>
 								<dd>
 									<?php if ( '' !== $last_improved ) : ?>
 										<?php echo esc_html( $last_improved ); ?>
 									<?php else : ?>
-										<span class="metg-muted"><?php esc_html_e( 'Not yet run', 'blockshift-migrate-from-elementor' ); ?></span>
+										<span class="blockshift-muted"><?php esc_html_e( 'Not yet run', 'blockshift-migrate-from-elementor' ); ?></span>
 									<?php endif; ?>
 								</dd>
 								<dt><?php esc_html_e( 'Mobile', 'blockshift-migrate-from-elementor' ); ?></dt>
@@ -1505,7 +1329,7 @@ class AI_Improvement_Admin {
 									<?php if ( '' !== $last_mobile_improved ) : ?>
 										<?php echo esc_html( $last_mobile_improved ); ?>
 									<?php else : ?>
-										<span class="metg-muted"><?php esc_html_e( 'Not yet run', 'blockshift-migrate-from-elementor' ); ?></span>
+										<span class="blockshift-muted"><?php esc_html_e( 'Not yet run', 'blockshift-migrate-from-elementor' ); ?></span>
 									<?php endif; ?>
 								</dd>
 							</dl>
@@ -1516,26 +1340,26 @@ class AI_Improvement_Admin {
 
 			</div>
 
-			<div id="metg-lightbox" class="metg-lightbox" hidden role="dialog" aria-modal="true" aria-label="<?php esc_attr_e( 'Screenshot viewer', 'blockshift-migrate-from-elementor' ); ?>">
-				<div class="metg-lightbox-overlay" id="metg-lightbox-overlay"></div>
-				<div class="metg-lightbox-panel">
-					<div class="metg-lightbox-toolbar">
-						<a id="metg-lightbox-open" href="#" target="_blank" rel="noopener" class="metg-lightbox-open-link"><?php esc_html_e( 'Open full image &#8599;', 'blockshift-migrate-from-elementor' ); ?></a>
-						<button type="button" id="metg-lightbox-close" class="metg-lightbox-close" aria-label="<?php esc_attr_e( 'Close', 'blockshift-migrate-from-elementor' ); ?>">&#x2715;</button>
+			<div id="blockshift-lightbox" class="blockshift-lightbox" hidden role="dialog" aria-modal="true" aria-label="<?php esc_attr_e( 'Screenshot viewer', 'blockshift-migrate-from-elementor' ); ?>">
+				<div class="blockshift-lightbox-overlay" id="blockshift-lightbox-overlay"></div>
+				<div class="blockshift-lightbox-panel">
+					<div class="blockshift-lightbox-toolbar">
+						<a id="blockshift-lightbox-open" href="#" target="_blank" rel="noopener" class="blockshift-lightbox-open-link"><?php esc_html_e( 'Open full image &#8599;', 'blockshift-migrate-from-elementor' ); ?></a>
+						<button type="button" id="blockshift-lightbox-close" class="blockshift-lightbox-close" aria-label="<?php esc_attr_e( 'Close', 'blockshift-migrate-from-elementor' ); ?>">&#x2715;</button>
 					</div>
-					<div id="metg-lightbox-images" class="metg-lightbox-images"></div>
+					<div id="blockshift-lightbox-images" class="blockshift-lightbox-images"></div>
 				</div>
 			</div>
 
-			<div id="metg-ai-loader" hidden>
-				<div class="metg-ai-loader-card">
-					<svg class="metg-ai-loader-spinner" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+			<div id="blockshift-ai-loader" hidden>
+				<div class="blockshift-ai-loader-card">
+					<svg class="blockshift-ai-loader-spinner" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
 						<circle class="track" cx="22" cy="22" r="20" fill="none" stroke="#2271b1" stroke-width="3" />
 						<circle class="arc"   cx="22" cy="22" r="20" fill="none" stroke="#2271b1" stroke-width="3" />
 					</svg>
 					<div>
-						<strong class="metg-ai-loader-title"><?php esc_html_e( 'Improving with AI&#8230;', 'blockshift-migrate-from-elementor' ); ?></strong>
-						<span class="metg-ai-loader-message"><?php esc_html_e( 'Analysing page structure and generating improvements. This may take up to 2 minutes.', 'blockshift-migrate-from-elementor' ); ?></span>
+						<strong class="blockshift-ai-loader-title"><?php esc_html_e( 'Improving with AI&#8230;', 'blockshift-migrate-from-elementor' ); ?></strong>
+						<span class="blockshift-ai-loader-message"><?php esc_html_e( 'Analysing page structure and generating improvements. This may take up to 2 minutes.', 'blockshift-migrate-from-elementor' ); ?></span>
 					</div>
 				</div>
 			</div>

@@ -1,9 +1,9 @@
-/* global progressusFormData */
+/* global blockshiftFormData */
 /**
  * Form submission handler with loader and AJAX
  */
 document.addEventListener( 'DOMContentLoaded', function () {
-	const forms = document.querySelectorAll( '.progressus-form' );
+	const forms = document.querySelectorAll( '.blockshift-form' );
 
 	forms.forEach( ( form ) => {
 		form.addEventListener( 'submit', function ( e ) {
@@ -17,8 +17,8 @@ document.addEventListener( 'DOMContentLoaded', function () {
 			const errorMessage = form.dataset.errorMessage;
 
 			// Add action and nonce
-			formData.append( 'action', 'progressus_form_submit' );
-			formData.append( 'nonce', progressusFormData.nonce );
+			formData.append( 'action', 'blockshift_form_submit' );
+			formData.append( 'nonce', blockshiftFormData.nonce );
 			formData.append( 'form_name', formName );
 
 			// Save original button text
@@ -40,7 +40,7 @@ document.addEventListener( 'DOMContentLoaded', function () {
 			messageContainer.className = 'form-message';
 
 			// Submit form via AJAX
-			fetch( progressusFormData.ajaxUrl, {
+			fetch( blockshiftFormData.ajaxUrl, {
 				method: 'POST',
 				body: formData,
 			} )

@@ -1,6 +1,6 @@
 <?php
 /**
- * Server-side render for the `progressus/google-map` block.
+ * Server-side render for the `blockshift/google-map` block.
  *
  * @package Progressus\BlockShift
  */
@@ -53,7 +53,7 @@ function render_google_map_block( $attributes, $_content, $_block ) { // phpcs:i
 		$src = '';
 	}
 
-	$wrapper = \get_block_wrapper_attributes( array( 'class' => 'wp-block-progressus-google-map' ) );
+	$wrapper = \get_block_wrapper_attributes( array( 'class' => 'wp-block-blockshift-google-map' ) );
 
 	// Attach serialized location data when present for richer frontend access.
 	$location_attr = isset( $attributes['location'] ) && is_array( $attributes['location'] ) ? $attributes['location'] : null;
@@ -79,21 +79,24 @@ function render_google_map_block( $attributes, $_content, $_block ) { // phpcs:i
 	$wrapper_with_data .= '>';
 
 	$style_parts = array();
-	// Helper: normalize a side value which may be numeric or include units (e.g. '2px' or '1.5%').
+	// Accept only a number, optionally followed by a known CSS length unit. Any
+	// other input (which could smuggle extra declarations into the inline style)
+	// collapses to '0px'.
 	$normalize = static function ( $value ) {
-		if ( '' === $value || null === $value ) {
-			return '0px';
-		}
-		// If it's numeric, append 'px'.
 		if ( is_numeric( $value ) ) {
 			return $value . 'px';
 		}
-		// If it already contains letters/percent/unit, return as-is.
-		if ( is_string( $value ) && preg_match( '/[a-z%]$/i', trim( $value ) ) ) {
+		$value = is_string( $value ) ? trim( $value ) : '';
+		if ( '' === $value ) {
+			return '0px';
+		}
+		if ( in_array( strtolower( $value ), array( 'auto', 'inherit', 'initial', 'unset' ), true ) ) {
 			return $value;
 		}
-		// Fallback: cast to string and append px.
-		return (string) $value . 'px';
+		if ( preg_match( '/^-?(?:\d+|\d*\.\d+)(?:px|em|rem|%|vh|vw|vmin|vmax|pt|pc|ex|ch|cm|mm|in)$/i', $value ) ) {
+			return $value;
+		}
+		return '0px';
 	};
 
 	if ( isset( $attributes['style']['spacing']['margin'] ) && is_array( $attributes['style']['spacing']['margin'] ) ) {
@@ -129,5 +132,5 @@ function render_google_map_block( $attributes, $_content, $_block ) { // phpcs:i
 }
 
 if ( function_exists( 'register_block_type' ) ) {
-	register_block_type( 'progressus/google-map', array( 'render_callback' => __NAMESPACE__ . '\\render_google_map_block' ) );
+	register_block_type( 'blockshift/google-map', array( 'render_callback' => __NAMESPACE__ . '\\render_google_map_block' ) );
 }

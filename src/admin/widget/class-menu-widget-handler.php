@@ -83,8 +83,8 @@ class Menu_Widget_Handler implements Widget_Handler_Interface {
 	 * Create or reuse a wp_navigation post for a given menu.
 	 *
 	 * @param \WP_Term|null $menu_object Menu term object when resolved.
-	 * @param string $menu_name Menu name or slug from settings.
-	 * @param string $element_id Elementor element id for fallback naming.
+	 * @param string        $menu_name Menu name or slug from settings.
+	 * @param string        $element_id Elementor element id for fallback naming.
 	 *
 	 * @return int Navigation post ID.
 	 */
@@ -97,7 +97,7 @@ class Menu_Widget_Handler implements Widget_Handler_Interface {
 					'post_type'      => 'wp_navigation',
 					'post_status'    => 'any',
 					// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
-					'meta_key'       => 'metg_source_menu_term_id',
+					'meta_key'       => 'blockshift_source_menu_term_id',
 					// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
 					'meta_value'     => $menu_object->term_id,
 					'posts_per_page' => 1,
@@ -119,7 +119,7 @@ class Menu_Widget_Handler implements Widget_Handler_Interface {
 		}
 
 		if ( ! $post_id && ! empty( $element_id ) ) {
-			$slug     = sanitize_title( 'metg-menu-' . $element_id );
+			$slug     = sanitize_title( 'blockshift-menu-' . $element_id );
 			$existing = get_page_by_path( $slug, OBJECT, 'wp_navigation' );
 			if ( $existing ) {
 				$post_id = (int) $existing->ID;
@@ -144,7 +144,7 @@ class Menu_Widget_Handler implements Widget_Handler_Interface {
 		);
 
 		if ( $menu_object ) {
-			update_post_meta( $post_id, 'metg_source_menu_term_id', $menu_object->term_id );
+			update_post_meta( $post_id, 'blockshift_source_menu_term_id', $menu_object->term_id );
 		}
 
 		return (int) $post_id;
@@ -154,8 +154,8 @@ class Menu_Widget_Handler implements Widget_Handler_Interface {
 	 * Resolve deterministic navigation title.
 	 *
 	 * @param \WP_Term|null $menu_object Menu term object when resolved.
-	 * @param string $menu_name Menu name or slug from settings.
-	 * @param string $element_id Elementor element id for fallback naming.
+	 * @param string        $menu_name Menu name or slug from settings.
+	 * @param string        $element_id Elementor element id for fallback naming.
 	 *
 	 * @return string
 	 */
@@ -178,7 +178,7 @@ class Menu_Widget_Handler implements Widget_Handler_Interface {
 	/**
 	 * Sync navigation items to a wp_navigation post.
 	 *
-	 * @param int $navigation_post_id Navigation post ID.
+	 * @param int      $navigation_post_id Navigation post ID.
 	 * @param \WP_Term $menu_object Menu term object.
 	 *
 	 * @return void
@@ -236,7 +236,7 @@ class Menu_Widget_Handler implements Widget_Handler_Interface {
 	 * Build a navigation-link block with nested items.
 	 *
 	 * @param array $items_by_id Items keyed by ID with children.
-	 * @param int $item_id Menu item ID.
+	 * @param int   $item_id Menu item ID.
 	 *
 	 * @return array
 	 */

@@ -229,7 +229,7 @@ class Image_Box_Widget_Handler implements Widget_Handler_Interface {
 
 		$content = '<div ' . implode( ' ', $wrapper_attrs ) . '>' . implode( '', $segments ) . '</div>';
 
-		// Build block attributes for the new `gutenberg/image-box` block.
+		// Build block attributes for the new `blockshift/image-box` block.
 		// Ensure attributes match the exact HTML inserted into the block content.
 		// Use the sanitized output for `description` so save() and the post body match.
 		$sanitized_description = '' !== trim( $description ) ? wp_kses_post( $description ) : '';
@@ -292,7 +292,7 @@ class Image_Box_Widget_Handler implements Widget_Handler_Interface {
 			Style_Parser::save_custom_css( $custom_css );
 		}
 
-		return Block_Builder::build( 'gutenberg/image-box', $block_attributes, $content );
+		return Block_Builder::build( 'blockshift/image-box', $block_attributes, $content );
 	}
 
 	/**

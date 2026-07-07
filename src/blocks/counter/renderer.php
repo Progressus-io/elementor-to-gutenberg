@@ -1,6 +1,6 @@
 <?php
 /**
- * Server-side rendering of the `progressus/counter` block.
+ * Server-side rendering of the `blockshift/counter` block.
  *
  * @package Progressus\BlockShift
  */
@@ -14,7 +14,7 @@ use function get_block_wrapper_attributes;
 use function register_block_type;
 
 /**
- * Renders the `progressus/counter` block on the server.
+ * Renders the `blockshift/counter` block on the server.
  *
  * @param array    $attributes Block attributes.
  * @param string   $content    Block default content.
@@ -30,7 +30,7 @@ function render_counter_block( $attributes, $_content, $_block ) { // phpcs:igno
 
 	$wrapper_attributes = \get_block_wrapper_attributes(
 		array(
-			'class'         => 'wp-block-progressus-counter',
+			'class'         => 'wp-block-blockshift-counter',
 			'data-start'    => $start_value,
 			'data-end'      => $end_value,
 			'data-duration' => $duration,
@@ -49,7 +49,7 @@ function render_counter_block( $attributes, $_content, $_block ) { // phpcs:igno
 // Register the render callback
 if ( \function_exists( 'register_block_type' ) ) {
 	\register_block_type(
-		'progressus/counter',
+		'blockshift/counter',
 		array(
 			'render_callback' => __NAMESPACE__ . '\render_counter_block',
 		)

@@ -98,10 +98,10 @@ class Diagnostic_Logger {
 
 	/**
 	 * Generate a stable run identifier.
-	 * Format: metg_YYYYMMDD_HHMMSS_<6-char hex>
+	 * Format: blockshift_YYYYMMDD_HHMMSS_<6-char hex>
 	 */
 	public static function generate_run_id(): string {
-		return 'metg_' . gmdate( 'Ymd_His' ) . '_' . substr( md5( uniqid( '', true ) ), 0, 6 );
+		return 'blockshift_' . gmdate( 'Ymd_His' ) . '_' . substr( md5( uniqid( '', true ) ), 0, 6 );
 	}
 
 	/**
@@ -109,7 +109,7 @@ class Diagnostic_Logger {
 	 */
 	public static function log_path(): string {
 		$upload = wp_upload_dir( null, false );
-		return $upload['basedir'] . '/metg/conversion-log.jsonl';
+		return $upload['basedir'] . '/blockshift/conversion-log.jsonl';
 	}
 
 	/** Log a run_start event. */

@@ -16,7 +16,7 @@ defined( 'ABSPATH' ) || exit;
 /**
  * Handles the HTTP POST to the hardcoded receiver endpoint.
  * Authentication uses a per-site client_id + client_secret pair that is
- * auto-generated on first use and stored in the metg_feedback_client WP option.
+ * auto-generated on first use and stored in the blockshift_feedback_client WP option.
  */
 class Feedback_Sender {
 
@@ -28,7 +28,7 @@ class Feedback_Sender {
 	/**
 	 * WP option key that stores the auto-generated client credentials.
 	 */
-	const OPTION_CREDENTIALS = 'metg_feedback_client';
+	const OPTION_CREDENTIALS = 'blockshift_feedback_client';
 
 	/**
 	 * Send the manifest array to the receiver.
@@ -42,7 +42,7 @@ class Feedback_Sender {
 
 		$json = wp_json_encode( $manifest );
 		if ( false === $json ) {
-			return new WP_Error( 'metg_feedback_encode', 'Failed to encode manifest as JSON.' );
+			return new WP_Error( 'blockshift_feedback_encode', 'Failed to encode manifest as JSON.' );
 		}
 
 		$response = wp_remote_post(
@@ -74,7 +74,7 @@ class Feedback_Sender {
 		$message = self::message_for_code( $code, $decoded );
 
 		return new WP_Error(
-			'metg_feedback_receiver_error',
+			'blockshift_feedback_receiver_error',
 			$message,
 			array( 'http_code' => $code )
 		);

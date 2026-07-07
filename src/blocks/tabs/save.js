@@ -91,13 +91,13 @@ const Save = ( { attributes } ) => {
 	return (
 		<div { ...blockProps }>
 			<div
-				className="progressus-tabs"
+				className="blockshift-tabs"
 				style={ tabsStyle }
 				data-tab-style={ tabStyle }
 				data-active-tab={ activeTab }
 			>
 				<div
-					className="progressus-tabs-headers"
+					className="blockshift-tabs-headers"
 					style={ {
 						display: 'flex',
 						flexDirection:
@@ -107,7 +107,7 @@ const Save = ( { attributes } ) => {
 					{ tabs.map( ( tab, index ) => (
 						<div
 							key={ index }
-							className={ `progressus-tab-header ${
+							className={ `blockshift-tab-header ${
 								index === activeTab ? 'active' : ''
 							}` }
 							style={
@@ -122,11 +122,11 @@ const Save = ( { attributes } ) => {
 					) ) }
 				</div>
 
-				<div className="progressus-tabs-content" style={ contentStyle }>
+				<div className="blockshift-tabs-content" style={ contentStyle }>
 					{ tabs.map( ( tab, index ) => (
 						<div
 							key={ index }
-							className={ `progressus-tab-content ${
+							className={ `blockshift-tab-content ${
 								index === activeTab ? 'active' : ''
 							}` }
 							style={ {

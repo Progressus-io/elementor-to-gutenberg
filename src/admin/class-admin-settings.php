@@ -66,7 +66,7 @@ class Admin_Settings {
 	 * top-level Elementor sections. Matches Elementor's default kit container width
 	 * (typically 1140px for Hello / SaaSland kits).
 	 */
-	private const OPTION_SECTION_CONTENT_WIDTH = 'metg_section_content_width';
+	private const OPTION_SECTION_CONTENT_WIDTH = 'blockshift_section_content_width';
 
 	/**
 	 * Default content width (in pixels) when the user hasn't configured one. 1140px
@@ -77,12 +77,12 @@ class Admin_Settings {
 	/**
 	 * Option key storing global conversion preferences (currently: copy meta + featured image).
 	 */
-	private const OPTION_CONVERSION_PREFERENCES = 'metg_conversion_preferences';
+	private const OPTION_CONVERSION_PREFERENCES = 'blockshift_conversion_preferences';
 
 	/**
 	 * Option key for the conversion logging toggle.
 	 */
-	private const OPTION_CONVERSION_LOGGING = 'metg_conversion_logging';
+	private const OPTION_CONVERSION_LOGGING = 'blockshift_conversion_logging';
 
 	/**
 	 * Active per-conversion log collector (reset before each conversion run).
@@ -153,10 +153,10 @@ class Admin_Settings {
 	public function __construct() {
 		add_action( 'admin_menu', array( $this, 'add_admin_menu' ) );
 		add_filter( 'plugin_action_links_' . BLOCKSHIFT_BASENAME, array( $this, 'add_plugin_action_links' ) );
-		add_filter( 'page_row_actions', array( $this, 'metg_add_convert_button' ), 10, 2 );
-		add_action( 'admin_post_metg_convert_page', array( $this, 'metg_handle_convert_page' ) );
-		add_action( 'admin_post_metg_save_screenshot_settings', array( $this, 'save_screenshot_settings' ) );
-		add_action( 'admin_post_metg_save_settings', array( $this, 'save_all_settings' ) );
+		add_filter( 'page_row_actions', array( $this, 'blockshift_add_convert_button' ), 10, 2 );
+		add_action( 'admin_post_blockshift_convert_page', array( $this, 'blockshift_handle_convert_page' ) );
+		add_action( 'admin_post_blockshift_save_screenshot_settings', array( $this, 'save_screenshot_settings' ) );
+		add_action( 'admin_post_blockshift_save_settings', array( $this, 'save_all_settings' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 	}
 
@@ -166,7 +166,7 @@ class Admin_Settings {
 	 * <i data-icon> placeholders are replaced with inline SVG.
 	 */
 	public function enqueue_assets(): void {
-		if ( empty( $_GET['page'] ) || 'gutenberg-settings' !== sanitize_key( wp_unslash( $_GET['page'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( empty( $_GET['page'] ) || 'blockshift-settings' !== sanitize_key( wp_unslash( $_GET['page'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			return;
 		}
 
@@ -174,14 +174,14 @@ class Admin_Settings {
 		$icons_path = BLOCKSHIFT_DIR_PATH . '/assets/js/pgs-icons.js';
 
 		wp_enqueue_style(
-			'metg-pgs-admin',
+			'blockshift-pgs-admin',
 			plugins_url( 'assets/css/batch-wizard.css', BLOCKSHIFT_MAIN_FILE ),
 			array(),
 			BLOCKSHIFT_DEBUG && file_exists( $css_path ) ? (string) filemtime( $css_path ) : BLOCKSHIFT_VERSION
 		);
 
 		wp_enqueue_script(
-			'metg-pgs-icons',
+			'blockshift-pgs-icons',
 			plugins_url( 'assets/js/pgs-icons.js', BLOCKSHIFT_MAIN_FILE ),
 			array(),
 			BLOCKSHIFT_DEBUG && file_exists( $icons_path ) ? (string) filemtime( $icons_path ) : BLOCKSHIFT_VERSION,
@@ -199,14 +199,14 @@ class Admin_Settings {
 			wp_die( esc_html__( 'You do not have permission to change plugin settings.', 'blockshift-migrate-from-elementor' ) );
 		}
 
-		check_admin_referer( 'metg_save_settings' );
+		check_admin_referer( 'blockshift_save_settings' );
 
-		$claude_raw = isset( $_POST['metg_claude_settings'] ) ? wp_unslash( $_POST['metg_claude_settings'] ) : array();
+		$claude_raw = isset( $_POST['blockshift_claude_settings'] ) ? wp_unslash( $_POST['blockshift_claude_settings'] ) : array();
 		$claude_raw = is_array( $claude_raw ) ? $claude_raw : array();
 		$api_key    = isset( $claude_raw['api_key'] ) ? sanitize_text_field( (string) $claude_raw['api_key'] ) : '';
-		update_option( 'metg_claude_settings', array( 'api_key' => $api_key ), false );
+		update_option( 'blockshift_claude_settings', array( 'api_key' => $api_key ), false );
 
-		$prefs_raw = isset( $_POST['metg_conversion_preferences'] ) ? wp_unslash( $_POST['metg_conversion_preferences'] ) : array();
+		$prefs_raw = isset( $_POST['blockshift_conversion_preferences'] ) ? wp_unslash( $_POST['blockshift_conversion_preferences'] ) : array();
 		$prefs_raw = is_array( $prefs_raw ) ? $prefs_raw : array();
 		update_option(
 			self::OPTION_CONVERSION_PREFERENCES,
@@ -216,11 +216,11 @@ class Admin_Settings {
 			false
 		);
 
-		$logging_raw = isset( $_POST['metg_logging_settings'] ) ? wp_unslash( $_POST['metg_logging_settings'] ) : array();
+		$logging_raw = isset( $_POST['blockshift_logging_settings'] ) ? wp_unslash( $_POST['blockshift_logging_settings'] ) : array();
 		$logging_raw = is_array( $logging_raw ) ? $logging_raw : array();
 		update_option( self::OPTION_CONVERSION_LOGGING, ! empty( $logging_raw['enabled'] ), false );
 
-		$layout_raw = isset( $_POST['metg_layout_settings'] ) ? wp_unslash( $_POST['metg_layout_settings'] ) : array();
+		$layout_raw = isset( $_POST['blockshift_layout_settings'] ) ? wp_unslash( $_POST['blockshift_layout_settings'] ) : array();
 		$layout_raw = is_array( $layout_raw ) ? $layout_raw : array();
 		$width      = isset( $layout_raw['section_content_width'] ) ? (int) $layout_raw['section_content_width'] : self::DEFAULT_SECTION_CONTENT_WIDTH;
 		if ( $width < 320 ) {
@@ -234,8 +234,8 @@ class Admin_Settings {
 		wp_safe_redirect(
 			add_query_arg(
 				array(
-					'page'               => 'gutenberg-settings',
-					'metg_settings_saved' => '1',
+					'page'               => 'blockshift-settings',
+					'blockshift_settings_saved' => '1',
 				),
 				admin_url( 'admin.php' )
 			)
@@ -251,15 +251,15 @@ class Admin_Settings {
 	 *
 	 * @return array<string, mixed>
 	 */
-	public function metg_add_convert_button( $actions, $post ) {
+	public function blockshift_add_convert_button( $actions, $post ) {
 		if ( $post->post_type === 'page' ) {
 			$json_data = get_post_meta( $post->ID, '_elementor_data', true );
 			if ( empty( $json_data ) ) {
 				return $actions;
 			}
 			$url                             = wp_nonce_url(
-				admin_url( 'admin-post.php?action=metg_convert_page&page_id=' . $post->ID ),
-				'metg_convert_page_' . $post->ID
+				admin_url( 'admin-post.php?action=blockshift_convert_page&page_id=' . $post->ID ),
+				'blockshift_convert_page_' . $post->ID
 			);
 			$actions['convert_to_gutenberg'] = '<a href="' . esc_url( $url ) . '">Convert to Gutenberg</a>';
 		}
@@ -273,7 +273,7 @@ class Admin_Settings {
 	 *
 	 * @return void
 	 */
-	public function metg_handle_convert_page() {
+	public function blockshift_handle_convert_page() {
 		if ( ! isset( $_GET['page_id'] ) ) {
 			wp_die( 'Page ID missing.' );
 		}
@@ -281,7 +281,7 @@ class Admin_Settings {
 		$page_id = absint( $_GET['page_id'] );
 
 		// Verify nonce
-		check_admin_referer( 'metg_convert_page_' . $page_id );
+		check_admin_referer( 'blockshift_convert_page_' . $page_id );
 
 		// Get JSON template stored in post meta
 		$json_data = get_post_meta( $page_id, '_elementor_data', true ); // Example for Elementor
@@ -298,7 +298,7 @@ class Admin_Settings {
 		if ( $new_page_id ) {
 			$this->finalize_converted_post( (int) $new_page_id, (string) $blocks, true );
 			if ( self::source_uses_elementor_full_width_template( (int) $page_id ) ) {
-				$this->assign_metg_full_width_template( (int) $new_page_id );
+				$this->assign_blockshift_full_width_template( (int) $new_page_id );
 			}
 		}
 
@@ -357,18 +357,18 @@ class Admin_Settings {
 	/**
 	 * Assign the Full Width Page template to the converted page.
 	 *
-	 * Always stores the classic-template path slug (`templates/metg-full-width-page.php`)
+	 * Always stores the classic-template path slug (`templates/blockshift-full-width-page.php`)
 	 * — the `template_include` filter in class-gutenberg.php intercepts the
 	 * request and loads the plugin's template file regardless of whether the
 	 * active theme is classic or block-based. Storing the same slug for both
 	 * theme types avoids the previous block-theme lookup miss where the slug
 	 * `full-width-page` was unrecognized because the block template was
-	 * registered under the `progressus-metg` namespace rather than the active
+	 * registered under the `progressus-blockshift` namespace rather than the active
 	 * theme.
 	 *
 	 * @param int $target_id Converted page ID.
 	 */
-	private function assign_metg_full_width_template( int $target_id ): void {
+	private function assign_blockshift_full_width_template( int $target_id ): void {
 		if ( $target_id <= 0 ) {
 			return;
 		}
@@ -411,18 +411,18 @@ class Admin_Settings {
 			esc_html__( 'BlockShift – Migrate from Elementor', 'blockshift-migrate-from-elementor' ),
 			esc_html__( 'BlockShift – Migrate from Elementor', 'blockshift-migrate-from-elementor' ),
 			'manage_options',
-			'gutenberg-settings',
+			'blockshift-settings',
 			array( $this, 'settings_page_content' ),
 			'dashicons-migrate',
 			76
 		);
 
 		add_submenu_page(
-			'gutenberg-settings',
+			'blockshift-settings',
 			esc_html__( 'Settings', 'blockshift-migrate-from-elementor' ),
 			esc_html__( 'Settings', 'blockshift-migrate-from-elementor' ),
 			'manage_options',
-			'gutenberg-settings',
+			'blockshift-settings',
 			array( $this, 'settings_page_content' )
 		);
 
@@ -434,7 +434,7 @@ class Admin_Settings {
 	 */
 	public function reorder_submenu(): void {
 		global $submenu;
-		if ( ! isset( $submenu['gutenberg-settings'] ) || ! is_array( $submenu['gutenberg-settings'] ) ) {
+		if ( ! isset( $submenu['blockshift-settings'] ) || ! is_array( $submenu['blockshift-settings'] ) ) {
 			return;
 		}
 
@@ -442,12 +442,12 @@ class Admin_Settings {
 			Batch_Convert_Wizard::MENU_SLUG,
 			AI_Enhancement_Admin::MENU_SLUG,
 			Conversion_Log_Admin::MENU_SLUG,
-			'gutenberg-settings',
+			'blockshift-settings',
 		);
 
 		$indexed   = array();
 		$remaining = array();
-		foreach ( $submenu['gutenberg-settings'] as $item ) {
+		foreach ( $submenu['blockshift-settings'] as $item ) {
 			$slug = isset( $item[2] ) ? (string) $item[2] : '';
 			$pos  = array_search( $slug, $desired, true );
 			if ( false !== $pos ) {
@@ -458,7 +458,7 @@ class Admin_Settings {
 		}
 
 		ksort( $indexed );
-		$submenu['gutenberg-settings'] = array_values( array_merge( $indexed, $remaining ) );
+		$submenu['blockshift-settings'] = array_values( array_merge( $indexed, $remaining ) );
 	}
 
 	/**
@@ -493,12 +493,12 @@ class Admin_Settings {
 				return $option;
 			}
 
-			return get_option( 'gutenberg_json_data', '' );
+			return get_option( 'blockshift_json_data', '' );
 		}
 
 		$json_content = File_Upload_Service::upload_file( $_FILES['json_upload'], 'json' ); // phpcs:ignore WordPress.Security.NonceVerification.Missing
 		if ( null === $json_content ) {
-			return get_option( 'gutenberg_json_data', '' );
+			return get_option( 'blockshift_json_data', '' );
 		}
 
 		$data              = json_decode( $json_content, true );
@@ -533,17 +533,17 @@ class Admin_Settings {
 
 		if ( is_wp_error( $new_post_id ) ) {
 			add_settings_error(
-				'gutenberg_json_data',
+				'blockshift_json_data',
 				'json_upload_error',
 				esc_html__( 'Failed to create new page.', 'blockshift-migrate-from-elementor' ),
 				'error'
 			);
 
-			return get_option( 'gutenberg_json_data', '' );
+			return get_option( 'blockshift_json_data', '' );
 		}
 
 		add_settings_error(
-			'gutenberg_json_data',
+			'blockshift_json_data',
 			'json_upload_success',
 			esc_html__( 'JSON file uploaded and page created successfully!', 'blockshift-migrate-from-elementor' ),
 			'updated'
@@ -563,9 +563,9 @@ class Admin_Settings {
 			wp_die( esc_html__( 'You do not have permission to change plugin settings.', 'blockshift-migrate-from-elementor' ) );
 		}
 
-		check_admin_referer( 'metg_save_screenshot_settings' );
+		check_admin_referer( 'blockshift_save_screenshot_settings' );
 
-		$raw = isset( $_POST['metg_screenshot_settings'] ) ? wp_unslash( $_POST['metg_screenshot_settings'] ) : array();
+		$raw = isset( $_POST['blockshift_screenshot_settings'] ) ? wp_unslash( $_POST['blockshift_screenshot_settings'] ) : array();
 		$raw = is_array( $raw ) ? $raw : array();
 
 		$endpoint_url  = isset( $raw['endpoint_url'] ) ? esc_url_raw( sanitize_text_field( (string) $raw['endpoint_url'] ) ) : '';
@@ -583,8 +583,8 @@ class Admin_Settings {
 		wp_safe_redirect(
 			add_query_arg(
 				array(
-					'page'               => 'gutenberg-settings',
-					'metg_settings_saved' => '1',
+					'page'               => 'blockshift-settings',
+					'blockshift_settings_saved' => '1',
 				),
 				admin_url( 'admin.php' )
 			)
@@ -596,7 +596,7 @@ class Admin_Settings {
 	 * Render settings page content.
 	 */
 	public function settings_page_content(): void {
-		$claude_settings  = get_option( 'metg_claude_settings', array() );
+		$claude_settings  = get_option( 'blockshift_claude_settings', array() );
 		$claude_settings  = is_array( $claude_settings ) ? $claude_settings : array();
 		$claude_api_key   = isset( $claude_settings['api_key'] ) ? (string) $claude_settings['api_key'] : '';
 		$copy_meta_enabled = self::is_copy_meta_enabled();
@@ -618,7 +618,7 @@ class Admin_Settings {
                     </div>
                 </div>
 
-                <?php if ( isset( $_GET['metg_settings_saved'] ) && '1' === $_GET['metg_settings_saved'] ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
+                <?php if ( isset( $_GET['blockshift_settings_saved'] ) && '1' === $_GET['blockshift_settings_saved'] ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
                     <div class="pgs-banner pgs-banner--success" role="status">
                         <span class="pgs-banner__icon"><i data-icon="check-circle-2"></i></span>
                         <div class="pgs-banner__body"><span class="pgs-banner__text"><?php esc_html_e( 'Settings saved.', 'blockshift-migrate-from-elementor' ); ?></span></div>
@@ -626,8 +626,8 @@ class Admin_Settings {
                 <?php endif; ?>
 
                 <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
-                    <?php wp_nonce_field( 'metg_save_settings' ); ?>
-                    <input type="hidden" name="action" value="metg_save_settings" />
+                    <?php wp_nonce_field( 'blockshift_save_settings' ); ?>
+                    <input type="hidden" name="action" value="blockshift_save_settings" />
 
                     <div class="pgs-stack" style="gap:var(--gap-section);">
 
@@ -641,13 +641,13 @@ class Admin_Settings {
                             <div class="pgs-card__body">
                                 <div class="pgs-setrow">
                                     <div class="pgs-setrow__meta">
-                                        <label class="pgs-setrow__label" for="metg_section_content_width"><?php esc_html_e( 'Section content width', 'blockshift-migrate-from-elementor' ); ?></label>
+                                        <label class="pgs-setrow__label" for="blockshift_section_content_width"><?php esc_html_e( 'Section content width', 'blockshift-migrate-from-elementor' ); ?></label>
                                         <div class="pgs-setrow__desc"><?php esc_html_e( 'Controls the content width applied to converted top-level Elementor sections. Match this to your Elementor kit\'s container width so converted pages render at the same width as the originals. Typical values: 1140, 1200, 1024. Clamped to 320–2560.', 'blockshift-migrate-from-elementor' ); ?></div>
                                     </div>
                                     <div class="pgs-setrow__control">
                                         <div class="pgs-field">
                                             <div class="pgs-input">
-                                                <input class="pgs-input__el" type="number" id="metg_section_content_width" name="metg_layout_settings[section_content_width]" value="<?php echo esc_attr( (string) $current_width ); ?>" min="320" max="2560" step="10" />
+                                                <input class="pgs-input__el" type="number" id="blockshift_section_content_width" name="blockshift_layout_settings[section_content_width]" value="<?php echo esc_attr( (string) $current_width ); ?>" min="320" max="2560" step="10" />
                                                 <span class="pgs-input__affix">px</span>
                                             </div>
                                         </div>
@@ -671,7 +671,7 @@ class Admin_Settings {
                                     </div>
                                     <div class="pgs-setrow__control">
                                         <label class="pgs-check">
-                                            <input type="checkbox" class="pgs-check__input" name="metg_conversion_preferences[copy_meta_and_featured_image]" value="1" <?php checked( $copy_meta_enabled ); ?> />
+                                            <input type="checkbox" class="pgs-check__input" name="blockshift_conversion_preferences[copy_meta_and_featured_image]" value="1" <?php checked( $copy_meta_enabled ); ?> />
                                             <span class="pgs-check__box" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
                                             <span class="pgs-check__text"><span class="pgs-check__label"><?php esc_html_e( 'Copy metadata and featured image', 'blockshift-migrate-from-elementor' ); ?></span></span>
                                         </label>
@@ -699,14 +699,14 @@ class Admin_Settings {
                                                     __( 'When enabled, each conversion records which widgets were converted, unsupported, or produced empty output. View the results in the <a href="%s">Conversion Log</a>. The log keeps the last 300 entries and does not affect conversion speed.', 'blockshift-migrate-from-elementor' ),
                                                     array( 'a' => array( 'href' => array() ) )
                                                 ),
-                                                esc_url( admin_url( 'admin.php?page=metg-conversion-log' ) )
+                                                esc_url( admin_url( 'admin.php?page=blockshift-conversion-log' ) )
                                             );
                                             ?>
                                         </div>
                                     </div>
                                     <div class="pgs-setrow__control">
                                         <label class="pgs-switch">
-                                            <input type="checkbox" role="switch" class="pgs-switch__input" name="metg_logging_settings[enabled]" value="1" <?php checked( self::is_logging_enabled() ); ?> />
+                                            <input type="checkbox" role="switch" class="pgs-switch__input" name="blockshift_logging_settings[enabled]" value="1" <?php checked( self::is_logging_enabled() ); ?> />
                                             <span class="pgs-switch__track" aria-hidden="true"></span>
                                             <span class="pgs-switch__text"><span class="pgs-switch__label"><?php esc_html_e( 'Enable conversion logging', 'blockshift-migrate-from-elementor' ); ?></span></span>
                                         </label>
@@ -725,7 +725,7 @@ class Admin_Settings {
                             <div class="pgs-card__body">
                                 <div class="pgs-setrow">
                                     <div class="pgs-setrow__meta">
-                                        <label class="pgs-setrow__label" for="metg_claude_api_key"><?php esc_html_e( 'Claude API Key', 'blockshift-migrate-from-elementor' ); ?></label>
+                                        <label class="pgs-setrow__label" for="blockshift_claude_api_key"><?php esc_html_e( 'Claude API Key', 'blockshift-migrate-from-elementor' ); ?></label>
                                         <div class="pgs-setrow__desc">
                                             <?php esc_html_e( 'Your Anthropic API key. Required for the "Improve with AI" automated workflow.', 'blockshift-migrate-from-elementor' ); ?>
                                             <a href="https://console.anthropic.com/" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Purchase Claude API key', 'blockshift-migrate-from-elementor' ); ?></a>
@@ -734,7 +734,7 @@ class Admin_Settings {
                                     <div class="pgs-setrow__control">
                                         <div class="pgs-field">
                                             <div class="pgs-input pgs-input--mono">
-                                                <input class="pgs-input__el" type="password" id="metg_claude_api_key" name="metg_claude_settings[api_key]" value="<?php echo esc_attr( $claude_api_key ); ?>" autocomplete="off" />
+                                                <input class="pgs-input__el" type="password" id="blockshift_claude_api_key" name="blockshift_claude_settings[api_key]" value="<?php echo esc_attr( $claude_api_key ); ?>" autocomplete="off" />
                                                 <span class="pgs-input__affix">
                                                     <?php if ( '' !== $claude_api_key ) : ?>
                                                         <span class="pgs-pill pgs-pill--success"><span class="pgs-pill__icon"><i data-icon="check"></i></span><?php esc_html_e( 'Configured', 'blockshift-migrate-from-elementor' ); ?></span>
@@ -891,15 +891,15 @@ class Admin_Settings {
 
 		$fonts = $this->external_css_collector->get_font_usage();
 		if ( empty( $fonts ) ) {
-			delete_post_meta( $post_id, '_metg_used_fonts' );
-			delete_post_meta( $post_id, '_metg_used_fonts_hash' );
+			delete_post_meta( $post_id, '_blockshift_used_fonts' );
+			delete_post_meta( $post_id, '_blockshift_used_fonts_hash' );
 			return;
 		}
 
 		$hash = md5( (string) wp_json_encode( $fonts ) );
 
-		update_post_meta( $post_id, '_metg_used_fonts', $fonts );
-		update_post_meta( $post_id, '_metg_used_fonts_hash', $hash );
+		update_post_meta( $post_id, '_blockshift_used_fonts', $fonts );
+		update_post_meta( $post_id, '_blockshift_used_fonts_hash', $hash );
 	}
 
 	/**
@@ -942,7 +942,7 @@ class Admin_Settings {
 	 * @return string
 	 */
 	private function get_page_wrapper_class(): string {
-		return 'metg-page-' . self::PAGE_WRAPPER_TOKEN;
+		return 'blockshift-page-' . self::PAGE_WRAPPER_TOKEN;
 	}
 
 	/**
@@ -951,7 +951,7 @@ class Admin_Settings {
 	 * @return string
 	 */
 	public static function get_page_wrapper_class_name(): string {
-		return 'metg-page-' . self::PAGE_WRAPPER_TOKEN;
+		return 'blockshift-page-' . self::PAGE_WRAPPER_TOKEN;
 	}
 
 	/**
@@ -1413,7 +1413,7 @@ class Admin_Settings {
 		}
 
 		$attributes['align'] = 'full';
-		$attributes          = $this->add_class_to_attributes( $attributes, 'metg-full-width-section' );
+		$attributes          = $this->add_class_to_attributes( $attributes, 'blockshift-full-width-section' );
 
 		$this->register_full_width_section_css();
 
@@ -1421,7 +1421,7 @@ class Admin_Settings {
 	}
 
 	/**
-	 * Register the shared CSS for .metg-full-width-section.
+	 * Register the shared CSS for .blockshift-full-width-section.
 	 *
 	 * Historically this registered `width:100vw; margin-inline:calc(50% - 50vw)` to
 	 * force a full-bleed, but that combines poorly with WP's native `alignfull`:
@@ -1656,7 +1656,7 @@ class Admin_Settings {
 	 * avoid accidental zero/negative values breaking every converted page.
 	 *
 	 * Resolution order (first non-empty wins):
-	 *   1. Plugin option `metg_section_content_width` (user override).
+	 *   1. Plugin option `blockshift_section_content_width` (user override).
 	 *   2. Elementor's active kit `container_width` setting (auto-detected).
 	 *   3. The hard-coded plugin default (1140 — Hello / SaaSland baseline).
 	 *
@@ -2272,12 +2272,12 @@ class Admin_Settings {
 		$notice_text = esc_html( $notice_text );
 
 		// core/paragraph canonical markup.
-		$inner_html = '<p class="metg-unsupported-widget">' . $notice_text . '</p>';
+		$inner_html = '<p class="blockshift-unsupported-widget">' . $notice_text . '</p>';
 
 		$block = array(
 			'blockName'    => 'core/paragraph',
 			'attrs'        => array(
-				'className' => 'metg-unsupported-widget',
+				'className' => 'blockshift-unsupported-widget',
 			),
 			'innerBlocks'  => array(),
 			'innerHTML'    => $inner_html,

@@ -19,7 +19,7 @@ use function esc_url;
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Converts Elementor Icon widget into Gutenberg `gutenberg/icon` block.
+ * Converts Elementor Icon widget into Gutenberg `blockshift/icon` block.
  */
 class Icon_Widget_Handler implements Widget_Handler_Interface {
 
@@ -144,7 +144,7 @@ class Icon_Widget_Handler implements Widget_Handler_Interface {
 
 		$wrapper_classes = array_merge(
 			array(
-				'wp-block-gutenberg-icon',
+				'wp-block-blockshift-icon',
 				$align_class,
 			),
 			$custom_classes
@@ -165,7 +165,7 @@ class Icon_Widget_Handler implements Widget_Handler_Interface {
 		}
 
 		return Block_Builder::build(
-			'gutenberg/icon',
+			'blockshift/icon',
 			$attributes,
 			$inner_html,
 			array( 'no_kses' => true )

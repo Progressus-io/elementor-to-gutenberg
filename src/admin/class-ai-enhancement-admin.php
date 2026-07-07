@@ -32,7 +32,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class AI_Enhancement_Admin {
 
-	public const MENU_SLUG = 'metg-ai-enhancement';
+	public const MENU_SLUG = 'blockshift-ai-enhancement';
 
 	/**
 	 * @var AI_Enhancement_Admin|null
@@ -47,17 +47,17 @@ class AI_Enhancement_Admin {
 		return self::$instance;
 	}
 
-	public const FEEDBACK_NONCE = 'metg_ai_enhancement_feedback_nonce';
+	public const FEEDBACK_NONCE = 'blockshift_ai_enhancement_feedback_nonce';
 
 	private function __construct() {
 		add_action( 'admin_menu', array( $this, 'register_menu' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
-		add_action( 'wp_ajax_metg_submit_ai_enhancement_feedback', array( $this, 'ajax_submit_ai_enhancement_feedback' ) );
+		add_action( 'wp_ajax_blockshift_submit_ai_enhancement_feedback', array( $this, 'ajax_submit_ai_enhancement_feedback' ) );
 	}
 
 	public function register_menu(): void {
 		add_submenu_page(
-			'gutenberg-settings',
+			'blockshift-settings',
 			esc_html__( 'AI Enhancement', 'blockshift-migrate-from-elementor' ),
 			esc_html__( 'AI Enhancement', 'blockshift-migrate-from-elementor' ),
 			'edit_pages',
@@ -85,14 +85,14 @@ class AI_Enhancement_Admin {
 		}
 
 		wp_enqueue_style(
-			'metg-batch-wizard',
+			'blockshift-batch-wizard',
 			BLOCKSHIFT_CSS_DIR_URL . '/batch-wizard.css',
 			array(),
 			self::asset_ver( 'assets/css/batch-wizard.css' )
 		);
 
 		wp_enqueue_script(
-			'metg-pgs-icons',
+			'blockshift-pgs-icons',
 			BLOCKSHIFT_JS_DIR_URL . '/pgs-icons.js',
 			array(),
 			self::asset_ver( 'assets/js/pgs-icons.js' ),
@@ -100,23 +100,23 @@ class AI_Enhancement_Admin {
 		);
 
 		wp_enqueue_script(
-			'metg-ai-enhancement',
+			'blockshift-ai-enhancement',
 			BLOCKSHIFT_JS_DIR_URL . '/ai-enhancement.js',
-			array( 'metg-pgs-icons' ),
+			array( 'blockshift-pgs-icons' ),
 			self::asset_ver( 'assets/js/ai-enhancement.js' ),
 			true
 		);
 
 		wp_localize_script(
-			'metg-ai-enhancement',
-			'etgAiEnhancement',
+			'blockshift-ai-enhancement',
+			'blockshiftAiEnhancement',
 			array(
 				'ajaxUrl'          => admin_url( 'admin-ajax.php' ),
-				'aiImproveNonce'   => wp_create_nonce( 'metg_ai_improve' ),
+				'aiImproveNonce'   => wp_create_nonce( 'blockshift_ai_improve' ),
 				'feedbackNonce'    => wp_create_nonce( self::FEEDBACK_NONCE ),
 				'feedbackEnabled'  => true,
 				'aiConfigured'     => '' !== Claude_Api_Service::get_api_key(),
-				'settingsUrl'      => admin_url( 'admin.php?page=gutenberg-settings' ),
+				'settingsUrl'      => admin_url( 'admin.php?page=blockshift-settings' ),
 				'editBaseUrl'      => admin_url( 'post.php?post=' ),
 				'aiImproveBaseUrl' => admin_url( 'admin.php?page=' . AI_Improvement_Admin::MENU_SLUG ),
 				'pages'            => $this->get_converted_pages_data(),
@@ -132,7 +132,7 @@ class AI_Enhancement_Admin {
 
 		$has_pages = ! empty( $this->get_converted_pages() );
 		?>
-		<div class="wrap pgs metg-wizard-wrap">
+		<div class="wrap pgs blockshift-wizard-wrap">
 			<header class="pgs-pluginhead">
 				<span class="pgs-pluginhead__brand"><span class="pgs-pluginhead__name"><?php esc_html_e( 'BlockShift – Migrate from Elementor', 'blockshift-migrate-from-elementor' ); ?></span></span>
 			</header>
@@ -151,7 +151,7 @@ class AI_Enhancement_Admin {
 					</div>
 				</div>
 			<?php else : ?>
-				<div id="metg-ai-enhancement-app"></div>
+				<div id="blockshift-ai-enhancement-app"></div>
 			<?php endif; ?>
 		</div>
 		<?php
@@ -160,10 +160,10 @@ class AI_Enhancement_Admin {
 	private function get_converted_pages_data(): array {
 		$data = array();
 		foreach ( $this->get_converted_pages() as $page ) {
-			$source_id = (int) get_post_meta( $page->ID, '_metg_source_id', true );
+			$source_id = (int) get_post_meta( $page->ID, '_blockshift_source_id', true );
 
 			if ( 'wp_template_part' === $page->post_type ) {
-				$kind = (string) get_post_meta( $page->ID, '_metg_template_kind', true );
+				$kind = (string) get_post_meta( $page->ID, '_blockshift_template_kind', true );
 				$type = in_array( $kind, array( 'header', 'footer' ), true ) ? $kind : 'template';
 			} else {
 				$type = 'page';
@@ -175,7 +175,7 @@ class AI_Enhancement_Admin {
 				'sourceId'     => $source_id,
 				'sourceTitle'  => $source_id > 0 ? (string) get_the_title( $source_id ) : '',
 				'type'         => $type,
-				'lastImproved' => (string) get_post_meta( $page->ID, '_metg_last_ai_improved', true ),
+				'lastImproved' => (string) get_post_meta( $page->ID, '_blockshift_last_ai_improved', true ),
 			);
 		}
 
@@ -191,7 +191,7 @@ class AI_Enhancement_Admin {
 			// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 			'meta_query'         => array(
 				array(
-					'key'     => '_metg_source_id',
+					'key'     => '_blockshift_source_id',
 					'compare' => 'EXISTS',
 				),
 			),
@@ -326,12 +326,12 @@ class AI_Enhancement_Admin {
 				'target_id'     => $target_id,
 				'source_id'     => $source_id > 0 ? $source_id : null,
 				'title'         => $target_post->post_title,
-				'last_improved' => (string) get_post_meta( $target_id, '_metg_last_ai_improved', true ),
+				'last_improved' => (string) get_post_meta( $target_id, '_blockshift_last_ai_improved', true ),
 				'screenshots'   => array(
-					'elementor_desktop' => $this->get_first_screenshot( $target_id, '_metg_ai_elementor_screenshot_url' ),
-					'gutenberg_desktop' => $this->get_first_screenshot( $target_id, '_metg_ai_gutenberg_screenshot_url' ),
-					'elementor_mobile'  => $this->get_first_screenshot( $target_id, '_metg_ai_elementor_screenshot_mobile_url' ),
-					'gutenberg_mobile'  => $this->get_first_screenshot( $target_id, '_metg_ai_gutenberg_screenshot_mobile_url' ),
+					'elementor_desktop' => $this->get_first_screenshot( $target_id, '_blockshift_ai_elementor_screenshot_url' ),
+					'gutenberg_desktop' => $this->get_first_screenshot( $target_id, '_blockshift_ai_gutenberg_screenshot_url' ),
+					'elementor_mobile'  => $this->get_first_screenshot( $target_id, '_blockshift_ai_elementor_screenshot_mobile_url' ),
+					'gutenberg_mobile'  => $this->get_first_screenshot( $target_id, '_blockshift_ai_gutenberg_screenshot_mobile_url' ),
 				),
 			),
 

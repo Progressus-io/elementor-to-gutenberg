@@ -1,12 +1,12 @@
 document.addEventListener( 'DOMContentLoaded', function () {
-	const tabsBlocks = document.querySelectorAll( '.progressus-tabs' );
+	const tabsBlocks = document.querySelectorAll( '.blockshift-tabs' );
 
 	tabsBlocks.forEach( function ( tabsBlock ) {
 		const tabHeaders = tabsBlock.querySelectorAll(
-			'.progressus-tab-header'
+			'.blockshift-tab-header'
 		);
 		const tabContents = tabsBlock.querySelectorAll(
-			'.progressus-tab-content'
+			'.blockshift-tab-content'
 		);
 
 		// Store original styles for each tab header
@@ -151,7 +151,7 @@ document.addEventListener( 'DOMContentLoaded', function () {
 if ( typeof module !== 'undefined' && module.exports ) {
 	module.exports = {
 		initializeTabs( selector ) {
-			document.querySelectorAll( selector || '.progressus-tabs' );
+			document.querySelectorAll( selector || '.blockshift-tabs' );
 			// Re-run initialization logic here if needed
 		},
 	};

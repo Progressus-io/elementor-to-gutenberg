@@ -1,7 +1,7 @@
 /* global IntersectionObserver */
 document.addEventListener( 'DOMContentLoaded', () => {
 	const progressBars = document.querySelectorAll(
-		'.wp-block-progressus-progress'
+		'.wp-block-blockshift-progress'
 	);
 
 	if ( ! progressBars.length ) {
@@ -13,7 +13,7 @@ document.addEventListener( 'DOMContentLoaded', () => {
 			entries.forEach( ( entry ) => {
 				if ( entry.isIntersecting ) {
 					const bar = entry.target.querySelector(
-						'.progressus-progress-bar-fill'
+						'.blockshift-progress-bar-fill'
 					);
 					if ( bar ) {
 						// Get the percentage from the width style

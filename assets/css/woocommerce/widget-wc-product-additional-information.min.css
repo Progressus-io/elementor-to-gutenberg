@@ -1,4 +1,4 @@
-:where([class*="metg-page-"] [class*="metg-widget-"])
+:where([class*="blockshift-page-"] [class*="blockshift-widget-"])
 :not(.elementor-show-heading-yes)
 :is(
   .woocommerce-tabs .woocommerce-Tabs-panel--additional_information
