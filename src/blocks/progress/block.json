@@ -64,7 +64,7 @@
       "default": "#ffffff"
     }
   },
-  "textdomain": "blockshift-migrate-from-elementor",
+  "textdomain": "layoutbridge-block-migration",
   "editorScript": "file:./index.js",
   "style": "file:./style-index.css",
   "viewScript": "file:./view.js"

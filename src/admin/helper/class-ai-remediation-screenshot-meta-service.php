@@ -191,7 +191,7 @@ class AI_Remediation_Screenshot_Meta_Service {
 			self::save_status( $target_id, self::STATUS_FAILED );
 			return array(
 				'success' => false,
-				'error'   => __( 'Could not resolve public URLs for the source or target page.', 'blockshift-migrate-from-elementor' ),
+				'error'   => __( 'Could not resolve public URLs for the source or target page.', 'layoutbridge-block-migration' ),
 			);
 		}
 
