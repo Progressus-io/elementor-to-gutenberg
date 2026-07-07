@@ -22,15 +22,37 @@ use function register_block_type;
  * @return string Returns the tabs block markup.
  */
 function render_tabs_block( $attributes, $_content, $_block ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter
-	$tabs                     = isset( $attributes['tabs'] ) ? $attributes['tabs'] : array();
-	$active_tab               = isset( $attributes['activeTab'] ) ? intval( $attributes['activeTab'] ) : 0;
-	$tab_style                = isset( $attributes['tabStyle'] ) ? \esc_html( $attributes['tabStyle'] ) : 'horizontal';
-	$tab_color                = isset( $attributes['tabColor'] ) ? \esc_html( $attributes['tabColor'] ) : '#f9f9f9';
-	$active_tab_color         = isset( $attributes['activeTabColor'] ) ? \esc_html( $attributes['activeTabColor'] ) : '#007cba';
-	$content_background_color = isset( $attributes['contentBackgroundColor'] ) ? \esc_html( $attributes['contentBackgroundColor'] ) : '#ffffff';
-	$border_color             = isset( $attributes['borderColor'] ) ? \esc_html( $attributes['borderColor'] ) : '#dddddd';
+	$tabs       = isset( $attributes['tabs'] ) ? $attributes['tabs'] : array();
+	$active_tab = isset( $attributes['activeTab'] ) ? intval( $attributes['activeTab'] ) : 0;
+	// Validate every value interpolated into an inline style attribute. esc_attr()
+	// alone would not stop ";"-delimited declaration injection, so colours are
+	// matched against a CSS-colour allowlist and keywords are limited to a fixed
+	// set; anything unexpected falls back to the block default.
+	$is_css_color  = static function ( $value ): bool {
+		$value = trim( (string) $value );
+		if ( '' === $value ) {
+			return false;
+		}
+		if ( preg_match( '/^#(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i', $value ) ) {
+			return true;
+		}
+		if ( preg_match( '/^(?:rgb|rgba|hsl|hsla)\([0-9.,%\/\s]+\)$/i', $value ) ) {
+			return true;
+		}
+		return (bool) preg_match( '/^[a-z]+$/i', $value );
+	};
+	$css_color     = static function ( $value, string $fallback ) use ( $is_css_color ): string {
+		return $is_css_color( $value ) ? trim( (string) $value ) : $fallback;
+	};
+	$border_styles = array( 'solid', 'dashed', 'dotted', 'double', 'groove', 'ridge', 'inset', 'outset', 'none', 'hidden' );
+
+	$tab_style                = ( isset( $attributes['tabStyle'] ) && 'vertical' === $attributes['tabStyle'] ) ? 'vertical' : 'horizontal';
+	$tab_color                = $css_color( $attributes['tabColor'] ?? '', '#f9f9f9' );
+	$active_tab_color         = $css_color( $attributes['activeTabColor'] ?? '', '#007cba' );
+	$content_background_color = $css_color( $attributes['contentBackgroundColor'] ?? '', '#ffffff' );
+	$border_color             = $css_color( $attributes['borderColor'] ?? '', '#dddddd' );
 	$border_width             = isset( $attributes['borderWidth'] ) ? intval( $attributes['borderWidth'] ) : 1;
-	$border_style             = isset( $attributes['borderStyle'] ) ? \esc_html( $attributes['borderStyle'] ) : 'solid';
+	$border_style             = ( isset( $attributes['borderStyle'] ) && in_array( $attributes['borderStyle'], $border_styles, true ) ) ? $attributes['borderStyle'] : 'solid';
 	$border_radius            = isset( $attributes['borderRadius'] ) ? intval( $attributes['borderRadius'] ) : 4;
 	$tabs_padding             = isset( $attributes['tabsPadding'] ) ? $attributes['tabsPadding'] : array(
 		'top'    => 12,
@@ -132,10 +154,10 @@ function render_tabs_block( $attributes, $_content, $_block ) { // phpcs:ignore 
 	$headers_direction = 'vertical' === $tab_style ? 'column' : 'row';
 
 	$output  = sprintf( '<div %s>', $wrapper_attributes );
-	$output .= sprintf( '<div class="progressus-tabs" style="%s">', $tabs_style );
+	$output .= sprintf( '<div class="progressus-tabs" style="%s">', \esc_attr( $tabs_style ) );
 
 	// Render tab headers
-	$output .= sprintf( '<div class="progressus-tabs-headers" style="display: flex; flex-direction: %s;">', $headers_direction );
+	$output .= sprintf( '<div class="progressus-tabs-headers" style="display: flex; flex-direction: %s;">', \esc_attr( $headers_direction ) );
 
 	foreach ( $tabs as $index => $tab ) {
 		$tab_title    = isset( $tab['title'] ) ? \esc_html( $tab['title'] ) : sprintf( 'Tab %d', $index + 1 );
@@ -146,7 +168,7 @@ function render_tabs_block( $attributes, $_content, $_block ) { // phpcs:ignore 
 		$output .= sprintf(
 			'<div class="%s" style="%s" data-tab-index="%d" tabindex="0" role="tab" aria-selected="%s">%s</div>',
 			$header_class,
-			$header_style,
+			\esc_attr( $header_style ),
 			$index,
 			$is_active ? 'true' : 'false',
 			$tab_title
@@ -156,7 +178,7 @@ function render_tabs_block( $attributes, $_content, $_block ) { // phpcs:ignore 
 	$output .= '</div>'; // Close headers
 
 	// Render tab content
-	$output .= sprintf( '<div class="progressus-tabs-content" style="%s" role="tablist">', $content_style );
+	$output .= sprintf( '<div class="progressus-tabs-content" style="%s" role="tablist">', \esc_attr( $content_style ) );
 
 	foreach ( $tabs as $index => $tab ) {
 		$tab_content     = isset( $tab['content'] ) ? wp_kses_post( $tab['content'] ) : '';

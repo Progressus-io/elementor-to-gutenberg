@@ -79,21 +79,18 @@ function render_google_map_block( $attributes, $_content, $_block ) { // phpcs:i
 	$wrapper_with_data .= '>';
 
 	$style_parts = array();
-	// Helper: normalize a side value which may be numeric or include units (e.g. '2px' or '1.5%').
+	// Accept only a number, optionally followed by a known CSS length unit. Any
+	// other input (which could smuggle extra declarations into the inline style)
+	// collapses to '0px'.
 	$normalize = static function ( $value ) {
-		if ( '' === $value || null === $value ) {
-			return '0px';
-		}
-		// If it's numeric, append 'px'.
 		if ( is_numeric( $value ) ) {
 			return $value . 'px';
 		}
-		// If it already contains letters/percent/unit, return as-is.
-		if ( is_string( $value ) && preg_match( '/[a-z%]$/i', trim( $value ) ) ) {
+		$value = is_string( $value ) ? trim( $value ) : '';
+		if ( '' !== $value && preg_match( '/^-?(?:\d+|\d*\.\d+)(?:px|em|rem|%|vh|vw|vmin|vmax|pt|pc|ex|ch|cm|mm|in)$/', $value ) ) {
 			return $value;
 		}
-		// Fallback: cast to string and append px.
-		return (string) $value . 'px';
+		return '0px';
 	};
 
 	if ( isset( $attributes['style']['spacing']['margin'] ) && is_array( $attributes['style']['spacing']['margin'] ) ) {
