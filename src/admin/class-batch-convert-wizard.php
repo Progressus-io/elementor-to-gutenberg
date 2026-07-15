@@ -10,7 +10,6 @@ namespace Progressus\BlockShift\Admin;
 defined( 'ABSPATH' ) || exit;
 
 use Progressus\BlockShift\Admin\Admin_Settings;
-use Progressus\BlockShift\Admin\AI_Improvement_Admin;
 use Progressus\BlockShift\Admin\Conversion_Log_Admin;
 use Progressus\BlockShift\Admin\Diagnostic_Logger;
 use Progressus\BlockShift\Gutenberg;
@@ -18,9 +17,6 @@ use WP_Error;
 use WP_Post;
 use WP_Query;
 
-use Progressus\BlockShift\Admin\Helper\AI_Remediation_Screenshot_Api_Service;
-use Progressus\BlockShift\Admin\Helper\AI_Remediation_Screenshot_Meta_Service;
-use Progressus\BlockShift\Admin\Helper\Claude_Api_Service;
 use Progressus\BlockShift\Admin\Helper\External_CSS_Service;
 
 use function absint;
@@ -95,8 +91,6 @@ class Batch_Convert_Wizard {
 	private const NONCE_ACTION = 'blockshift_batch_convert';
 
 	private const NONCE_NAME = 'nonce';
-
-	private const AI_IMPROVE_NONCE_ACTION = 'blockshift_ai_improve';
 
 	private const FEEDBACK_NONCE_ACTION = 'blockshift_feedback_nonce';
 
@@ -187,7 +181,6 @@ class Batch_Convert_Wizard {
 		add_action( 'wp_ajax_blockshift_start_job', array( $this, 'ajax_start_job' ) );
 		add_action( 'wp_ajax_blockshift_poll_job', array( $this, 'ajax_poll_job' ) );
 		add_action( 'wp_ajax_blockshift_cancel_job', array( $this, 'ajax_cancel_job' ) );
-		add_action( 'wp_ajax_blockshift_ai_improve_single', array( $this, 'ajax_ai_improve_single' ) );
 		add_action( 'wp_ajax_blockshift_submit_feedback', array( $this, 'ajax_submit_feedback' ) );
 	}
 
@@ -240,9 +233,7 @@ class Batch_Convert_Wizard {
 			'blockshiftBatchWizard',
 			array(
 				'ajaxUrl'          => admin_url( 'admin-ajax.php' ),
-				'aiImproveBaseUrl' => admin_url( 'admin.php?page=' . AI_Improvement_Admin::MENU_SLUG ),
 				'nonce'            => wp_create_nonce( self::NONCE_ACTION ),
-				'aiImproveNonce'   => wp_create_nonce( self::AI_IMPROVE_NONCE_ACTION ),
 				'pages'            => $pages_data,
 				'postTypes'        => $this->get_post_types_descriptor( $pages_data ),
 				'strings'          => $this->get_strings(),
@@ -251,7 +242,6 @@ class Batch_Convert_Wizard {
 				'activeJob'        => $this->get_active_job_for_user(),
 				'userCanEdit'      => current_user_can( 'edit_pages' ),
 				'maxBatchSize'     => 1,
-				'aiConfigured'     => '' !== Claude_Api_Service::get_api_key(),
 				'preflight'        => $this->build_preflight_summary(),
 				'feedbackNonce'    => wp_create_nonce( self::FEEDBACK_NONCE_ACTION ),
 				'feedbackEnabled'  => true,
@@ -317,7 +307,6 @@ class Batch_Convert_Wizard {
 			'convertedCount' => $converted_count,
 			'headersCount'   => $templates_data['counts']['headers'],
 			'footersCount'   => $templates_data['counts']['footers'],
-			'aiConfigured'   => '' !== Claude_Api_Service::get_api_key(),
 		);
 	}
 
@@ -523,9 +512,6 @@ class Batch_Convert_Wizard {
 						'php_version'       => PHP_VERSION,
 						'active_theme'      => $_theme->get( 'Name' ),
 						'conversion_mode'   => $job['mode'] ?? '',
-						'ai_assist_enabled' => false,
-						'ai_provider'       => 'claude',
-						'ai_model'          => Claude_Api_Service::MODEL,
 						'sanitized'         => true,
 						'site_url_hash'     => hash( 'sha256', (string) get_site_url() ),
 						'started_at'        => gmdate( 'c', ! empty( $job['started_at'] ) ? $job['started_at'] : time() ),
@@ -612,11 +598,6 @@ class Batch_Convert_Wizard {
 				);
 
 				$this->store_page_conversion_result( (int) $page_info['id'], $result_entry );
-
-				// Auto-generate screenshots for successfully converted pages if the feature is enabled.
-				if ( 'success' === $result['status'] && $converted_post_id > 0 ) {
-					$this->maybe_generate_screenshots( (int) $page_info['id'], $converted_post_id );
-				}
 			} else {
 				$template_info = $item['data'];
 
@@ -3249,7 +3230,6 @@ class Batch_Convert_Wizard {
 			'stepLabelConflicts'       => __( 'Conflicts', 'blockshift-migrate-from-elementor' ),
 			'stepLabelReview'          => __( 'Review', 'blockshift-migrate-from-elementor' ),
 			'stepLabelProgress'        => __( 'Convert', 'blockshift-migrate-from-elementor' ),
-			'stepLabelAiImprove'       => __( 'AI Improve', 'blockshift-migrate-from-elementor' ),
 			'modeTitle'                => __( 'Choose Mode', 'blockshift-migrate-from-elementor' ),
 			'modeAutoTitle'            => __( 'Convert all pages automatically', 'blockshift-migrate-from-elementor' ),
 			'modeAutoDesc'             => __( 'Converts all eligible items, skips already converted, uses default settings.', 'blockshift-migrate-from-elementor' ),
@@ -3330,21 +3310,6 @@ class Batch_Convert_Wizard {
 			'skip'                     => __( 'Skip', 'blockshift-migrate-from-elementor' ),
 			'viewPages'                => __( 'View converted pages', 'blockshift-migrate-from-elementor' ),
 			'startNew'                 => __( 'Start new conversion', 'blockshift-migrate-from-elementor' ),
-			'aiLoaderTitle'            => __( 'Improving with AI…', 'blockshift-migrate-from-elementor' ),
-			'aiLoaderMessage'          => __( 'Analysing page structure and generating improvements. This may take up to 2 minutes.', 'blockshift-migrate-from-elementor' ),
-			/* translators: %1$d: number of items to improve */
-			'aiImproveAllBtn'          => __( 'Improve all with AI (%1$d)', 'blockshift-migrate-from-elementor' ),
-			'aiImproveTitle'           => __( 'AI Improvement', 'blockshift-migrate-from-elementor' ),
-			'aiImproveWarningTitle'    => __( 'AI credits will be used', 'blockshift-migrate-from-elementor' ),
-			'aiImproveWarning'         => __( 'This will use AI credits once per selected item. Make sure your API key has sufficient credits before starting.', 'blockshift-migrate-from-elementor' ),
-			'aiReadinessTitle'         => __( 'Pre-flight checklist', 'blockshift-migrate-from-elementor' ),
-			'aiReadinessAllReady'      => __( '✓ Ready to start', 'blockshift-migrate-from-elementor' ),
-			'aiReadinessApiValid'      => __( 'API key configured', 'blockshift-migrate-from-elementor' ),
-			'aiReadinessApiInvalid'    => __( 'API key not configured', 'blockshift-migrate-from-elementor' ),
-			'aiReadinessApiMissing'    => __( 'AI features require a valid API key. ', 'blockshift-migrate-from-elementor' ),
-			/* translators: %1$d: estimated number of API calls */
-			'aiReadinessCredits'       => __( 'Estimated: ~%1$d API call(s), ~1–2 minutes per item', 'blockshift-migrate-from-elementor' ),
-			'goToSettings'             => __( 'Go to Settings →', 'blockshift-migrate-from-elementor' ),
 			'editSection'              => __( 'Edit', 'blockshift-migrate-from-elementor' ),
 			'reviewDesc'               => __( 'Double-check the plan below before starting. You can edit any section from here.', 'blockshift-migrate-from-elementor' ),
 			'reviewStatPages'          => __( 'Pages to convert', 'blockshift-migrate-from-elementor' ),
@@ -3356,28 +3321,10 @@ class Batch_Convert_Wizard {
 			'reviewSectionTemplates'   => __( 'Templates', 'blockshift-migrate-from-elementor' ),
 			'reviewSectionConflicts'   => __( 'Conflicts', 'blockshift-migrate-from-elementor' ),
 			'safetyNote'               => __( 'Recommended to run on a staging environment if your site is live. Conversion runs in the background — you can safely close this page.', 'blockshift-migrate-from-elementor' ),
-			'aiStageAnalyzing'         => __( 'Analyzing…', 'blockshift-migrate-from-elementor' ),
-			'aiStageGenerating'        => __( 'Generating…', 'blockshift-migrate-from-elementor' ),
-			'aiStageSaving'            => __( 'Saving…', 'blockshift-migrate-from-elementor' ),
 			'resultsNeedsAttention'    => __( 'Needs attention', 'blockshift-migrate-from-elementor' ),
 			'resultsCompleted'         => __( 'Completed successfully', 'blockshift-migrate-from-elementor' ),
 			'errorNoOutput'            => __( 'No Gutenberg output was generated. The source may contain unsupported widgets or empty content.', 'blockshift-migrate-from-elementor' ),
-			/* translators: %1$d: number of successfully converted items */
-			'improveSuccessful'        => __( 'Improve successful items with AI (%1$d)', 'blockshift-migrate-from-elementor' ),
 			'themeChangeWarning'       => __( 'Changing the active theme may affect the live site appearance. Test on staging when possible.', 'blockshift-migrate-from-elementor' ),
-			'aiImproveStart'           => __( 'Start AI Improvement', 'blockshift-migrate-from-elementor' ),
-			'aiImproveNone'            => __( 'No successfully converted items found in this session.', 'blockshift-migrate-from-elementor' ),
-			'aiImproveError'           => __( 'An unexpected error occurred.', 'blockshift-migrate-from-elementor' ),
-			'aiImproveType'            => __( 'Type', 'blockshift-migrate-from-elementor' ),
-			'aiImprovePaused'          => __( 'Paused — a page failed. Review the error below, then skip or retry to continue.', 'blockshift-migrate-from-elementor' ),
-			'aiImproveFinishedOk'      => __( 'All items improved successfully.', 'blockshift-migrate-from-elementor' ),
-			/* translators: 1: items done, 2: items failed, 3: items skipped */
-			'aiImproveFinishedErr'     => __( 'Finished with issues — %1$d done, %2$d failed, %3$d skipped.', 'blockshift-migrate-from-elementor' ),
-			'aiStatusPending'          => __( 'Pending', 'blockshift-migrate-from-elementor' ),
-			'aiStatusProcessing'       => __( 'Processing…', 'blockshift-migrate-from-elementor' ),
-			'aiStatusDone'             => __( 'Done', 'blockshift-migrate-from-elementor' ),
-			'aiStatusFailed'           => __( 'Failed', 'blockshift-migrate-from-elementor' ),
-			'aiStatusSkipped'          => __( 'Skipped', 'blockshift-migrate-from-elementor' ),
 			'statusConverted'          => __( 'Converted', 'blockshift-migrate-from-elementor' ),
 			'statusNotConverted'       => __( 'Not converted', 'blockshift-migrate-from-elementor' ),
 			'statusPartial'            => __( 'Partial', 'blockshift-migrate-from-elementor' ),
@@ -3521,47 +3468,6 @@ class Batch_Convert_Wizard {
 				'job' => $this->format_job_for_response( $job ),
 			)
 		);
-	}
-
-	/**
-	 * Run AI improvement on a single page via AJAX.
-	 *
-	 * Called sequentially by the bulk AI improve step in the conversion wizard.
-	 * Uses a dedicated nonce separate from the conversion job nonce.
-	 */
-	public function ajax_ai_improve_single(): void {
-		if ( ! current_user_can( 'edit_pages' ) ) {
-			wp_send_json_error(
-				array( 'message' => esc_html__( 'You do not have permission to perform this action.', 'blockshift-migrate-from-elementor' ) ),
-				403
-			);
-		}
-
-		check_ajax_referer( self::AI_IMPROVE_NONCE_ACTION, self::NONCE_NAME );
-
-		$source_id = isset( $_POST['source_id'] ) ? absint( wp_unslash( $_POST['source_id'] ) ) : 0;
-		$target_id = isset( $_POST['target_id'] ) ? absint( wp_unslash( $_POST['target_id'] ) ) : 0;
-
-		if ( $source_id <= 0 || $target_id <= 0 ) {
-			wp_send_json_error(
-				array( 'message' => esc_html__( 'Invalid source or target page ID.', 'blockshift-migrate-from-elementor' ) )
-			);
-		}
-
-		if ( ! current_user_can( 'edit_post', $target_id ) ) {
-			wp_send_json_error(
-				array( 'message' => esc_html__( 'You do not have permission to edit this page.', 'blockshift-migrate-from-elementor' ) ),
-				403
-			);
-		}
-
-		$result = AI_Improvement_Admin::run_improvement( $source_id, $target_id );
-
-		if ( $result['success'] ) {
-			wp_send_json_success();
-		} else {
-			wp_send_json_error( array( 'message' => $result['error'] ) );
-		}
 	}
 
 	/**
@@ -3801,23 +3707,6 @@ class Batch_Convert_Wizard {
 				'unsupported_by_type' => $widget_log['unsupported_by_type'] ?? array(),
 			)
 		);
-	}
-
-	/**
-	 * Attempt to generate screenshots for a converted page pair if auto-generation is enabled.
-	 *
-	 * Called after each successful page conversion in the batch wizard. Any failure is stored
-	 * in post meta and does not interrupt the wizard AJAX response.
-	 *
-	 * @param int $source_id Elementor source page ID.
-	 * @param int $target_id Converted Gutenberg page ID.
-	 */
-	private function maybe_generate_screenshots( int $source_id, int $target_id ): void {
-		if ( ! AI_Remediation_Screenshot_Api_Service::is_auto_generate_enabled() ) {
-			return;
-		}
-
-		AI_Remediation_Screenshot_Meta_Service::generate_and_store( $source_id, $target_id, false );
 	}
 
 	/**

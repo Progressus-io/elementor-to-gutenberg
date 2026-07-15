@@ -16,7 +16,6 @@ use Progressus\BlockShift\Admin\Helper\Style_Parser;
 use Progressus\BlockShift\Admin\Helper\Alignment_Helper;
 use Progressus\BlockShift\Admin\Helper\External_CSS_Service;
 use Progressus\BlockShift\Admin\Helper\External_Style_Collector;
-use Progressus\BlockShift\Admin\Helper\AI_Remediation_Screenshot_Api_Service;
 use Progressus\BlockShift\Admin\Conversion_Log;
 use Progressus\BlockShift\Admin\Conversion_Log_Admin;
 
@@ -155,7 +154,6 @@ class Admin_Settings {
 		add_filter( 'plugin_action_links_' . BLOCKSHIFT_BASENAME, array( $this, 'add_plugin_action_links' ) );
 		add_filter( 'page_row_actions', array( $this, 'blockshift_add_convert_button' ), 10, 2 );
 		add_action( 'admin_post_blockshift_convert_page', array( $this, 'blockshift_handle_convert_page' ) );
-		add_action( 'admin_post_blockshift_save_screenshot_settings', array( $this, 'save_screenshot_settings' ) );
 		add_action( 'admin_post_blockshift_save_settings', array( $this, 'save_all_settings' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 	}
@@ -200,11 +198,6 @@ class Admin_Settings {
 		}
 
 		check_admin_referer( 'blockshift_save_settings' );
-
-		$claude_raw = isset( $_POST['blockshift_claude_settings'] ) ? wp_unslash( $_POST['blockshift_claude_settings'] ) : array();
-		$claude_raw = is_array( $claude_raw ) ? $claude_raw : array();
-		$api_key    = isset( $claude_raw['api_key'] ) ? sanitize_text_field( (string) $claude_raw['api_key'] ) : '';
-		update_option( 'blockshift_claude_settings', array( 'api_key' => $api_key ), false );
 
 		$prefs_raw = isset( $_POST['blockshift_conversion_preferences'] ) ? wp_unslash( $_POST['blockshift_conversion_preferences'] ) : array();
 		$prefs_raw = is_array( $prefs_raw ) ? $prefs_raw : array();
@@ -440,7 +433,6 @@ class Admin_Settings {
 
 		$desired = array(
 			Batch_Convert_Wizard::MENU_SLUG,
-			AI_Enhancement_Admin::MENU_SLUG,
 			Conversion_Log_Admin::MENU_SLUG,
 			'blockshift-settings',
 		);
@@ -553,52 +545,9 @@ class Admin_Settings {
 	}
 
 	/**
-	 * Save screenshot service settings submitted from the settings page form.
-	 *
-	 * Accepts POST data from the screenshot settings form, sanitizes all fields,
-	 * persists them via AI_Remediation_Screenshot_Api_Service, then redirects back.
-	 */
-	public function save_screenshot_settings(): void {
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( esc_html__( 'You do not have permission to change plugin settings.', 'blockshift-migrate-from-elementor' ) );
-		}
-
-		check_admin_referer( 'blockshift_save_screenshot_settings' );
-
-		$raw = isset( $_POST['blockshift_screenshot_settings'] ) ? wp_unslash( $_POST['blockshift_screenshot_settings'] ) : array();
-		$raw = is_array( $raw ) ? $raw : array();
-
-		$endpoint_url  = isset( $raw['endpoint_url'] ) ? esc_url_raw( sanitize_text_field( (string) $raw['endpoint_url'] ) ) : '';
-		$timeout       = isset( $raw['timeout'] ) ? max( 5, min( 120, (int) $raw['timeout'] ) ) : 15;
-		$auto_generate = ! empty( $raw['auto_generate'] );
-
-		$settings = array(
-			'endpoint_url'  => $endpoint_url,
-			'timeout'       => $timeout,
-			'auto_generate' => $auto_generate,
-		);
-
-		AI_Remediation_Screenshot_Api_Service::save_settings( $settings );
-
-		wp_safe_redirect(
-			add_query_arg(
-				array(
-					'page'               => 'blockshift-settings',
-					'blockshift_settings_saved' => '1',
-				),
-				admin_url( 'admin.php' )
-			)
-		);
-		exit;
-	}
-
-	/**
 	 * Render settings page content.
 	 */
 	public function settings_page_content(): void {
-		$claude_settings  = get_option( 'blockshift_claude_settings', array() );
-		$claude_settings  = is_array( $claude_settings ) ? $claude_settings : array();
-		$claude_api_key   = isset( $claude_settings['api_key'] ) ? (string) $claude_settings['api_key'] : '';
 		$copy_meta_enabled = self::is_copy_meta_enabled();
 		$current_width    = $this->get_section_content_width_px();
 		?>
@@ -715,39 +664,6 @@ class Admin_Settings {
                             </div>
                         </div>
 
-                        <div class="pgs-card">
-                            <div class="pgs-card__header">
-                                <div>
-                                    <div class="pgs-card__eyebrow"><?php esc_html_e( 'Integration', 'blockshift-migrate-from-elementor' ); ?></div>
-                                    <div class="pgs-card__title"><?php esc_html_e( 'Claude AI', 'blockshift-migrate-from-elementor' ); ?></div>
-                                </div>
-                            </div>
-                            <div class="pgs-card__body">
-                                <div class="pgs-setrow">
-                                    <div class="pgs-setrow__meta">
-                                        <label class="pgs-setrow__label" for="blockshift_claude_api_key"><?php esc_html_e( 'Claude API Key', 'blockshift-migrate-from-elementor' ); ?></label>
-                                        <div class="pgs-setrow__desc">
-                                            <?php esc_html_e( 'Your Anthropic API key. Required for the "Improve with AI" automated workflow.', 'blockshift-migrate-from-elementor' ); ?>
-                                            <a href="https://console.anthropic.com/" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Purchase Claude API key', 'blockshift-migrate-from-elementor' ); ?></a>
-                                        </div>
-                                    </div>
-                                    <div class="pgs-setrow__control">
-                                        <div class="pgs-field">
-                                            <div class="pgs-input pgs-input--mono">
-                                                <input class="pgs-input__el" type="password" id="blockshift_claude_api_key" name="blockshift_claude_settings[api_key]" value="<?php echo esc_attr( $claude_api_key ); ?>" autocomplete="off" />
-                                                <span class="pgs-input__affix">
-                                                    <?php if ( '' !== $claude_api_key ) : ?>
-                                                        <span class="pgs-pill pgs-pill--success"><span class="pgs-pill__icon"><i data-icon="check"></i></span><?php esc_html_e( 'Configured', 'blockshift-migrate-from-elementor' ); ?></span>
-                                                    <?php else : ?>
-                                                        <span class="pgs-pill pgs-pill--neutral"><?php esc_html_e( 'Not configured', 'blockshift-migrate-from-elementor' ); ?></span>
-                                                    <?php endif; ?>
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
 
                         <div class="pgs-actions-end">
                             <button type="submit" class="pgs-btn pgs-btn--primary pgs-btn--md"><span class="pgs-btn__icon"><i data-icon="save"></i></span><span><?php esc_html_e( 'Save Settings', 'blockshift-migrate-from-elementor' ); ?></span></button>
