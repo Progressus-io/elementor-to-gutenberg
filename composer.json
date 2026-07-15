@@ -1,5 +1,5 @@
 {
-	"name": "progressus/blockshift-migrate-from-elementor",
+	"name": "progressus/blockshift",
 	"license": "GPL-3.0",
 	"require-dev": {
 		"woocommerce/woocommerce-sniffs": "^1.0",
