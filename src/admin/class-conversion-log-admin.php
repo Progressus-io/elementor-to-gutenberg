@@ -491,7 +491,7 @@ class Conversion_Log_Admin {
 					</div>
 					<div class="pgs-card__body">
 						<p class="pgs-muted" style="margin-bottom:12px;">
-							<?php esc_html_e( 'Structured machine-readable log. Every conversion run appends JSON events — one per line. Attach this file to a feedback report or import it into the Feedback Hub for AI analysis.', 'blockshift' ); ?>
+							<?php esc_html_e( 'Structured machine-readable log. Every conversion run appends JSON events — one per line. Attach this file to a feedback report or import it into the Feedback Hub for analysis.', 'blockshift' ); ?>
 						</p>
 
 						<div class="pgs-muted" style="margin-bottom:12px;line-height:var(--leading-relaxed);">

@@ -3303,8 +3303,6 @@ class Batch_Convert_Wizard {
 			'duration'                 => __( 'Duration', 'blockshift' ),
 			'viewConverted'            => __( 'View', 'blockshift' ),
 			'viewConvertedTooltip'     => __( 'View converted page', 'blockshift' ),
-			'improveWithAi'            => __( 'Improve with AI', 'blockshift' ),
-			'improveWithAiTooltip'     => __( 'Improve this page with AI', 'blockshift' ),
 			'retryTooltip'             => __( 'Retry this conversion', 'blockshift' ),
 			'retry'                    => __( 'Retry', 'blockshift' ),
 			'skip'                     => __( 'Skip', 'blockshift' ),
@@ -3393,7 +3391,6 @@ class Batch_Convert_Wizard {
 			'feedbackIssueMissing'     => __( 'Missing content', 'blockshift' ),
 			'feedbackIssueWidget'      => __( 'Unsupported widget', 'blockshift' ),
 			'feedbackIssueCss'         => __( 'CSS/styling', 'blockshift' ),
-			'feedbackIssueAi'          => __( 'AI output quality', 'blockshift' ),
 			'feedbackIssueOther'       => __( 'Other', 'blockshift' ),
 		);
 	}
