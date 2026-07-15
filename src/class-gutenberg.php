@@ -10,6 +10,7 @@ namespace Progressus\BlockShift;
 defined( 'ABSPATH' ) || exit;
 
 use Progressus\BlockShift\Admin\Admin_Settings;
+use Progressus\BlockShift\Admin\Addons_Page;
 use Progressus\BlockShift\Admin\Batch_Convert_Wizard;
 use Progressus\BlockShift\Admin\Conversion_Log_Admin;
 use Progressus\BlockShift\Admin\Data_Migration;
@@ -453,6 +454,7 @@ class Gutenberg {
 		Admin_Settings::instance();
 		Batch_Convert_Wizard::instance();
 		Conversion_Log_Admin::instance();
+		Addons_Page::instance();
 	}
 
 	/**

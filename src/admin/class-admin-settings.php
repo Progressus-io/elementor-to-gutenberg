@@ -224,6 +224,15 @@ class Admin_Settings {
 		}
 		update_option( self::OPTION_SECTION_CONTENT_WIDTH, $width, false );
 
+		/**
+		 * Fires after the core settings are saved, so add-ons can persist the
+		 * fields they rendered via 'blockshift_settings_sections'. The nonce and
+		 * capability have already been verified above.
+		 *
+		 * @since 1.0.0
+		 */
+		do_action( 'blockshift_settings_save' );
+
 		wp_safe_redirect(
 			add_query_arg(
 				array(
@@ -434,6 +443,7 @@ class Admin_Settings {
 		$desired = array(
 			Batch_Convert_Wizard::MENU_SLUG,
 			Conversion_Log_Admin::MENU_SLUG,
+			Addons_Page::MENU_SLUG,
 			'blockshift-settings',
 		);
 
@@ -664,6 +674,18 @@ class Admin_Settings {
                             </div>
                         </div>
 
+
+                        <?php
+                        /**
+                         * Fires inside the Settings form, after the core sections
+                         * and before the Save button. Add-ons render their own
+                         * settings cards here; the submitted fields are persisted
+                         * via the 'blockshift_settings_save' action.
+                         *
+                         * @since 1.0.0
+                         */
+                        do_action( 'blockshift_settings_sections' );
+                        ?>
 
                         <div class="pgs-actions-end">
                             <button type="submit" class="pgs-btn pgs-btn--primary pgs-btn--md"><span class="pgs-btn__icon"><i data-icon="save"></i></span><span><?php esc_html_e( 'Save Settings', 'blockshift-migrate-from-elementor' ); ?></span></button>
