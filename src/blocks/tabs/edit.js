@@ -130,22 +130,22 @@ const Edit = ( { attributes, setAttributes } ) => {
 		<>
 			<InspectorControls>
 				<PanelBody
-					title={ __( 'Settings', 'blockshift-migrate-from-elementor' ) }
+					title={ __( 'Settings', 'blockshift' ) }
 					initialOpen={ true }
 				>
 					<SelectControl
-						label={ __( 'Tab Style', 'blockshift-migrate-from-elementor' ) }
+						label={ __( 'Tab Style', 'blockshift' ) }
 						value={ tabStyle }
 						options={ [
 							{
 								label: __(
 									'Horizontal',
-									'blockshift-migrate-from-elementor'
+									'blockshift'
 								),
 								value: 'horizontal',
 							},
 							{
-								label: __( 'Vertical', 'blockshift-migrate-from-elementor' ),
+								label: __( 'Vertical', 'blockshift' ),
 								value: 'vertical',
 							},
 						] }
@@ -156,7 +156,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 				</PanelBody>
 
 				<PanelColorSettings
-					title={ __( 'Background Colors', 'blockshift-migrate-from-elementor' ) }
+					title={ __( 'Background Colors', 'blockshift' ) }
 					initialOpen={ false }
 					colorSettings={ [
 						{
@@ -165,7 +165,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 								setAttributes( { tabColor: color } ),
 							label: __(
 								'Tab Background',
-								'blockshift-migrate-from-elementor'
+								'blockshift'
 							),
 						},
 						{
@@ -174,7 +174,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 								setAttributes( { activeTabColor: color } ),
 							label: __(
 								'Active Tab Background',
-								'blockshift-migrate-from-elementor'
+								'blockshift'
 							),
 						},
 						{
@@ -185,21 +185,21 @@ const Edit = ( { attributes, setAttributes } ) => {
 								} ),
 							label: __(
 								'Content Background',
-								'blockshift-migrate-from-elementor'
+								'blockshift'
 							),
 						},
 					] }
 				/>
 
 				<PanelColorSettings
-					title={ __( 'Text Colors', 'blockshift-migrate-from-elementor' ) }
+					title={ __( 'Text Colors', 'blockshift' ) }
 					initialOpen={ false }
 					colorSettings={ [
 						{
 							value: tabTextColor,
 							onChange: ( color ) =>
 								setAttributes( { tabTextColor: color } ),
-							label: __( 'Tab Text', 'blockshift-migrate-from-elementor' ),
+							label: __( 'Tab Text', 'blockshift' ),
 						},
 						{
 							value: activeTabTextColor,
@@ -207,20 +207,20 @@ const Edit = ( { attributes, setAttributes } ) => {
 								setAttributes( { activeTabTextColor: color } ),
 							label: __(
 								'Active Tab Text',
-								'blockshift-migrate-from-elementor'
+								'blockshift'
 							),
 						},
 						{
 							value: contentTextColor,
 							onChange: ( color ) =>
 								setAttributes( { contentTextColor: color } ),
-							label: __( 'Content Text', 'blockshift-migrate-from-elementor' ),
+							label: __( 'Content Text', 'blockshift' ),
 						},
 					] }
 				/>
 
 				<PanelBody
-					title={ __( 'Typography', 'blockshift-migrate-from-elementor' ) }
+					title={ __( 'Typography', 'blockshift' ) }
 					initialOpen={ false }
 				>
 					<div style={ { marginBottom: '20px' } }>
@@ -232,7 +232,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 								color: '#1e1e1e',
 							} }
 						>
-							{ __( 'Tab Typography', 'blockshift-migrate-from-elementor' ) }
+							{ __( 'Tab Typography', 'blockshift' ) }
 						</h3>
 
 						<FontSizePicker
@@ -251,7 +251,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						<TextControl
 							label={ __(
 								'Font Family',
-								'blockshift-migrate-from-elementor'
+								'blockshift'
 							) }
 							value={ tabTypography.fontFamily }
 							onChange={ ( value ) =>
@@ -264,7 +264,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 							}
 							placeholder={ __(
 								'Default',
-								'blockshift-migrate-from-elementor'
+								'blockshift'
 							) }
 							__nextHasNoMarginBottom
 						/>
@@ -272,26 +272,26 @@ const Edit = ( { attributes, setAttributes } ) => {
 						<SelectControl
 							label={ __(
 								'Font Weight',
-								'blockshift-migrate-from-elementor'
+								'blockshift'
 							) }
 							value={ tabTypography.fontWeight }
 							options={ [
 								{
 									label: __(
 										'Default',
-										'blockshift-migrate-from-elementor'
+										'blockshift'
 									),
 									value: '',
 								},
 								{
 									label: __(
 										'Normal',
-										'blockshift-migrate-from-elementor'
+										'blockshift'
 									),
 									value: 'normal',
 								},
 								{
-									label: __( 'Bold', 'blockshift-migrate-from-elementor' ),
+									label: __( 'Bold', 'blockshift' ),
 									value: 'bold',
 								},
 								{ label: '100', value: '100' },
@@ -318,7 +318,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						<RangeControl
 							label={ __(
 								'Line Height',
-								'blockshift-migrate-from-elementor'
+								'blockshift'
 							) }
 							value={ tabTypography.lineHeight }
 							onChange={ ( value ) =>
@@ -347,7 +347,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						>
 							{ __(
 								'Content Typography',
-								'blockshift-migrate-from-elementor'
+								'blockshift'
 							) }
 						</h3>
 
@@ -367,7 +367,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						<TextControl
 							label={ __(
 								'Font Family',
-								'blockshift-migrate-from-elementor'
+								'blockshift'
 							) }
 							value={ contentTypography.fontFamily }
 							onChange={ ( value ) =>
@@ -380,7 +380,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 							}
 							placeholder={ __(
 								'Default',
-								'blockshift-migrate-from-elementor'
+								'blockshift'
 							) }
 							__nextHasNoMarginBottom
 						/>
@@ -388,26 +388,26 @@ const Edit = ( { attributes, setAttributes } ) => {
 						<SelectControl
 							label={ __(
 								'Font Weight',
-								'blockshift-migrate-from-elementor'
+								'blockshift'
 							) }
 							value={ contentTypography.fontWeight }
 							options={ [
 								{
 									label: __(
 										'Default',
-										'blockshift-migrate-from-elementor'
+										'blockshift'
 									),
 									value: '',
 								},
 								{
 									label: __(
 										'Normal',
-										'blockshift-migrate-from-elementor'
+										'blockshift'
 									),
 									value: 'normal',
 								},
 								{
-									label: __( 'Bold', 'blockshift-migrate-from-elementor' ),
+									label: __( 'Bold', 'blockshift' ),
 									value: 'bold',
 								},
 								{ label: '100', value: '100' },
@@ -434,7 +434,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						<RangeControl
 							label={ __(
 								'Line Height',
-								'blockshift-migrate-from-elementor'
+								'blockshift'
 							) }
 							value={ contentTypography.lineHeight }
 							onChange={ ( value ) =>
@@ -454,11 +454,11 @@ const Edit = ( { attributes, setAttributes } ) => {
 				</PanelBody>
 
 				<PanelBody
-					title={ __( 'Border', 'blockshift-migrate-from-elementor' ) }
+					title={ __( 'Border', 'blockshift' ) }
 					initialOpen={ false }
 				>
 					<BorderControl
-						label={ __( 'Border', 'blockshift-migrate-from-elementor' ) }
+						label={ __( 'Border', 'blockshift' ) }
 						value={ {
 							color: borderColor,
 							style: borderStyle,
@@ -475,7 +475,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					/>
 
 					<RangeControl
-						label={ __( 'Border Radius', 'blockshift-migrate-from-elementor' ) }
+						label={ __( 'Border Radius', 'blockshift' ) }
 						value={ borderRadius }
 						onChange={ ( value ) =>
 							setAttributes( { borderRadius: value } )
@@ -487,11 +487,11 @@ const Edit = ( { attributes, setAttributes } ) => {
 				</PanelBody>
 
 				<PanelBody
-					title={ __( 'Dimensions', 'blockshift-migrate-from-elementor' ) }
+					title={ __( 'Dimensions', 'blockshift' ) }
 					initialOpen={ false }
 				>
 					<BoxControl
-						label={ __( 'Tab Padding', 'blockshift-migrate-from-elementor' ) }
+						label={ __( 'Tab Padding', 'blockshift' ) }
 						values={ {
 							top: tabsPadding.top + 'px',
 							right: tabsPadding.right + 'px',
@@ -514,7 +514,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					<BoxControl
 						label={ __(
 							'Content Padding',
-							'blockshift-migrate-from-elementor'
+							'blockshift'
 						) }
 						values={ {
 							top: contentPadding.top + 'px',
@@ -536,7 +536,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					/>
 
 					<BoxControl
-						label={ __( 'Tab Margin', 'blockshift-migrate-from-elementor' ) }
+						label={ __( 'Tab Margin', 'blockshift' ) }
 						values={ {
 							top: tabsMargin.top + 'px',
 							right: tabsMargin.right + 'px',
@@ -557,7 +557,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					/>
 
 					<BoxControl
-						label={ __( 'Content Margin', 'blockshift-migrate-from-elementor' ) }
+						label={ __( 'Content Margin', 'blockshift' ) }
 						values={ {
 							top: contentMargin.top + 'px',
 							right: contentMargin.right + 'px',
@@ -579,7 +579,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 				</PanelBody>
 
 				<PanelBody
-					title={ __( 'Content', 'blockshift-migrate-from-elementor' ) }
+					title={ __( 'Content', 'blockshift' ) }
 					initialOpen={ false }
 				>
 					<div style={ { marginBottom: '16px' } }>
@@ -588,7 +588,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 							onClick={ addTab }
 							style={ { width: '100%' } }
 						>
-							{ __( 'Add Tab', 'blockshift-migrate-from-elementor' ) }
+							{ __( 'Add Tab', 'blockshift' ) }
 						</Button>
 					</div>
 
@@ -620,7 +620,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 										color: '#1e1e1e',
 									} }
 								>
-									{ __( 'Tab', 'blockshift-migrate-from-elementor' ) }{ ' ' }
+									{ __( 'Tab', 'blockshift' ) }{ ' ' }
 									{ index + 1 }
 									{ index === activeTab && (
 										<span
@@ -632,7 +632,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 											(
 											{ __(
 												'Active',
-												'blockshift-migrate-from-elementor'
+												'blockshift'
 											) }
 											)
 										</span>
@@ -645,12 +645,12 @@ const Edit = ( { attributes, setAttributes } ) => {
 									onClick={ () => removeTab( index ) }
 									disabled={ tabs.length <= 1 }
 								>
-									{ __( 'Remove', 'blockshift-migrate-from-elementor' ) }
+									{ __( 'Remove', 'blockshift' ) }
 								</Button>
 							</div>
 
 							<TextControl
-								label={ __( 'Title', 'blockshift-migrate-from-elementor' ) }
+								label={ __( 'Title', 'blockshift' ) }
 								value={ tab.title }
 								onChange={ ( value ) =>
 									updateTab( index, 'title', value )
@@ -661,7 +661,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 							<TextareaControl
 								label={ __(
 									'Content',
-									'blockshift-migrate-from-elementor'
+									'blockshift'
 								) }
 								value={ tab.content }
 								onChange={ ( value ) =>
@@ -679,7 +679,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 				<ToolbarGroup>
 					<ToolbarButton
 						icon="admin-page"
-						label={ __( 'Add Tab', 'blockshift-migrate-from-elementor' ) }
+						label={ __( 'Add Tab', 'blockshift' ) }
 						onClick={ addTab }
 					/>
 				</ToolbarGroup>
