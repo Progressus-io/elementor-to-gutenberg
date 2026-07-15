@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name: BlockShift – Migrate from Elementor
+ * Plugin Name: BlockShift
  * Plugin URI: https://block-shift.com
  * Description: Professional migration tool to convert Elementor layouts into native Gutenberg blocks
  * Author: Progressus

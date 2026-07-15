@@ -1,4 +1,4 @@
-=== BlockShift – Migrate from Elementor ===
+=== BlockShift ===
 Contributors: shadim
 Tags: elementor, gutenberg, migration, conversion, blocks
 Requires at least: 6.7
