@@ -11,7 +11,6 @@ use function absint;
 use function current_time;
 use function delete_post_meta;
 use function get_option;
-use function gmdate;
 use function file_exists;
 use function filemtime;
 use function get_post_meta;
@@ -153,64 +152,6 @@ class External_CSS_Service {
 	}
 
 	/**
-	 * Append CSS to an already generated external CSS file for a post.
-	 *
-	 * @param int    $post_id Post ID.
-	 * @param string $css CSS to append.
-	 *
-	 * @return bool|\WP_Error
-	 */
-	public static function append_post_css( int $post_id, string $css ) {
-		$post_id = self::resolve_post_id( $post_id );
-		$css     = self::normalize_css( $css );
-
-		if ( '' === $css ) {
-			return true;
-		}
-
-		$meta = self::get_post_css_meta( $post_id );
-		if ( ! is_array( $meta ) || empty( $meta['path'] ) ) {
-			return new \WP_Error(
-				'blockshift_missing_css_file',
-				'External CSS file reference could not be resolved for this page.'
-			);
-		}
-
-		$path = self::normalize_fs_path( (string) $meta['path'] );
-		if ( ! file_exists( $path ) || ! is_readable( $path ) ) {
-			return new \WP_Error(
-				'blockshift_css_file_not_found',
-				'External CSS file does not exist or is not readable.'
-			);
-		}
-
-		if ( ! function_exists( 'WP_Filesystem' ) ) {
-			require_once ABSPATH . 'wp-admin/includes/file.php';
-		}
-		WP_Filesystem();
-		global $wp_filesystem;
-		$current_css = ( $wp_filesystem && method_exists( $wp_filesystem, 'get_contents' ) )
-			? (string) $wp_filesystem->get_contents( $path )
-			: '';
-		$separator   = "\n\n/* AI remediation CSS appended on " . gmdate( 'Y-m-d H:i:s' ) . " UTC */\n";
-		$updated_css = trim( $current_css ) . $separator . $css . "\n";
-
-		if ( ! self::write_file( $path, $updated_css ) ) {
-			return new \WP_Error(
-				'blockshift_css_write_failed',
-				'Failed to append CSS to external stylesheet file.'
-			);
-		}
-
-		$meta['hash']     = substr( md5( $updated_css ), 0, 12 );
-		$meta['saved_at'] = current_time( 'mysql' );
-		$meta_json        = wp_json_encode( $meta, JSON_UNESCAPED_SLASHES );
-		update_post_meta( $post_id, self::META_KEY, $meta_json );
-
-		return true;
-	}
-
-	/**
 	 * Delete CSS meta reference.
 	 *
 	 * @param int $post_id
@@ -315,7 +256,7 @@ class External_CSS_Service {
 	/**
 	 * Strip constructs that could turn a saved stylesheet into an attack vector.
 	 *
-	 * AI-generated CSS is written to a file in uploads and enqueued, so it never
+	 * The generated CSS is written to a file in uploads and enqueued, so it never
 	 * passes through WordPress content sanitization. This removes the pieces that
 	 * do not belong in a plain stylesheet: markup, remote @import rules, and the
 	 * legacy script-in-CSS vectors (expression(), behavior, -moz-binding,

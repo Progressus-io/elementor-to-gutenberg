@@ -1,6 +1,7 @@
 <?php
 /**
- * Plugin Name: BlockShift – Migrate from Elementor
+ * Plugin Name: BlockShift
+ * Plugin URI: https://block-shift.com
  * Description: Professional migration tool to convert Elementor layouts into native Gutenberg blocks
  * Author: Progressus
  * Author URI: https://progressus.io/
@@ -9,7 +10,7 @@
  * Requires PHP: 7.4
  * License: GPLv2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain: blockshift-migrate-from-elementor
+ * Text Domain: blockshift
  *
  * @package Progressus\BlockShift
  */
@@ -61,7 +62,7 @@ register_activation_hook(
 		 *
 		 * @since 1.0.0
 		 */
-		do_action( 'metg_activated' );
+		do_action( 'blockshift_activated' );
 	}
 );
 
@@ -73,7 +74,7 @@ register_deactivation_hook(
 		 *
 		 * @since 1.0.0
 		 */
-		do_action( 'metg_deactivated' );
+		do_action( 'blockshift_deactivated' );
 	}
 );
 

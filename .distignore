@@ -6,6 +6,7 @@
 .gitignore
 .idea
 .distignore
+.npmrc
 node_modules
 package.json
 package-lock.json
@@ -15,3 +16,7 @@ webpack.config.js
 ruleset.xml
 version-bump.js
 README.md
+composer.json
+composer.lock
+wiki
+*.zip

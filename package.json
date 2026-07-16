@@ -1,10 +1,10 @@
 {
-	"name": "blockshift-migrate-from-elementor",
+	"name": "blockshift",
 	"version": "1.0.0",
 	"description": "",
 	"main": "build/index.js",
 	"files": [
-		"blockshift-migrate-from-elementor.php",
+		"blockshift.php",
 		"readme.txt",
 		"LICENSE.txt",
 		"composer.json",

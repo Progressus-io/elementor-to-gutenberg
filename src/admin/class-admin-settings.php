@@ -16,7 +16,6 @@ use Progressus\BlockShift\Admin\Helper\Style_Parser;
 use Progressus\BlockShift\Admin\Helper\Alignment_Helper;
 use Progressus\BlockShift\Admin\Helper\External_CSS_Service;
 use Progressus\BlockShift\Admin\Helper\External_Style_Collector;
-use Progressus\BlockShift\Admin\Helper\AI_Remediation_Screenshot_Api_Service;
 use Progressus\BlockShift\Admin\Conversion_Log;
 use Progressus\BlockShift\Admin\Conversion_Log_Admin;
 
@@ -155,7 +154,6 @@ class Admin_Settings {
 		add_filter( 'plugin_action_links_' . BLOCKSHIFT_BASENAME, array( $this, 'add_plugin_action_links' ) );
 		add_filter( 'page_row_actions', array( $this, 'blockshift_add_convert_button' ), 10, 2 );
 		add_action( 'admin_post_blockshift_convert_page', array( $this, 'blockshift_handle_convert_page' ) );
-		add_action( 'admin_post_blockshift_save_screenshot_settings', array( $this, 'save_screenshot_settings' ) );
 		add_action( 'admin_post_blockshift_save_settings', array( $this, 'save_all_settings' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 	}
@@ -196,15 +194,10 @@ class Admin_Settings {
 	 */
 	public function save_all_settings(): void {
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( esc_html__( 'You do not have permission to change plugin settings.', 'blockshift-migrate-from-elementor' ) );
+			wp_die( esc_html__( 'You do not have permission to change plugin settings.', 'blockshift' ) );
 		}
 
 		check_admin_referer( 'blockshift_save_settings' );
-
-		$claude_raw = isset( $_POST['blockshift_claude_settings'] ) ? wp_unslash( $_POST['blockshift_claude_settings'] ) : array();
-		$claude_raw = is_array( $claude_raw ) ? $claude_raw : array();
-		$api_key    = isset( $claude_raw['api_key'] ) ? sanitize_text_field( (string) $claude_raw['api_key'] ) : '';
-		update_option( 'blockshift_claude_settings', array( 'api_key' => $api_key ), false );
 
 		$prefs_raw = isset( $_POST['blockshift_conversion_preferences'] ) ? wp_unslash( $_POST['blockshift_conversion_preferences'] ) : array();
 		$prefs_raw = is_array( $prefs_raw ) ? $prefs_raw : array();
@@ -230,6 +223,15 @@ class Admin_Settings {
 			$width = 2560;
 		}
 		update_option( self::OPTION_SECTION_CONTENT_WIDTH, $width, false );
+
+		/**
+		 * Fires after the core settings are saved, so add-ons can persist the
+		 * fields they rendered via 'blockshift_settings_sections'. The nonce and
+		 * capability have already been verified above.
+		 *
+		 * @since 1.0.0
+		 */
+		do_action( 'blockshift_settings_save' );
 
 		wp_safe_redirect(
 			add_query_arg(
@@ -408,8 +410,8 @@ class Admin_Settings {
 	 */
 	public function add_admin_menu(): void {
 		add_menu_page(
-			esc_html__( 'BlockShift – Migrate from Elementor', 'blockshift-migrate-from-elementor' ),
-			esc_html__( 'BlockShift – Migrate from Elementor', 'blockshift-migrate-from-elementor' ),
+			esc_html__( 'BlockShift – Migrate from Elementor', 'blockshift' ),
+			esc_html__( 'BlockShift – Migrate from Elementor', 'blockshift' ),
 			'manage_options',
 			'blockshift-settings',
 			array( $this, 'settings_page_content' ),
@@ -419,8 +421,8 @@ class Admin_Settings {
 
 		add_submenu_page(
 			'blockshift-settings',
-			esc_html__( 'Settings', 'blockshift-migrate-from-elementor' ),
-			esc_html__( 'Settings', 'blockshift-migrate-from-elementor' ),
+			esc_html__( 'Settings', 'blockshift' ),
+			esc_html__( 'Settings', 'blockshift' ),
 			'manage_options',
 			'blockshift-settings',
 			array( $this, 'settings_page_content' )
@@ -440,8 +442,8 @@ class Admin_Settings {
 
 		$desired = array(
 			Batch_Convert_Wizard::MENU_SLUG,
-			AI_Enhancement_Admin::MENU_SLUG,
 			Conversion_Log_Admin::MENU_SLUG,
+			Addons_Page::MENU_SLUG,
 			'blockshift-settings',
 		);
 
@@ -535,7 +537,7 @@ class Admin_Settings {
 			add_settings_error(
 				'blockshift_json_data',
 				'json_upload_error',
-				esc_html__( 'Failed to create new page.', 'blockshift-migrate-from-elementor' ),
+				esc_html__( 'Failed to create new page.', 'blockshift' ),
 				'error'
 			);
 
@@ -545,7 +547,7 @@ class Admin_Settings {
 		add_settings_error(
 			'blockshift_json_data',
 			'json_upload_success',
-			esc_html__( 'JSON file uploaded and page created successfully!', 'blockshift-migrate-from-elementor' ),
+			esc_html__( 'JSON file uploaded and page created successfully!', 'blockshift' ),
 			'updated'
 		);
 
@@ -553,52 +555,9 @@ class Admin_Settings {
 	}
 
 	/**
-	 * Save screenshot service settings submitted from the settings page form.
-	 *
-	 * Accepts POST data from the screenshot settings form, sanitizes all fields,
-	 * persists them via AI_Remediation_Screenshot_Api_Service, then redirects back.
-	 */
-	public function save_screenshot_settings(): void {
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( esc_html__( 'You do not have permission to change plugin settings.', 'blockshift-migrate-from-elementor' ) );
-		}
-
-		check_admin_referer( 'blockshift_save_screenshot_settings' );
-
-		$raw = isset( $_POST['blockshift_screenshot_settings'] ) ? wp_unslash( $_POST['blockshift_screenshot_settings'] ) : array();
-		$raw = is_array( $raw ) ? $raw : array();
-
-		$endpoint_url  = isset( $raw['endpoint_url'] ) ? esc_url_raw( sanitize_text_field( (string) $raw['endpoint_url'] ) ) : '';
-		$timeout       = isset( $raw['timeout'] ) ? max( 5, min( 120, (int) $raw['timeout'] ) ) : 15;
-		$auto_generate = ! empty( $raw['auto_generate'] );
-
-		$settings = array(
-			'endpoint_url'  => $endpoint_url,
-			'timeout'       => $timeout,
-			'auto_generate' => $auto_generate,
-		);
-
-		AI_Remediation_Screenshot_Api_Service::save_settings( $settings );
-
-		wp_safe_redirect(
-			add_query_arg(
-				array(
-					'page'               => 'blockshift-settings',
-					'blockshift_settings_saved' => '1',
-				),
-				admin_url( 'admin.php' )
-			)
-		);
-		exit;
-	}
-
-	/**
 	 * Render settings page content.
 	 */
 	public function settings_page_content(): void {
-		$claude_settings  = get_option( 'blockshift_claude_settings', array() );
-		$claude_settings  = is_array( $claude_settings ) ? $claude_settings : array();
-		$claude_api_key   = isset( $claude_settings['api_key'] ) ? (string) $claude_settings['api_key'] : '';
 		$copy_meta_enabled = self::is_copy_meta_enabled();
 		$current_width    = $this->get_section_content_width_px();
 		?>
@@ -606,22 +565,22 @@ class Admin_Settings {
         <div class="pgs-screen" data-screen-label="Settings">
 
             <header class="pgs-pluginhead">
-                <span class="pgs-pluginhead__brand"><span class="pgs-pluginhead__name"><?php esc_html_e( 'BlockShift – Migrate from Elementor', 'blockshift-migrate-from-elementor' ); ?></span></span>
+                <span class="pgs-pluginhead__brand"><span class="pgs-pluginhead__name"><?php esc_html_e( 'BlockShift – Migrate from Elementor', 'blockshift' ); ?></span></span>
             </header>
             <hr class="wp-header-end" style="margin:0;border:0;">
 
             <div class="pgs-col">
                 <div class="pgs-pagetitle">
                     <div>
-                        <h1><?php esc_html_e( 'BlockShift – Migrate from Elementor', 'blockshift-migrate-from-elementor' ); ?></h1>
-                        <p><?php esc_html_e( 'Professional migration tool to convert Elementor layouts into native Gutenberg blocks.', 'blockshift-migrate-from-elementor' ); ?></p>
+                        <h1><?php esc_html_e( 'BlockShift – Migrate from Elementor', 'blockshift' ); ?></h1>
+                        <p><?php esc_html_e( 'Professional migration tool to convert Elementor layouts into native Gutenberg blocks.', 'blockshift' ); ?></p>
                     </div>
                 </div>
 
                 <?php if ( isset( $_GET['blockshift_settings_saved'] ) && '1' === $_GET['blockshift_settings_saved'] ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
                     <div class="pgs-banner pgs-banner--success" role="status">
                         <span class="pgs-banner__icon"><i data-icon="check-circle-2"></i></span>
-                        <div class="pgs-banner__body"><span class="pgs-banner__text"><?php esc_html_e( 'Settings saved.', 'blockshift-migrate-from-elementor' ); ?></span></div>
+                        <div class="pgs-banner__body"><span class="pgs-banner__text"><?php esc_html_e( 'Settings saved.', 'blockshift' ); ?></span></div>
                     </div>
                 <?php endif; ?>
 
@@ -634,15 +593,15 @@ class Admin_Settings {
                         <div class="pgs-card">
                             <div class="pgs-card__header">
                                 <div>
-                                    <div class="pgs-card__eyebrow"><?php esc_html_e( 'Output', 'blockshift-migrate-from-elementor' ); ?></div>
-                                    <div class="pgs-card__title"><?php esc_html_e( 'Layout Settings', 'blockshift-migrate-from-elementor' ); ?></div>
+                                    <div class="pgs-card__eyebrow"><?php esc_html_e( 'Output', 'blockshift' ); ?></div>
+                                    <div class="pgs-card__title"><?php esc_html_e( 'Layout Settings', 'blockshift' ); ?></div>
                                 </div>
                             </div>
                             <div class="pgs-card__body">
                                 <div class="pgs-setrow">
                                     <div class="pgs-setrow__meta">
-                                        <label class="pgs-setrow__label" for="blockshift_section_content_width"><?php esc_html_e( 'Section content width', 'blockshift-migrate-from-elementor' ); ?></label>
-                                        <div class="pgs-setrow__desc"><?php esc_html_e( 'Controls the content width applied to converted top-level Elementor sections. Match this to your Elementor kit\'s container width so converted pages render at the same width as the originals. Typical values: 1140, 1200, 1024. Clamped to 320–2560.', 'blockshift-migrate-from-elementor' ); ?></div>
+                                        <label class="pgs-setrow__label" for="blockshift_section_content_width"><?php esc_html_e( 'Section content width', 'blockshift' ); ?></label>
+                                        <div class="pgs-setrow__desc"><?php esc_html_e( 'Controls the content width applied to converted top-level Elementor sections. Match this to your Elementor kit\'s container width so converted pages render at the same width as the originals. Typical values: 1140, 1200, 1024. Clamped to 320–2560.', 'blockshift' ); ?></div>
                                     </div>
                                     <div class="pgs-setrow__control">
                                         <div class="pgs-field">
@@ -659,21 +618,21 @@ class Admin_Settings {
                         <div class="pgs-card">
                             <div class="pgs-card__header">
                                 <div>
-                                    <div class="pgs-card__eyebrow"><?php esc_html_e( 'Defaults', 'blockshift-migrate-from-elementor' ); ?></div>
-                                    <div class="pgs-card__title"><?php esc_html_e( 'Conversion Preferences', 'blockshift-migrate-from-elementor' ); ?></div>
+                                    <div class="pgs-card__eyebrow"><?php esc_html_e( 'Defaults', 'blockshift' ); ?></div>
+                                    <div class="pgs-card__title"><?php esc_html_e( 'Conversion Preferences', 'blockshift' ); ?></div>
                                 </div>
                             </div>
                             <div class="pgs-card__body">
                                 <div class="pgs-setrow">
                                     <div class="pgs-setrow__meta">
-                                        <div class="pgs-setrow__label"><?php esc_html_e( 'Metadata', 'blockshift-migrate-from-elementor' ); ?></div>
-                                        <div class="pgs-setrow__desc"><?php esc_html_e( 'When enabled, every converted page automatically copies post meta fields and the featured image from the source Elementor page. When disabled, the wizard skips this step entirely.', 'blockshift-migrate-from-elementor' ); ?></div>
+                                        <div class="pgs-setrow__label"><?php esc_html_e( 'Metadata', 'blockshift' ); ?></div>
+                                        <div class="pgs-setrow__desc"><?php esc_html_e( 'When enabled, every converted page automatically copies post meta fields and the featured image from the source Elementor page. When disabled, the wizard skips this step entirely.', 'blockshift' ); ?></div>
                                     </div>
                                     <div class="pgs-setrow__control">
                                         <label class="pgs-check">
                                             <input type="checkbox" class="pgs-check__input" name="blockshift_conversion_preferences[copy_meta_and_featured_image]" value="1" <?php checked( $copy_meta_enabled ); ?> />
                                             <span class="pgs-check__box" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
-                                            <span class="pgs-check__text"><span class="pgs-check__label"><?php esc_html_e( 'Copy metadata and featured image', 'blockshift-migrate-from-elementor' ); ?></span></span>
+                                            <span class="pgs-check__text"><span class="pgs-check__label"><?php esc_html_e( 'Copy metadata and featured image', 'blockshift' ); ?></span></span>
                                         </label>
                                     </div>
                                 </div>
@@ -683,20 +642,20 @@ class Admin_Settings {
                         <div class="pgs-card">
                             <div class="pgs-card__header">
                                 <div>
-                                    <div class="pgs-card__eyebrow"><?php esc_html_e( 'Visibility', 'blockshift-migrate-from-elementor' ); ?></div>
-                                    <div class="pgs-card__title"><?php esc_html_e( 'Logging', 'blockshift-migrate-from-elementor' ); ?></div>
+                                    <div class="pgs-card__eyebrow"><?php esc_html_e( 'Visibility', 'blockshift' ); ?></div>
+                                    <div class="pgs-card__title"><?php esc_html_e( 'Logging', 'blockshift' ); ?></div>
                                 </div>
                             </div>
                             <div class="pgs-card__body">
                                 <div class="pgs-setrow">
                                     <div class="pgs-setrow__meta">
-                                        <div class="pgs-setrow__label"><?php esc_html_e( 'Conversion logging', 'blockshift-migrate-from-elementor' ); ?></div>
+                                        <div class="pgs-setrow__label"><?php esc_html_e( 'Conversion logging', 'blockshift' ); ?></div>
                                         <div class="pgs-setrow__desc">
                                             <?php
                                             printf(
                                                 wp_kses(
                                                     /* translators: %s: URL to Conversion Log page */
-                                                    __( 'When enabled, each conversion records which widgets were converted, unsupported, or produced empty output. View the results in the <a href="%s">Conversion Log</a>. The log keeps the last 300 entries and does not affect conversion speed.', 'blockshift-migrate-from-elementor' ),
+                                                    __( 'When enabled, each conversion records which widgets were converted, unsupported, or produced empty output. View the results in the <a href="%s">Conversion Log</a>. The log keeps the last 300 entries and does not affect conversion speed.', 'blockshift' ),
                                                     array( 'a' => array( 'href' => array() ) )
                                                 ),
                                                 esc_url( admin_url( 'admin.php?page=blockshift-conversion-log' ) )
@@ -708,49 +667,28 @@ class Admin_Settings {
                                         <label class="pgs-switch">
                                             <input type="checkbox" role="switch" class="pgs-switch__input" name="blockshift_logging_settings[enabled]" value="1" <?php checked( self::is_logging_enabled() ); ?> />
                                             <span class="pgs-switch__track" aria-hidden="true"></span>
-                                            <span class="pgs-switch__text"><span class="pgs-switch__label"><?php esc_html_e( 'Enable conversion logging', 'blockshift-migrate-from-elementor' ); ?></span></span>
+                                            <span class="pgs-switch__text"><span class="pgs-switch__label"><?php esc_html_e( 'Enable conversion logging', 'blockshift' ); ?></span></span>
                                         </label>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="pgs-card">
-                            <div class="pgs-card__header">
-                                <div>
-                                    <div class="pgs-card__eyebrow"><?php esc_html_e( 'Integration', 'blockshift-migrate-from-elementor' ); ?></div>
-                                    <div class="pgs-card__title"><?php esc_html_e( 'Claude AI', 'blockshift-migrate-from-elementor' ); ?></div>
-                                </div>
-                            </div>
-                            <div class="pgs-card__body">
-                                <div class="pgs-setrow">
-                                    <div class="pgs-setrow__meta">
-                                        <label class="pgs-setrow__label" for="blockshift_claude_api_key"><?php esc_html_e( 'Claude API Key', 'blockshift-migrate-from-elementor' ); ?></label>
-                                        <div class="pgs-setrow__desc">
-                                            <?php esc_html_e( 'Your Anthropic API key. Required for the "Improve with AI" automated workflow.', 'blockshift-migrate-from-elementor' ); ?>
-                                            <a href="https://console.anthropic.com/" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Purchase Claude API key', 'blockshift-migrate-from-elementor' ); ?></a>
-                                        </div>
-                                    </div>
-                                    <div class="pgs-setrow__control">
-                                        <div class="pgs-field">
-                                            <div class="pgs-input pgs-input--mono">
-                                                <input class="pgs-input__el" type="password" id="blockshift_claude_api_key" name="blockshift_claude_settings[api_key]" value="<?php echo esc_attr( $claude_api_key ); ?>" autocomplete="off" />
-                                                <span class="pgs-input__affix">
-                                                    <?php if ( '' !== $claude_api_key ) : ?>
-                                                        <span class="pgs-pill pgs-pill--success"><span class="pgs-pill__icon"><i data-icon="check"></i></span><?php esc_html_e( 'Configured', 'blockshift-migrate-from-elementor' ); ?></span>
-                                                    <?php else : ?>
-                                                        <span class="pgs-pill pgs-pill--neutral"><?php esc_html_e( 'Not configured', 'blockshift-migrate-from-elementor' ); ?></span>
-                                                    <?php endif; ?>
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+
+                        <?php
+                        /**
+                         * Fires inside the Settings form, after the core sections
+                         * and before the Save button. Add-ons render their own
+                         * settings cards here; the submitted fields are persisted
+                         * via the 'blockshift_settings_save' action.
+                         *
+                         * @since 1.0.0
+                         */
+                        do_action( 'blockshift_settings_sections' );
+                        ?>
 
                         <div class="pgs-actions-end">
-                            <button type="submit" class="pgs-btn pgs-btn--primary pgs-btn--md"><span class="pgs-btn__icon"><i data-icon="save"></i></span><span><?php esc_html_e( 'Save Settings', 'blockshift-migrate-from-elementor' ); ?></span></button>
+                            <button type="submit" class="pgs-btn pgs-btn--primary pgs-btn--md"><span class="pgs-btn__icon"><i data-icon="save"></i></span><span><?php esc_html_e( 'Save Settings', 'blockshift' ); ?></span></button>
                         </div>
 
                     </div>

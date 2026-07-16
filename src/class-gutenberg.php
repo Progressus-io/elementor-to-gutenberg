@@ -10,8 +10,7 @@ namespace Progressus\BlockShift;
 defined( 'ABSPATH' ) || exit;
 
 use Progressus\BlockShift\Admin\Admin_Settings;
-use Progressus\BlockShift\Admin\AI_Enhancement_Admin;
-use Progressus\BlockShift\Admin\AI_Improvement_Admin;
+use Progressus\BlockShift\Admin\Addons_Page;
 use Progressus\BlockShift\Admin\Batch_Convert_Wizard;
 use Progressus\BlockShift\Admin\Conversion_Log_Admin;
 use Progressus\BlockShift\Admin\Data_Migration;
@@ -91,7 +90,7 @@ class Gutenberg {
 			return $templates;
 		}
 
-		$templates[ self::FULL_WIDTH_PAGE_TEMPLATE_SLUG ] = __( 'Full Width Page', 'blockshift-migrate-from-elementor' );
+		$templates[ self::FULL_WIDTH_PAGE_TEMPLATE_SLUG ] = __( 'Full Width Page', 'blockshift' );
 
 		return $templates;
 	}
@@ -454,9 +453,8 @@ class Gutenberg {
 		$this->register_full_width_page_template();
 		Admin_Settings::instance();
 		Batch_Convert_Wizard::instance();
-		AI_Enhancement_Admin::instance();
-		AI_Improvement_Admin::instance();
 		Conversion_Log_Admin::instance();
+		Addons_Page::instance();
 	}
 
 	/**
@@ -478,8 +476,8 @@ class Gutenberg {
 		register_block_template(
 			self::FULL_WIDTH_TEMPLATE_ID,
 			array(
-				'title'       => __( 'Full Width Page', 'blockshift-migrate-from-elementor' ),
-				'description' => __( 'Template for converted full width pages that keeps the active theme header and footer without forcing constrained page layout.', 'blockshift-migrate-from-elementor' ),
+				'title'       => __( 'Full Width Page', 'blockshift' ),
+				'description' => __( 'Template for converted full width pages that keeps the active theme header and footer without forcing constrained page layout.', 'blockshift' ),
 				'post_types'  => array( 'page' ),
 				'content'     => sprintf(
 					'<!-- wp:template-part {"slug":"header","theme":"%1$s","tagName":"header"} /-->' . "\n\n" .
@@ -501,7 +499,7 @@ class Gutenberg {
 		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'blockshift_form_nonce' ) ) {
 			wp_send_json_error(
 				array(
-					'message' => __( 'Security verification failed.', 'blockshift-migrate-from-elementor' ),
+					'message' => __( 'Security verification failed.', 'blockshift' ),
 				)
 			);
 		}
@@ -522,16 +520,16 @@ class Gutenberg {
 
 		// Prepare email content
 		/* translators: %s: name of the form submitted */
-		$subject = sprintf( __( 'New Form Submission: %s', 'blockshift-migrate-from-elementor' ), $form_name );
+		$subject = sprintf( __( 'New Form Submission: %s', 'blockshift' ), $form_name );
 		/* translators: %s: name of the WordPress site */
-		$message = sprintf( __( "You have received a new form submission from %s:\n\n", 'blockshift-migrate-from-elementor' ), get_bloginfo( 'name' ) );
+		$message = sprintf( __( "You have received a new form submission from %s:\n\n", 'blockshift' ), get_bloginfo( 'name' ) );
 
 		foreach ( $form_data as $field => $value ) {
 			$message .= sprintf( "%s: %s\n", ucfirst( str_replace( array( '_', '-' ), ' ', $field ) ), $value );
 		}
 
 		/* translators: %s: date and time of form submission */
-		$message .= sprintf( "\n\n" . __( 'Submitted at: %s', 'blockshift-migrate-from-elementor' ), current_time( 'mysql' ) );
+		$message .= sprintf( "\n\n" . __( 'Submitted at: %s', 'blockshift' ), current_time( 'mysql' ) );
 
 		// Set email headers
 		$headers = array( 'Content-Type: text/plain; charset=UTF-8' );
@@ -542,13 +540,13 @@ class Gutenberg {
 		if ( $email_sent ) {
 			wp_send_json_success(
 				array(
-					'message' => __( 'Your submission was successful. We will get back to you soon!', 'blockshift-migrate-from-elementor' ),
+					'message' => __( 'Your submission was successful. We will get back to you soon!', 'blockshift' ),
 				)
 			);
 		} else {
 			wp_send_json_error(
 				array(
-					'message' => __( 'Your submission failed because of an error. Please try again.', 'blockshift-migrate-from-elementor' ),
+					'message' => __( 'Your submission failed because of an error. Please try again.', 'blockshift' ),
 				)
 			);
 		}

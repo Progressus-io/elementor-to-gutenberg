@@ -154,9 +154,6 @@ class Feedback_Builder {
 			'run_id'           => (string) ( $job['run_id'] ?? '' ),
 			'conversion_mode'  => sanitize_key( (string) ( $job['mode'] ?? '' ) ),
 			'conflict_policy'  => sanitize_key( (string) ( $job['options']['conflict_policy'] ?? '' ) ),
-			'ai_assist_enabled' => false,
-			'ai_provider'      => 'claude',
-			'ai_model'         => null,
 			'started_at'       => $started_at,
 			'completed_at'     => $completed_at,
 			'duration_seconds' => $duration,
@@ -320,7 +317,6 @@ class Feedback_Builder {
 
 	/**
 	 * Retrieve the Elementor JSON for a source post.
-	 * Prefers the AI workspace snapshot; falls back to _elementor_data.
 	 *
 	 * @param int $source_id Source post ID.
 	 *
@@ -331,18 +327,12 @@ class Feedback_Builder {
 			return null;
 		}
 
-		$workspace = get_post_meta( $source_id, '_blockshift_ai_workspace', true );
-		if ( is_array( $workspace ) && ! empty( $workspace['elementor_json_snapshot'] ) ) {
-			return (string) $workspace['elementor_json_snapshot'];
-		}
-
 		$raw = get_post_meta( $source_id, '_elementor_data', true );
 		return ! empty( $raw ) ? (string) $raw : null;
 	}
 
 	/**
 	 * Retrieve the converted Gutenberg markup for a target post.
-	 * Prefers the AI workspace snapshot; falls back to post_content.
 	 *
 	 * @param int $target_id Target post ID.
 	 *
@@ -351,11 +341,6 @@ class Feedback_Builder {
 	private static function get_gutenberg_markup( int $target_id ): ?string {
 		if ( $target_id <= 0 ) {
 			return null;
-		}
-
-		$workspace = get_post_meta( $target_id, '_blockshift_ai_workspace', true );
-		if ( is_array( $workspace ) && ! empty( $workspace['gutenberg_snapshot'] ) ) {
-			return (string) $workspace['gutenberg_snapshot'];
 		}
 
 		$post = get_post( $target_id );

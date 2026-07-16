@@ -2739,6 +2739,12 @@
 .pgs .pgs-card__body { padding: var(--pad-card); }
 .pgs .pgs-card__body--tight { padding: var(--pad-card-sm); }
 
+/* ================= FEATURE LIST ================= */
+.pgs .pgs-featurelist { list-style: none; margin: var(--space-4) 0 0; padding: 0; display: grid; gap: var(--space-2-5); }
+.pgs .pgs-featurelist li { display: flex; align-items: flex-start; gap: var(--space-2); font-size: var(--text-sm); color: var(--text-body); }
+.pgs .pgs-featurelist__icon { display: inline-flex; flex: 0 0 auto; margin-top: 1px; color: var(--brand); }
+.pgs .pgs-featurelist__icon svg { width: 16px; height: 16px; }
+
 /* ================= BADGE ================= */
 .pgs .pgs-badge {
   display: inline-flex; align-items: center; gap: var(--space-1);
