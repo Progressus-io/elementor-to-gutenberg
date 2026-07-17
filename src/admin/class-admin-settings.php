@@ -443,7 +443,6 @@ class Admin_Settings {
 		$desired = array(
 			Batch_Convert_Wizard::MENU_SLUG,
 			Conversion_Log_Admin::MENU_SLUG,
-			Addons_Page::MENU_SLUG,
 			'blockshift-settings',
 		);
 
