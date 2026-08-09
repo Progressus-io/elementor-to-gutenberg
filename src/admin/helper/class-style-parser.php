@@ -2324,21 +2324,9 @@ class Style_Parser {
 	 * @param string $css CSS string to append.
 	 */
 	public static function save_custom_css( string $css ): void {
-		// Migrated custom CSS is untrusted author input; sanitize it the same way
-		// the generated stylesheet is hardened before it reaches any store.
-		$css = External_CSS_Service::sanitize_stylesheet( $css );
-		if ( '' === $css ) {
-			return;
-		}
-
-		if ( ! function_exists( 'wp_get_custom_css_post' ) || ! function_exists( 'wp_update_custom_css_post' ) ) {
-			return;
-		}
-
-		$customizer_css_post = wp_get_custom_css_post();
-		$existing_css        = $customizer_css_post ? (string) $customizer_css_post->post_content : '';
-		$new_css             = rtrim( $existing_css ) . "\n" . $css;
-
-		wp_update_custom_css_post( $new_css );
+		// Migrated custom CSS is untrusted author input. Rather than writing it to
+		// the site's Additional CSS, hand it to the external-CSS service, which
+		// sanitizes it and stores it in a plugin-owned stylesheet enqueued site-wide.
+		External_CSS_Service::append_global_custom_css( $css );
 	}
 }

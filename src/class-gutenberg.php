@@ -559,6 +559,7 @@ class Gutenberg {
 	 */
 	public function enqueue_converted_page_css(): void {
 		External_CSS_Service::enqueue_current_post_css();
+		External_CSS_Service::enqueue_global_custom_css();
 	}
 
 	/**
