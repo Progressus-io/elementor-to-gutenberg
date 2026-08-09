@@ -1,10 +1,10 @@
 {
-	"name": "blockshift",
+	"name": "migrate-off-elementor",
 	"version": "1.0.0",
 	"description": "",
 	"main": "build/index.js",
 	"files": [
-		"blockshift.php",
+		"migrate-off-elementor.php",
 		"readme.txt",
 		"LICENSE.txt",
 		"composer.json",

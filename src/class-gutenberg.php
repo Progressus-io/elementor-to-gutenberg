@@ -89,7 +89,7 @@ class Gutenberg {
 			return $templates;
 		}
 
-		$templates[ self::FULL_WIDTH_PAGE_TEMPLATE_SLUG ] = __( 'Full Width Page', 'blockshift' );
+		$templates[ self::FULL_WIDTH_PAGE_TEMPLATE_SLUG ] = __( 'Full Width Page', 'migrate-off-elementor' );
 
 		return $templates;
 	}
@@ -474,8 +474,8 @@ class Gutenberg {
 		register_block_template(
 			self::FULL_WIDTH_TEMPLATE_ID,
 			array(
-				'title'       => __( 'Full Width Page', 'blockshift' ),
-				'description' => __( 'Template for converted full width pages that keeps the active theme header and footer without forcing constrained page layout.', 'blockshift' ),
+				'title'       => __( 'Full Width Page', 'migrate-off-elementor' ),
+				'description' => __( 'Template for converted full width pages that keeps the active theme header and footer without forcing constrained page layout.', 'migrate-off-elementor' ),
 				'post_types'  => array( 'page' ),
 				'content'     => sprintf(
 					'<!-- wp:template-part {"slug":"header","theme":"%1$s","tagName":"header"} /-->' . "\n\n" .
@@ -497,7 +497,7 @@ class Gutenberg {
 		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'blockshift_form_nonce' ) ) {
 			wp_send_json_error(
 				array(
-					'message' => __( 'Security verification failed.', 'blockshift' ),
+					'message' => __( 'Security verification failed.', 'migrate-off-elementor' ),
 				)
 			);
 		}
@@ -518,16 +518,16 @@ class Gutenberg {
 
 		// Prepare email content
 		/* translators: %s: name of the form submitted */
-		$subject = sprintf( __( 'New Form Submission: %s', 'blockshift' ), $form_name );
+		$subject = sprintf( __( 'New Form Submission: %s', 'migrate-off-elementor' ), $form_name );
 		/* translators: %s: name of the WordPress site */
-		$message = sprintf( __( "You have received a new form submission from %s:\n\n", 'blockshift' ), get_bloginfo( 'name' ) );
+		$message = sprintf( __( "You have received a new form submission from %s:\n\n", 'migrate-off-elementor' ), get_bloginfo( 'name' ) );
 
 		foreach ( $form_data as $field => $value ) {
 			$message .= sprintf( "%s: %s\n", ucfirst( str_replace( array( '_', '-' ), ' ', $field ) ), $value );
 		}
 
 		/* translators: %s: date and time of form submission */
-		$message .= sprintf( "\n\n" . __( 'Submitted at: %s', 'blockshift' ), current_time( 'mysql' ) );
+		$message .= sprintf( "\n\n" . __( 'Submitted at: %s', 'migrate-off-elementor' ), current_time( 'mysql' ) );
 
 		// Set email headers
 		$headers = array( 'Content-Type: text/plain; charset=UTF-8' );
@@ -538,13 +538,13 @@ class Gutenberg {
 		if ( $email_sent ) {
 			wp_send_json_success(
 				array(
-					'message' => __( 'Your submission was successful. We will get back to you soon!', 'blockshift' ),
+					'message' => __( 'Your submission was successful. We will get back to you soon!', 'migrate-off-elementor' ),
 				)
 			);
 		} else {
 			wp_send_json_error(
 				array(
-					'message' => __( 'Your submission failed because of an error. Please try again.', 'blockshift' ),
+					'message' => __( 'Your submission failed because of an error. Please try again.', 'migrate-off-elementor' ),
 				)
 			);
 		}

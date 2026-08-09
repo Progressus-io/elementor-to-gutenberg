@@ -1,4 +1,4 @@
-=== BlockShift ===
+=== Migrate Off Elementor ===
 Contributors: shadim
 Tags: elementor, gutenberg, migration, conversion, blocks
 Requires at least: 6.7
@@ -12,9 +12,9 @@ Turn your Elementor pages into the built-in WordPress editor automatically — i
 
 == Description ==
 
-**BlockShift – Migrate from Elementor** moves your Elementor pages over to the **built-in WordPress editor** (the "block editor", also called Gutenberg) — automatically, so you don't have to rebuild them by hand.
+**Migrate Off Elementor** moves your Elementor pages over to the **built-in WordPress editor** (the "block editor", also called Gutenberg) — automatically, so you don't have to rebuild them by hand.
 
-If you've ever looked into leaving Elementor, you've probably heard the same disappointing answer: "there's no real converter, you'll have to rebuild every page yourself." BlockShift is that missing converter. It reads how each Elementor page was built, recreates it using standard WordPress blocks, keeps the colors, fonts, and spacing, and saves it as a brand-new page. Your original Elementor page is left exactly as it is, so nothing breaks and you can compare the old and new versions side by side.
+If you've ever looked into leaving Elementor, you've probably heard the same disappointing answer: "there's no real converter, you'll have to rebuild every page yourself." Migrate Off Elementor is that missing converter. It reads how each Elementor page was built, recreates it using standard WordPress blocks, keeps the colors, fonts, and spacing, and saves it as a brand-new page. Your original Elementor page is left exactly as it is, so nothing breaks and you can compare the old and new versions side by side.
 
 Once a page is made of standard blocks, it no longer needs Elementor to display. That means lighter pages that load faster, one less big plugin to maintain, and content you can edit with the tools already built into WordPress.
 
@@ -29,15 +29,15 @@ Page builders are convenient, but they add a lot of weight. Every builder page l
 
 = What we promise (and what we don't) =
 
-We promise to do the heavy lifting. BlockShift reads your Elementor pages and rebuilds them as real blocks, carrying over the text, images, structure, and styling, so you skip the slow, error-prone job of recreating everything by hand.
+We promise to do the heavy lifting. Migrate Off Elementor reads your Elementor pages and rebuilds them as real blocks, carrying over the text, images, structure, and styling, so you skip the slow, error-prone job of recreating everything by hand.
 
 What we don't promise is a pixel-perfect copy on every page with zero effort. Elementor and the block editor are built differently, so a small amount of review and touch-up is normal, especially on complex layouts. The honest goal is to turn days of rebuilding into a few clicks plus a short review, and to make that review as painless as possible (more on that below).
 
 = About the results: why it isn't always 100% =
 
-BlockShift gets most pages very close straight away. On busier, highly customised designs you may notice small differences in spacing, alignment, or a widget that has no exact block equivalent. This isn't a bug. It happens because the two systems handle layout and styling in different ways, so some things have to be approximated rather than copied one-to-one.
+Migrate Off Elementor gets most pages very close straight away. On busier, highly customised designs you may notice small differences in spacing, alignment, or a widget that has no exact block equivalent. This isn't a bug. It happens because the two systems handle layout and styling in different ways, so some things have to be approximated rather than copied one-to-one.
 
-Rather than pretend that never happens, BlockShift is built to make the last mile quick:
+Rather than pretend that never happens, Migrate Off Elementor is built to make the last mile quick:
 
 * **A conversion report.** After each page, the Conversion Log lists exactly which elements converted cleanly and which few might want a look, so you're never hunting blind.
 * **Everything is a normal block.** Because the result is standard WordPress content (not a locked builder format), you fix anything directly in the editor you already know. No shortcodes, no special mode.
@@ -55,17 +55,17 @@ We'd rather be upfront:
 
 None of these stop you migrating. They're the spots to look at during your review, and the Conversion Log points most of them out for you.
 
-= In plain terms, BlockShift lets you =
+= In plain terms, Migrate Off Elementor lets you =
 
 * **Stop paying for and depending on a page builder.** Your pages keep working even after you switch Elementor off.
 * **Speed up your site.** Pages built with standard blocks load lighter and faster because they don't have to load Elementor's extra code.
 * **Keep editing easily.** Everything ends up in the normal WordPress editor, so you (or your clients) can make changes without learning a builder.
 * **Save days of work.** Instead of rebuilding pages one element at a time, you convert them in a few clicks.
 
-= What makes BlockShift different =
+= What makes Migrate Off Elementor different =
 
-* **It actually converts — automatically.** Many "solutions" just embed Elementor inside the editor, or expect you to rebuild by hand. BlockShift genuinely rebuilds your pages as real blocks.
-* **No extra plugins required.** Some converters make you install another block library (like Kadence) to work. BlockShift converts to standard WordPress blocks and its own built-in blocks — nothing else to install.
+* **It actually converts — automatically.** Many "solutions" just embed Elementor inside the editor, or expect you to rebuild by hand. Migrate Off Elementor genuinely rebuilds your pages as real blocks.
+* **No extra plugins required.** Some converters make you install another block library (like Kadence) to work. Migrate Off Elementor converts to standard WordPress blocks and its own built-in blocks — nothing else to install.
 * **Handles more of your page.** Over 50 Elementor elements are supported, including WooCommerce shop elements. Most free converters cover around 20 basic ones.
 * **A clear report after every conversion.** The Conversion Log tells you exactly which elements converted perfectly and which few might need a quick manual tweak, so there are no surprises.
 * **Safe by design.** Your original Elementor pages are never deleted or changed. You decide when — or whether — to switch your site over to the new versions.
@@ -84,7 +84,7 @@ None of these stop you migrating. They're the spots to look at during your revie
 
 **WooCommerce (online stores):** product grids, cart, checkout, mini-cart, product categories, store notices, "my account", and add-to-cart.
 
-Anything BlockShift doesn't have an exact match for is converted safely with a general-purpose fallback, so the page always comes through in one piece — and the Conversion Log points out anything worth a second look.
+Anything Migrate Off Elementor doesn't have an exact match for is converted safely with a general-purpose fallback, so the page always comes through in one piece — and the Conversion Log points out anything worth a second look.
 
 = Who is it for? =
 
@@ -94,13 +94,13 @@ Anything BlockShift doesn't have an exact match for is converted safely with a g
 
 == Installation ==
 
-1. In your WordPress dashboard, go to **Plugins → Add New**, search for "BlockShift – Migrate from Elementor", and click **Install Now** — or upload the plugin ZIP under **Plugins → Add New → Upload Plugin**.
+1. In your WordPress dashboard, go to **Plugins → Add New**, search for "Migrate Off Elementor", and click **Install Now** — or upload the plugin ZIP under **Plugins → Add New → Upload Plugin**.
 2. Click **Activate**.
-3. A new **BlockShift – Migrate from Elementor** menu appears in your dashboard sidebar.
-4. (Recommended) Open **BlockShift → Settings** first and set the page width to match your Elementor design, so converted pages look the same width as before.
-5. Open **BlockShift → Conversion Wizard**, pick a page, and convert it.
+3. A new **Migrate Off Elementor** menu appears in your dashboard sidebar.
+4. (Recommended) Open **Migrate Off Elementor → Settings** first and set the page width to match your Elementor design, so converted pages look the same width as before.
+5. Open **Migrate Off Elementor → Conversion Wizard**, pick a page, and convert it.
 
-**Before you start:** it's always wise to back up your site first, or try it on a test/staging copy. BlockShift never deletes your Elementor pages, but a backup is good practice for any big change.
+**Before you start:** it's always wise to back up your site first, or try it on a test/staging copy. Migrate Off Elementor never deletes your Elementor pages, but a backup is good practice for any big change.
 
 == Frequently Asked Questions ==
 
@@ -114,7 +114,7 @@ No. Elementor only needs to have been used to build the pages in the first place
 
 = Will it delete or change my original Elementor pages? =
 
-No. BlockShift always creates a brand-new page for the converted version and leaves your original untouched. You can review the new version and only switch it live when you're ready.
+No. Migrate Off Elementor always creates a brand-new page for the converted version and leaves your original untouched. You can review the new version and only switch it live when you're ready.
 
 = Will the converted page look exactly the same? =
 
@@ -122,11 +122,11 @@ It gets you very close automatically — colors, fonts, spacing, and layout are 
 
 = Do I need to install any other plugin for it to work? =
 
-No. Some other converters require you to install an extra block library (such as Kadence Blocks). BlockShift doesn't — it uses the blocks already in WordPress plus its own built-in ones.
+No. Some other converters require you to install an extra block library (such as Kadence Blocks). Migrate Off Elementor doesn't — it uses the blocks already in WordPress plus its own built-in ones.
 
 = Does it work with WooCommerce stores? =
 
-Yes. BlockShift converts common WooCommerce elements (product grids, cart, checkout, mini-cart, categories, notices, my-account, and add-to-cart) into their WooCommerce block versions.
+Yes. Migrate Off Elementor converts common WooCommerce elements (product grids, cart, checkout, mini-cart, categories, notices, my-account, and add-to-cart) into their WooCommerce block versions.
 
 = What happens to elements it doesn't recognise? =
 

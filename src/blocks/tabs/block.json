@@ -127,7 +127,7 @@
       }
     }
   },
-  "textdomain": "blockshift",
+  "textdomain": "migrate-off-elementor",
   "editorScript": "file:./index.js",
   "editorStyle": "file:./index.css",
   "style": "file:./style-index.css",

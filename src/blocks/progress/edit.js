@@ -68,18 +68,18 @@ export default function Edit( { attributes, setAttributes } ) {
 				<PanelBody
 					title={ __(
 						'Progress Bar Settings',
-						'blockshift'
+						'migrate-off-elementor'
 					) }
 				>
 					<TextControl
-						label={ __( 'Title', 'blockshift' ) }
+						label={ __( 'Title', 'migrate-off-elementor' ) }
 						value={ title }
 						onChange={ ( value ) =>
 							setAttributes( { title: value } )
 						}
 					/>
 					<RangeControl
-						label={ __( 'Percentage', 'blockshift' ) }
+						label={ __( 'Percentage', 'migrate-off-elementor' ) }
 						value={ percentage }
 						onChange={ ( value ) =>
 							setAttributes( { percentage: value } )
@@ -88,7 +88,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						max={ 100 }
 					/>
 					<TextControl
-						label={ __( 'Inner Text', 'blockshift' ) }
+						label={ __( 'Inner Text', 'migrate-off-elementor' ) }
 						value={ innerText }
 						onChange={ ( value ) =>
 							setAttributes( { innerText: value } )
@@ -97,7 +97,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					<ToggleControl
 						label={ __(
 							'Show Percentage',
-							'blockshift'
+							'migrate-off-elementor'
 						) }
 						checked={ showPercentage }
 						onChange={ ( value ) =>
@@ -105,14 +105,14 @@ export default function Edit( { attributes, setAttributes } ) {
 						}
 					/>
 					<ToggleControl
-						label={ __( 'Show Title', 'blockshift' ) }
+						label={ __( 'Show Title', 'migrate-off-elementor' ) }
 						checked={ showTitle }
 						onChange={ ( value ) =>
 							setAttributes( { showTitle: value } )
 						}
 					/>
 					<RangeControl
-						label={ __( 'Title Size', 'blockshift' ) }
+						label={ __( 'Title Size', 'migrate-off-elementor' ) }
 						value={ titleSize }
 						onChange={ ( value ) =>
 							setAttributes( { titleSize: value } )
@@ -121,7 +121,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						max={ 50 }
 					/>
 					<RangeControl
-						label={ __( 'Bar Height', 'blockshift' ) }
+						label={ __( 'Bar Height', 'migrate-off-elementor' ) }
 						value={ barHeight }
 						onChange={ ( value ) =>
 							setAttributes( { barHeight: value } )
@@ -130,7 +130,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						max={ 50 }
 					/>
 					<RangeControl
-						label={ __( 'Border Radius', 'blockshift' ) }
+						label={ __( 'Border Radius', 'migrate-off-elementor' ) }
 						value={ borderRadius }
 						onChange={ ( value ) =>
 							setAttributes( { borderRadius: value } )
@@ -143,7 +143,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						<label>
 							{ __(
 								'Progress Text Color',
-								'blockshift'
+								'migrate-off-elementor'
 							) }
 						</label>
 						<ColorPicker
@@ -155,7 +155,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						/>
 					</div>
 					<RangeControl
-						label={ __( 'Bar Color', 'blockshift' ) }
+						label={ __( 'Bar Color', 'migrate-off-elementor' ) }
 						value={ barColor }
 						onChange={ ( value ) =>
 							setAttributes( { barColor: value } )
@@ -165,7 +165,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					<div>
 						{ /* eslint-disable-next-line jsx-a11y/label-has-associated-control */ }
 						<label>
-							{ __( 'Bar Color', 'blockshift' ) }
+							{ __( 'Bar Color', 'migrate-off-elementor' ) }
 						</label>
 						<ColorPicker
 							color={ barColor }
@@ -178,7 +178,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					<div>
 						{ /* eslint-disable-next-line jsx-a11y/label-has-associated-control */ }
 						<label>
-							{ __( 'Background Color', 'blockshift' ) }
+							{ __( 'Background Color', 'migrate-off-elementor' ) }
 						</label>
 						<ColorPicker
 							color={ backgroundColor }
@@ -191,7 +191,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					<div>
 						{ /* eslint-disable-next-line jsx-a11y/label-has-associated-control */ }
 						<label>
-							{ __( 'Title Color', 'blockshift' ) }
+							{ __( 'Title Color', 'migrate-off-elementor' ) }
 						</label>
 						<ColorPicker
 							color={ titleColor }

@@ -1,8 +1,7 @@
 <?php
 /**
- * Plugin Name: BlockShift
- * Plugin URI: https://block-shift.com
- * Description: Professional migration tool to convert Elementor layouts into native Gutenberg blocks
+ * Plugin Name: Migrate Off Elementor
+ * Description: Professional migration tool to convert Elementor layouts into native WordPress blocks
  * Author: Progressus
  * Author URI: https://progressus.io/
  * Version: 1.0.0
@@ -10,7 +9,7 @@
  * Requires PHP: 7.4
  * License: GPLv2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain: blockshift
+ * Text Domain: migrate-off-elementor
  *
  * @package Progressus\BlockShift
  */
