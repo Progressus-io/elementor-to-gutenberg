@@ -6,3 +6,5 @@ pnpm-lock.yaml
 /build/
 /.idea
 /.claude
+/wiki/
+/ideas/
