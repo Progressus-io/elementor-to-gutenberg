@@ -418,7 +418,7 @@ class Conversion_Log_Admin {
 										<?php if ( $target_id > 0 && $tgt_link ) : ?>
 											<div class="pgs-table__meta">
 												<?php esc_html_e( 'Target:', 'migrate-off-elementor' ); ?>
-												<a href="<?php echo esc_url( (string) $tgt_link ); ?>">#<?php echo $target_id; ?></a>
+												<a href="<?php echo esc_url( (string) $tgt_link ); ?>">#<?php echo (int) $target_id; ?></a>
 											</div>
 										<?php endif; ?>
 									</td>
@@ -428,7 +428,7 @@ class Conversion_Log_Admin {
 									</td>
 									<td style="min-width:140px;">
 										<?php if ( $total_w > 0 ) : ?>
-											<div class="pgs-progress pgs-progress--sm"><div class="pgs-progress__track"><div class="pgs-progress__fill<?php echo $is_partial ? ' pgs-progress__fill--warning' : ''; ?>" style="width:<?php echo $pct; ?>%;"></div></div></div>
+											<div class="pgs-progress pgs-progress--sm"><div class="pgs-progress__track"><div class="pgs-progress__fill<?php echo $is_partial ? ' pgs-progress__fill--warning' : ''; ?>" style="width:<?php echo esc_attr( $pct ); ?>%;"></div></div></div>
 											<div class="pgs-table__count"><?php printf( esc_html__( '%1$d / %2$d', 'migrate-off-elementor' ), $converted_w, $total_w ); ?></div>
 										<?php else : ?>
 											<span class="pgs-table__muted">—</span>
