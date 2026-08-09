@@ -406,13 +406,70 @@ class External_Style_Collector {
 	 *
 	 * @return string
 	 */
+	/**
+	 * Raw CSS blocks (e.g. migrated widget custom CSS) appended verbatim.
+	 *
+	 * @var array<int, string>
+	 */
+	private array $raw_css = array();
+
+	/**
+	 * Collector active during the current conversion, if any.
+	 *
+	 * @var External_Style_Collector|null
+	 */
+	private static ?External_Style_Collector $active = null;
+
+	/**
+	 * Register the collector for the current conversion so static callers
+	 * (e.g. Style_Parser::save_custom_css) can route raw CSS into this page.
+	 *
+	 * @param External_Style_Collector|null $collector Collector, or null to clear.
+	 *
+	 * @return void
+	 */
+	public static function set_active( ?External_Style_Collector $collector ): void {
+		self::$active = $collector;
+	}
+
+	/**
+	 * Get the collector active during the current conversion.
+	 *
+	 * @return External_Style_Collector|null
+	 */
+	public static function get_active(): ?External_Style_Collector {
+		return self::$active;
+	}
+
+	/**
+	 * Append a raw CSS block to this page's stylesheet.
+	 *
+	 * Used for migrated widget custom CSS. Because the page stylesheet is
+	 * enqueued only on its own page, these rules never leak site-wide. The
+	 * content is sanitized when the file is written (save_post_css).
+	 *
+	 * @param string $css Raw CSS.
+	 *
+	 * @return void
+	 */
+	public function add_raw_css( string $css ): void {
+		$css = trim( $css );
+		if ( '' === $css ) {
+			return;
+		}
+		if ( ! in_array( $css, $this->raw_css, true ) ) {
+			$this->raw_css[] = $css;
+		}
+	}
+
 	public function render_css(): string {
 
 		if (
 			empty( $this->rules ) &&
 			empty( $this->rules_kit ) &&
 			empty( $this->media_rules ) &&
-			empty( $this->media_rules_kit )
+			empty( $this->media_rules_kit ) &&
+			empty( $this->raw_css )
 		) {
 			return '';
 		}
@@ -425,6 +482,10 @@ class External_Style_Collector {
 
 		$out .= $this->render_media_bucket( $this->media_rules_kit );
 		$out .= $this->render_media_bucket( $this->media_rules );
+
+		if ( ! empty( $this->raw_css ) ) {
+			$out .= implode( "\n", $this->raw_css ) . "\n";
+		}
 
 		return $out;
 	}

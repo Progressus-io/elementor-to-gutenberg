@@ -33,8 +33,6 @@ class External_CSS_Service {
 
 	const META_KEY = '_blockshift_external_css';
 
-	const CUSTOM_CSS_OPTION = 'blockshift_custom_css';
-
 	private static function resolve_post_id( int $post_id ): int {
 		$parent_id = wp_is_post_revision( $post_id );
 		if ( $parent_id ) {
@@ -239,93 +237,6 @@ class External_CSS_Service {
 		return $path;
 	}
 
-
-	/**
-	 * Append migrated custom CSS to the plugin's own global stylesheet.
-	 *
-	 * Widget custom CSS carried over during conversion is untrusted author input.
-	 * Rather than writing it to the site's Additional CSS (which replicates the
-	 * Customizer's CSS editor), we sanitize it and store it in a plugin-owned CSS
-	 * file that is enqueued site-wide by enqueue_global_custom_css().
-	 *
-	 * @param string $css CSS content.
-	 *
-	 * @return void
-	 */
-	public static function append_global_custom_css( string $css ): void {
-		$css = self::normalize_css( $css );
-		if ( '' === $css ) {
-			return;
-		}
-
-		$existing = (string) get_option( self::CUSTOM_CSS_OPTION, '' );
-
-		// Skip snippets already stored so repeated conversions don't grow the file.
-		if ( '' !== $existing && false !== strpos( $existing, $css ) ) {
-			return;
-		}
-
-		$combined = '' === $existing ? $css : rtrim( $existing ) . "\n" . $css;
-		update_option( self::CUSTOM_CSS_OPTION, $combined, false );
-
-		$paths = self::global_custom_css_paths();
-		if ( null !== $paths ) {
-			self::write_file( $paths['path'], $combined );
-		}
-	}
-
-	/**
-	 * Enqueue the plugin's global migrated-custom-CSS stylesheet on the front end.
-	 *
-	 * @return void
-	 */
-	public static function enqueue_global_custom_css(): void {
-		$css = (string) get_option( self::CUSTOM_CSS_OPTION, '' );
-		if ( '' === $css ) {
-			return;
-		}
-
-		$paths = self::global_custom_css_paths();
-		if ( null === $paths ) {
-			return;
-		}
-
-		$path = self::normalize_fs_path( $paths['path'] );
-
-		// Rebuild the file from the stored option if it was removed.
-		if ( ! file_exists( $path ) ) {
-			self::write_file( $paths['path'], $css );
-			$path = self::normalize_fs_path( $paths['path'] );
-		}
-
-		if ( ! file_exists( $path ) || ! is_readable( $path ) ) {
-			return;
-		}
-
-		wp_enqueue_style( 'blockshift-custom-css', $paths['url'], array(), substr( md5( $css ), 0, 12 ) );
-	}
-
-	/**
-	 * Resolve the filesystem path and URL for the global custom-CSS file.
-	 *
-	 * @return array{path:string,url:string}|null
-	 */
-	private static function global_custom_css_paths(): ?array {
-		$upload = wp_get_upload_dir();
-		if ( empty( $upload['basedir'] ) || empty( $upload['baseurl'] ) ) {
-			return null;
-		}
-
-		$dir = trailingslashit( (string) $upload['basedir'] ) . 'blockshift';
-		if ( ! wp_mkdir_p( $dir ) ) {
-			return null;
-		}
-
-		return array(
-			'path' => trailingslashit( $dir ) . 'blockshift-custom.css',
-			'url'  => trailingslashit( (string) $upload['baseurl'] ) . 'blockshift/blockshift-custom.css',
-		);
-	}
 
 	/**
 	 * Normalize CSS content.

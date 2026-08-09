@@ -721,6 +721,7 @@ class Admin_Settings {
 	 */
 	public function convert_json_to_gutenberg_content( array $json_data ): string {
 		$this->external_css_collector = new External_Style_Collector();
+		External_Style_Collector::set_active( $this->external_css_collector );
 		Block_Builder::bootstrap( $this->external_css_collector );
 
 		$this->conversion_log = self::is_logging_enabled() ? new Conversion_Log() : null;
