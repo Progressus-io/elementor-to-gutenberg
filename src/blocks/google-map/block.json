@@ -68,7 +68,7 @@
       }
     }
   },
-  "textdomain": "blockshift",
+  "textdomain": "migrate-off-elementor",
   "editorScript": "file:./index.js",
   "viewScript": "file:./view.js",
   "editorStyle": "file:./index.css",

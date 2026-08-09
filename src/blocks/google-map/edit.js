@@ -11,10 +11,10 @@ import {
 import { Fragment, useState, useEffect, useRef } from '@wordpress/element';
 
 const mapTypes = [
-	{ label: __( 'Roadmap', 'blockshift' ), value: 'roadmap' },
-	{ label: __( 'Satellite', 'blockshift' ), value: 'satellite' },
-	{ label: __( 'Hybrid', 'blockshift' ), value: 'hybrid' },
-	{ label: __( 'Terrain', 'blockshift' ), value: 'terrain' },
+	{ label: __( 'Roadmap', 'migrate-off-elementor' ), value: 'roadmap' },
+	{ label: __( 'Satellite', 'migrate-off-elementor' ), value: 'satellite' },
+	{ label: __( 'Hybrid', 'migrate-off-elementor' ), value: 'hybrid' },
+	{ label: __( 'Terrain', 'migrate-off-elementor' ), value: 'terrain' },
 ];
 
 const Edit = ( { attributes, setAttributes } ) => {
@@ -325,28 +325,28 @@ const Edit = ( { attributes, setAttributes } ) => {
 		<Fragment>
 			<InspectorControls>
 				<PanelBody
-					title={ __( 'Map Settings', 'blockshift' ) }
+					title={ __( 'Map Settings', 'migrate-off-elementor' ) }
 					initialOpen={ true }
 				>
 					<p style={ { marginTop: 0, marginBottom: 8 } }>
 						{ __(
 							"Set your Google Maps API Key in the plugin's Integrations Settings page.",
-							'blockshift'
+							'migrate-off-elementor'
 						) }{ ' ' }
 						<a
 							href="/wp-admin/admin.php?page=blockshift-settings"
 							target="_blank"
 							rel="noopener noreferrer"
 						>
-							{ __( 'Open Settings', 'blockshift' ) }
+							{ __( 'Open Settings', 'migrate-off-elementor' ) }
 						</a>{ ' ' }
-						{ __( 'Create your key', 'blockshift' ) }{ ' ' }
+						{ __( 'Create your key', 'migrate-off-elementor' ) }{ ' ' }
 						<a
 							href="https://developers.google.com/maps/documentation/embed/get-api-key"
 							target="_blank"
 							rel="noopener noreferrer"
 						>
-							{ __( 'here.', 'blockshift' ) }
+							{ __( 'here.', 'migrate-off-elementor' ) }
 						</a>
 					</p>
 					<div style={ { marginBottom: 8 } }>
@@ -354,7 +354,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 							htmlFor="google-map-address-input"
 							className="components-base-control__label"
 						>
-							{ __( 'Address', 'blockshift' ) }
+							{ __( 'Address', 'migrate-off-elementor' ) }
 						</label>
 						<input
 							id="google-map-address-input"
@@ -378,7 +378,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 							}
 							placeholder={ __(
 								'Start typing an address…',
-								'blockshift'
+								'migrate-off-elementor'
 							) }
 							style={ { width: '100%' } }
 						/>
@@ -398,7 +398,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 									<div style={ { padding: 8 } }>
 										{ __(
 											'Searching…',
-											'blockshift'
+											'migrate-off-elementor'
 										) }
 									</div>
 								) }
@@ -406,7 +406,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 									<div style={ { padding: 8 } }>
 										{ __(
 											'No suggestions',
-											'blockshift'
+											'migrate-off-elementor'
 										) }
 									</div>
 								) }
@@ -439,7 +439,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					<TextControl
 						label={ __(
 							'Latitude (optional)',
-							'blockshift'
+							'migrate-off-elementor'
 						) }
 						value={ locLat === null ? '' : String( locLat ) }
 						onChange={ ( value ) =>
@@ -451,7 +451,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					<TextControl
 						label={ __(
 							'Longitude (optional)',
-							'blockshift'
+							'migrate-off-elementor'
 						) }
 						value={ locLng === null ? '' : String( locLng ) }
 						onChange={ ( value ) =>
@@ -461,7 +461,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						}
 					/>
 					<RangeControl
-						label={ __( 'Zoom', 'blockshift' ) }
+						label={ __( 'Zoom', 'migrate-off-elementor' ) }
 						value={ zoom }
 						onChange={ ( value ) =>
 							setAttributes( { zoom: value } )
@@ -470,7 +470,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						max={ 20 }
 					/>
 					<RangeControl
-						label={ __( 'Height (px)', 'blockshift' ) }
+						label={ __( 'Height (px)', 'migrate-off-elementor' ) }
 						value={ height }
 						onChange={ ( value ) =>
 							setAttributes( { height: value } )
@@ -480,7 +480,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					/>
 					{ /* Show Marker removed */ }
 					<SelectControl
-						label={ __( 'Map Type', 'blockshift' ) }
+						label={ __( 'Map Type', 'migrate-off-elementor' ) }
 						value={ mapType }
 						options={ mapTypes }
 						onChange={ ( value ) =>
@@ -488,12 +488,12 @@ const Edit = ( { attributes, setAttributes } ) => {
 						}
 					/>
 					<PanelBody
-						title={ __( 'Dimensions', 'blockshift' ) }
+						title={ __( 'Dimensions', 'migrate-off-elementor' ) }
 						initialOpen={ false }
 					>
 						{ /** Normalize values for BoxControl display: accept '2px' or numeric 2 */ }
 						<BoxControl
-							label={ __( 'Padding', 'blockshift' ) }
+							label={ __( 'Padding', 'migrate-off-elementor' ) }
 							values={ {
 								top: valueToCss( padding.top ),
 								right: valueToCss( padding.right ),
@@ -527,7 +527,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						/>
 
 						<BoxControl
-							label={ __( 'Margin', 'blockshift' ) }
+							label={ __( 'Margin', 'migrate-off-elementor' ) }
 							values={ {
 								top: valueToCss( margin.top ),
 								right: valueToCss( margin.right ),
@@ -583,7 +583,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 									src={ src }
 									title={ __(
 										'Google Map',
-										'blockshift'
+										'migrate-off-elementor'
 									) }
 									style={ {
 										width: '100%',
@@ -598,7 +598,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 							<div>
 								{ __(
 									'Enter an address or coordinates to preview',
-									'blockshift'
+									'migrate-off-elementor'
 								) }
 							</div>
 						);

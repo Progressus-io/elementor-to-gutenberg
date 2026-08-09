@@ -49,4 +49,4 @@ function bumpPluginVersion( path ) {
 	fs.writeFileSync( path, fileContent );
 }
 
-bumpPluginVersion( './blockshift.php' );
+bumpPluginVersion( './migrate-off-elementor.php' );

@@ -138,45 +138,45 @@ const Edit = ( { attributes, setAttributes } ) => {
 		<>
 			<InspectorControls>
 				<PanelBody
-					title={ __( 'Layout Settings', 'blockshift' ) }
+					title={ __( 'Layout Settings', 'migrate-off-elementor' ) }
 					initialOpen={ true }
 				>
 					<SelectControl
-						label={ __( 'Layout', 'blockshift' ) }
+						label={ __( 'Layout', 'migrate-off-elementor' ) }
 						value={ layout }
 						options={ [
 							{
 								label: __(
 									'Image Above',
-									'blockshift'
+									'migrate-off-elementor'
 								),
 								value: 'image_above',
 							},
 							{
 								label: __(
 									'Image Inline',
-									'blockshift'
+									'migrate-off-elementor'
 								),
 								value: 'image_inline',
 							},
 							{
 								label: __(
 									'Image Stacked',
-									'blockshift'
+									'migrate-off-elementor'
 								),
 								value: 'image_stacked',
 							},
 							{
 								label: __(
 									'Image Left',
-									'blockshift'
+									'migrate-off-elementor'
 								),
 								value: 'image_left',
 							},
 							{
 								label: __(
 									'Image Right',
-									'blockshift'
+									'migrate-off-elementor'
 								),
 								value: 'image_right',
 							},
@@ -186,19 +186,19 @@ const Edit = ( { attributes, setAttributes } ) => {
 						}
 					/>
 					<SelectControl
-						label={ __( 'Alignment', 'blockshift' ) }
+						label={ __( 'Alignment', 'migrate-off-elementor' ) }
 						value={ alignment }
 						options={ [
 							{
-								label: __( 'Left', 'blockshift' ),
+								label: __( 'Left', 'migrate-off-elementor' ),
 								value: 'left',
 							},
 							{
-								label: __( 'Center', 'blockshift' ),
+								label: __( 'Center', 'migrate-off-elementor' ),
 								value: 'center',
 							},
 							{
-								label: __( 'Right', 'blockshift' ),
+								label: __( 'Right', 'migrate-off-elementor' ),
 								value: 'right',
 							},
 						] }
@@ -209,7 +209,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					<RangeControl
 						label={ __(
 							'Slides Per View',
-							'blockshift'
+							'migrate-off-elementor'
 						) }
 						value={ slidesPerView }
 						onChange={ ( value ) =>
@@ -221,7 +221,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					<RangeControl
 						label={ __(
 							'Slides To Scroll',
-							'blockshift'
+							'migrate-off-elementor'
 						) }
 						value={ slidesToScroll }
 						onChange={ ( value ) =>
@@ -231,7 +231,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						max={ 6 }
 					/>
 					<RangeControl
-						label={ __( 'Width (%)', 'blockshift' ) }
+						label={ __( 'Width (%)', 'migrate-off-elementor' ) }
 						value={ width }
 						onChange={ ( value ) =>
 							setAttributes( { width: value } )
@@ -240,7 +240,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						max={ 100 }
 					/>
 					<RangeControl
-						label={ __( 'Space Between', 'blockshift' ) }
+						label={ __( 'Space Between', 'migrate-off-elementor' ) }
 						value={ spaceBetween }
 						onChange={ ( value ) =>
 							setAttributes( { spaceBetween: value } )
@@ -251,18 +251,18 @@ const Edit = ( { attributes, setAttributes } ) => {
 				</PanelBody>
 
 				<PanelBody
-					title={ __( 'Slide Style', 'blockshift' ) }
+					title={ __( 'Slide Style', 'migrate-off-elementor' ) }
 					initialOpen={ false }
 				>
 					<BoxControl
-						label={ __( 'Border Size', 'blockshift' ) }
+						label={ __( 'Border Size', 'migrate-off-elementor' ) }
 						values={ slideBorderSize }
 						onChange={ ( value ) =>
 							setAttributes( { slideBorderSize: value } )
 						}
 					/>
 					<RangeControl
-						label={ __( 'Border Radius', 'blockshift' ) }
+						label={ __( 'Border Radius', 'migrate-off-elementor' ) }
 						value={ slideBorderRadius }
 						onChange={ ( value ) =>
 							setAttributes( { slideBorderRadius: value } )
@@ -271,7 +271,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						max={ 100 }
 					/>
 					<BoxControl
-						label={ __( 'Slide Padding', 'blockshift' ) }
+						label={ __( 'Slide Padding', 'migrate-off-elementor' ) }
 						values={ slidePadding }
 						onChange={ ( value ) =>
 							setAttributes( { slidePadding: value } )
@@ -280,7 +280,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 				</PanelBody>
 
 				<PanelColorSettings
-					title={ __( 'Slide Colors', 'blockshift' ) }
+					title={ __( 'Slide Colors', 'migrate-off-elementor' ) }
 					colorSettings={ [
 						{
 							value: slideBackgroundColor,
@@ -290,24 +290,24 @@ const Edit = ( { attributes, setAttributes } ) => {
 								} ),
 							label: __(
 								'Background Color',
-								'blockshift'
+								'migrate-off-elementor'
 							),
 						},
 						{
 							value: slideBorderColor,
 							onChange: ( value ) =>
 								setAttributes( { slideBorderColor: value } ),
-							label: __( 'Border Color', 'blockshift' ),
+							label: __( 'Border Color', 'migrate-off-elementor' ),
 						},
 					] }
 				/>
 
 				<PanelBody
-					title={ __( 'Content Style', 'blockshift' ) }
+					title={ __( 'Content Style', 'migrate-off-elementor' ) }
 					initialOpen={ false }
 				>
 					<RangeControl
-						label={ __( 'Content Gap', 'blockshift' ) }
+						label={ __( 'Content Gap', 'migrate-off-elementor' ) }
 						value={ contentGap }
 						onChange={ ( value ) =>
 							setAttributes( { contentGap: value } )
@@ -316,7 +316,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						max={ 100 }
 					/>
 					<RangeControl
-						label={ __( 'Font Size', 'blockshift' ) }
+						label={ __( 'Font Size', 'migrate-off-elementor' ) }
 						value={ contentTypography.fontSize }
 						onChange={ ( value ) =>
 							setAttributes( {
@@ -330,7 +330,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						max={ 50 }
 					/>
 					<SelectControl
-						label={ __( 'Font Weight', 'blockshift' ) }
+						label={ __( 'Font Weight', 'migrate-off-elementor' ) }
 						value={ contentTypography.fontWeight }
 						options={ [
 							{ label: 'Normal', value: 'normal' },
@@ -351,7 +351,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						}
 					/>
 					<TextControl
-						label={ __( 'Font Family', 'blockshift' ) }
+						label={ __( 'Font Family', 'migrate-off-elementor' ) }
 						value={ contentTypography.fontFamily }
 						onChange={ ( value ) =>
 							setAttributes( {
@@ -363,7 +363,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						}
 					/>
 					<RangeControl
-						label={ __( 'Line Height', 'blockshift' ) }
+						label={ __( 'Line Height', 'migrate-off-elementor' ) }
 						value={ contentTypography.lineHeight }
 						onChange={ ( value ) =>
 							setAttributes( {
@@ -378,7 +378,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						step={ 1 }
 					/>
 					<RangeControl
-						label={ __( 'Letter Spacing', 'blockshift' ) }
+						label={ __( 'Letter Spacing', 'migrate-off-elementor' ) }
 						value={ contentTypography.letterSpacing }
 						onChange={ ( value ) =>
 							setAttributes( {
@@ -393,7 +393,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						step={ 0.1 }
 					/>
 					<RangeControl
-						label={ __( 'Word Spacing', 'blockshift' ) }
+						label={ __( 'Word Spacing', 'migrate-off-elementor' ) }
 						value={ contentTypography.wordSpacing }
 						onChange={ ( value ) =>
 							setAttributes( {
@@ -410,7 +410,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 				</PanelBody>
 
 				<PanelColorSettings
-					title={ __( 'Content Colors', 'blockshift' ) }
+					title={ __( 'Content Colors', 'migrate-off-elementor' ) }
 					colorSettings={ [
 						{
 							value: contentColor,
@@ -418,30 +418,30 @@ const Edit = ( { attributes, setAttributes } ) => {
 								setAttributes( { contentColor: value } ),
 							label: __(
 								'Content Color',
-								'blockshift'
+								'migrate-off-elementor'
 							),
 						},
 						{
 							value: nameColor,
 							onChange: ( value ) =>
 								setAttributes( { nameColor: value } ),
-							label: __( 'Name Color', 'blockshift' ),
+							label: __( 'Name Color', 'migrate-off-elementor' ),
 						},
 						{
 							value: titleColor,
 							onChange: ( value ) =>
 								setAttributes( { titleColor: value } ),
-							label: __( 'Title Color', 'blockshift' ),
+							label: __( 'Title Color', 'migrate-off-elementor' ),
 						},
 					] }
 				/>
 
 				<PanelBody
-					title={ __( 'Image Settings', 'blockshift' ) }
+					title={ __( 'Image Settings', 'migrate-off-elementor' ) }
 					initialOpen={ false }
 				>
 					<RangeControl
-						label={ __( 'Image Size', 'blockshift' ) }
+						label={ __( 'Image Size', 'migrate-off-elementor' ) }
 						value={ imageSize }
 						onChange={ ( value ) =>
 							setAttributes( { imageSize: value } )
@@ -450,7 +450,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						max={ 200 }
 					/>
 					<RangeControl
-						label={ __( 'Image Gap', 'blockshift' ) }
+						label={ __( 'Image Gap', 'migrate-off-elementor' ) }
 						value={ imageGap }
 						onChange={ ( value ) =>
 							setAttributes( { imageGap: value } )
@@ -461,7 +461,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					<RangeControl
 						label={ __(
 							'Image Border Radius (%)',
-							'blockshift'
+							'migrate-off-elementor'
 						) }
 						value={ imageBorderRadius }
 						onChange={ ( value ) =>
@@ -473,11 +473,11 @@ const Edit = ( { attributes, setAttributes } ) => {
 				</PanelBody>
 
 				<PanelBody
-					title={ __( 'Navigation', 'blockshift' ) }
+					title={ __( 'Navigation', 'migrate-off-elementor' ) }
 					initialOpen={ false }
 				>
 					<RangeControl
-						label={ __( 'Arrows Size', 'blockshift' ) }
+						label={ __( 'Arrows Size', 'migrate-off-elementor' ) }
 						value={ arrowsSize }
 						onChange={ ( value ) =>
 							setAttributes( { arrowsSize: value } )
@@ -486,7 +486,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						max={ 50 }
 					/>
 					<RangeControl
-						label={ __( 'Pagination Gap', 'blockshift' ) }
+						label={ __( 'Pagination Gap', 'migrate-off-elementor' ) }
 						value={ paginationGap }
 						onChange={ ( value ) =>
 							setAttributes( { paginationGap: value } )
@@ -497,7 +497,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					<RangeControl
 						label={ __(
 							'Pagination Size',
-							'blockshift'
+							'migrate-off-elementor'
 						) }
 						value={ paginationSize }
 						onChange={ ( value ) =>
@@ -509,13 +509,13 @@ const Edit = ( { attributes, setAttributes } ) => {
 				</PanelBody>
 
 				<PanelColorSettings
-					title={ __( 'Navigation Colors', 'blockshift' ) }
+					title={ __( 'Navigation Colors', 'migrate-off-elementor' ) }
 					colorSettings={ [
 						{
 							value: arrowsColor,
 							onChange: ( value ) =>
 								setAttributes( { arrowsColor: value } ),
-							label: __( 'Arrows Color', 'blockshift' ),
+							label: __( 'Arrows Color', 'migrate-off-elementor' ),
 						},
 						{
 							value: paginationColorInactive,
@@ -525,25 +525,25 @@ const Edit = ( { attributes, setAttributes } ) => {
 								} ),
 							label: __(
 								'Pagination Color',
-								'blockshift'
+								'migrate-off-elementor'
 							),
 						},
 					] }
 				/>
 
 				<PanelBody
-					title={ __( 'Spacing', 'blockshift' ) }
+					title={ __( 'Spacing', 'migrate-off-elementor' ) }
 					initialOpen={ false }
 				>
 					<BoxControl
-						label={ __( 'Margin', 'blockshift' ) }
+						label={ __( 'Margin', 'migrate-off-elementor' ) }
 						values={ _margin }
 						onChange={ ( value ) =>
 							setAttributes( { _margin: value } )
 						}
 					/>
 					<BoxControl
-						label={ __( 'Padding', 'blockshift' ) }
+						label={ __( 'Padding', 'migrate-off-elementor' ) }
 						values={ _padding }
 						onChange={ ( value ) =>
 							setAttributes( { _padding: value } )
@@ -554,14 +554,14 @@ const Edit = ( { attributes, setAttributes } ) => {
 
 			<InspectorAdvancedControls>
 				<TextControl
-					label={ __( 'Custom ID', 'blockshift' ) }
+					label={ __( 'Custom ID', 'migrate-off-elementor' ) }
 					value={ customId }
 					onChange={ ( value ) =>
 						setAttributes( { customId: value } )
 					}
 				/>
 				<TextControl
-					label={ __( 'Custom Class', 'blockshift' ) }
+					label={ __( 'Custom Class', 'migrate-off-elementor' ) }
 					value={ customClass }
 					onChange={ ( value ) =>
 						setAttributes( { customClass: value } )
@@ -692,7 +692,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 										>
 											{ __(
 												'Edit',
-												'blockshift'
+												'migrate-off-elementor'
 											) }
 										</Button>
 										<Button
@@ -704,7 +704,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 										>
 											{ __(
 												'Remove',
-												'blockshift'
+												'migrate-off-elementor'
 											) }
 										</Button>
 									</div>
@@ -714,7 +714,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 					</div>
 
 					<Button isPrimary onClick={ addSlide }>
-						{ __( 'Add Testimonial', 'blockshift' ) }
+						{ __( 'Add Testimonial', 'migrate-off-elementor' ) }
 					</Button>
 
 					{ slides[ editingSlide ] && (
@@ -722,13 +722,13 @@ const Edit = ( { attributes, setAttributes } ) => {
 							<h3>
 								{ __(
 									'Edit Testimonial',
-									'blockshift'
+									'migrate-off-elementor'
 								) }
 							</h3>
 							<TextareaControl
 								label={ __(
 									'Content',
-									'blockshift'
+									'migrate-off-elementor'
 								) }
 								value={ slides[ editingSlide ].content }
 								onChange={ ( value ) =>
@@ -740,14 +740,14 @@ const Edit = ( { attributes, setAttributes } ) => {
 								}
 							/>
 							<TextControl
-								label={ __( 'Name', 'blockshift' ) }
+								label={ __( 'Name', 'migrate-off-elementor' ) }
 								value={ slides[ editingSlide ].name }
 								onChange={ ( value ) =>
 									updateSlide( editingSlide, 'name', value )
 								}
 							/>
 							<TextControl
-								label={ __( 'Title', 'blockshift' ) }
+								label={ __( 'Title', 'migrate-off-elementor' ) }
 								value={ slides[ editingSlide ].title }
 								onChange={ ( value ) =>
 									updateSlide( editingSlide, 'title', value )
@@ -777,11 +777,11 @@ const Edit = ( { attributes, setAttributes } ) => {
 											{ slides[ editingSlide ].imageUrl
 												? __(
 														'Change Image',
-														'blockshift'
+														'migrate-off-elementor'
 												  )
 												: __(
 														'Select Image',
-														'blockshift'
+														'migrate-off-elementor'
 												  ) }
 										</Button>
 									) }
