@@ -239,6 +239,21 @@ class External_CSS_Service {
 
 
 	/**
+	 * Sanitize an arbitrary CSS string before it is stored elsewhere.
+	 *
+	 * Public entry point so other converters (e.g. migrated widget custom CSS
+	 * written to the Customizer's Additional CSS) reuse the same hardening the
+	 * generated stylesheet gets, instead of storing raw author input.
+	 *
+	 * @param string $css CSS content.
+	 *
+	 * @return string Sanitized CSS.
+	 */
+	public static function sanitize_stylesheet( string $css ): string {
+		return self::normalize_css( $css );
+	}
+
+	/**
 	 * Normalize CSS content.
 	 *
 	 * @param string $css

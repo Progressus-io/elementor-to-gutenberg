@@ -2324,7 +2324,9 @@ class Style_Parser {
 	 * @param string $css CSS string to append.
 	 */
 	public static function save_custom_css( string $css ): void {
-		$css = trim( $css );
+		// Migrated custom CSS is untrusted author input; sanitize it the same way
+		// the generated stylesheet is hardened before it reaches any store.
+		$css = External_CSS_Service::sanitize_stylesheet( $css );
 		if ( '' === $css ) {
 			return;
 		}
