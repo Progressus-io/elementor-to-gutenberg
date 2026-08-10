@@ -10,6 +10,14 @@ import {
 } from '@wordpress/components';
 import { Fragment, useState, useEffect, useRef } from '@wordpress/element';
 
+/**
+ * How long the address has to stay unchanged before the editor preview is
+ * rebuilt. Every rebuild loads a live Google Maps document in an iframe, which
+ * then fetches its own scripts and map tiles, so rebuilding per keystroke turns
+ * one edited address into dozens of third-party requests.
+ */
+const PREVIEW_DEBOUNCE_MS = 800;
+
 const mapTypes = [
 	{ label: __( 'Roadmap', 'migrate-off-elementor' ), value: 'roadmap' },
 	{ label: __( 'Satellite', 'migrate-off-elementor' ), value: 'satellite' },
@@ -88,6 +96,30 @@ const Edit = ( { attributes, setAttributes } ) => {
 		setQuery( locAddress || '' );
 	}, [ locAddress ] );
 
+	// Location the preview is currently built from. It lags the attributes by
+	// PREVIEW_DEBOUNCE_MS so that typing an address produces one preview, not one
+	// per keystroke. Seeded with the stored values so an existing block previews
+	// immediately on open.
+	const [ previewLocation, setPreviewLocation ] = useState( {
+		address: locAddress,
+		lat: locLat,
+		lng: locLng,
+		zoom,
+	} );
+
+	useEffect( () => {
+		const timer = setTimeout( () => {
+			setPreviewLocation( {
+				address: locAddress,
+				lat: locLat,
+				lng: locLng,
+				zoom,
+			} );
+		}, PREVIEW_DEBOUNCE_MS );
+
+		return () => clearTimeout( timer );
+	}, [ locAddress, locLat, locLng, zoom ] );
+
 	const onAddressChange = ( value ) => {
 		setQuery( value );
 		// When user types a new address, reset coordinates to force selection
@@ -125,26 +157,29 @@ const Edit = ( { attributes, setAttributes } ) => {
 		// Create map
 		try {
 			const center =
-				locLat !== null && locLng !== null
-					? { lat: parseFloat( locLat ), lng: parseFloat( locLng ) }
+				previewLocation.lat !== null && previewLocation.lng !== null
+					? {
+							lat: parseFloat( previewLocation.lat ),
+							lng: parseFloat( previewLocation.lng ),
+					  }
 					: null;
 
 			mapRef.current = new window.google.maps.Map(
 				mapContainerRef.current,
 				{
-					zoom: zoom || 14,
+					zoom: previewLocation.zoom || 14,
 					mapTypeId: mapType || 'roadmap',
 				}
 			);
 
 			if ( center ) {
 				mapRef.current.setCenter( center );
-			} else if ( locAddress ) {
+			} else if ( previewLocation.address ) {
 				// Geocode address to center map in the editor preview
 				try {
 					const geocoder = new window.google.maps.Geocoder();
 					geocoder.geocode(
-						{ address: locAddress },
+						{ address: previewLocation.address },
 						( results, status ) => {
 							if ( status === 'OK' && results && results[ 0 ] ) {
 								mapRef.current.setCenter(
@@ -173,20 +208,21 @@ const Edit = ( { attributes, setAttributes } ) => {
 				}
 			} catch ( e ) {}
 		};
-	}, [ locLat, locLng, locAddress, zoom, mapType ] );
+	}, [ previewLocation, mapType ] );
 
-	// Prepare iframe src like save.js
+	// Prepare iframe src like save.js, from the debounced location so the embed
+	// is created once the address settles rather than on every keystroke.
 	let src = '';
-	if ( locLat !== null && locLng !== null ) {
+	if ( previewLocation.lat !== null && previewLocation.lng !== null ) {
 		src = `https://maps.google.com/maps?q=${ encodeURIComponent(
-			locLat
-		) },${ encodeURIComponent( locLng ) }&z=${ encodeURIComponent(
-			zoom
-		) }&output=embed`;
-	} else if ( locAddress ) {
+			previewLocation.lat
+		) },${ encodeURIComponent(
+			previewLocation.lng
+		) }&z=${ encodeURIComponent( previewLocation.zoom ) }&output=embed`;
+	} else if ( previewLocation.address ) {
 		src = `https://maps.google.com/maps?q=${ encodeURIComponent(
-			locAddress
-		) }&z=${ encodeURIComponent( zoom ) }&output=embed`;
+			previewLocation.address
+		) }&z=${ encodeURIComponent( previewLocation.zoom ) }&output=embed`;
 	}
 
 	return (

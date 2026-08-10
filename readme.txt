@@ -172,7 +172,9 @@ This service is provided by Google. Terms: https://policies.google.com/terms —
 
 = Embedded maps and videos =
 
-If a converted page contains a map or video, the page embeds it from Google Maps (https://maps.google.com) or YouTube (https://www.youtube.com), the same way the original Elementor page did. These embeds load only when such a page is viewed.
+If a converted page contains a map or video, the page embeds it from Google Maps (https://maps.google.com) or YouTube (https://www.youtube.com), the same way the original Elementor page did. These embeds load when such a page is viewed, and also in the block editor while a Map block is open, so that you can see a preview of the map you are editing. In the editor the preview is rebuilt once you stop typing, not on every keystroke.
+
+A Google Maps embed is a page served by Google inside an iframe. Once it loads, Google's own code in that iframe fetches map tiles and its supporting resources from further Google hosts: https://www.google.com, https://maps.googleapis.com, https://places.googleapis.com, https://maps.gstatic.com, https://fonts.googleapis.com and https://fonts.gstatic.com. The plugin sends Google only the address or the coordinates stored in the block, plus the zoom level.
 
 Provided by Google. Terms: https://policies.google.com/terms and https://www.youtube.com/t/terms — Privacy policy: https://policies.google.com/privacy
 
