@@ -110,6 +110,14 @@ class Batch_Convert_Wizard {
 
 	private const TEMPLATE_ROLE_EXTRA = 'extra';
 
+	/**
+	 * The conflict policies a job may carry. Anything else falls back to the
+	 * non-destructive one.
+	 *
+	 * @var string[]
+	 */
+	private const CONFLICT_POLICIES = array( 'skip', 'overwrite', 'duplicate' );
+
 	private const SUGGESTED_BLOCK_THEMES = array(
 		array(
 			'slug' => 'twentytwentyfive',
@@ -399,9 +407,14 @@ class Batch_Convert_Wizard {
 				$all_pages
 			);
 			$skip_converted    = true;
-		} elseif ( 'skip' === $conflict_policy ) {
-			$conflict_policy = 'overwrite';
 		}
+
+		// `skip` skips. It used to be rewritten to `overwrite` here for every
+		// mode except auto, which meant a re-run silently replaced a converted
+		// page the user had since hand-edited - the opposite of what the option
+		// says. The skip branch is implemented downstream in
+		// process_single_post(), so honouring the request needs no other change.
+		$conflict_policy = in_array( $conflict_policy, self::CONFLICT_POLICIES, true ) ? $conflict_policy : 'skip';
 
 		$selected_page_ids = array_values( array_unique( array_filter( $selected_page_ids ) ) );
 

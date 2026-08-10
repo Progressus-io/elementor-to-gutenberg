@@ -232,7 +232,10 @@
 					defaultFooter
 				);
 				this.state.skipConverted = false;
-				this.state.conflictPolicy = 'overwrite';
+				// Custom mode used to arm "overwrite" here without saying so.
+				// The non-destructive policy is the default in every mode; the
+				// conflicts step lets the user choose otherwise.
+				this.state.conflictPolicy = 'skip';
 				this.state.tablePage = 1;
 			}
 
@@ -2231,7 +2234,16 @@
 				createElement( 'p', 'blockshift-step-description', summary )
 			);
 
+			// "Skip" is offered in every mode, and it is the pre-selected
+			// default, because it is the only option that cannot destroy work.
+			// It used to be withheld in custom mode and the stored policy
+			// rewritten to "overwrite", which silently replaced converted pages
+			// the user had since hand-edited.
 			const options = [
+				{
+					key: 'skip',
+					label: this.strings.conflictSkip || 'Skip those pages',
+				},
 				{
 					key: 'overwrite',
 					label:
@@ -2245,15 +2257,6 @@
 						'Create duplicates with “(Converted)” suffix',
 				},
 			];
-
-			if ( this.state.mode !== 'custom' ) {
-				options.splice( 1, 0, {
-					key: 'skip',
-					label: this.strings.conflictSkip || 'Skip those pages',
-				} );
-			} else if ( this.state.conflictPolicy === 'skip' ) {
-				this.state.conflictPolicy = 'overwrite';
-			}
 
 			const wrapper = createElement( 'div', 'blockshift-conflict-options' );
 			options.forEach( ( option ) => {
