@@ -1,6 +1,6 @@
 === Migrate Off Elementor ===
 Contributors: shadim
-Tags: elementor, gutenberg, migration, conversion, blocks
+Tags: gutenberg, migration, conversion, blocks
 Requires at least: 6.7
 Tested up to: 7.0
 Stable tag: 1.0.0
