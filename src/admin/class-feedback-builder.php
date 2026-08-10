@@ -16,9 +16,9 @@ defined( 'ABSPATH' ) || exit;
  */
 class Feedback_Builder {
 
-	const CONSENT_VERSION = '1.0';
+	const CONSENT_VERSION = '2.0';
 
-	const CONSENT_TEXT = 'I consent to sharing this anonymised conversion report with the plugin developer for quality improvement purposes. No passwords, API keys, or personal data are included.';
+	const CONSENT_TEXT = 'I consent to sending this conversion report to the plugin developer for quality improvement. It includes my site domain and a hashed site URL, the plugin, WordPress and PHP versions, the active theme and locale, my browser and screen details, the conversion run data, my rating and notes, and the original Elementor data and converted content of each page I select. Page content is sent as-is, is not anonymised, and may contain personal data.';
 
 	/**
 	 * Assemble the manifest.
