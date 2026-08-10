@@ -36,6 +36,25 @@ class Gutenberg {
 	 */
 	public const FULL_WIDTH_CSS_HANDLE = 'blockshift-full-width-page';
 
+	/**
+	 * Option holding, per form name, the field names that form's block declares.
+	 * Written when a page containing a form block is rendered, and read by the
+	 * submission handler so it never has to trust the shape of the request.
+	 */
+	private const OPTION_FORM_FIELDS = 'blockshift_form_fields';
+
+	/**
+	 * Form name used when a form block does not set one. Matches the default in
+	 * src/blocks/form/block.json.
+	 */
+	private const DEFAULT_FORM_NAME = 'contact-form';
+
+	/**
+	 * Fields declared by src/blocks/form/block.json for a form block that has
+	 * never had its field list customised.
+	 */
+	private const DEFAULT_FORM_FIELDS = array( 'name', 'email', 'message' );
+
 
 	/**
 	 * Instance to call certain functions globally within the plugin
@@ -556,7 +575,131 @@ class Gutenberg {
 					'nonce'   => wp_create_nonce( 'blockshift_form_nonce' ),
 				)
 			);
+
+			$this->remember_declared_form_fields( (int) get_queried_object_id() );
 		}
+	}
+
+	/**
+	 * Record the fields each form block on a rendered page declares, so the
+	 * submission handler has an allow-list to work from without querying for it.
+	 *
+	 * @param int $post_id Post being rendered.
+	 */
+	private function remember_declared_form_fields( int $post_id ): void {
+		if ( $post_id <= 0 ) {
+			return;
+		}
+
+		$declared = self::collect_declared_form_fields( (string) get_post_field( 'post_content', $post_id ) );
+		if ( empty( $declared ) ) {
+			return;
+		}
+
+		$stored = get_option( self::OPTION_FORM_FIELDS, array() );
+		$stored = is_array( $stored ) ? $stored : array();
+
+		$merged = array_merge( $stored, $declared );
+		if ( $merged === $stored ) {
+			return;
+		}
+
+		update_option( self::OPTION_FORM_FIELDS, $merged, false );
+	}
+
+	/**
+	 * Map of form name => declared field names, read out of the form blocks in
+	 * a piece of post content.
+	 *
+	 * @param string $content Post content.
+	 *
+	 * @return array<string, array<int, string>>
+	 */
+	private static function collect_declared_form_fields( string $content ): array {
+		$map = array();
+
+		if ( '' === $content || false === strpos( $content, 'wp:blockshift/form' ) ) {
+			return $map;
+		}
+
+		self::walk_blocks_for_form_fields( parse_blocks( $content ), $map );
+
+		return $map;
+	}
+
+	/**
+	 * Recursive worker for collect_declared_form_fields().
+	 *
+	 * @param array<int, array<string, mixed>> $blocks Parsed blocks.
+	 * @param array<string, array<int, string>> $map   Accumulator, by reference.
+	 */
+	private static function walk_blocks_for_form_fields( array $blocks, array &$map ): void {
+		foreach ( $blocks as $block ) {
+			if ( ! is_array( $block ) ) {
+				continue;
+			}
+
+			if ( isset( $block['blockName'] ) && 'blockshift/form' === $block['blockName'] ) {
+				$attrs = isset( $block['attrs'] ) && is_array( $block['attrs'] ) ? $block['attrs'] : array();
+
+				$form_name = isset( $attrs['formName'] ) ? sanitize_text_field( (string) $attrs['formName'] ) : self::DEFAULT_FORM_NAME;
+				if ( '' === $form_name ) {
+					$form_name = self::DEFAULT_FORM_NAME;
+				}
+
+				$fields = array();
+				if ( isset( $attrs['formFields'] ) && is_array( $attrs['formFields'] ) ) {
+					foreach ( $attrs['formFields'] as $field ) {
+						if ( ! is_array( $field ) || empty( $field['customId'] ) ) {
+							continue;
+						}
+
+						$key = sanitize_key( (string) $field['customId'] );
+						if ( '' !== $key ) {
+							$fields[] = $key;
+						}
+					}
+				}
+
+				// A form block that never overrode the attribute carries the
+				// defaults declared in block.json.
+				$map[ $form_name ] = empty( $fields ) ? self::DEFAULT_FORM_FIELDS : array_values( array_unique( $fields ) );
+			}
+
+			if ( ! empty( $block['innerBlocks'] ) && is_array( $block['innerBlocks'] ) ) {
+				self::walk_blocks_for_form_fields( $block['innerBlocks'], $map );
+			}
+		}
+	}
+
+	/**
+	 * The fields a submission for the given form name is allowed to carry.
+	 *
+	 * @param string $form_name Submitted form name.
+	 *
+	 * @return array<int, string>
+	 */
+	private function get_declared_form_fields( string $form_name ): array {
+		$stored = get_option( self::OPTION_FORM_FIELDS, array() );
+		if ( is_array( $stored ) && ! empty( $stored[ $form_name ] ) && is_array( $stored[ $form_name ] ) ) {
+			return $stored[ $form_name ];
+		}
+
+		// Nothing recorded for this form - which happens when a full-page cache
+		// means the front-end render never ran. Read the declaration off the page
+		// the submission came from instead.
+		$referer = wp_get_referer();
+		if ( is_string( $referer ) && '' !== $referer ) {
+			$post_id = url_to_postid( $referer );
+			if ( $post_id > 0 ) {
+				$declared = self::collect_declared_form_fields( (string) get_post_field( 'post_content', $post_id ) );
+				if ( ! empty( $declared[ $form_name ] ) ) {
+					return $declared[ $form_name ];
+				}
+			}
+		}
+
+		return self::DEFAULT_FORM_FIELDS;
 	}
 
 	/**
@@ -711,11 +854,17 @@ class Gutenberg {
 		$form_name = isset( $_POST['form_name'] ) ? sanitize_text_field( wp_unslash( $_POST['form_name'] ) ) : '';
 		$form_data = array();
 
-		// Collect all form fields
-		foreach ( $_POST as $key => $value ) {
-			if ( ! in_array( $key, array( 'action', 'nonce', 'form_name' ), true ) ) {
-				$form_data[ sanitize_key( $key ) ] = sanitize_text_field( wp_unslash( $value ) );
+		// Collect only the fields the submitted form's block declares, and ignore
+		// everything else in the request: an anonymous caller no longer decides
+		// what ends up in the site owner's inbox.
+		foreach ( $this->get_declared_form_fields( $form_name ) as $field ) {
+			if ( ! isset( $_POST[ $field ] ) ) {
+				continue;
 			}
+
+			// sanitize_text_field() returns '' for arrays and objects, which is
+			// what keeps a crafted array value from causing a fatal here.
+			$form_data[ sanitize_key( $field ) ] = sanitize_text_field( wp_unslash( $_POST[ $field ] ) );
 		}
 
 		// Get admin email
