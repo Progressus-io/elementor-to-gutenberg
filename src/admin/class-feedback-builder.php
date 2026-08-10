@@ -218,12 +218,6 @@ class Feedback_Builder {
 
 			$jsonl_status = Diagnostic_Logger::derive_status( $raw_status, $widget_log );
 
-			// Screenshots from post meta — all four types are stored on the target post.
-			$src_urls        = $target_id > 0 ? self::get_screenshot_urls( $target_id, '_blockshift_ai_elementor_screenshot_url' ) : array();
-			$src_mob_urls    = $target_id > 0 ? self::get_screenshot_urls( $target_id, '_blockshift_ai_elementor_screenshot_mobile_url' ) : array();
-			$gb_urls         = $target_id > 0 ? self::get_screenshot_urls( $target_id, '_blockshift_ai_gutenberg_screenshot_url' ) : array();
-			$gb_mob_urls     = $target_id > 0 ? self::get_screenshot_urls( $target_id, '_blockshift_ai_gutenberg_screenshot_mobile_url' ) : array();
-
 			// Elementor JSON.
 			$elementor_json = self::get_elementor_json( $source_id );
 
@@ -278,13 +272,6 @@ class Feedback_Builder {
 				'item_rating'               => $item_rating,
 				'item_note'                 => $item_note,
 
-				'artifacts'                 => array(
-					'source_screenshot_url'          => $src_urls[0] ?? null,
-					'source_screenshot_mobile_url'   => $src_mob_urls[0] ?? null,
-					'gutenberg_screenshot_url'       => $gb_urls[0] ?? null,
-					'gutenberg_screenshot_mobile_url' => $gb_mob_urls[0] ?? null,
-				),
-
 				'elementor_json'   => $elementor_json,
 				'gutenberg_markup' => $gutenberg_markup,
 				'widget_log'       => $widget_log,
@@ -294,25 +281,6 @@ class Feedback_Builder {
 		}
 
 		return $items;
-	}
-
-	/**
-	 * Read screenshot URLs from post meta (JSON-encoded array).
-	 *
-	 * @param int    $post_id  Post ID.
-	 * @param string $meta_key Meta key.
-	 *
-	 * @return string[]
-	 */
-	private static function get_screenshot_urls( int $post_id, string $meta_key ): array {
-		if ( $post_id <= 0 ) {
-			return array();
-		}
-
-		$raw     = get_post_meta( $post_id, $meta_key, true );
-		$decoded = json_decode( (string) $raw, true );
-
-		return is_array( $decoded ) ? array_values( array_filter( $decoded ) ) : array();
 	}
 
 	/**
