@@ -1,6 +1,4 @@
 <?php
-// phpcs:ignoreFile
-
 /**
  * Widget-level conversion log collector for a single page conversion.
  *

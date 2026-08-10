@@ -1,6 +1,4 @@
 <?php
-// phpcs:ignoreFile
-
 /**
  * Structured JSONL diagnostic logger for Elementor-to-Gutenberg conversions.
  *

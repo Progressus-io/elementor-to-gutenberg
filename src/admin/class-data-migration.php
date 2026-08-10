@@ -34,12 +34,15 @@
 
 namespace Progressus\BlockShift\Admin;
 
+defined( 'ABSPATH' ) || exit;
+
 use function add_option;
 use function basename;
 use function clean_post_cache;
 use function current_user_can;
 use function delete_option;
 use function get_option;
+use function get_post;
 use function glob;
 use function is_admin;
 use function is_dir;
@@ -52,8 +55,6 @@ use function wp_cache_set_posts_last_changed;
 use function wp_cache_set_users_last_changed;
 use function wp_get_upload_dir;
 use function WP_Filesystem;
-
-defined( 'ABSPATH' ) || exit;
 
 /**
  * Renames pre-rename data to the unified `blockshift` scheme.
@@ -396,38 +397,24 @@ class Data_Migration {
 	private static function migrate_post_content(): void {
 		global $wpdb;
 
-		$ids = self::get_owned_post_ids();
-		if ( empty( $ids ) ) {
-			return;
-		}
-
-		$placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $placeholders is a generated run of %d tokens; every value is passed through prepare() below.
-		$rows = $wpdb->get_results(
-			$wpdb->prepare(
-				"SELECT ID, post_content FROM {$wpdb->posts} WHERE ID IN ({$placeholders})",
-				$ids
-			)
-		);
-
-		if ( empty( $rows ) ) {
-			return;
-		}
-
-		foreach ( $rows as $row ) {
-			$updated = strtr( (string) $row->post_content, self::CONTENT_MAP );
-			if ( $updated === $row->post_content ) {
+		foreach ( self::get_owned_post_ids() as $post_id ) {
+			$post = get_post( $post_id );
+			if ( ! $post instanceof \WP_Post ) {
 				continue;
 			}
 
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- wp_update_post() would fire save hooks and re-run kses over already-stored content; the post cache is cleaned immediately after.
+			$updated = strtr( (string) $post->post_content, self::CONTENT_MAP );
+			if ( $updated === $post->post_content ) {
+				continue;
+			}
+
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- wp_update_post() would fire save hooks and re-run kses over content that is already stored; the post cache is cleaned immediately after.
 			$wpdb->update(
 				$wpdb->posts,
 				array( 'post_content' => $updated ),
-				array( 'ID' => (int) $row->ID )
+				array( 'ID' => (int) $post_id )
 			);
-			clean_post_cache( (int) $row->ID );
+			clean_post_cache( (int) $post_id );
 		}
 	}
 
@@ -439,18 +426,22 @@ class Data_Migration {
 	private static function get_owned_post_ids(): array {
 		global $wpdb;
 
-		$keys         = self::OWNERSHIP_META_KEYS;
-		$placeholders = implode( ',', array_fill( 0, count( $keys ), '%s' ) );
+		$ids = array();
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $placeholders is a generated run of %s tokens; the key names themselves are class constants passed through prepare().
-		$ids = $wpdb->get_col(
-			$wpdb->prepare(
-				"SELECT DISTINCT post_id FROM {$wpdb->postmeta} WHERE meta_key IN ({$placeholders})",
-				$keys
-			)
-		);
+		// One prepared, indexed lookup per key rather than a built IN() list,
+		// so no fragment of any query is assembled by interpolation. This runs
+		// once in a site's lifetime.
+		foreach ( self::OWNERSHIP_META_KEYS as $meta_key ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- A meta_key-only lookup across all posts has no core API and nothing worth caching for a one-time pass.
+			$found = $wpdb->get_col(
+				$wpdb->prepare(
+					"SELECT DISTINCT post_id FROM {$wpdb->postmeta} WHERE meta_key = %s",
+					$meta_key
+				)
+			);
 
-		$ids = array_map( 'intval', (array) $ids );
+			$ids = array_merge( $ids, array_map( 'intval', (array) $found ) );
+		}
 
 		// Converted header/footer parts whose CSS is enqueued site-wide are
 		// tracked in an option rather than by meta.

@@ -1,6 +1,4 @@
 <?php
-// phpcs:ignoreFile
-
 /**
  * Extracts JSONL diagnostic events for a specific item from the conversion log.
  *
@@ -39,11 +37,11 @@ class JSONL_Item_Extractor {
 
 		$entries = array();
 
-		if ( @file_exists( $path ) ) { // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+		if ( @file_exists( $path ) ) { // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- The log may legitimately not exist yet; a warning here would surface in an admin screen for a non-condition.
 			$entries = array_merge( $entries, self::extract_from_file( $path, $run_id, $source_id ) );
 		}
 
-		if ( @file_exists( $rotated ) ) { // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+		if ( @file_exists( $rotated ) ) { // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- The rotated log usually does not exist; same reason as above.
 			$entries = array_merge( $entries, self::extract_from_file( $rotated, $run_id, $source_id ) );
 		}
 
@@ -85,13 +83,13 @@ class JSONL_Item_Extractor {
 	private static function extract_from_file( string $path, string $run_id, int $source_id ): array {
 		$entries = array();
 
-		$handle = @fopen( $path, 'r' ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_system_operations_fopen
+		$handle = @fopen( $path, 'r' ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- A JSONL log is read a line at a time on purpose so a large file is never loaded into memory; WP_Filesystem offers no streaming reader, and an unreadable file is handled by the null check below.
 		if ( ! $handle ) {
 			return $entries;
 		}
 
 		try {
-			while ( ( $line = fgets( $handle ) ) !== false ) { // phpcs:ignore WordPress.CodeAnalysis.AssignmentInCondition.FoundInWhileCondition
+			while ( ( $line = fgets( $handle ) ) !== false ) { // phpcs:ignore WordPress.CodeAnalysis.AssignmentInCondition.FoundInWhileCondition -- Canonical line-reading idiom; the assignment is parenthesised and compared strictly.
 				$line = trim( $line );
 				if ( '' === $line ) {
 					continue;
@@ -118,7 +116,7 @@ class JSONL_Item_Extractor {
 				$entries[] = $event;
 			}
 		} finally {
-			fclose( $handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
+			fclose( $handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Closes the stream opened above; WP_Filesystem has no counterpart.
 		}
 
 		return $entries;

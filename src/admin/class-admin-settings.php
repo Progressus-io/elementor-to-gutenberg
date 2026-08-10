@@ -1,6 +1,4 @@
 <?php
-// phpcs:ignoreFile
-
 /**
  * Main admin settings class for Elementor to Gutenberg conversion.
  *
@@ -165,7 +163,7 @@ class Admin_Settings {
 	 * <i data-icon> placeholders are replaced with inline SVG.
 	 */
 	public function enqueue_assets(): void {
-		if ( empty( $_GET['page'] ) || 'blockshift-settings' !== sanitize_key( wp_unslash( $_GET['page'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( empty( $_GET['page'] ) || 'blockshift-settings' !== sanitize_key( wp_unslash( $_GET['page'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only screen check on an enqueue hook; nothing is written, so a nonce would be meaningless here.
 			return;
 		}
 
@@ -200,8 +198,7 @@ class Admin_Settings {
 
 		check_admin_referer( 'blockshift_save_settings' );
 
-		$prefs_raw = isset( $_POST['blockshift_conversion_preferences'] ) ? wp_unslash( $_POST['blockshift_conversion_preferences'] ) : array();
-		$prefs_raw = is_array( $prefs_raw ) ? $prefs_raw : array();
+		$prefs_raw = self::read_posted_settings_group( 'blockshift_conversion_preferences' );
 		update_option(
 			self::OPTION_CONVERSION_PREFERENCES,
 			array(
@@ -210,12 +207,10 @@ class Admin_Settings {
 			false
 		);
 
-		$logging_raw = isset( $_POST['blockshift_logging_settings'] ) ? wp_unslash( $_POST['blockshift_logging_settings'] ) : array();
-		$logging_raw = is_array( $logging_raw ) ? $logging_raw : array();
+		$logging_raw = self::read_posted_settings_group( 'blockshift_logging_settings' );
 		update_option( self::OPTION_CONVERSION_LOGGING, ! empty( $logging_raw['enabled'] ), false );
 
-		$layout_raw = isset( $_POST['blockshift_layout_settings'] ) ? wp_unslash( $_POST['blockshift_layout_settings'] ) : array();
-		$layout_raw = is_array( $layout_raw ) ? $layout_raw : array();
+		$layout_raw = self::read_posted_settings_group( 'blockshift_layout_settings' );
 		$width      = isset( $layout_raw['section_content_width'] ) ? (int) $layout_raw['section_content_width'] : self::DEFAULT_SECTION_CONTENT_WIDTH;
 		if ( $width < 320 ) {
 			$width = 320;
@@ -244,6 +239,33 @@ class Admin_Settings {
 			)
 		);
 		exit;
+	}
+
+	/**
+	 * Read one grouped settings field out of the current POST.
+	 *
+	 * Every value is run through sanitize_text_field() before it is looked at,
+	 * so nothing untrusted survives even as a string; the callers then narrow
+	 * each value further to a boolean or a clamped integer.
+	 *
+	 * The caller is responsible for the capability check and the nonce, both of
+	 * which save_all_settings() performs before reaching here - which is what
+	 * the annotation below records.
+	 *
+	 * @param string $field Name of the posted field group.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private static function read_posted_settings_group( string $field ): array {
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Both the manage_options check and check_admin_referer( 'blockshift_save_settings' ) run in save_all_settings() before this is called.
+		if ( ! isset( $_POST[ $field ] ) ) {
+			return array();
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- As above; the nonce is verified by the caller.
+		$raw = map_deep( wp_unslash( $_POST[ $field ] ), 'sanitize_text_field' );
+
+		return is_array( $raw ) ? $raw : array();
 	}
 
 	/**
@@ -684,7 +706,7 @@ class Admin_Settings {
                     </div>
                 </div>
 
-                <?php if ( isset( $_GET['blockshift_settings_saved'] ) && '1' === $_GET['blockshift_settings_saved'] ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
+                <?php if ( isset( $_GET['blockshift_settings_saved'] ) && '1' === $_GET['blockshift_settings_saved'] ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Post-redirect flag that only decides whether a notice is shown; the save itself is capability- and nonce-checked in save_all_settings(). ?>
                     <div class="pgs-banner pgs-banner--success" role="status">
                         <span class="pgs-banner__icon"><i data-icon="check-circle-2"></i></span>
                         <div class="pgs-banner__body"><span class="pgs-banner__text"><?php esc_html_e( 'Settings saved.', 'migrate-off-elementor' ); ?></span></div>
@@ -827,7 +849,6 @@ class Admin_Settings {
 
 		$content = $this->parse_elementor_elements( $json_data['content'] );
 		$content = $this->wrap_converted_content( $content );
-		$this->log_inventory_summary();
 
 		return $content;
 	}
@@ -884,31 +905,6 @@ class Admin_Settings {
 		return $updated_content;
 	}
 
-	/**
-	 * Log external CSS inventory summary when debugging is enabled.
-	 *
-	 * @return void
-	 */
-	private function log_inventory_summary(): void {
-		if ( null === $this->external_css_collector ) {
-			return;
-		}
-
-		$inventory = $this->external_css_collector->get_inventory();
-		if ( empty( $inventory ) ) {
-			return;
-		}
-
-		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-			$summary = array(
-				'externalized' => count( $inventory['externalized'] ?? array() ),
-				'dropped'      => count( $inventory['dropped'] ?? array() ),
-				'conversions'  => count( $inventory['conversions'] ?? array() ),
-			);
-
-			error_log( 'inventory: ' . wp_json_encode( $summary ) );
-		}
-	}
 
 	/**
 	 * Render the collected external CSS.
