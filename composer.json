@@ -1,5 +1,6 @@
 {
 	"name": "progressus/migrate-off-elementor",
+	"description": "Convert Elementor layouts into native WordPress blocks.",
 	"license": "GPL-2.0-or-later",
 	"require-dev": {
 		"woocommerce/woocommerce-sniffs": "^1.0",
@@ -17,18 +18,6 @@
 		},
 		"classmap": [
 			"src/"
-		]
-	},
-	"archive": {
-		"exclude": [
-			"!/assets",
-			"!/languages",
-			"!/vendor",
-			"/node_modules",
-			"package.json",
-			".gitignore",
-			"README.md",
-			"version-bump.js"
 		]
 	},
 	"config": {

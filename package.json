@@ -1,7 +1,7 @@
 {
 	"name": "migrate-off-elementor",
 	"version": "1.0.0",
-	"description": "",
+	"description": "Convert Elementor layouts into native WordPress blocks.",
 	"main": "build/index.js",
 	"files": [
 		"migrate-off-elementor.php",
@@ -18,7 +18,8 @@
 	"scripts": {
 		"build": "composer install --no-dev -o && wp-scripts build && npm run archive",
 		"build:dev": "composer install -o",
-		"archive": "wp-scripts plugin-zip",
+		"archive": "wp-scripts plugin-zip && npm run archive:prune",
+		"archive:prune": "zip -q -d migrate-off-elementor.zip migrate-off-elementor/package.json",
 		"bump": "node version-bump.js",
 		"bump:major": "node version-bump.js major",
 		"wpcs": "composer wpcs",
@@ -29,7 +30,7 @@
 		"url": "git+https://github.com/Progressus-io/elementor-to-gutenberg.git"
 	},
 	"keywords": [],
-	"author": "",
+	"author": "Progressus",
 	"license": "GPL-2.0-or-later",
 	"devDependencies": {
 		"@woocommerce/dependency-extraction-webpack-plugin": "^4.0.0",
