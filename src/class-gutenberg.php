@@ -406,8 +406,17 @@ class Gutenberg {
 
 	/**
 	 * Enqueue styles for admin screens.
+	 *
+	 * Scoped to the screens that need them: this plugin's own screens, which use
+	 * the icon font in their UI, and the block editor, where the icon blocks
+	 * render. Every other screen in wp-admin - core's and other plugins' - used
+	 * to load 102 KB of icon CSS and its webfonts for nothing.
 	 */
 	public function fontawesome_icon_block_enqueue_fontawesome() {
+		if ( ! $this->is_plugin_admin_screen() ) {
+			return;
+		}
+
 		wp_enqueue_style(
 			'font-awesome-custom',
 			BLOCKSHIFT_DIR_URL . '/assets/vendor/fontawesome/css/all.min.css',
@@ -421,6 +430,58 @@ class Gutenberg {
 			array(),
 			BLOCKSHIFT_VERSION
 		);
+	}
+
+	/**
+	 * Whether the current admin screen is one of this plugin's own screens, or a
+	 * block editor screen where this plugin's blocks can be rendered.
+	 */
+	private function is_plugin_admin_screen(): bool {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Reading the screen slug to decide whether to enqueue an asset; no state changes.
+		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+
+		$plugin_pages = array(
+			'blockshift-settings',
+			Batch_Convert_Wizard::MENU_SLUG,
+			Conversion_Log_Admin::MENU_SLUG,
+		);
+
+		if ( '' !== $page && in_array( $page, $plugin_pages, true ) ) {
+			return true;
+		}
+
+		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+		if ( is_object( $screen ) && method_exists( $screen, 'is_block_editor' ) && $screen->is_block_editor() ) {
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Whether the post being served carries any of this plugin's content.
+	 *
+	 * Converted pages and this plugin's blocks both leave "blockshift" in the
+	 * post content - as a `wp:blockshift/*` block name, a `blockshift-*` class,
+	 * or a converted-page wrapper id - so one lookup over content WordPress has
+	 * already loaded answers it.
+	 */
+	private function current_post_has_plugin_content(): bool {
+		if ( ! is_singular() ) {
+			return false;
+		}
+
+		$post_id = (int) get_queried_object_id();
+		if ( $post_id <= 0 ) {
+			return false;
+		}
+
+		$content = (string) get_post_field( 'post_content', $post_id );
+		if ( '' === $content ) {
+			return false;
+		}
+
+		return false !== strpos( $content, 'blockshift' );
 	}
 
 	/**
