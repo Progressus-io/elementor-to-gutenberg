@@ -577,8 +577,8 @@ class Admin_Settings {
 		$post_title = $data['title'] ?? 'Untitled';
 		$post_type  = $data['type'] ?? 'page';
 
-		// Check if a post with the same title and type exists
-		$existing_post = get_page_by_title( $post_title, OBJECT, $post_type );
+		// Check if a post with the same title and type exists.
+		$existing_post = self::find_post_by_title( (string) $post_title, (string) $post_type );
 
 		if ( $existing_post ) {
 			// Update existing post
@@ -620,6 +620,44 @@ class Admin_Settings {
 		);
 
 		return $gutenberg_content;
+	}
+
+	/**
+	 * Find a single post of a given type by its exact title.
+	 *
+	 * Drop-in replacement for `get_page_by_title()`, which core deprecated in
+	 * WordPress 6.2 - five minors below this plugin's declared floor. The query
+	 * arguments mirror core's own deprecated implementation exactly, so the
+	 * behaviour is unchanged: every registered post status is searched, the
+	 * oldest match wins, and `null` is returned when nothing matches.
+	 *
+	 * @param string $post_title Exact post title to look for.
+	 * @param string $post_type  Post type to search within.
+	 *
+	 * @return \WP_Post|null The matching post, or null when there is none.
+	 */
+	private static function find_post_by_title( string $post_title, string $post_type ): ?\WP_Post {
+		$query = new \WP_Query(
+			array(
+				'title'                  => $post_title,
+				'post_type'              => $post_type,
+				'post_status'            => get_post_stati(),
+				'posts_per_page'         => 1,
+				'update_post_term_cache' => false,
+				'update_post_meta_cache' => false,
+				'no_found_rows'          => true,
+				'orderby'                => 'post_date ID',
+				'order'                  => 'ASC',
+			)
+		);
+
+		if ( empty( $query->posts ) ) {
+			return null;
+		}
+
+		$post = get_post( $query->posts[0] );
+
+		return $post instanceof \WP_Post ? $post : null;
 	}
 
 	/**
