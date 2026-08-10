@@ -150,11 +150,11 @@ Yes. Converted pages use standard WordPress blocks, so they work with any modern
 
 = Is any of my data sent to outside services? =
 
-The conversion itself runs entirely on your own site. A few optional features do connect to outside services (address suggestions when editing a Map, any Google fonts/maps/videos your page already used, and sending feedback if you choose to). Each one is explained in full in the **External services** section below, and the feedback feature only ever runs when you choose to start it.
+The conversion itself runs entirely on your own site. A few optional features do connect to outside services (any Google fonts/maps/videos your page already used, and sending feedback if you choose to). Each one is explained in full in the **External services** section below, and the feedback feature only ever runs when you choose to start it.
 
 == External services ==
 
-This plugin can connect to the third-party services listed below. The feedback service is only contacted from the admin area, as part of an action you explicitly start (submitting feedback). The others load only when a converted page that uses those features is viewed, or while editing a Map block.
+This plugin can connect to the third-party services listed below. The feedback service is only contacted from the admin area, as part of an action you explicitly start (submitting feedback). The others load only when a converted page that uses those features is viewed, or while a Map block is open in the block editor.
 
 = Feedback service =
 
@@ -175,14 +175,6 @@ This service is provided by Google. Terms: https://policies.google.com/terms —
 If a converted page contains a map or video, the page embeds it from Google Maps (https://maps.google.com) or YouTube (https://www.youtube.com), the same way the original Elementor page did. These embeds load only when such a page is viewed.
 
 Provided by Google. Terms: https://policies.google.com/terms and https://www.youtube.com/t/terms — Privacy policy: https://policies.google.com/privacy
-
-= OpenStreetMap (Nominatim) =
-
-Used for address autocomplete when you edit a Map block in the block editor.
-
-While editing a Map block, as you type an address (3 or more characters), the plugin sends that address text to the OpenStreetMap Nominatim geocoding service (https://nominatim.openstreetmap.org) and displays matching location suggestions. This happens only in the admin editor, never on the public-facing site.
-
-This service is provided by the OpenStreetMap Foundation. Usage policy: https://operations.osmfoundation.org/policies/nominatim/ — Privacy policy: https://wiki.osmfoundation.org/wiki/Privacy_Policy
 
 == Screenshots ==
 

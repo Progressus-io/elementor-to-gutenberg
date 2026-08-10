@@ -44,16 +44,10 @@ const Edit = ( { attributes, setAttributes } ) => {
 
 	const blockProps = useBlockProps();
 	const mapContainerRef = useRef( null );
-	const inputRef = useRef( null );
 	const mapRef = useRef( null );
 	const markerRef = useRef( null );
-	const autocompleteRef = useRef( null );
-	const debounceRef = useRef( null );
 
 	const [ query, setQuery ] = useState( locAddress || '' );
-	const [ suggestions, setSuggestions ] = useState( [] );
-	const [ isLoading, setIsLoading ] = useState( false );
-	const [ showSuggestions, setShowSuggestions ] = useState( false );
 	// Helper to convert stored spacing values to CSS strings for BoxControl display.
 	const valueToCss = ( v ) => {
 		if ( v === undefined || v === null || v === '' ) {
@@ -93,71 +87,6 @@ const Edit = ( { attributes, setAttributes } ) => {
 	useEffect( () => {
 		setQuery( locAddress || '' );
 	}, [ locAddress ] );
-
-	useEffect( () => {
-		// If Google Places is available, skip the Nominatim fallback here to avoid
-		// initializing autocomplete in the editor during build-time.
-		if (
-			typeof window !== 'undefined' &&
-			window.google &&
-			window.google.maps &&
-			window.google.maps.places
-		) {
-			return;
-		}
-
-		if ( ! query || query.length < 3 ) {
-			setSuggestions( [] );
-			setShowSuggestions( false );
-			return;
-		}
-
-		setIsLoading( true );
-		setShowSuggestions( true );
-
-		if ( debounceRef.current ) {
-			clearTimeout( debounceRef.current );
-		}
-		debounceRef.current = setTimeout( () => {
-			const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=5&q=${ encodeURIComponent(
-				query
-			) }`;
-
-			fetch( url, { headers: { Accept: 'application/json' } } )
-				.then( ( res ) => res.json() )
-				.then( ( data ) => {
-					setSuggestions(
-						( data || [] ).map( ( item ) => ( {
-							label: item.display_name,
-							lat: item.lat,
-							lon: item.lon,
-						} ) )
-					);
-				} )
-				.catch( () => setSuggestions( [] ) )
-				.finally( () => setIsLoading( false ) );
-		}, 300 );
-
-		return () => clearTimeout( debounceRef.current );
-	}, [ query ] );
-
-	const selectSuggestion = ( s ) => {
-		const locationObj = {
-			address: s.label,
-			lat: parseFloat( s.lat ),
-			lng: parseFloat( s.lon ),
-		};
-		// Set both `location` (Elementor-style) and legacy fields for compatibility
-		setAttributes( {
-			location: locationObj,
-			address: s.label,
-			lat: locationObj.lat,
-			lng: locationObj.lng,
-		} );
-		setQuery( s.label );
-		setSuggestions( [] );
-		setShowSuggestions( false );
-	};
 
 	const onAddressChange = ( value ) => {
 		setQuery( value );
@@ -246,67 +175,6 @@ const Edit = ( { attributes, setAttributes } ) => {
 		};
 	}, [ locLat, locLng, locAddress, zoom, mapType ] );
 
-	// Initialize Places Autocomplete in the editor when available.
-	useEffect( () => {
-		if (
-			typeof window === 'undefined' ||
-			! window.google ||
-			! window.google.maps ||
-			! window.google.maps.places
-		) {
-			return;
-		}
-		if ( ! inputRef.current ) {
-			return;
-		}
-
-		try {
-			autocompleteRef.current =
-				new window.google.maps.places.Autocomplete( inputRef.current );
-			autocompleteRef.current.setFields( [
-				'formatted_address',
-				'geometry',
-			] );
-			const listener = () => {
-				const place = autocompleteRef.current.getPlace();
-				if ( ! place ) {
-					return;
-				}
-				const lat =
-					place.geometry && place.geometry.location
-						? place.geometry.location.lat()
-						: null;
-				const lng =
-					place.geometry && place.geometry.location
-						? place.geometry.location.lng()
-						: null;
-				const address =
-					place.formatted_address || inputRef.current.value || '';
-				const locationObj = { address, lat, lng };
-				setAttributes( {
-					location: locationObj,
-					address,
-					lat,
-					lng,
-				} );
-				setQuery( address );
-			};
-			autocompleteRef.current.addListener( 'place_changed', listener );
-
-			return () => {
-				try {
-					window.google.maps.event.clearInstanceListeners(
-						autocompleteRef.current
-					);
-				} catch ( e ) {}
-				autocompleteRef.current = null;
-			};
-		} catch ( e ) {
-			// ignore
-		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [] );
-
 	// Prepare iframe src like save.js
 	let src = '';
 	if ( locLat !== null && locLng !== null ) {
@@ -359,81 +227,17 @@ const Edit = ( { attributes, setAttributes } ) => {
 						<input
 							id="google-map-address-input"
 							type="text"
-							ref={ inputRef }
 							className="components-text-control__input"
 							value={ query }
 							onChange={ ( e ) =>
 								onAddressChange( e.target.value )
 							}
-							onFocus={ () => {
-								if ( suggestions.length ) {
-									setShowSuggestions( true );
-								}
-							} }
-							onBlur={ () =>
-								setTimeout(
-									() => setShowSuggestions( false ),
-									150
-								)
-							}
 							placeholder={ __(
-								'Start typing an address…',
+								'Enter an address',
 								'migrate-off-elementor'
 							) }
 							style={ { width: '100%' } }
 						/>
-
-						{ showSuggestions && (
-							<div
-								style={ {
-									border: '1px solid #ddd',
-									background: '#fff',
-									maxHeight: 200,
-									overflowY: 'auto',
-									marginTop: 4,
-									zIndex: 9999,
-								} }
-							>
-								{ isLoading && (
-									<div style={ { padding: 8 } }>
-										{ __(
-											'Searching…',
-											'migrate-off-elementor'
-										) }
-									</div>
-								) }
-								{ ! isLoading && suggestions.length === 0 && (
-									<div style={ { padding: 8 } }>
-										{ __(
-											'No suggestions',
-											'migrate-off-elementor'
-										) }
-									</div>
-								) }
-								{ suggestions.map( ( s, i ) => (
-									<button
-										key={ i }
-										type="button"
-										className="components-button"
-										onMouseDown={ ( e ) => {
-											// prevent blur
-											e.preventDefault();
-											selectSuggestion( s );
-										} }
-										style={ {
-											display: 'block',
-											width: '100%',
-											textAlign: 'left',
-											padding: '8px 10px',
-											border: 'none',
-											background: 'transparent',
-										} }
-									>
-										{ s.label }
-									</button>
-								) ) }
-							</div>
-						) }
 					</div>
 
 					<TextControl
