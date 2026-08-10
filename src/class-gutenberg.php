@@ -486,8 +486,20 @@ class Gutenberg {
 
 	/**
 	 * Enqueue scripts and styles.
+	 *
+	 * The converted-page fonts and the WooCommerce widget styles decide for
+	 * themselves, per post, whether they are needed. Everything else here belongs
+	 * to this plugin's own markup, so it is skipped entirely on pages that carry
+	 * none of it - which used to be every page on the site.
 	 */
 	public function enqueue_scripts(): void {
+		$this->enqueue_converted_post_fonts();
+		$this->enqueue_woocommerce_widget_styles();
+
+		if ( ! $this->current_post_has_plugin_content() ) {
+			return;
+		}
+
 		wp_enqueue_style(
 			'font-awesome-custom',
 			BLOCKSHIFT_DIR_URL . '/assets/vendor/fontawesome/css/all.min.css',
@@ -534,8 +546,6 @@ class Gutenberg {
 			);
 		}
 
-		$this->enqueue_converted_post_fonts();
-
 		// Enqueue form submission script if form block is present
 		if ( has_block( 'blockshift/form' ) ) {
 			wp_localize_script(
@@ -547,8 +557,6 @@ class Gutenberg {
 				)
 			);
 		}
-
-		$this->enqueue_woocommerce_widget_styles();
 	}
 
 	/**
