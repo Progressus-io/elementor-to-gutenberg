@@ -536,6 +536,15 @@ class Gutenberg {
 			return $urls;
 		}
 
+		// Only hint at hosts this response is actually going to use. The font
+		// stylesheet is enqueued conditionally, on wp_enqueue_scripts, which runs
+		// before wp_resource_hints - so if nothing was enqueued for this request,
+		// there is nothing to preconnect to, and a page with no converted fonts
+		// must not open a connection to Google.
+		if ( empty( $this->enqueued_font_handles ) ) {
+			return $urls;
+		}
+
 		$urls[] = 'https://fonts.googleapis.com';
 		$urls[] = array(
 			'href'        => 'https://fonts.gstatic.com',
