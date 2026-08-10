@@ -18,6 +18,88 @@ import { Fragment, useState, useEffect, useRef } from '@wordpress/element';
  */
 const PREVIEW_DEBOUNCE_MS = 800;
 
+/**
+ * The optional Google Maps API key, as exposed to the editor by the plugin.
+ *
+ * Empty when the site owner has not set one, which is the default.
+ *
+ * @return {string} API key or an empty string.
+ */
+const getApiKey = () => {
+	if ( typeof window === 'undefined' || ! window.blockshiftGoogleMap ) {
+		return '';
+	}
+
+	const key = window.blockshiftGoogleMap.apiKey;
+
+	return typeof key === 'string' ? key : '';
+};
+
+/**
+ * URL of the plugin's Settings screen, as exposed to the editor.
+ *
+ * Falls back to the default admin path when the value is missing, which keeps
+ * the link working on a stock install.
+ *
+ * @return {string} Admin URL of the Settings screen.
+ */
+const getSettingsUrl = () => {
+	if (
+		typeof window !== 'undefined' &&
+		window.blockshiftGoogleMap &&
+		typeof window.blockshiftGoogleMap.settingsUrl === 'string' &&
+		window.blockshiftGoogleMap.settingsUrl
+	) {
+		return window.blockshiftGoogleMap.settingsUrl;
+	}
+
+	return '/wp-admin/admin.php?page=blockshift-settings';
+};
+
+/**
+ * Build the preview iframe URL for a location.
+ *
+ * Without a key this is the keyless embed URL that save.js writes into post
+ * content. With a key it is the Maps Embed API URL the front end substitutes at
+ * render time, so the preview shows what a visitor will get.
+ *
+ * @param {Object} location Debounced location: address, lat, lng, zoom.
+ * @param {string} apiKey   Google Maps API key, or an empty string.
+ *
+ * @return {string} Embed URL, or an empty string when there is no location.
+ */
+const buildEmbedSrc = ( location, apiKey ) => {
+	const hasCoordinates = location.lat !== null && location.lng !== null;
+
+	if ( ! hasCoordinates && ! location.address ) {
+		return '';
+	}
+
+	if ( apiKey ) {
+		const query = hasCoordinates
+			? `${ location.lat },${ location.lng }`
+			: location.address;
+
+		return `https://www.google.com/maps/embed/v1/place?key=${ encodeURIComponent(
+			apiKey
+		) }&q=${ encodeURIComponent( query ) }&zoom=${ encodeURIComponent(
+			location.zoom
+		) }`;
+	}
+
+	// Character for character what save.js writes, including the unencoded comma
+	// between coordinates, so a keyless preview matches the saved markup.
+	const keylessQuery = hasCoordinates
+		? `${ encodeURIComponent( location.lat ) },${ encodeURIComponent(
+				location.lng
+		  ) }`
+		: encodeURIComponent( location.address );
+
+	return `https://maps.google.com/maps?q=${ keylessQuery }&z=${ encodeURIComponent(
+		location.zoom
+	) }&output=embed`;
+};
+
 const mapTypes = [
 	{ label: __( 'Roadmap', 'migrate-off-elementor' ), value: 'roadmap' },
 	{ label: __( 'Satellite', 'migrate-off-elementor' ), value: 'satellite' },
@@ -210,20 +292,14 @@ const Edit = ( { attributes, setAttributes } ) => {
 		};
 	}, [ previewLocation, mapType ] );
 
-	// Prepare iframe src like save.js, from the debounced location so the embed
-	// is created once the address settles rather than on every keystroke.
-	let src = '';
-	if ( previewLocation.lat !== null && previewLocation.lng !== null ) {
-		src = `https://maps.google.com/maps?q=${ encodeURIComponent(
-			previewLocation.lat
-		) },${ encodeURIComponent(
-			previewLocation.lng
-		) }&z=${ encodeURIComponent( previewLocation.zoom ) }&output=embed`;
-	} else if ( previewLocation.address ) {
-		src = `https://maps.google.com/maps?q=${ encodeURIComponent(
-			previewLocation.address
-		) }&z=${ encodeURIComponent( previewLocation.zoom ) }&output=embed`;
-	}
+	// Prepare iframe src, from the debounced location so the embed is created
+	// once the address settles rather than on every keystroke.
+	//
+	// With no API key stored this is the same keyless URL save.js writes, so the
+	// preview matches the front end. With a key stored, the front end swaps the
+	// same block over to the Maps Embed API when it renders it, and the preview
+	// follows. The key is never written into the block's attributes.
+	const src = buildEmbedSrc( previewLocation, getApiKey() );
 
 	return (
 		<Fragment>
@@ -234,11 +310,11 @@ const Edit = ( { attributes, setAttributes } ) => {
 				>
 					<p style={ { marginTop: 0, marginBottom: 8 } }>
 						{ __(
-							"Set your Google Maps API Key in the plugin's Integrations Settings page.",
+							"Optional: set a Google Maps API key under Integrations on the plugin's Settings page to render maps through the Google Maps Embed API. Without a key the map still works.",
 							'migrate-off-elementor'
 						) }{ ' ' }
 						<a
-							href="/wp-admin/admin.php?page=blockshift-settings"
+							href={ getSettingsUrl() }
 							target="_blank"
 							rel="noopener noreferrer"
 						>

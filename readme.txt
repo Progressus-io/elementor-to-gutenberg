@@ -134,7 +134,9 @@ They're converted with a safe general-purpose fallback so the page still comes t
 
 = Do I need to pay for anything or get an "API key"? =
 
-No — the conversion is completely free and runs entirely on your own site. No account or API key is required.
+No — the conversion is completely free and runs entirely on your own site, and no account is required.
+
+One optional key exists: Settings > Integrations has a field for a Google Maps API key. Leave it empty (the default) and converted Map blocks keep using the keyless Google Maps embed, exactly as before. Fill it in and Map blocks are rendered through the Google Maps Embed API on your own Google account instead. It changes nothing else, it is applied when a page is rendered rather than saved into your pages, and clearing it puts every map straight back to the keyless embed.
 
 = Why isn't the converted page 100% identical? =
 
@@ -177,6 +179,14 @@ If a converted page contains a map or video, the page embeds it from Google Maps
 A Google Maps embed is a page served by Google inside an iframe. Once it loads, Google's own code in that iframe fetches map tiles and its supporting resources from further Google hosts: https://www.google.com, https://maps.googleapis.com, https://places.googleapis.com, https://maps.gstatic.com, https://fonts.googleapis.com and https://fonts.gstatic.com. The plugin sends Google only the address or the coordinates stored in the block, plus the zoom level.
 
 Provided by Google. Terms: https://policies.google.com/terms and https://www.youtube.com/t/terms — Privacy policy: https://policies.google.com/privacy
+
+= Google Maps Embed API =
+
+Only used if you enter a Google Maps API key in Settings > Integrations. There is no key by default and this service is not contacted until you set one.
+
+With a key set, Map blocks are embedded from the Google Maps Embed API (https://www.google.com/maps/embed/v1/place) instead of the keyless Google Maps embed, both on the public page and in the block editor preview. The plugin sends Google your API key, the address or coordinates stored in the block, and the zoom level.
+
+Provided by Google. Terms: https://policies.google.com/terms and https://cloud.google.com/maps-platform/terms — Privacy policy: https://policies.google.com/privacy
 
 == Screenshots ==
 

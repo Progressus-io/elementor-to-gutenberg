@@ -261,6 +261,103 @@ class Gutenberg {
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_converted_page_css' ), 9999 );
 		add_filter( 'wp_theme_json_data_default', array( $this, 'inject_elementor_typography_theme_json' ) );
 		add_filter( 'wp_resource_hints', array( $this, 'add_font_resource_hints' ), 10, 2 );
+		add_filter( 'render_block_blockshift/google-map', array( $this, 'apply_google_maps_api_key' ), 10, 2 );
+	}
+
+	/**
+	 * Swap a Map block's keyless embed for the Google Maps Embed API when the
+	 * site owner has stored an API key.
+	 *
+	 * The key is applied here, at render time, and never written into post
+	 * content: saved markup stays byte-identical, every already-converted page
+	 * picks the key up at once, and clearing the key restores the keyless embed
+	 * without touching a single post. With no key stored this returns the block
+	 * exactly as it was saved.
+	 *
+	 * @param string               $block_content Rendered block HTML.
+	 * @param array<string, mixed> $block         Parsed block, including its attributes.
+	 *
+	 * @return string
+	 */
+	public function apply_google_maps_api_key( $block_content, $block ): string {
+		$block_content = (string) $block_content;
+
+		$api_key = Admin_Settings::get_google_maps_api_key();
+		if ( '' === $api_key ) {
+			return $block_content;
+		}
+
+		$attributes = isset( $block['attrs'] ) && is_array( $block['attrs'] ) ? $block['attrs'] : array();
+
+		$src = self::build_google_maps_embed_src( $attributes, $api_key );
+		if ( '' === $src ) {
+			return $block_content;
+		}
+
+		$replaced = preg_replace_callback(
+			'#(<iframe\b[^>]*\ssrc=")https://maps\.google\.com/maps\?[^"]*(")#i',
+			static function ( $matches ) use ( $src ) {
+				return $matches[1] . esc_url( $src ) . $matches[2];
+			},
+			$block_content,
+			1
+		);
+
+		return null === $replaced ? $block_content : $replaced;
+	}
+
+	/**
+	 * Build a Maps Embed API URL from a Map block's attributes.
+	 *
+	 * Mirrors the attribute precedence in src/blocks/google-map/save.js: the
+	 * `location` object wins over the legacy flat attributes, and coordinates win
+	 * over the address.
+	 *
+	 * @param array<string, mixed> $attributes Block attributes.
+	 * @param string               $api_key    Google Maps API key.
+	 *
+	 * @return string Embed URL, or an empty string when the block has no location.
+	 */
+	private static function build_google_maps_embed_src( array $attributes, string $api_key ): string {
+		$location = isset( $attributes['location'] ) && is_array( $attributes['location'] ) ? $attributes['location'] : array();
+
+		$address = '';
+		if ( isset( $location['address'] ) && '' !== $location['address'] ) {
+			$address = (string) $location['address'];
+		} elseif ( isset( $attributes['address'] ) ) {
+			$address = (string) $attributes['address'];
+		}
+
+		$lat = null;
+		if ( isset( $location['lat'] ) && null !== $location['lat'] && '' !== $location['lat'] ) {
+			$lat = (float) $location['lat'];
+		} elseif ( isset( $attributes['lat'] ) && null !== $attributes['lat'] && '' !== $attributes['lat'] ) {
+			$lat = (float) $attributes['lat'];
+		}
+
+		$lng = null;
+		if ( isset( $location['lng'] ) && null !== $location['lng'] && '' !== $location['lng'] ) {
+			$lng = (float) $location['lng'];
+		} elseif ( isset( $attributes['lng'] ) && null !== $attributes['lng'] && '' !== $attributes['lng'] ) {
+			$lng = (float) $attributes['lng'];
+		}
+
+		$zoom = isset( $attributes['zoom'] ) ? (int) $attributes['zoom'] : 14;
+		if ( $zoom < 1 || $zoom > 21 ) {
+			$zoom = 14;
+		}
+
+		if ( null !== $lat && null !== $lng ) {
+			$query = $lat . ',' . $lng;
+		} elseif ( '' !== $address ) {
+			$query = $address;
+		} else {
+			return '';
+		}
+
+		return 'https://www.google.com/maps/embed/v1/place?key=' . rawurlencode( $api_key )
+			. '&q=' . rawurlencode( $query )
+			. '&zoom=' . $zoom;
 	}
 
 	/**
@@ -274,7 +371,37 @@ class Gutenberg {
 			BLOCKSHIFT_VERSION
 		);
 
+		$this->expose_google_maps_api_key_to_editor();
+
 		$this->enqueue_converted_post_fonts( $this->detect_editor_post_id() );
+	}
+
+	/**
+	 * Make the optional Google Maps API key readable by the Map block's editor
+	 * component, so the editor preview matches what the front end will render.
+	 *
+	 * The key is not part of any block attribute and is never written into post
+	 * content; it only reaches users who can already edit content.
+	 */
+	private function expose_google_maps_api_key_to_editor(): void {
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			return;
+		}
+
+		if ( ! wp_script_is( 'wp-blocks', 'registered' ) ) {
+			return;
+		}
+
+		wp_add_inline_script(
+			'wp-blocks',
+			'window.blockshiftGoogleMap = ' . wp_json_encode(
+				array(
+					'apiKey'      => Admin_Settings::get_google_maps_api_key(),
+					'settingsUrl' => admin_url( 'admin.php?page=blockshift-settings' ),
+				)
+			) . ';',
+			'before'
+		);
 	}
 
 	/**
