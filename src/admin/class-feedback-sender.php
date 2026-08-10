@@ -1,6 +1,4 @@
 <?php
-// phpcs:ignoreFile
-
 /**
  * Sends a feedback manifest to the ETG Feedback Receiver.
  *

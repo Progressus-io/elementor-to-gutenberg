@@ -1,6 +1,4 @@
 <?php
-// phpcs:ignoreFile
-
 /**
  * Assembles the feedback manifest from the job transient and available post meta.
  *
@@ -50,7 +48,7 @@ class Feedback_Builder {
 		$total_job_items = self::count_job_items( $job );
 		$item_count      = count( $selected_source_ids );
 
-		if ( $item_count === 1 ) {
+		if ( 1 === $item_count ) {
 			$scope = 'single_item';
 		} elseif ( $item_count >= $total_job_items ) {
 			$scope = 'run';
@@ -106,6 +104,8 @@ class Feedback_Builder {
 
 	/**
 	 * Count total items across pages + templates in a job.
+	 *
+	 * @param array<string,mixed> $job Job transient array.
 	 */
 	private static function count_job_items( array $job ): int {
 		$pages   = is_array( $job['pages'] ?? null ) ? count( $job['pages'] ) : 0;
@@ -124,15 +124,15 @@ class Feedback_Builder {
 		$theme = wp_get_theme();
 
 		return array(
-			'site_url_hash'              => hash( 'sha256', (string) home_url() ),
-			'site_domain'                => (string) wp_parse_url( home_url(), PHP_URL_HOST ),
-			'plugin_version'             => BLOCKSHIFT_VERSION,
-			'wordpress_version'          => get_bloginfo( 'version' ),
-			'php_version'                => PHP_VERSION,
-			'active_theme'               => (string) $theme->get( 'Name' ),
+			'site_url_hash'               => hash( 'sha256', (string) home_url() ),
+			'site_domain'                 => (string) wp_parse_url( home_url(), PHP_URL_HOST ),
+			'plugin_version'              => BLOCKSHIFT_VERSION,
+			'wordpress_version'           => get_bloginfo( 'version' ),
+			'php_version'                 => PHP_VERSION,
+			'active_theme'                => (string) $theme->get( 'Name' ),
 			'active_theme_is_block_theme' => wp_is_block_theme(),
-			'is_multisite'               => is_multisite(),
-			'locale'                     => get_locale(),
+			'is_multisite'                => is_multisite(),
+			'locale'                      => get_locale(),
 		);
 	}
 
@@ -272,11 +272,11 @@ class Feedback_Builder {
 				'item_rating'               => $item_rating,
 				'item_note'                 => $item_note,
 
-				'elementor_json'   => $elementor_json,
-				'gutenberg_markup' => $gutenberg_markup,
-				'widget_log'       => $widget_log,
-				'item_log_entries' => $item_log_entries,
-				'failure_results'  => $failure_results,
+				'elementor_json'            => $elementor_json,
+				'gutenberg_markup'          => $gutenberg_markup,
+				'widget_log'                => $widget_log,
+				'item_log_entries'          => $item_log_entries,
+				'failure_results'           => $failure_results,
 			);
 		}
 
