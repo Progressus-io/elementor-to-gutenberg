@@ -25,6 +25,7 @@ use function get_edit_post_link;
 use function get_option;
 use function get_the_title;
 use function update_option;
+use function wp_delete_file;
 use function wp_die;
 use function wp_kses;
 use function wp_nonce_field;
@@ -129,16 +130,22 @@ class Conversion_Log_Admin {
 
 		delete_option( self::OPTION_LOG );
 
-		$_jsonl = Diagnostic_Logger::log_path();
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_exists
-		if ( file_exists( $_jsonl ) ) {
-			// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
-			unlink( $_jsonl );
-		}
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_exists
-		if ( file_exists( $_jsonl . '.1' ) ) {
-			// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
-			unlink( $_jsonl . '.1' );
+		$jsonl = Diagnostic_Logger::log_path();
+
+		// The legacy path is included so "Clear log" also removes a file left
+		// in the old, publicly readable location by a pre-1.0.1 install.
+		$targets = array(
+			$jsonl,
+			$jsonl . '.1',
+			Diagnostic_Logger::legacy_log_path(),
+			Diagnostic_Logger::legacy_log_path() . '.1',
+		);
+
+		foreach ( $targets as $target ) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_exists -- wp_delete_file() below is the WordPress API for the deletion itself; there is no wrapped existence test, and a missing file must not raise a notice.
+			if ( file_exists( $target ) ) {
+				wp_delete_file( $target );
+			}
 		}
 
 		wp_safe_redirect(

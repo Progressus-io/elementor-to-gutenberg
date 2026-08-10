@@ -94,6 +94,7 @@ class Data_Migration {
 		'migrate_page_template_assignments',
 		'migrate_post_content',
 		'migrate_external_css',
+		'secure_diagnostic_log',
 	);
 
 	/**
@@ -508,5 +509,55 @@ class Data_Migration {
 		);
 
 		wp_cache_set_posts_last_changed();
+	}
+
+	/**
+	 * Take the diagnostic log out of web reach.
+	 *
+	 * Before 1.0.1 the log was written to `uploads/blockshift/conversion-log.jsonl`,
+	 * a directory the plugin serves generated stylesheets from, with no index
+	 * file and no deny rule - so anyone could read it. This step creates the
+	 * new protected directory and moves any existing log into it, keeping the
+	 * administrator's history while removing the readable copy. If a log
+	 * already exists at the new path the stale public one is deleted rather
+	 * than merged, because leaving it behind would leave the exposure in place.
+	 *
+	 * @return void
+	 */
+	private static function secure_diagnostic_log(): void {
+		Diagnostic_Logger::harden_log_dir();
+
+		global $wp_filesystem;
+		if ( ! $wp_filesystem ) {
+			require_once ABSPATH . 'wp-admin/includes/file.php';
+			WP_Filesystem();
+		}
+
+		if ( ! $wp_filesystem ) {
+			return;
+		}
+
+		$pairs = array(
+			array( Diagnostic_Logger::legacy_log_path(), Diagnostic_Logger::log_path() ),
+			array( Diagnostic_Logger::legacy_log_path() . '.1', Diagnostic_Logger::log_path() . '.1' ),
+		);
+
+		foreach ( $pairs as $pair ) {
+			list( $legacy, $target ) = $pair;
+
+			if ( ! $wp_filesystem->exists( $legacy ) ) {
+				continue;
+			}
+
+			if ( $wp_filesystem->exists( $target ) ) {
+				$wp_filesystem->delete( $legacy );
+				continue;
+			}
+
+			if ( ! $wp_filesystem->move( $legacy, $target ) ) {
+				// Moving failed for some reason; the exposure still has to go.
+				$wp_filesystem->delete( $legacy );
+			}
+		}
 	}
 }

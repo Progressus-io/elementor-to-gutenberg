@@ -114,15 +114,16 @@ class Admin_Settings {
 	}
 
 	/**
-	 * Whether conversion logging is enabled (defaults to true on first install).
+	 * Whether conversion logging is enabled.
+	 *
+	 * Opt-in. The diagnostic log records the titles and IDs of every converted
+	 * item, including drafts and private posts, so it is not written until an
+	 * administrator asks for it on the settings screen. An explicit saved
+	 * choice - on or off - is always honoured; only the never-saved case
+	 * changed, and it now means off.
 	 */
 	public static function is_logging_enabled(): bool {
-		$val = get_option( self::OPTION_CONVERSION_LOGGING, null );
-		// Default to enabled when option has never been saved.
-		if ( null === $val ) {
-			return true;
-		}
-		return (bool) $val;
+		return (bool) get_option( self::OPTION_CONVERSION_LOGGING, false );
 	}
 
 	/**
@@ -761,7 +762,7 @@ class Admin_Settings {
                                             printf(
                                                 wp_kses(
                                                     /* translators: %s: URL to Conversion Log page */
-                                                    __( 'When enabled, each conversion records which widgets were converted, unsupported, or produced empty output. View the results in the <a href="%s">Conversion Log</a>. The log keeps the last 300 entries and does not affect conversion speed.', 'migrate-off-elementor' ),
+                                                    __( 'Off by default. When enabled, each conversion records which widgets were converted, unsupported, or produced empty output, together with the title and ID of every converted item - including drafts and private posts. View the results in the <a href="%s">Conversion Log</a>. The log keeps the last 300 entries, is written to a protected directory that is not served over the web, and does not affect conversion speed.', 'migrate-off-elementor' ),
                                                     array( 'a' => array( 'href' => array() ) )
                                                 ),
                                                 esc_url( admin_url( 'admin.php?page=blockshift-conversion-log' ) )
