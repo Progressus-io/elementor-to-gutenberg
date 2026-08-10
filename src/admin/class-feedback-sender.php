@@ -23,7 +23,7 @@ class Feedback_Sender {
 	/**
 	 * Hardcoded receiver endpoint — never changeable by site admins.
 	 */
-	const RECEIVER_URL = 'https://block-shift.com/wp-json/metg-feedback/v1/submit';
+	const RECEIVER_URL = 'https://block-shift.com/wp-json/etg-feedback/v1/submit';
 
 	/**
 	 * WP option key that stores the auto-generated client credentials.
