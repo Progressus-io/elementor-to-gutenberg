@@ -113,6 +113,12 @@
 				defaults: { header: 0, footer: 0 },
 				counts: { headers: 0, footers: 0 },
 			};
+			// The server refuses these two operations without the matching
+			// capability, so the wizard must not offer them either. Default to
+			// false: an unknown capability is not a granted one.
+			this.userCanSwitchTheme = !! config.userCanSwitchTheme;
+			this.userCanManageTemplateParts =
+				!! config.userCanManageTemplateParts;
 			this.state = {
 				currentStep: 'mode',
 				mode: 'auto',
@@ -390,6 +396,9 @@
 		}
 
 		getSelectedTemplateIds( type ) {
+			if ( ! this.userCanManageTemplateParts ) {
+				return [];
+			}
 			const set =
 				type === 'header'
 					? this.state.selectedHeaderIds
@@ -444,9 +453,14 @@
 				return [ 'progress' ];
 			}
 
-			const steps = [ 'mode', 'theme' ];
+			const steps = [ 'mode' ];
+			if ( this.userCanSwitchTheme ) {
+				steps.push( 'theme' );
+			}
 			if ( this.state.mode === 'custom' ) {
-				steps.push( 'templates' );
+				if ( this.userCanManageTemplateParts ) {
+					steps.push( 'templates' );
+				}
 				steps.push( 'select' );
 			}
 			if ( this.shouldShowConflictStep() ) {
@@ -693,6 +707,10 @@
 		}
 
 		getThemePayload() {
+			if ( ! this.userCanSwitchTheme ) {
+				return { changeTheme: 0 };
+			}
+
 			const willChange = this.willChangeTheme();
 			const payload = {
 				changeTheme: willChange ? 1 : 0,
@@ -740,8 +758,12 @@
 
 			payload.headerTemplates = selectedHeaders;
 			payload.footerTemplates = selectedFooters;
-			payload.defaultHeader = this.state.defaultHeaderId || 0;
-			payload.defaultFooter = this.state.defaultFooterId || 0;
+			payload.defaultHeader = this.userCanManageTemplateParts
+				? this.state.defaultHeaderId || 0
+				: 0;
+			payload.defaultFooter = this.userCanManageTemplateParts
+				? this.state.defaultFooterId || 0
+				: 0;
 
 			this.request( 'blockshift_start_job', payload )
 				.then( ( response ) => {

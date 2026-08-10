@@ -226,26 +226,54 @@ class Batch_Convert_Wizard {
 			true
 		);
 
-		$pages_data = $this->get_elementor_pages_data();
+		$pages_data      = $this->get_elementor_pages_data();
+		$can_switch      = self::current_user_can_switch_theme();
+		$can_manage_tpls = self::current_user_can_manage_template_parts();
 
 		wp_localize_script(
 			'blockshift-batch-wizard',
 			'blockshiftBatchWizard',
 			array(
-				'ajaxUrl'          => admin_url( 'admin-ajax.php' ),
-				'nonce'            => wp_create_nonce( self::NONCE_ACTION ),
-				'pages'            => $pages_data,
-				'postTypes'        => $this->get_post_types_descriptor( $pages_data ),
-				'strings'          => $this->get_strings(),
-				'templates'        => $this->get_header_footer_templates_data(),
-				'themes'           => $this->get_theme_compatibility_data(),
-				'activeJob'        => $this->get_active_job_for_user(),
-				'userCanEdit'      => current_user_can( 'edit_pages' ),
-				'maxBatchSize'     => 1,
-				'preflight'        => $this->build_preflight_summary(),
-				'feedbackNonce'    => wp_create_nonce( self::FEEDBACK_NONCE_ACTION ),
-				'feedbackEnabled'  => true,
+				'ajaxUrl'                    => admin_url( 'admin-ajax.php' ),
+				'nonce'                      => wp_create_nonce( self::NONCE_ACTION ),
+				'pages'                      => $pages_data,
+				'postTypes'                  => $this->get_post_types_descriptor( $pages_data ),
+				'strings'                    => $this->get_strings(),
+				// The theme picker and the header/footer picker drive operations
+				// the server now refuses without these capabilities, so the data
+				// behind them is not shipped to a browser that cannot use it.
+				'templates'                  => $can_manage_tpls ? $this->get_header_footer_templates_data() : $this->empty_templates_data(),
+				'themes'                     => $can_switch ? $this->get_theme_compatibility_data() : array(),
+				'activeJob'                  => $this->get_active_job_for_user(),
+				'userCanEdit'                => current_user_can( 'edit_pages' ),
+				'userCanSwitchTheme'         => $can_switch,
+				'userCanManageTemplateParts' => $can_manage_tpls,
+				'maxBatchSize'               => 1,
+				'preflight'                  => $this->build_preflight_summary(),
+				'feedbackNonce'              => wp_create_nonce( self::FEEDBACK_NONCE_ACTION ),
+				'feedbackEnabled'            => true,
 			)
+		);
+	}
+
+	/**
+	 * The shape `get_header_footer_templates_data()` returns, with nothing in it.
+	 *
+	 * Used when the current user may not manage template parts, so the wizard
+	 * script sees a well-formed but empty payload rather than a missing key.
+	 */
+	private function empty_templates_data(): array {
+		return array(
+			'headers'  => array(),
+			'footers'  => array(),
+			'defaults' => array(
+				'header' => 0,
+				'footer' => 0,
+			),
+			'counts'   => array(
+				'headers' => 0,
+				'footers' => 0,
+			),
 		);
 	}
 
@@ -284,7 +312,9 @@ class Batch_Convert_Wizard {
 			array(
 				'pages'     => $pages_data,
 				'postTypes' => $this->get_post_types_descriptor( $pages_data ),
-				'templates' => $this->get_header_footer_templates_data(),
+				'templates' => self::current_user_can_manage_template_parts()
+					? $this->get_header_footer_templates_data()
+					: $this->empty_templates_data(),
 				'preflight' => $this->build_preflight_summary(),
 			)
 		);
@@ -333,6 +363,32 @@ class Batch_Convert_Wizard {
 		$selected_page_ids = array_map( 'absint', (array) $raw_pages );
 		$selected_headers  = $this->normalize_template_selection( $raw_headers );
 		$selected_footers  = $this->normalize_template_selection( $raw_footers );
+
+		// A request that asks for a site-wide appearance change is refused
+		// outright unless the caller holds the capability core requires for it.
+		// Converting pages needs no such capability and keeps working.
+		if ( $change_theme && ! self::current_user_can_switch_theme() ) {
+			wp_send_json_error(
+				array(
+					'message' => esc_html__( 'You do not have permission to change the site theme.', 'migrate-off-elementor' ),
+				),
+				403
+			);
+		}
+
+		$requested_template_work = ! empty( $selected_headers )
+			|| ! empty( $selected_footers )
+			|| $default_header > 0
+			|| $default_footer > 0;
+
+		if ( $requested_template_work && ! self::current_user_can_manage_template_parts() ) {
+			wp_send_json_error(
+				array(
+					'message' => esc_html__( 'You do not have permission to manage template parts.', 'migrate-off-elementor' ),
+				),
+				403
+			);
+		}
 
 		if ( 'auto' === $mode ) {
 			$all_pages         = $this->get_elementor_pages_data();
@@ -864,6 +920,28 @@ class Batch_Convert_Wizard {
 		}
 
 		check_ajax_referer( self::NONCE_ACTION, self::NONCE_NAME );
+	}
+
+	/**
+	 * Whether the current user may change which theme the site runs.
+	 *
+	 * `edit_pages` is not that permission. Core reserves theme switching for
+	 * `switch_themes` and refuses everyone else at `themes.php`; the wizard
+	 * draws the same line rather than a wider one.
+	 */
+	public static function current_user_can_switch_theme(): bool {
+		return current_user_can( 'switch_themes' );
+	}
+
+	/**
+	 * Whether the current user may create or rename `wp_template_part` posts.
+	 *
+	 * The `wp_template_part` post type maps its capabilities onto
+	 * `edit_theme_options`, and a converted part renamed to `header` or
+	 * `footer` becomes the site-wide header or footer of a block theme.
+	 */
+	public static function current_user_can_manage_template_parts(): bool {
+		return current_user_can( 'edit_theme_options' );
 	}
 
 	/**
@@ -1697,6 +1775,12 @@ class Batch_Convert_Wizard {
 			if ( ! in_array( get_post_type( $post ), $convertible, true ) ) {
 				continue;
 			}
+			// Convertible post types are discovered dynamically, so the wizard
+			// can surface a type whose own capabilities the caller does not
+			// hold. Ask per item rather than trusting the edit_pages gate.
+			if ( ! Admin_Settings::current_user_can_convert_post( (int) $page_id, (string) get_post_type( $post ) ) ) {
+				continue;
+			}
 
 			$pages[] = array(
 				'id'    => (int) $page_id,
@@ -1744,6 +1828,18 @@ class Batch_Convert_Wizard {
 	 * Prepare job templates configuration.
 	 */
 	private function prepare_job_templates( string $mode, array $selected_headers, array $selected_footers, int $default_header, int $default_footer ): array {
+		// Auto mode selects every detected template when the request names
+		// none, so the capability has to be re-checked here and not only
+		// against what the request explicitly asked for.
+		if ( ! self::current_user_can_manage_template_parts() ) {
+			return array(
+				'headers'        => array(),
+				'footers'        => array(),
+				'default_header' => 0,
+				'default_footer' => 0,
+			);
+		}
+
 		$detected     = $this->get_header_footer_templates_raw();
 		$header_index = array();
 		foreach ( $detected['headers'] as $template ) {
@@ -1997,6 +2093,15 @@ class Batch_Convert_Wizard {
 			return true;
 		}
 
+		// Last line of defence: whatever route reached here, switching the
+		// site's theme requires the capability core requires for it.
+		if ( ! self::current_user_can_switch_theme() ) {
+			return new WP_Error(
+				'blockshift-theme-switch-permissions',
+				esc_html__( 'You do not have permission to change the site theme.', 'migrate-off-elementor' )
+			);
+		}
+
 		$current_stylesheet = get_stylesheet();
 		if ( $new_theme === $current_stylesheet ) {
 			return true;
@@ -2092,7 +2197,7 @@ class Batch_Convert_Wizard {
 			return true;
 		}
 
-		if ( ! current_user_can( 'install_themes' ) ) {
+		if ( ! current_user_can( 'install_themes' ) || ! self::current_user_can_switch_theme() ) {
 			return new WP_Error(
 				'blockshift-theme-install-permissions',
 				esc_html__( 'You do not have permission to install themes.', 'migrate-off-elementor' )
@@ -2612,6 +2717,12 @@ class Batch_Convert_Wizard {
 	 * Create or update a template part post for the converted template.
 	 */
 	private function save_template_part( array $template_info, WP_Post $source_post, string $content, int $existing_target ): int {
+		// wp_template_part maps its capabilities onto edit_theme_options; a
+		// caller without it does not get to write one, by any route.
+		if ( ! self::current_user_can_manage_template_parts() ) {
+			return 0;
+		}
+
 		$slug = sanitize_title( sprintf( 'converted-%s-%d', $template_info['type'], $source_post->ID ) );
 
 		/* translators: 1: template type (Header or Footer), 2: template title */
@@ -2681,6 +2792,12 @@ class Batch_Convert_Wizard {
 	 * @param int $target_id Template part post ID.
 	 */
 	private function force_block_theme_default_header( int $target_id ): void {
+		// Renaming a part to `header` makes it the site-wide header of a block
+		// theme, which is an edit_theme_options action.
+		if ( ! self::current_user_can_manage_template_parts() ) {
+			return;
+		}
+
 		if ( ! function_exists( 'wp_is_block_theme' ) || ! wp_is_block_theme() ) {
 			return;
 		}
@@ -2749,6 +2866,12 @@ class Batch_Convert_Wizard {
 	 * @param int $target_id Template part post ID.
 	 */
 	private function force_block_theme_default_footer( int $target_id ): void {
+		// Renaming a part to `footer` makes it the site-wide footer of a block
+		// theme, which is an edit_theme_options action.
+		if ( ! self::current_user_can_manage_template_parts() ) {
+			return;
+		}
+
 		if ( ! function_exists( 'wp_is_block_theme' ) || ! wp_is_block_theme() ) {
 			return;
 		}
