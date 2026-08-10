@@ -1,5 +1,30 @@
 import { RichText } from '@wordpress/block-editor';
 
+/**
+ * Turn a CSS declaration string into the style object React expects.
+ *
+ * @param {string} str Declarations, e.g. "width:35px;height:auto;".
+ *
+ * @return {Object} Style object.
+ */
+const parseStyleString = ( str ) => {
+	return String( str )
+		.split( ';' )
+		.reduce( ( acc, rule ) => {
+			const parts = rule.split( ':' );
+			const prop = parts[ 0 ] ? parts[ 0 ].trim() : '';
+			const val = parts[ 1 ] ? parts.slice( 1 ).join( ':' ).trim() : '';
+			if ( ! prop || ! val ) {
+				return acc;
+			}
+			const jsProp = prop.replace( /-([a-z])/g, function ( _, c ) {
+				return c.toUpperCase();
+			} );
+			acc[ jsProp ] = val;
+			return acc;
+		}, {} );
+};
+
 export default function save( { attributes } ) {
 	const {
 		icon,
@@ -23,11 +48,29 @@ export default function save( { attributes } ) {
 		className,
 	] ).join( ' ' );
 
-	const iconHtml = svgUrl
-		? `<img src="${ svgUrl }" alt="" style="${
-				svgStyle ? svgStyle : `width:${ size }px;height:auto;`
-		  }" class="svg-icon" />`
-		: `<i class="${ iconStyle } ${ icon }" style="font-size:${ size }px;"></i>`;
+	// Built as elements rather than as a string of HTML: these values reach the
+	// block from the converter and from the media library, and interpolating
+	// them into attribute positions in a raw HTML string is what let a value
+	// containing a quote escape its attribute. React escapes each one for the
+	// context it lands in. The previous markup is preserved in deprecated.js so
+	// icon boxes already in posts keep validating.
+	const iconElement = svgUrl ? (
+		<img
+			src={ svgUrl }
+			alt=""
+			style={
+				svgStyle
+					? parseStyleString( svgStyle )
+					: { width: `${ size }px`, height: 'auto' }
+			}
+			className="svg-icon"
+		/>
+	) : (
+		<i
+			className={ `${ iconStyle } ${ icon }` }
+			style={ { fontSize: `${ size }px` } }
+		/>
+	);
 
 	return (
 		<div
@@ -35,10 +78,7 @@ export default function save( { attributes } ) {
 			style={ { textAlign: alignment } }
 			id={ anchor || undefined }
 		>
-			<div
-				className="icon-box-icon"
-				dangerouslySetInnerHTML={ { __html: iconHtml } }
-			/>
+			<div className="icon-box-icon">{ iconElement }</div>
 			{ title && (
 				<RichText.Content
 					tagName="h3"
