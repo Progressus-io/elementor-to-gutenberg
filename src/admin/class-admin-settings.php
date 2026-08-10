@@ -488,7 +488,8 @@ class Admin_Settings {
 	 * @return string The processed Gutenberg content or existing option.
 	 */
 	public function handle_json_upload( $option ): string {
-		if ( empty( $_FILES['json_upload']['tmp_name'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing
+		// phpcs:disable WordPress.Security.NonceVerification.Missing -- The Settings API verifies the option-save nonce.
+		if ( empty( $_FILES['json_upload']['tmp_name'] ) ) {
 			// return a string to satisfy the declared return type.
 			if ( is_string( $option ) ) {
 				return $option;
@@ -497,7 +498,19 @@ class Admin_Settings {
 			return get_option( 'blockshift_json_data', '' );
 		}
 
-		$json_content = File_Upload_Service::upload_file( $_FILES['json_upload'], 'json' ); // phpcs:ignore WordPress.Security.NonceVerification.Missing
+		// Accept only a genuine PHP upload, never an arbitrary server path, and sanitize the fields.
+		$tmp_name = sanitize_text_field( wp_unslash( $_FILES['json_upload']['tmp_name'] ) );
+		if ( '' === $tmp_name || ! is_uploaded_file( $tmp_name ) ) {
+			return get_option( 'blockshift_json_data', '' );
+		}
+
+		$file = array(
+			'name'     => isset( $_FILES['json_upload']['name'] ) ? sanitize_file_name( wp_unslash( $_FILES['json_upload']['name'] ) ) : '',
+			'tmp_name' => $tmp_name,
+		);
+		// phpcs:enable WordPress.Security.NonceVerification.Missing
+
+		$json_content = File_Upload_Service::upload_file( $file, 'json' );
 		if ( null === $json_content ) {
 			return get_option( 'blockshift_json_data', '' );
 		}
@@ -708,6 +721,7 @@ class Admin_Settings {
 	 */
 	public function convert_json_to_gutenberg_content( array $json_data ): string {
 		$this->external_css_collector = new External_Style_Collector();
+		External_Style_Collector::set_active( $this->external_css_collector );
 		Block_Builder::bootstrap( $this->external_css_collector );
 
 		$this->conversion_log = self::is_logging_enabled() ? new Conversion_Log() : null;
