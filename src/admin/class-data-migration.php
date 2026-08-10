@@ -25,7 +25,9 @@
  *   features that no longer ship. Nothing reads a renamed equivalent, so
  *   renaming them would achieve nothing.
  *
- * The whole pass is guarded by an option so it runs at most once per site.
+ * The pass runs as a sequence of steps, each of which records its own
+ * completion the moment it finishes. An interrupted request therefore resumes
+ * where it stopped instead of re-running everything from the top.
  *
  * @package Progressus\BlockShift
  */
@@ -36,6 +38,7 @@ use function add_option;
 use function basename;
 use function clean_post_cache;
 use function current_user_can;
+use function delete_option;
 use function get_option;
 use function glob;
 use function is_admin;
@@ -63,9 +66,50 @@ class Data_Migration {
 	const VERSION_OPTION = 'blockshift_data_version';
 
 	/**
-	 * Marker stored once the migration has run for the rename.
+	 * Marker stored once every step below has run.
 	 */
-	const TARGET_VERSION = '2024-rename-blockshift';
+	const TARGET_VERSION = '2026-08-scope-and-log';
+
+	/**
+	 * Marker written by the original all-or-nothing rename pass. A site
+	 * carrying it has already had the six rename steps applied.
+	 */
+	const LEGACY_RENAME_VERSION = '2024-rename-blockshift';
+
+	/**
+	 * Option holding the steps that have completed so far, so an interrupted
+	 * run resumes rather than restarting. Removed once the pass finishes.
+	 */
+	const STEPS_OPTION = 'blockshift_data_migration_steps';
+
+	/**
+	 * Steps, in order. Each is a private method on this class.
+	 *
+	 * @var string[]
+	 */
+	private const STEPS = array(
+		'migrate_postmeta_keys',
+		'migrate_usermeta_keys',
+		'migrate_option_names',
+		'migrate_page_template_assignments',
+		'migrate_post_content',
+		'migrate_external_css',
+	);
+
+	/**
+	 * The steps that the original rename pass already performed. A site holding
+	 * LEGACY_RENAME_VERSION does not need them run again.
+	 *
+	 * @var string[]
+	 */
+	private const LEGACY_RENAME_STEPS = array(
+		'migrate_postmeta_keys',
+		'migrate_usermeta_keys',
+		'migrate_option_names',
+		'migrate_page_template_assignments',
+		'migrate_post_content',
+		'migrate_external_css',
+	);
 
 	/**
 	 * Option names this plugin created before the rename, mapped to the names
@@ -160,7 +204,8 @@ class Data_Migration {
 	);
 
 	/**
-	 * Run the migration once, in the admin, for users who can manage options.
+	 * Run any outstanding migration steps, in the admin, for users who can
+	 * manage options.
 	 *
 	 * @return void
 	 */
@@ -177,18 +222,62 @@ class Data_Migration {
 			return;
 		}
 
-		self::migrate_postmeta_keys();
-		self::migrate_usermeta_keys();
-		self::migrate_option_names();
-		self::migrate_page_template_assignments();
-		self::migrate_post_content();
-		self::migrate_external_css();
+		$completed = self::get_completed_steps();
 
-		// Record completion (add_option first run, update_option afterwards).
+		foreach ( self::STEPS as $step ) {
+			if ( in_array( $step, $completed, true ) ) {
+				continue;
+			}
+
+			self::$step();
+
+			// Recorded immediately, so a timeout or a fatal in a later step
+			// cannot cause this one to run twice.
+			$completed[] = $step;
+			self::set_completed_steps( $completed );
+		}
+
 		if ( false === get_option( self::VERSION_OPTION, false ) ) {
 			add_option( self::VERSION_OPTION, self::TARGET_VERSION, '', false );
 		} else {
 			update_option( self::VERSION_OPTION, self::TARGET_VERSION, false );
+		}
+
+		delete_option( self::STEPS_OPTION );
+	}
+
+	/**
+	 * The steps that have already run on this site.
+	 *
+	 * A site that completed the original all-or-nothing rename pass carries
+	 * only its version marker, so the rename steps are treated as done and
+	 * just the newer steps run.
+	 *
+	 * @return string[]
+	 */
+	private static function get_completed_steps(): array {
+		$completed = get_option( self::STEPS_OPTION, array() );
+		$completed = is_array( $completed ) ? array_values( array_filter( $completed, 'is_string' ) ) : array();
+
+		if ( empty( $completed ) && self::LEGACY_RENAME_VERSION === get_option( self::VERSION_OPTION ) ) {
+			$completed = self::LEGACY_RENAME_STEPS;
+		}
+
+		return $completed;
+	}
+
+	/**
+	 * Persist the completed-step list.
+	 *
+	 * @param string[] $completed Completed step names.
+	 *
+	 * @return void
+	 */
+	private static function set_completed_steps( array $completed ): void {
+		if ( false === get_option( self::STEPS_OPTION, false ) ) {
+			add_option( self::STEPS_OPTION, $completed, '', false );
+		} else {
+			update_option( self::STEPS_OPTION, $completed, false );
 		}
 	}
 
