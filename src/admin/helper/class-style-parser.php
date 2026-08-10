@@ -2324,19 +2324,18 @@ class Style_Parser {
 	 * @param string $css CSS string to append.
 	 */
 	public static function save_custom_css( string $css ): void {
+		// Migrated custom CSS is page-specific author input (e.g. a rule the user
+		// wrote for one page). Route it into the active per-page stylesheet so it
+		// loads ONLY on the converted page and never leaks site-wide. It is
+		// sanitized when that page's file is written (External_CSS_Service::save_post_css).
 		$css = trim( $css );
 		if ( '' === $css ) {
 			return;
 		}
 
-		if ( ! function_exists( 'wp_get_custom_css_post' ) || ! function_exists( 'wp_update_custom_css_post' ) ) {
-			return;
+		$collector = External_Style_Collector::get_active();
+		if ( null !== $collector ) {
+			$collector->add_raw_css( $css );
 		}
-
-		$customizer_css_post = wp_get_custom_css_post();
-		$existing_css        = $customizer_css_post ? (string) $customizer_css_post->post_content : '';
-		$new_css             = rtrim( $existing_css ) . "\n" . $css;
-
-		wp_update_custom_css_post( $new_css );
 	}
 }
