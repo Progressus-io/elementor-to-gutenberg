@@ -259,6 +259,10 @@ class Admin_Settings {
 			if ( empty( $json_data ) ) {
 				return $actions;
 			}
+			// Do not mint a nonce for a user the handler will refuse anyway.
+			if ( ! self::current_user_can_convert_post( (int) $post->ID ) ) {
+				return $actions;
+			}
 			$url                             = wp_nonce_url(
 				admin_url( 'admin-post.php?action=blockshift_convert_page&page_id=' . $post->ID ),
 				'blockshift_convert_page_' . $post->ID
@@ -273,22 +277,36 @@ class Admin_Settings {
 	/**
 	 * Handle the admin convert page action.
 	 *
+	 * Authorization is two-sided and both sides are required: the caller must be
+	 * able to edit the specific source post (which also denies anyone who cannot
+	 * read a private or draft source), and must hold the capability that lets
+	 * them publish the page this handler creates. A nonce proves intent, not
+	 * authority, so it is checked in addition to - never instead of - these.
+	 *
 	 * @return void
 	 */
 	public function blockshift_handle_convert_page() {
 		if ( ! isset( $_GET['page_id'] ) ) {
-			wp_die( 'Page ID missing.' );
+			wp_die( esc_html__( 'Page ID missing.', 'migrate-off-elementor' ) );
 		}
 
 		$page_id = absint( $_GET['page_id'] );
 
-		// Verify nonce
+		if ( ! self::current_user_can_convert_post( $page_id ) ) {
+			wp_die(
+				esc_html__( 'You do not have permission to convert this page.', 'migrate-off-elementor' ),
+				'',
+				array( 'response' => 403 )
+			);
+		}
+
+		// Verify nonce.
 		check_admin_referer( 'blockshift_convert_page_' . $page_id );
 
-		// Get JSON template stored in post meta
-		$json_data = get_post_meta( $page_id, '_elementor_data', true ); // Example for Elementor
+		// Get JSON template stored in post meta.
+		$json_data = get_post_meta( $page_id, '_elementor_data', true );
 		if ( empty( $json_data ) ) {
-			wp_die( 'No template JSON found for this page.' );
+			wp_die( esc_html__( 'No template JSON found for this page.', 'migrate-off-elementor' ) );
 		}
 
 		$data['content'] = json_decode( $json_data, true );
@@ -309,7 +327,45 @@ class Admin_Settings {
 			exit;
 		}
 
-		wp_die( 'Failed to create Gutenberg page.' );
+		wp_die( esc_html__( 'Failed to create Gutenberg page.', 'migrate-off-elementor' ) );
+	}
+
+	/**
+	 * Whether the current user may convert a specific source post.
+	 *
+	 * Two checks, both required:
+	 *
+	 * 1. `edit_post` on the source. This is the meta capability, so it resolves
+	 *    against the source's own post type, its author and its status - which
+	 *    is what stops a user who cannot read a draft or private post from
+	 *    republishing its contents through a conversion.
+	 * 2. The `publish_posts` capability of the post type the conversion writes
+	 *    into, because the conversion creates a published post.
+	 *
+	 * @param int    $source_id        Source post ID.
+	 * @param string $target_post_type Post type the conversion will create.
+	 *
+	 * @return bool
+	 */
+	public static function current_user_can_convert_post( int $source_id, string $target_post_type = 'page' ): bool {
+		if ( $source_id <= 0 ) {
+			return false;
+		}
+
+		if ( ! get_post( $source_id ) instanceof \WP_Post ) {
+			return false;
+		}
+
+		if ( ! current_user_can( 'edit_post', $source_id ) ) {
+			return false;
+		}
+
+		$target_type = get_post_type_object( $target_post_type );
+		if ( ! $target_type instanceof \WP_Post_Type ) {
+			return false;
+		}
+
+		return current_user_can( $target_type->cap->publish_posts );
 	}
 
 	/**
