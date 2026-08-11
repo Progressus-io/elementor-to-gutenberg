@@ -1,6 +1,6 @@
 === Migrate Off Elementor ===
 Contributors: shadim
-Tags: elementor, gutenberg, migration, conversion, blocks
+Tags: gutenberg, migration, conversion, blocks
 Requires at least: 6.7
 Tested up to: 7.0
 Stable tag: 1.0.0
@@ -12,155 +12,95 @@ Turn your Elementor pages into the built-in WordPress editor automatically — i
 
 == Description ==
 
-**Migrate Off Elementor** moves your Elementor pages over to the **built-in WordPress editor** (the "block editor", also called Gutenberg) — automatically, so you don't have to rebuild them by hand.
+Migrate Off Elementor converts Elementor pages into native WordPress blocks, in bulk or one page at a time, so you do not have to rebuild them by hand.
 
-If you've ever looked into leaving Elementor, you've probably heard the same disappointing answer: "there's no real converter, you'll have to rebuild every page yourself." Migrate Off Elementor is that missing converter. It reads how each Elementor page was built, recreates it using standard WordPress blocks, keeps the colors, fonts, and spacing, and saves it as a brand-new page. Your original Elementor page is left exactly as it is, so nothing breaks and you can compare the old and new versions side by side.
+It reads the Elementor data already stored on each page, rebuilds the layout with standard WordPress blocks plus a few of its own, carries over colors, fonts and spacing, and saves the result as a new page. The original is left in place, so you can compare the two and switch over when you are ready. Elementor does not need to be active for a conversion to run.
 
-Once a page is made of standard blocks, it no longer needs Elementor to display. That means lighter pages that load faster, one less big plugin to maintain, and content you can edit with the tools already built into WordPress.
+= What it can convert =
 
-= Why move to the block editor? =
+**Content:** headings, text, images, galleries and carousels, buttons, videos, icons, spacers, dividers, Google Maps, and shortcodes.
 
-Page builders are convenient, but they add a lot of weight. Every builder page loads the builder's own code on top of WordPress, which slows the site down, and it locks your content into a format only that builder understands. Moving to the built-in block editor fixes both problems:
-
-* **Faster pages.** Standard blocks output far less code, so pages load quicker for visitors and score better in speed tests.
-* **No lock-in.** Your content lives in plain WordPress. It keeps working with any modern theme, and you're not tied to one builder or its yearly fee.
-* **Easier editing.** The block editor is the same tool WordPress ships with, so anyone on your team can update a page without learning a builder first.
-* **Future-ready.** Blocks are where WordPress is heading, including full-site editing for headers, footers, and templates.
-
-= What we promise (and what we don't) =
-
-We promise to do the heavy lifting. Migrate Off Elementor reads your Elementor pages and rebuilds them as real blocks, carrying over the text, images, structure, and styling, so you skip the slow, error-prone job of recreating everything by hand.
-
-What we don't promise is a pixel-perfect copy on every page with zero effort. Elementor and the block editor are built differently, so a small amount of review and touch-up is normal, especially on complex layouts. The honest goal is to turn days of rebuilding into a few clicks plus a short review, and to make that review as painless as possible (more on that below).
-
-= About the results: why it isn't always 100% =
-
-Migrate Off Elementor gets most pages very close straight away. On busier, highly customised designs you may notice small differences in spacing, alignment, or a widget that has no exact block equivalent. This isn't a bug. It happens because the two systems handle layout and styling in different ways, so some things have to be approximated rather than copied one-to-one.
-
-Rather than pretend that never happens, Migrate Off Elementor is built to make the last mile quick:
-
-* **A conversion report.** After each page, the Conversion Log lists exactly which elements converted cleanly and which few might want a look, so you're never hunting blind.
-* **Everything is a normal block.** Because the result is standard WordPress content (not a locked builder format), you fix anything directly in the editor you already know. No shortcodes, no special mode.
-
-In practice, most pages need only minor tweaks, and the tools above turn what used to be a rebuild into a few small edits.
-
-= Current limitations =
-
-We'd rather be upfront:
-
-* **Some manual review is expected.** Complex pages usually need a few small tweaks after conversion.
-* **Elementor Pro and third-party widgets** that have no block equivalent are converted with a safe fallback and flagged for you, rather than recreated exactly.
-* **Dynamic and interactive extras** (advanced motion effects, some pop-ups, and similar builder-only features) may not carry across and can need rebuilding with block tools.
-* **Global Elementor styles** (theme-wide colors and fonts set in Elementor) are matched as closely as possible but may need a final check against your theme.
-
-None of these stop you migrating. They're the spots to look at during your review, and the Conversion Log points most of them out for you.
-
-= In plain terms, Migrate Off Elementor lets you =
-
-* **Stop paying for and depending on a page builder.** Your pages keep working even after you switch Elementor off.
-* **Speed up your site.** Pages built with standard blocks load lighter and faster because they don't have to load Elementor's extra code.
-* **Keep editing easily.** Everything ends up in the normal WordPress editor, so you (or your clients) can make changes without learning a builder.
-* **Save days of work.** Instead of rebuilding pages one element at a time, you convert them in a few clicks.
-
-= What makes Migrate Off Elementor different =
-
-* **It actually converts — automatically.** Many "solutions" just embed Elementor inside the editor, or expect you to rebuild by hand. Migrate Off Elementor genuinely rebuilds your pages as real blocks.
-* **No extra plugins required.** Some converters make you install another block library (like Kadence) to work. Migrate Off Elementor converts to standard WordPress blocks and its own built-in blocks — nothing else to install.
-* **Handles more of your page.** Over 50 Elementor elements are supported, including WooCommerce shop elements. Most free converters cover around 20 basic ones.
-* **A clear report after every conversion.** The Conversion Log tells you exactly which elements converted perfectly and which few might need a quick manual tweak, so there are no surprises.
-* **Safe by design.** Your original Elementor pages are never deleted or changed. You decide when — or whether — to switch your site over to the new versions.
-
-= What can it convert? =
-
-**Everyday content:** headings, text, images, image galleries and carousels, buttons, videos, icons, spacers, dividers, Google Maps, and shortcodes.
-
-**Interactive elements:** accordions, toggles, tabs (including nested tabs and accordions), counters, and progress bars.
+**Interactive elements:** accordions, toggles, tabs (including nested ones), counters, and progress bars.
 
 **Boxes and lists:** icon boxes, image boxes, icon lists, call-to-action boxes, testimonials and testimonial carousels, and social icons.
 
-**Forms:** contact forms and search forms.
+**Forms and site parts:** contact and search forms, navigation menus, the site logo, and post/blog listings.
 
-**Site parts:** navigation menus, the site logo, and post/blog listings.
+**WooCommerce:** product grids, cart, checkout, mini-cart, product categories, store notices, "my account", and add-to-cart.
 
-**WooCommerce (online stores):** product grids, cart, checkout, mini-cart, product categories, store notices, "my account", and add-to-cart.
+Anything with no exact block equivalent is converted with a general-purpose fallback and flagged in the Conversion Log.
 
-Anything Migrate Off Elementor doesn't have an exact match for is converted safely with a general-purpose fallback, so the page always comes through in one piece — and the Conversion Log points out anything worth a second look.
+= What a conversion changes on your site =
 
-= Who is it for? =
+Converted pages are saved as brand-new pages, and your Elementor originals are never deleted or edited. Some optional steps in the Conversion Wizard do change site-wide settings, so they are listed here in full:
 
-* **Agencies and freelancers** moving client sites off Elementor without hours of rebuilding.
-* **Site owners** who want faster pages and fewer plugins.
-* **Anyone** who wants to edit their site with the standard WordPress editor instead of a page builder.
+* **Theme install.** If you choose a block theme in the wizard's theme step that is not installed, the plugin downloads and installs it from WordPress.org. It only runs if your account may install themes.
+* **Theme switch.** If you choose a theme other than the active one, the plugin switches the site's active theme when the run starts. That changes how the whole site looks to visitors, not only the converted pages.
+* **Additional CSS is merged.** When the theme is switched, the previous theme's Additional CSS is appended to the new theme's Additional CSS, marked with a "Migrated from" comment. It is on by default, you can turn it off in the wizard, and it always runs in automatic mode.
+* **Template parts.** Converted Elementor headers and footers are saved as block template parts. On a block theme, the converted header and footer marked as default take the place of the theme's own header and footer across the whole site.
+
+Choosing "Keep current theme" in the theme step skips all four.
+
+= What to expect =
+
+Most pages land very close to the original straight away. Elementor and the block editor handle layout and styling differently, so some things are approximated rather than copied one to one, mostly on busier and highly customised designs. The Conversion Log lists, page by page, what converted cleanly and what is worth a look, and because the result is ordinary block content you fix anything in the editor you already know. Specifically:
+
+* Complex pages usually need a few small tweaks after conversion.
+* Elementor Pro and third-party widgets with no block equivalent are converted with a safe fallback and flagged, rather than recreated exactly.
+* Motion effects, some pop-ups, and similar builder-only extras may not carry across and can need rebuilding with block tools.
+* Global Elementor styles (theme-wide colors and fonts set in Elementor) are matched as closely as possible but may need a final check against your theme.
 
 == Installation ==
 
-1. In your WordPress dashboard, go to **Plugins → Add New**, search for "Migrate Off Elementor", and click **Install Now** — or upload the plugin ZIP under **Plugins → Add New → Upload Plugin**.
+1. In your dashboard, go to **Plugins > Add New**, search for this plugin, and click **Install Now** - or upload the ZIP under **Plugins > Add New > Upload Plugin**.
 2. Click **Activate**.
-3. A new **Migrate Off Elementor** menu appears in your dashboard sidebar.
-4. (Recommended) Open **Migrate Off Elementor → Settings** first and set the page width to match your Elementor design, so converted pages look the same width as before.
-5. Open **Migrate Off Elementor → Conversion Wizard**, pick a page, and convert it.
+3. A new **Migrate Off Elementor** menu appears in your sidebar.
+4. (Recommended) Open **Settings** first and set the page width to match your Elementor design.
+5. Open **Conversion Wizard**, pick a page, and convert it.
 
-**Before you start:** it's always wise to back up your site first, or try it on a test/staging copy. Migrate Off Elementor never deletes your Elementor pages, but a backup is good practice for any big change.
+Back up your site, or work on a staging copy, before your first run: the wizard's theme step can install a theme, switch the active theme and merge Additional CSS.
 
 == Frequently Asked Questions ==
 
-= Do I need to know any code to use this? =
-
-No. You pick the pages you want and click a button. Everything happens inside your normal WordPress dashboard.
-
 = Does Elementor need to stay installed after I convert? =
 
-No. Elementor only needs to have been used to build the pages in the first place. Once a page is converted to blocks, it no longer needs Elementor — you can switch Elementor off (once you're happy with the results).
+No. Elementor only needs to have built the pages in the first place. Once a page is converted to blocks you can switch Elementor off.
 
 = Will it delete or change my original Elementor pages? =
 
-No. Migrate Off Elementor always creates a brand-new page for the converted version and leaves your original untouched. You can review the new version and only switch it live when you're ready.
-
-= Will the converted page look exactly the same? =
-
-It gets you very close automatically — colors, fonts, spacing, and layout are all carried over. Because Elementor and the WordPress editor work differently under the hood, very complex pages may need a few small manual tweaks. The Conversion Log makes those quick to spot and fix.
+No. The converted version is always a brand-new page and the original is left untouched. Site-wide settings are a separate matter: see "What a conversion changes on your site" above.
 
 = Do I need to install any other plugin for it to work? =
 
-No. Some other converters require you to install an extra block library (such as Kadence Blocks). Migrate Off Elementor doesn't — it uses the blocks already in WordPress plus its own built-in ones.
+No. Conversion targets the blocks already in WordPress plus the plugin's own built-in ones, so there is no extra block library to install.
 
 = Does it work with WooCommerce stores? =
 
-Yes. Migrate Off Elementor converts common WooCommerce elements (product grids, cart, checkout, mini-cart, categories, notices, my-account, and add-to-cart) into their WooCommerce block versions.
-
-= What happens to elements it doesn't recognise? =
-
-They're converted with a safe general-purpose fallback so the page still comes through cleanly, and the Conversion Log flags them so you know if any need a manual touch-up.
+Yes. Common WooCommerce elements (product grids, cart, checkout, mini-cart, categories, notices, my-account, and add-to-cart) are converted into their WooCommerce block versions.
 
 = Do I need to pay for anything or get an "API key"? =
 
-No — the conversion is completely free and runs entirely on your own site. No account or API key is required.
+No — the conversion is completely free and runs entirely on your own site, and no account is required.
 
-= Why isn't the converted page 100% identical? =
-
-Because Elementor and the block editor build pages differently, some styling has to be approximated rather than copied exactly, mostly on complex layouts. Most pages come out very close, and the Conversion Log and the normal block editor make the remaining tweaks quick. See the "About the results" section above.
-
-= Can I convert my whole site at once? =
-
-You can convert page after page using the Conversion Wizard. We recommend doing them in small batches and checking each one, rather than converting everything blindly — that way you catch any tweaks early.
+One optional key exists: Settings > Integrations has a field for a Google Maps API key. Leave it empty (the default) and converted Map blocks keep using the keyless Google Maps embed, exactly as before. Fill it in and Map blocks are rendered through the Google Maps Embed API on your own Google account instead. It changes nothing else, it is applied when a page is rendered rather than saved into your pages, and clearing it puts every map straight back to the keyless embed.
 
 = Will it work with my theme? =
 
-Yes. Converted pages use standard WordPress blocks, so they work with any modern block-friendly theme. The wizard also shows some basic theme information to help set expectations.
+Yes. Converted pages use standard WordPress blocks, so they work with any modern block-friendly theme. The wizard's theme step reports what your current theme supports, and can install and switch to a block theme if you ask it to.
 
 = Is any of my data sent to outside services? =
 
-The conversion itself runs entirely on your own site. A few optional features do connect to outside services (address suggestions when editing a Map, any Google fonts/maps/videos your page already used, and sending feedback if you choose to). Each one is explained in full in the **External services** section below, and the feedback feature only ever runs when you choose to start it.
+The conversion itself runs entirely on your own site. A few optional features do connect to outside services (any Google fonts/maps/videos your page already used, and sending feedback if you choose to). Each one is explained in full in the **External services** section below, and the feedback feature only ever runs when you choose to start it.
 
 == External services ==
 
-This plugin can connect to the third-party services listed below. The feedback service is only contacted from the admin area, as part of an action you explicitly start (submitting feedback). The others load only when a converted page that uses those features is viewed, or while editing a Map block.
+This plugin can connect to the third-party services listed below. The feedback service is only contacted from the admin area, as part of an action you explicitly start (submitting feedback). The others load only when a converted page that uses those features is viewed, or while a Map block is open in the block editor.
 
 = Feedback service =
 
 Used only if you choose to send feedback about a conversion to the plugin developer. It is never sent automatically; submission requires your explicit consent on the feedback screen.
 
-When you submit feedback, the plugin sends a feedback package to https://block-shift.com/wp-json/metg-feedback/v1/submit, authenticated with a per-site client ID/secret generated and stored on your site. The package contains: environment data (site domain, a hashed site URL, plugin/WordPress/PHP versions, active theme, locale), your browser/screen details, the conversion run data and summary, your rating and notes, and the converted content and artifacts (such as screenshots) for the pages you select.
+When you submit feedback, the plugin sends a feedback package to https://block-shift.com/wp-json/etg-feedback/v1/submit, authenticated with a per-site client ID/secret generated and stored on your site. The package contains: environment data (site domain, a hashed site URL, plugin/WordPress/PHP versions, active theme, locale), your browser/screen details, the conversion run data and summary, your rating and notes, and, for the pages you select, the original Elementor page data and the converted page content. Page content is sent as-is: it is not anonymised or filtered, so it may contain personal data if the page does.
 
 This service is operated by Progressus. Privacy policy: https://progressus.io/privacy-policy
 
@@ -172,24 +112,37 @@ This service is provided by Google. Terms: https://policies.google.com/terms —
 
 = Embedded maps and videos =
 
-If a converted page contains a map or video, the page embeds it from Google Maps (https://maps.google.com) or YouTube (https://www.youtube.com), the same way the original Elementor page did. These embeds load only when such a page is viewed.
+If a converted page contains a map or video, the page embeds it from Google Maps (https://maps.google.com) or YouTube (https://www.youtube.com), the same way the original Elementor page did. These embeds load when such a page is viewed, and also in the block editor while a Map block is open, so that you can see a preview of the map you are editing. In the editor the preview is rebuilt once you stop typing, not on every keystroke.
+
+A Google Maps embed is a page served by Google inside an iframe. Once it loads, Google's own code in that iframe fetches map tiles and its supporting resources from further Google hosts: https://www.google.com, https://maps.googleapis.com, https://places.googleapis.com, https://maps.gstatic.com, https://fonts.googleapis.com and https://fonts.gstatic.com. The plugin sends Google only the address or the coordinates stored in the block, plus the zoom level.
 
 Provided by Google. Terms: https://policies.google.com/terms and https://www.youtube.com/t/terms — Privacy policy: https://policies.google.com/privacy
 
-= OpenStreetMap (Nominatim) =
+= Google Maps Embed API =
 
-Used for address autocomplete when you edit a Map block in the block editor.
+Only used if you enter a Google Maps API key in Settings > Integrations. There is no key by default and this service is not contacted until you set one.
 
-While editing a Map block, as you type an address (3 or more characters), the plugin sends that address text to the OpenStreetMap Nominatim geocoding service (https://nominatim.openstreetmap.org) and displays matching location suggestions. This happens only in the admin editor, never on the public-facing site.
+With a key set, Map blocks are embedded from the Google Maps Embed API (https://www.google.com/maps/embed/v1/place) instead of the keyless Google Maps embed, both on the public page and in the block editor preview. The plugin sends Google your API key, the address or coordinates stored in the block, and the zoom level.
 
-This service is provided by the OpenStreetMap Foundation. Usage policy: https://operations.osmfoundation.org/policies/nominatim/ — Privacy policy: https://wiki.osmfoundation.org/wiki/Privacy_Policy
+Provided by Google. Terms: https://policies.google.com/terms and https://cloud.google.com/maps-platform/terms — Privacy policy: https://policies.google.com/privacy
+
+== Source code ==
+
+Development happens in the open at https://github.com/Progressus-io/elementor-to-gutenberg, which holds the uncompressed sources for everything the plugin builds, including the JavaScript and SCSS behind every block under src/. Released ZIPs are built from it with `npm run build`.
+
+Two third-party libraries ship in compressed form:
+
+* Swiper 11.2.10 (MIT), at assets/vendor/swiper/. Source: https://github.com/nolimits4web/swiper/releases/tag/v11.2.10
+* Font Awesome Free 6.5.0 (icons CC BY 4.0, fonts SIL OFL 1.1, code MIT), at assets/vendor/fontawesome/. Source: https://github.com/FortAwesome/Font-Awesome/releases/tag/6.5.0
+
+Lucide line icons (ISC) are inlined uncompressed in assets/js/pgs-icons.js. Source: https://github.com/lucide-icons/lucide
 
 == Screenshots ==
 
-1. The Conversion Wizard — pick your Elementor pages and convert them to blocks.
-2. Conversion results, with a summary for each page and the option to review it.
-3. The Conversion Log — see which elements converted perfectly and which need a quick look.
-4. Settings — page width, conversion defaults, and logging.
+1. The Conversion Wizard - pick your Elementor pages and convert them to blocks.
+2. Conversion results, with a summary for each page.
+3. The Conversion Log - which elements converted cleanly and which need a look.
+4. Settings - page width, conversion defaults, and logging.
 
 == Changelog ==
 

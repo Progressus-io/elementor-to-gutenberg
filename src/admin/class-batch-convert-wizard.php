@@ -3514,7 +3514,7 @@ class Batch_Convert_Wizard {
 			'feedbackIssueLabel'       => __( 'Issue type', 'migrate-off-elementor' ),
 			'feedbackIssueDetailLabel' => __( 'Describe the issue', 'migrate-off-elementor' ),
 			'feedbackNoteLabel'        => __( 'Any additional notes?', 'migrate-off-elementor' ),
-			'feedbackConsentLabel'     => __( 'I consent to sending this anonymised conversion report to the plugin developer for quality improvement. No passwords, API keys, or user data are included.', 'migrate-off-elementor' ),
+			'feedbackConsentLabel'     => __( 'I consent to sending this conversion report to the plugin developer for quality improvement. It includes my site domain and a hashed site URL, the plugin, WordPress and PHP versions, the active theme and locale, my browser and screen details, the conversion run data, my rating and notes, and the original Elementor data and converted content of each page I select. Page content is sent as-is, is not anonymised, and may contain personal data.', 'migrate-off-elementor' ),
 			'feedbackSubmit'           => __( 'Send Feedback', 'migrate-off-elementor' ),
 			'feedbackCancel'           => __( 'Cancel', 'migrate-off-elementor' ),
 			'feedbackSending'          => __( 'Sending…', 'migrate-off-elementor' ),

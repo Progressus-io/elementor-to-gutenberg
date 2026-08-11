@@ -1,7 +1,7 @@
 {
 	"name": "migrate-off-elementor",
 	"version": "1.0.0",
-	"description": "",
+	"description": "Convert Elementor layouts into native WordPress blocks.",
 	"main": "build/index.js",
 	"files": [
 		"migrate-off-elementor.php",
@@ -18,7 +18,8 @@
 	"scripts": {
 		"build": "composer install --no-dev -o && wp-scripts build && npm run archive",
 		"build:dev": "composer install -o",
-		"archive": "wp-scripts plugin-zip",
+		"archive": "wp-scripts plugin-zip && npm run archive:prune",
+		"archive:prune": "zip -q -d migrate-off-elementor.zip migrate-off-elementor/package.json",
 		"bump": "node version-bump.js",
 		"bump:major": "node version-bump.js major",
 		"wpcs": "composer wpcs",
@@ -26,17 +27,17 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/progressus-io/gutenberg-plugin.git"
+		"url": "git+https://github.com/Progressus-io/elementor-to-gutenberg.git"
 	},
 	"keywords": [],
-	"author": "",
-	"license": "ISC",
+	"author": "Progressus",
+	"license": "GPL-2.0-or-later",
 	"devDependencies": {
 		"@woocommerce/dependency-extraction-webpack-plugin": "^4.0.0",
 		"@wordpress/scripts": "^30.24.0"
 	},
 	"bugs": {
-		"url": "https://github.com/progressus-io/gutenberg-plugin/issues"
+		"url": "https://github.com/Progressus-io/elementor-to-gutenberg/issues"
 	},
-	"homepage": "https://github.com/progressus-io/gutenberg-plugin#readme"
+	"homepage": "https://github.com/Progressus-io/elementor-to-gutenberg#readme"
 }

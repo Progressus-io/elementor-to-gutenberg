@@ -2,6 +2,7 @@
 /**
  * Plugin Name: Migrate Off Elementor
  * Description: Professional migration tool to convert Elementor layouts into native WordPress blocks
+ * Plugin URI: https://block-shift.com/
  * Author: Progressus
  * Author URI: https://progressus.io/
  * Version: 1.0.0

@@ -434,7 +434,12 @@ class Conversion_Log_Admin {
 									<td style="min-width:140px;">
 										<?php if ( $total_w > 0 ) : ?>
 											<div class="pgs-progress pgs-progress--sm"><div class="pgs-progress__track"><div class="pgs-progress__fill<?php echo $is_partial ? ' pgs-progress__fill--warning' : ''; ?>" style="width:<?php echo esc_attr( $pct ); ?>%;"></div></div></div>
-											<div class="pgs-table__count"><?php printf( esc_html__( '%1$d / %2$d', 'migrate-off-elementor' ), (int) $converted_w, (int) $total_w ); ?></div>
+											<div class="pgs-table__count">
+												<?php
+												/* translators: 1: number of Elementor widgets on this page that were converted, 2: total number of Elementor widgets found on this page. */
+												printf( esc_html__( '%1$d / %2$d', 'migrate-off-elementor' ), (int) $converted_w, (int) $total_w );
+												?>
+											</div>
 										<?php else : ?>
 											<span class="pgs-table__muted">—</span>
 										<?php endif; ?>
@@ -446,6 +451,7 @@ class Conversion_Log_Admin {
 													<i data-icon="alert-triangle"></i>
 													<?php
 													$nt = count( $unsp_types );
+													/* translators: %d: number of distinct Elementor widget types on this page that have no block equivalent. */
 													printf( esc_html( _n( '%d unsupported type', '%d unsupported types', $nt, 'migrate-off-elementor' ) ), (int) $nt );
 													?>
 												</summary>
@@ -457,12 +463,19 @@ class Conversion_Log_Admin {
 											</details>
 											<?php if ( $empty_w > 0 ) : ?>
 												<div class="pgs-table__meta">
-													<?php printf( esc_html( _n( '+%d empty output', '+%d empty outputs', $empty_w, 'migrate-off-elementor' ) ), (int) $empty_w ); ?>
+													<?php
+													/* translators: %d: number of Elementor widgets on this page that converted to empty block output, in addition to the unsupported types listed above. */
+													printf( esc_html( _n( '+%d empty output', '+%d empty outputs', $empty_w, 'migrate-off-elementor' ) ), (int) $empty_w );
+													?>
 												</div>
 											<?php endif; ?>
 										<?php elseif ( $empty_w > 0 ) : ?>
 											<span class="pgs-issue">
-												<i data-icon="info"></i> <?php printf( esc_html( _n( '%d empty output', '%d empty outputs', $empty_w, 'migrate-off-elementor' ) ), (int) $empty_w ); ?>
+												<i data-icon="info"></i>
+												<?php
+												/* translators: %d: number of Elementor widgets on this page that converted to empty block output. */
+												printf( esc_html( _n( '%d empty output', '%d empty outputs', $empty_w, 'migrate-off-elementor' ) ), (int) $empty_w );
+												?>
 											</span>
 										<?php else : ?>
 											<span class="pgs-issue pgs-issue--ok"><i data-icon="check"></i> <?php esc_html_e( 'None', 'migrate-off-elementor' ); ?></span>
@@ -477,6 +490,7 @@ class Conversion_Log_Admin {
 						<div class="pgs-table__foot">
 							<?php
 							printf(
+								/* translators: 1: number of conversion log entries currently listed in the table, 2: maximum number of entries the log keeps before the oldest are discarded. */
 								esc_html__( 'Showing %1$d entries. Log retains the last %2$d entries; oldest are discarded automatically.', 'migrate-off-elementor' ),
 								(int) count( $log ),
 								(int) self::MAX_ENTRIES
@@ -532,6 +546,7 @@ class Conversion_Log_Admin {
 							<p class="pgs-muted" style="margin-top:10px;">
 								<?php
 								printf(
+									/* translators: %1$d: number of most recent diagnostic log events shown from conversion-log.jsonl. */
 									esc_html__( 'Showing last %1$d events. The file rotates automatically at 5 MB — the previous file is kept as .jsonl.1.', 'migrate-off-elementor' ),
 									count( $jsonl_log_lines )
 								);

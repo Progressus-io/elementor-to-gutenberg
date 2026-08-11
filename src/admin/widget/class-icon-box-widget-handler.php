@@ -110,10 +110,15 @@ class Icon_Box_Widget_Handler implements Widget_Handler_Interface {
 		$content = '<div ' . implode( ' ', $wrapper_attrs ) . '>' . implode( '', $segments ) . '</div>';
 
 		// Build block attributes for the new `blockshift/icon-box` block.
+		//
+		// These three come from the Elementor data and end up in the block's
+		// markup as a class list and an image URL, so they are reduced to what
+		// those positions can legitimately hold before they are stored, rather
+		// than only when they are printed.
 		$block_attributes = array(
-			'icon'             => isset( $icon_data['slug'] ) ? (string) $icon_data['slug'] : '',
-			'iconStyle'        => isset( $icon_data['style_class'] ) ? (string) $icon_data['style_class'] : 'fas',
-			'svgUrl'           => isset( $icon_data['url'] ) ? (string) $icon_data['url'] : '',
+			'icon'             => $this->sanitize_class_tokens( isset( $icon_data['slug'] ) ? (string) $icon_data['slug'] : '' ),
+			'iconStyle'        => $this->sanitize_class_tokens( isset( $icon_data['style_class'] ) ? (string) $icon_data['style_class'] : 'fas' ),
+			'svgUrl'           => isset( $icon_data['url'] ) ? esc_url_raw( (string) $icon_data['url'] ) : '',
 			'svgStyle'         => ( 'svg' === $icon_data['type'] && '' !== $icon_data['url'] )
 				? ( 'width:' . $size . 'px;height:auto;' )
 				: '',
@@ -151,6 +156,32 @@ class Icon_Box_Widget_Handler implements Widget_Handler_Interface {
 		}
 
 		return $icon_data;
+	}
+
+	/**
+	 * Reduce a value to a space-separated list of CSS class tokens.
+	 *
+	 * Icon class names arrive from Elementor and are written into a `class`
+	 * attribute, so anything that is not a class token - quotes above all - is
+	 * dropped here, before the value becomes a block attribute.
+	 *
+	 * @param string $value Raw value.
+	 */
+	private function sanitize_class_tokens( string $value ): string {
+		$tokens = preg_split( '/\s+/', trim( $value ) );
+		if ( ! is_array( $tokens ) ) {
+			return '';
+		}
+
+		$clean = array();
+		foreach ( $tokens as $token ) {
+			$token = (string) preg_replace( '/[^A-Za-z0-9_-]/', '', $token );
+			if ( '' !== $token ) {
+				$clean[] = $token;
+			}
+		}
+
+		return implode( ' ', $clean );
 	}
 
 	/**

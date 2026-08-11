@@ -155,6 +155,8 @@ class Admin_Settings {
 		add_action( 'admin_post_blockshift_convert_page', array( $this, 'blockshift_handle_convert_page' ) );
 		add_action( 'admin_post_blockshift_save_settings', array( $this, 'save_all_settings' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
+		add_action( 'blockshift_settings_sections', array( $this, 'render_integrations_section' ) );
+		add_action( 'blockshift_settings_save', array( $this, 'save_integrations_settings' ) );
 	}
 
 	/**
@@ -2427,5 +2429,124 @@ class Admin_Settings {
 		}
 	}
 
+	/* ---------------------------------------------------------------------
+	 * Integrations: optional Google Maps API key.
+	 * ------------------------------------------------------------------ */
 
+	/**
+	 * Option key holding the optional Google Maps API key.
+	 *
+	 * Optional by design: with no key stored, converted Map blocks keep rendering
+	 * the keyless maps.google.com embed they were converted to, exactly as
+	 * before. A key only ever upgrades that embed to the Maps Embed API.
+	 */
+	private const OPTION_GOOGLE_MAPS_API_KEY = 'blockshift_google_maps_api_key';
+
+	/**
+	 * The stored Google Maps API key, or an empty string when none is set.
+	 */
+	public static function get_google_maps_api_key(): string {
+		$key = get_option( self::OPTION_GOOGLE_MAPS_API_KEY, '' );
+
+		return is_string( $key ) ? trim( $key ) : '';
+	}
+
+	/**
+	 * Reduce a submitted API key to the character set Google issues keys from.
+	 *
+	 * Keys are opaque tokens of unreserved URL characters, so anything else is
+	 * dropped rather than escaped: the value ends up inside an iframe URL, and a
+	 * value that cannot contain a delimiter cannot break out of one.
+	 *
+	 * @param mixed $value Raw submitted value.
+	 */
+	public static function sanitize_google_maps_api_key( $value ): string {
+		if ( ! is_string( $value ) ) {
+			return '';
+		}
+
+		$value = trim( wp_strip_all_tags( $value ) );
+		$value = (string) preg_replace( '/[^A-Za-z0-9_-]/', '', $value );
+
+		return substr( $value, 0, 120 );
+	}
+
+	/**
+	 * Render the Integrations card on the Settings screen.
+	 *
+	 * Hooked to 'blockshift_settings_sections', which fires inside the settings
+	 * form after the core sections, so this card is submitted and saved with the
+	 * same nonce and capability check as the rest of the screen.
+	 */
+	public function render_integrations_section(): void {
+		$api_key = self::get_google_maps_api_key();
+		?>
+		<div class="pgs-card">
+			<div class="pgs-card__header">
+				<div>
+					<div class="pgs-card__eyebrow"><?php esc_html_e( 'Integrations', 'migrate-off-elementor' ); ?></div>
+					<div class="pgs-card__title"><?php esc_html_e( 'Google Maps', 'migrate-off-elementor' ); ?></div>
+				</div>
+			</div>
+			<div class="pgs-card__body">
+				<div class="pgs-setrow">
+					<div class="pgs-setrow__meta">
+						<label class="pgs-setrow__label" for="blockshift_google_maps_api_key"><?php esc_html_e( 'Google Maps API key (optional)', 'migrate-off-elementor' ); ?></label>
+						<div class="pgs-setrow__desc">
+							<?php
+							printf(
+								wp_kses(
+									/* translators: %s: URL of Google's "get an API key" documentation for the Maps Embed API */
+									__( 'Leave this empty and Map blocks keep using the keyless Google Maps embed they were converted to - nothing changes. Enter a key and Map blocks switch to the Google <a href="%s" target="_blank" rel="noopener noreferrer">Maps Embed API</a> instead, which gives a cleaner embed and puts the usage on your own Google account. The key is applied when a page is rendered, so changing or clearing it takes effect on every Map block at once, with no need to re-save any page.', 'migrate-off-elementor' ),
+									array(
+										'a' => array(
+											'href'   => array(),
+											'target' => array(),
+											'rel'    => array(),
+										),
+									)
+								),
+								'https://developers.google.com/maps/documentation/embed/get-api-key'
+							);
+							?>
+						</div>
+					</div>
+					<div class="pgs-setrow__control">
+						<div class="pgs-field">
+							<div class="pgs-input">
+								<input class="pgs-input__el" type="password" id="blockshift_google_maps_api_key" name="blockshift_integrations_settings[google_maps_api_key]" value="<?php echo esc_attr( $api_key ); ?>" autocomplete="off" spellcheck="false" />
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Persist the Integrations card.
+	 *
+	 * Hooked to 'blockshift_settings_save', which save_all_settings() fires only
+	 * after check_admin_referer() and the manage_options check. The capability is
+	 * re-asserted here so the method is safe if the action is ever fired from
+	 * somewhere else.
+	 */
+	public function save_integrations_settings(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		check_admin_referer( 'blockshift_save_settings' );
+
+		$submitted = '';
+		if ( isset( $_POST['blockshift_integrations_settings']['google_maps_api_key'] )
+			&& is_string( $_POST['blockshift_integrations_settings']['google_maps_api_key'] ) ) {
+			$submitted = sanitize_text_field( wp_unslash( $_POST['blockshift_integrations_settings']['google_maps_api_key'] ) );
+		}
+
+		$api_key = self::sanitize_google_maps_api_key( $submitted );
+
+		update_option( self::OPTION_GOOGLE_MAPS_API_KEY, $api_key, false );
+	}
 }
