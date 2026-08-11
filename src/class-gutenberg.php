@@ -966,43 +966,43 @@ class Gutenberg {
 		if ( has_block( 'woocommerce/product-button', get_the_ID() )
 			|| has_block( 'woocommerce/add-to-cart-form', get_the_ID() )
 		) {
-			$required[ $handle_prefix . 'add-to-cart' ] = 'widget-wc-product-add-to-cart.min.css';
+			$required[ $handle_prefix . 'add-to-cart' ] = 'widget-wc-product-add-to-cart.css';
 		}
 
 		if ( has_block( 'woocommerce/product-price', get_the_ID() ) ) {
-			$required[ $handle_prefix . 'price' ] = 'widget-wc-product-price.min.css';
+			$required[ $handle_prefix . 'price' ] = 'widget-wc-product-price.css';
 		}
 
 		if ( has_block( 'woocommerce/product-image', get_the_ID() ) ) {
-			$required[ $handle_prefix . 'images' ] = 'widget-wc-product-images.min.css';
+			$required[ $handle_prefix . 'images' ] = 'widget-wc-product-images.css';
 		}
 
 		if ( has_block( 'woocommerce/product-collection', get_the_ID() ) ) {
-			$required[ $handle_prefix . 'products' ] = 'widget-wc-products.min.css';
+			$required[ $handle_prefix . 'products' ] = 'widget-wc-products.css';
 		}
 
 		if ( has_block( 'woocommerce/product-categories', get_the_ID() ) ) {
-			$required[ $handle_prefix . 'archive' ] = 'widget-wc-products-archive.min.css';
+			$required[ $handle_prefix . 'archive' ] = 'widget-wc-products-archive.css';
 		}
 
 		if (
 			strpos( $content, 'woocommerce-tabs' ) !== false
 			|| strpos( $content, 'wc-tabs' ) !== false
 		) {
-			$required[ $handle_prefix . 'tabs' ] = 'widget-wc-product-data-tabs.min.css';
+			$required[ $handle_prefix . 'tabs' ] = 'widget-wc-product-data-tabs.css';
 		}
 
 		if (
 			strpos( $content, 'product_meta' ) !== false
 		) {
-			$required[ $handle_prefix . 'meta' ] = 'widget-wc-product-meta.min.css';
+			$required[ $handle_prefix . 'meta' ] = 'widget-wc-product-meta.css';
 		}
 
 		if (
 			strpos( $content, 'woocommerce-notices-wrapper' ) !== false
 			|| strpos( $content, 'wc-block-components-notice-banner' ) !== false
 		) {
-			$required[ $handle_prefix . 'notices' ] = 'widget-wc-notices.min.css';
+			$required[ $handle_prefix . 'notices' ] = 'widget-wc-notices.css';
 		}
 
 		return $required;
