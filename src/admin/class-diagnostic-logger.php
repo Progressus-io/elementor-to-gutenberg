@@ -1,6 +1,4 @@
 <?php
-// phpcs:ignoreFile
-
 /**
  * Structured JSONL diagnostic logger for Elementor-to-Gutenberg conversions.
  *
@@ -22,7 +20,9 @@ namespace Progressus\BlockShift\Admin;
 use function gmdate;
 use function hash;
 use function md5;
+use function trailingslashit;
 use function uniqid;
+use function wp_hash;
 use function wp_json_encode;
 use function wp_mkdir_p;
 use function wp_upload_dir;
@@ -60,6 +60,22 @@ class Diagnostic_Logger {
 
 	/** Rotate when the file exceeds this size (5 MB). */
 	const MAX_FILE_BYTES = 5242880;
+
+	/**
+	 * Directory, relative to the uploads base, that holds the diagnostic log.
+	 *
+	 * Deliberately NOT `blockshift/`: the plugin serves generated per-page
+	 * stylesheets out of that directory by URL, so it has to stay publicly
+	 * readable. The log lives in a sibling directory that nothing serves and
+	 * that is hardened on first write.
+	 */
+	const LOG_DIR = 'blockshift-logs';
+
+	/**
+	 * Legacy location of the log, from before it was moved out of web reach.
+	 * Kept only so the upgrade path can clean it up.
+	 */
+	const LEGACY_LOG_RELATIVE_PATH = 'blockshift/conversion-log.jsonl';
 
 	// ── Key-based redaction list ──────────────────────────────────────────────
 
@@ -105,11 +121,71 @@ class Diagnostic_Logger {
 	}
 
 	/**
+	 * Absolute path to the directory holding the JSONL log.
+	 */
+	public static function log_dir(): string {
+		$upload = wp_upload_dir( null, false );
+
+		return trailingslashit( (string) $upload['basedir'] ) . self::LOG_DIR;
+	}
+
+	/**
 	 * Absolute path to the JSONL log file.
+	 *
+	 * The filename carries a per-site hash derived from the site's own auth
+	 * salts, so it is not guessable from the shipped source the way a constant
+	 * filename is. That is the third leg of the protection, alongside the
+	 * directory index file and the deny rules written by harden_log_dir().
 	 */
 	public static function log_path(): string {
+		return trailingslashit( self::log_dir() ) . 'conversion-log-' . wp_hash( 'blockshift-conversion-log' ) . '.jsonl';
+	}
+
+	/**
+	 * Absolute path to the log's pre-1.0.1 location, inside the public
+	 * `uploads/blockshift/` directory.
+	 */
+	public static function legacy_log_path(): string {
 		$upload = wp_upload_dir( null, false );
-		return $upload['basedir'] . '/blockshift/conversion-log.jsonl';
+
+		return trailingslashit( (string) $upload['basedir'] ) . self::LEGACY_LOG_RELATIVE_PATH;
+	}
+
+	/**
+	 * Make the log directory unreadable over HTTP.
+	 *
+	 * Three independent measures, because no single one covers every host:
+	 * an `index.php` and an `index.html` so a directory request cannot list or
+	 * expose anything; `.htaccess` and `web.config` deny rules for Apache and
+	 * IIS; and, from log_path(), a filename that is not a constant. On nginx,
+	 * where none of the deny files are read, the unguessable filename is what
+	 * carries the protection.
+	 *
+	 * Safe to call repeatedly - each file is only written when missing.
+	 */
+	public static function harden_log_dir(): void {
+		$dir = self::log_dir();
+
+		if ( ! is_dir( $dir ) && ! wp_mkdir_p( $dir ) ) {
+			return;
+		}
+
+		$files = array(
+			'index.php'   => "<?php\n// Silence is golden.\n",
+			'index.html'  => '',
+			'.htaccess'   => "# Apache 2.4\n<IfModule mod_authz_core.c>\n\tRequire all denied\n</IfModule>\n# Apache 2.2\n<IfModule !mod_authz_core.c>\n\tOrder allow,deny\n\tDeny from all\n</IfModule>\n",
+			'web.config'  => "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<configuration>\n\t<system.webServer>\n\t\t<authorization>\n\t\t\t<deny users=\"*\" />\n\t\t</authorization>\n\t</system.webServer>\n</configuration>\n",
+		);
+
+		foreach ( $files as $name => $contents ) {
+			$path = trailingslashit( $dir ) . $name;
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_exists -- WP_Filesystem is not initialised on every request that can write a log line, and a hardening file must never be the thing that fails a conversion.
+			if ( file_exists( $path ) ) {
+				continue;
+			}
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Same reason; the payload is a fixed literal above, with no request data in it.
+			file_put_contents( $path, $contents, LOCK_EX );
+		}
 	}
 
 	/** Log a run_start event. */
@@ -265,16 +341,16 @@ class Diagnostic_Logger {
 			$event = self::redact( $event );
 
 			$path = self::log_path();
-			$dir  = dirname( $path );
 
-			if ( ! is_dir( $dir ) ) {
-				wp_mkdir_p( $dir );
-			}
+			// Creates the directory when missing and, either way, makes sure
+			// the index files and deny rules are in place before anything is
+			// written into it.
+			self::harden_log_dir();
 
 			// Rotate the file once it exceeds the size limit.
-			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_exists
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_exists -- The logger runs on front-end and AJAX requests where WP_Filesystem is not initialised, and its contract is that a logging failure never interrupts a conversion.
 			if ( file_exists( $path ) && filesize( $path ) > self::MAX_FILE_BYTES ) {
-				// phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename
+				// phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename -- Same reason; an atomic rename is also what keeps the rotation race-free.
 				rename( $path, $path . '.1' );
 			}
 
@@ -283,7 +359,7 @@ class Diagnostic_Logger {
 				return;
 			}
 
-			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- WP_Filesystem has no append mode; FILE_APPEND | LOCK_EX is required for a JSONL log written by concurrent requests.
 			file_put_contents( $path, $line . "\n", FILE_APPEND | LOCK_EX );
 
 		} catch ( \Throwable $e ) {

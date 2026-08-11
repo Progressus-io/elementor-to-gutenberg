@@ -1,6 +1,4 @@
 <?php
-// phpcs:ignoreFile
-
 /**
  * Main admin settings class for Elementor to Gutenberg conversion.
  *
@@ -114,15 +112,16 @@ class Admin_Settings {
 	}
 
 	/**
-	 * Whether conversion logging is enabled (defaults to true on first install).
+	 * Whether conversion logging is enabled.
+	 *
+	 * Opt-in. The diagnostic log records the titles and IDs of every converted
+	 * item, including drafts and private posts, so it is not written until an
+	 * administrator asks for it on the settings screen. An explicit saved
+	 * choice - on or off - is always honoured; only the never-saved case
+	 * changed, and it now means off.
 	 */
 	public static function is_logging_enabled(): bool {
-		$val = get_option( self::OPTION_CONVERSION_LOGGING, null );
-		// Default to enabled when option has never been saved.
-		if ( null === $val ) {
-			return true;
-		}
-		return (bool) $val;
+		return (bool) get_option( self::OPTION_CONVERSION_LOGGING, false );
 	}
 
 	/**
@@ -166,7 +165,7 @@ class Admin_Settings {
 	 * <i data-icon> placeholders are replaced with inline SVG.
 	 */
 	public function enqueue_assets(): void {
-		if ( empty( $_GET['page'] ) || 'blockshift-settings' !== sanitize_key( wp_unslash( $_GET['page'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( empty( $_GET['page'] ) || 'blockshift-settings' !== sanitize_key( wp_unslash( $_GET['page'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only screen check on an enqueue hook; nothing is written, so a nonce would be meaningless here.
 			return;
 		}
 
@@ -201,8 +200,7 @@ class Admin_Settings {
 
 		check_admin_referer( 'blockshift_save_settings' );
 
-		$prefs_raw = isset( $_POST['blockshift_conversion_preferences'] ) ? wp_unslash( $_POST['blockshift_conversion_preferences'] ) : array();
-		$prefs_raw = is_array( $prefs_raw ) ? $prefs_raw : array();
+		$prefs_raw = self::read_posted_settings_group( 'blockshift_conversion_preferences' );
 		update_option(
 			self::OPTION_CONVERSION_PREFERENCES,
 			array(
@@ -211,12 +209,10 @@ class Admin_Settings {
 			false
 		);
 
-		$logging_raw = isset( $_POST['blockshift_logging_settings'] ) ? wp_unslash( $_POST['blockshift_logging_settings'] ) : array();
-		$logging_raw = is_array( $logging_raw ) ? $logging_raw : array();
+		$logging_raw = self::read_posted_settings_group( 'blockshift_logging_settings' );
 		update_option( self::OPTION_CONVERSION_LOGGING, ! empty( $logging_raw['enabled'] ), false );
 
-		$layout_raw = isset( $_POST['blockshift_layout_settings'] ) ? wp_unslash( $_POST['blockshift_layout_settings'] ) : array();
-		$layout_raw = is_array( $layout_raw ) ? $layout_raw : array();
+		$layout_raw = self::read_posted_settings_group( 'blockshift_layout_settings' );
 		$width      = isset( $layout_raw['section_content_width'] ) ? (int) $layout_raw['section_content_width'] : self::DEFAULT_SECTION_CONTENT_WIDTH;
 		if ( $width < 320 ) {
 			$width = 320;
@@ -248,6 +244,33 @@ class Admin_Settings {
 	}
 
 	/**
+	 * Read one grouped settings field out of the current POST.
+	 *
+	 * Every value is run through sanitize_text_field() before it is looked at,
+	 * so nothing untrusted survives even as a string; the callers then narrow
+	 * each value further to a boolean or a clamped integer.
+	 *
+	 * The caller is responsible for the capability check and the nonce, both of
+	 * which save_all_settings() performs before reaching here - which is what
+	 * the annotation below records.
+	 *
+	 * @param string $field Name of the posted field group.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private static function read_posted_settings_group( string $field ): array {
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Both the manage_options check and check_admin_referer( 'blockshift_save_settings' ) run in save_all_settings() before this is called.
+		if ( ! isset( $_POST[ $field ] ) ) {
+			return array();
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- As above; the nonce is verified by the caller.
+		$raw = map_deep( wp_unslash( $_POST[ $field ] ), 'sanitize_text_field' );
+
+		return is_array( $raw ) ? $raw : array();
+	}
+
+	/**
 	 * Add a Gutenberg conversion action to page row actions.
 	 *
 	 * @param array<string, mixed> $actions Existing row actions.
@@ -259,6 +282,10 @@ class Admin_Settings {
 		if ( $post->post_type === 'page' ) {
 			$json_data = get_post_meta( $post->ID, '_elementor_data', true );
 			if ( empty( $json_data ) ) {
+				return $actions;
+			}
+			// Do not mint a nonce for a user the handler will refuse anyway.
+			if ( ! self::current_user_can_convert_post( (int) $post->ID ) ) {
 				return $actions;
 			}
 			$url                             = wp_nonce_url(
@@ -275,22 +302,36 @@ class Admin_Settings {
 	/**
 	 * Handle the admin convert page action.
 	 *
+	 * Authorization is two-sided and both sides are required: the caller must be
+	 * able to edit the specific source post (which also denies anyone who cannot
+	 * read a private or draft source), and must hold the capability that lets
+	 * them publish the page this handler creates. A nonce proves intent, not
+	 * authority, so it is checked in addition to - never instead of - these.
+	 *
 	 * @return void
 	 */
 	public function blockshift_handle_convert_page() {
 		if ( ! isset( $_GET['page_id'] ) ) {
-			wp_die( 'Page ID missing.' );
+			wp_die( esc_html__( 'Page ID missing.', 'migrate-off-elementor' ) );
 		}
 
 		$page_id = absint( $_GET['page_id'] );
 
-		// Verify nonce
+		if ( ! self::current_user_can_convert_post( $page_id ) ) {
+			wp_die(
+				esc_html__( 'You do not have permission to convert this page.', 'migrate-off-elementor' ),
+				'',
+				array( 'response' => 403 )
+			);
+		}
+
+		// Verify nonce.
 		check_admin_referer( 'blockshift_convert_page_' . $page_id );
 
-		// Get JSON template stored in post meta
-		$json_data = get_post_meta( $page_id, '_elementor_data', true ); // Example for Elementor
+		// Get JSON template stored in post meta.
+		$json_data = get_post_meta( $page_id, '_elementor_data', true );
 		if ( empty( $json_data ) ) {
-			wp_die( 'No template JSON found for this page.' );
+			wp_die( esc_html__( 'No template JSON found for this page.', 'migrate-off-elementor' ) );
 		}
 
 		$data['content'] = json_decode( $json_data, true );
@@ -311,7 +352,45 @@ class Admin_Settings {
 			exit;
 		}
 
-		wp_die( 'Failed to create Gutenberg page.' );
+		wp_die( esc_html__( 'Failed to create Gutenberg page.', 'migrate-off-elementor' ) );
+	}
+
+	/**
+	 * Whether the current user may convert a specific source post.
+	 *
+	 * Two checks, both required:
+	 *
+	 * 1. `edit_post` on the source. This is the meta capability, so it resolves
+	 *    against the source's own post type, its author and its status - which
+	 *    is what stops a user who cannot read a draft or private post from
+	 *    republishing its contents through a conversion.
+	 * 2. The `publish_posts` capability of the post type the conversion writes
+	 *    into, because the conversion creates a published post.
+	 *
+	 * @param int    $source_id        Source post ID.
+	 * @param string $target_post_type Post type the conversion will create.
+	 *
+	 * @return bool
+	 */
+	public static function current_user_can_convert_post( int $source_id, string $target_post_type = 'page' ): bool {
+		if ( $source_id <= 0 ) {
+			return false;
+		}
+
+		if ( ! get_post( $source_id ) instanceof \WP_Post ) {
+			return false;
+		}
+
+		if ( ! current_user_can( 'edit_post', $source_id ) ) {
+			return false;
+		}
+
+		$target_type = get_post_type_object( $target_post_type );
+		if ( ! $target_type instanceof \WP_Post_Type ) {
+			return false;
+		}
+
+		return current_user_can( $target_type->cap->publish_posts );
 	}
 
 	/**
@@ -523,8 +602,8 @@ class Admin_Settings {
 		$post_title = $data['title'] ?? 'Untitled';
 		$post_type  = $data['type'] ?? 'page';
 
-		// Check if a post with the same title and type exists
-		$existing_post = get_page_by_title( $post_title, OBJECT, $post_type );
+		// Check if a post with the same title and type exists.
+		$existing_post = self::find_post_by_title( (string) $post_title, (string) $post_type );
 
 		if ( $existing_post ) {
 			// Update existing post
@@ -569,6 +648,44 @@ class Admin_Settings {
 	}
 
 	/**
+	 * Find a single post of a given type by its exact title.
+	 *
+	 * Drop-in replacement for `get_page_by_title()`, which core deprecated in
+	 * WordPress 6.2 - five minors below this plugin's declared floor. The query
+	 * arguments mirror core's own deprecated implementation exactly, so the
+	 * behaviour is unchanged: every registered post status is searched, the
+	 * oldest match wins, and `null` is returned when nothing matches.
+	 *
+	 * @param string $post_title Exact post title to look for.
+	 * @param string $post_type  Post type to search within.
+	 *
+	 * @return \WP_Post|null The matching post, or null when there is none.
+	 */
+	private static function find_post_by_title( string $post_title, string $post_type ): ?\WP_Post {
+		$query = new \WP_Query(
+			array(
+				'title'                  => $post_title,
+				'post_type'              => $post_type,
+				'post_status'            => get_post_stati(),
+				'posts_per_page'         => 1,
+				'update_post_term_cache' => false,
+				'update_post_meta_cache' => false,
+				'no_found_rows'          => true,
+				'orderby'                => 'post_date ID',
+				'order'                  => 'ASC',
+			)
+		);
+
+		if ( empty( $query->posts ) ) {
+			return null;
+		}
+
+		$post = get_post( $query->posts[0] );
+
+		return $post instanceof \WP_Post ? $post : null;
+	}
+
+	/**
 	 * Render settings page content.
 	 */
 	public function settings_page_content(): void {
@@ -591,7 +708,7 @@ class Admin_Settings {
                     </div>
                 </div>
 
-                <?php if ( isset( $_GET['blockshift_settings_saved'] ) && '1' === $_GET['blockshift_settings_saved'] ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
+                <?php if ( isset( $_GET['blockshift_settings_saved'] ) && '1' === $_GET['blockshift_settings_saved'] ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Post-redirect flag that only decides whether a notice is shown; the save itself is capability- and nonce-checked in save_all_settings(). ?>
                     <div class="pgs-banner pgs-banner--success" role="status">
                         <span class="pgs-banner__icon"><i data-icon="check-circle-2"></i></span>
                         <div class="pgs-banner__body"><span class="pgs-banner__text"><?php esc_html_e( 'Settings saved.', 'migrate-off-elementor' ); ?></span></div>
@@ -669,7 +786,7 @@ class Admin_Settings {
                                             printf(
                                                 wp_kses(
                                                     /* translators: %s: URL to Conversion Log page */
-                                                    __( 'When enabled, each conversion records which widgets were converted, unsupported, or produced empty output. View the results in the <a href="%s">Conversion Log</a>. The log keeps the last 300 entries and does not affect conversion speed.', 'migrate-off-elementor' ),
+                                                    __( 'Off by default. When enabled, each conversion records which widgets were converted, unsupported, or produced empty output, together with the title and ID of every converted item - including drafts and private posts. View the results in the <a href="%s">Conversion Log</a>. The log keeps the last 300 entries, is written to a protected directory that is not served over the web, and does not affect conversion speed.', 'migrate-off-elementor' ),
                                                     array( 'a' => array( 'href' => array() ) )
                                                 ),
                                                 esc_url( admin_url( 'admin.php?page=blockshift-conversion-log' ) )
@@ -734,7 +851,6 @@ class Admin_Settings {
 
 		$content = $this->parse_elementor_elements( $json_data['content'] );
 		$content = $this->wrap_converted_content( $content );
-		$this->log_inventory_summary();
 
 		return $content;
 	}
@@ -791,31 +907,6 @@ class Admin_Settings {
 		return $updated_content;
 	}
 
-	/**
-	 * Log external CSS inventory summary when debugging is enabled.
-	 *
-	 * @return void
-	 */
-	private function log_inventory_summary(): void {
-		if ( null === $this->external_css_collector ) {
-			return;
-		}
-
-		$inventory = $this->external_css_collector->get_inventory();
-		if ( empty( $inventory ) ) {
-			return;
-		}
-
-		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-			$summary = array(
-				'externalized' => count( $inventory['externalized'] ?? array() ),
-				'dropped'      => count( $inventory['dropped'] ?? array() ),
-				'conversions'  => count( $inventory['conversions'] ?? array() ),
-			);
-
-			error_log( 'inventory: ' . wp_json_encode( $summary ) );
-		}
-	}
 
 	/**
 	 * Render the collected external CSS.

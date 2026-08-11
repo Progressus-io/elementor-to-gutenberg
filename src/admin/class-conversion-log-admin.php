@@ -1,6 +1,4 @@
 <?php
-// phpcs:ignoreFile
-
 /**
  * Conversion Log admin UI page.
  *
@@ -25,6 +23,7 @@ use function get_edit_post_link;
 use function get_option;
 use function get_the_title;
 use function update_option;
+use function wp_delete_file;
 use function wp_die;
 use function wp_kses;
 use function wp_nonce_field;
@@ -66,8 +65,8 @@ class Conversion_Log_Admin {
 	 *
 	 * @param string $hook Current admin page hook suffix.
 	 */
-	public function enqueue_assets( string $hook ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found
-		if ( empty( $_GET['page'] ) || self::MENU_SLUG !== sanitize_key( wp_unslash( $_GET['page'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+	public function enqueue_assets( string $hook ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found -- Signature is fixed by the admin_enqueue_scripts hook; the screen is identified from the page query var instead.
+		if ( empty( $_GET['page'] ) || self::MENU_SLUG !== sanitize_key( wp_unslash( $_GET['page'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only screen check on an enqueue hook; nothing is written, so a nonce would be meaningless here.
 			return;
 		}
 
@@ -129,16 +128,22 @@ class Conversion_Log_Admin {
 
 		delete_option( self::OPTION_LOG );
 
-		$_jsonl = Diagnostic_Logger::log_path();
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_exists
-		if ( file_exists( $_jsonl ) ) {
-			// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
-			unlink( $_jsonl );
-		}
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_exists
-		if ( file_exists( $_jsonl . '.1' ) ) {
-			// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
-			unlink( $_jsonl . '.1' );
+		$jsonl = Diagnostic_Logger::log_path();
+
+		// The legacy path is included so "Clear log" also removes a file left
+		// in the old, publicly readable location by a pre-1.0.1 install.
+		$targets = array(
+			$jsonl,
+			$jsonl . '.1',
+			Diagnostic_Logger::legacy_log_path(),
+			Diagnostic_Logger::legacy_log_path() . '.1',
+		);
+
+		foreach ( $targets as $target ) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_exists -- wp_delete_file() below is the WordPress API for the deletion itself; there is no wrapped existence test, and a missing file must not raise a notice.
+			if ( file_exists( $target ) ) {
+				wp_delete_file( $target );
+			}
 		}
 
 		wp_safe_redirect(
@@ -195,9 +200,9 @@ class Conversion_Log_Admin {
 		// Newest first for the table.
 		$log = array_reverse( $log );
 
-		$filter     = isset( $_GET['status'] ) ? sanitize_key( (string) $_GET['status'] ) : 'all'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$filter     = isset( $_GET['status'] ) ? sanitize_key( (string) $_GET['status'] ) : 'all'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Display-only table filter behind a manage_options check; it changes no state.
 		$logging_on = Admin_Settings::is_logging_enabled();
-		$cleared    = isset( $_GET['blockshift_cleared'] ) && '1' === $_GET['blockshift_cleared']; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$cleared    = isset( $_GET['blockshift_cleared'] ) && '1' === $_GET['blockshift_cleared']; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Post-redirect flag that only decides whether a notice is shown; the clear action itself is nonce-checked in handle_clear_log().
 
 		// Summary counts (computed before filter is applied).
 		$total_count = count( $log );
@@ -244,12 +249,12 @@ class Conversion_Log_Admin {
 
 		// JSONL diagnostic log state.
 		$jsonl_log_path  = Diagnostic_Logger::log_path();
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_exists
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_exists -- Read-only probe of the plugin's own log path while rendering a screen; initialising WP_Filesystem here would prompt for credentials on non-direct hosts.
 		$jsonl_log_exists = file_exists( $jsonl_log_path );
 		$jsonl_log_size   = $jsonl_log_exists ? (int) filesize( $jsonl_log_path ) : 0;
 		$jsonl_log_lines  = array();
 		if ( $jsonl_log_exists && $jsonl_log_size > 0 ) {
-			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Reading a local file the plugin wrote itself, not a remote resource; WP_Filesystem has no line-wise reader and would prompt for credentials.
 			$_all_lines      = file( $jsonl_log_path, FILE_IGNORE_NEW_LINES );
 			$_all_lines      = is_array( $_all_lines ) ? $_all_lines : array();
 			$jsonl_log_lines = array_slice( $_all_lines, -self::JSONL_LOG_TAIL );
@@ -432,7 +437,7 @@ class Conversion_Log_Admin {
 											<div class="pgs-table__count">
 												<?php
 												/* translators: 1: number of Elementor widgets on this page that were converted, 2: total number of Elementor widgets found on this page. */
-												printf( esc_html__( '%1$d / %2$d', 'migrate-off-elementor' ), $converted_w, $total_w );
+												printf( esc_html__( '%1$d / %2$d', 'migrate-off-elementor' ), (int) $converted_w, (int) $total_w );
 												?>
 											</div>
 										<?php else : ?>
@@ -447,7 +452,7 @@ class Conversion_Log_Admin {
 													<?php
 													$nt = count( $unsp_types );
 													/* translators: %d: number of distinct Elementor widget types on this page that have no block equivalent. */
-													printf( esc_html( _n( '%d unsupported type', '%d unsupported types', $nt, 'migrate-off-elementor' ) ), $nt );
+													printf( esc_html( _n( '%d unsupported type', '%d unsupported types', $nt, 'migrate-off-elementor' ) ), (int) $nt );
 													?>
 												</summary>
 												<ul style="margin:6px 0 0 16px;padding:0;font-size:var(--text-xs);color:var(--text-muted);list-style:disc;">
@@ -460,7 +465,7 @@ class Conversion_Log_Admin {
 												<div class="pgs-table__meta">
 													<?php
 													/* translators: %d: number of Elementor widgets on this page that converted to empty block output, in addition to the unsupported types listed above. */
-													printf( esc_html( _n( '+%d empty output', '+%d empty outputs', $empty_w, 'migrate-off-elementor' ) ), $empty_w );
+													printf( esc_html( _n( '+%d empty output', '+%d empty outputs', $empty_w, 'migrate-off-elementor' ) ), (int) $empty_w );
 													?>
 												</div>
 											<?php endif; ?>
@@ -469,7 +474,7 @@ class Conversion_Log_Admin {
 												<i data-icon="info"></i>
 												<?php
 												/* translators: %d: number of Elementor widgets on this page that converted to empty block output. */
-												printf( esc_html( _n( '%d empty output', '%d empty outputs', $empty_w, 'migrate-off-elementor' ) ), $empty_w );
+												printf( esc_html( _n( '%d empty output', '%d empty outputs', $empty_w, 'migrate-off-elementor' ) ), (int) $empty_w );
 												?>
 											</span>
 										<?php else : ?>
@@ -487,8 +492,8 @@ class Conversion_Log_Admin {
 							printf(
 								/* translators: 1: number of conversion log entries currently listed in the table, 2: maximum number of entries the log keeps before the oldest are discarded. */
 								esc_html__( 'Showing %1$d entries. Log retains the last %2$d entries; oldest are discarded automatically.', 'migrate-off-elementor' ),
-								count( $log ),
-								self::MAX_ENTRIES
+								(int) count( $log ),
+								(int) self::MAX_ENTRIES
 							);
 							?>
 						</div>
@@ -518,7 +523,7 @@ class Conversion_Log_Admin {
 								<?php
 								if ( $jsonl_log_exists && $jsonl_log_size > 0 ) {
 									echo esc_html( size_format( $jsonl_log_size ) );
-									// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_exists
+									// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_exists -- Read-only probe of the plugin's own rotated log while rendering a screen.
 									if ( file_exists( $jsonl_log_path . '.1' ) ) {
 										echo ' &nbsp;';
 										esc_html_e( '(rotated backup: .jsonl.1 also present)', 'migrate-off-elementor' );
