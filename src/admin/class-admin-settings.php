@@ -2448,10 +2448,13 @@ class Admin_Settings {
 
 		check_admin_referer( 'blockshift_save_settings' );
 
-		$raw = isset( $_POST['blockshift_integrations_settings'] ) ? wp_unslash( $_POST['blockshift_integrations_settings'] ) : array();
-		$raw = is_array( $raw ) ? $raw : array();
+		$submitted = '';
+		if ( isset( $_POST['blockshift_integrations_settings']['google_maps_api_key'] )
+			&& is_string( $_POST['blockshift_integrations_settings']['google_maps_api_key'] ) ) {
+			$submitted = sanitize_text_field( wp_unslash( $_POST['blockshift_integrations_settings']['google_maps_api_key'] ) );
+		}
 
-		$api_key = self::sanitize_google_maps_api_key( $raw['google_maps_api_key'] ?? '' );
+		$api_key = self::sanitize_google_maps_api_key( $submitted );
 
 		update_option( self::OPTION_GOOGLE_MAPS_API_KEY, $api_key, false );
 	}
