@@ -36,6 +36,25 @@ class Gutenberg {
 	 */
 	public const FULL_WIDTH_CSS_HANDLE = 'blockshift-full-width-page';
 
+	/**
+	 * Option holding, per form name, the field names that form's block declares.
+	 * Written when a page containing a form block is rendered, and read by the
+	 * submission handler so it never has to trust the shape of the request.
+	 */
+	private const OPTION_FORM_FIELDS = 'blockshift_form_fields';
+
+	/**
+	 * Form name used when a form block does not set one. Matches the default in
+	 * src/blocks/form/block.json.
+	 */
+	private const DEFAULT_FORM_NAME = 'contact-form';
+
+	/**
+	 * Fields declared by src/blocks/form/block.json for a form block that has
+	 * never had its field list customised.
+	 */
+	private const DEFAULT_FORM_FIELDS = array( 'name', 'email', 'message' );
+
 
 	/**
 	 * Instance to call certain functions globally within the plugin
@@ -261,6 +280,103 @@ class Gutenberg {
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_converted_page_css' ), 9999 );
 		add_filter( 'wp_theme_json_data_default', array( $this, 'inject_elementor_typography_theme_json' ) );
 		add_filter( 'wp_resource_hints', array( $this, 'add_font_resource_hints' ), 10, 2 );
+		add_filter( 'render_block_blockshift/google-map', array( $this, 'apply_google_maps_api_key' ), 10, 2 );
+	}
+
+	/**
+	 * Swap a Map block's keyless embed for the Google Maps Embed API when the
+	 * site owner has stored an API key.
+	 *
+	 * The key is applied here, at render time, and never written into post
+	 * content: saved markup stays byte-identical, every already-converted page
+	 * picks the key up at once, and clearing the key restores the keyless embed
+	 * without touching a single post. With no key stored this returns the block
+	 * exactly as it was saved.
+	 *
+	 * @param string               $block_content Rendered block HTML.
+	 * @param array<string, mixed> $block         Parsed block, including its attributes.
+	 *
+	 * @return string
+	 */
+	public function apply_google_maps_api_key( $block_content, $block ): string {
+		$block_content = (string) $block_content;
+
+		$api_key = Admin_Settings::get_google_maps_api_key();
+		if ( '' === $api_key ) {
+			return $block_content;
+		}
+
+		$attributes = isset( $block['attrs'] ) && is_array( $block['attrs'] ) ? $block['attrs'] : array();
+
+		$src = self::build_google_maps_embed_src( $attributes, $api_key );
+		if ( '' === $src ) {
+			return $block_content;
+		}
+
+		$replaced = preg_replace_callback(
+			'#(<iframe\b[^>]*\ssrc=")https://maps\.google\.com/maps\?[^"]*(")#i',
+			static function ( $matches ) use ( $src ) {
+				return $matches[1] . esc_url( $src ) . $matches[2];
+			},
+			$block_content,
+			1
+		);
+
+		return null === $replaced ? $block_content : $replaced;
+	}
+
+	/**
+	 * Build a Maps Embed API URL from a Map block's attributes.
+	 *
+	 * Mirrors the attribute precedence in src/blocks/google-map/save.js: the
+	 * `location` object wins over the legacy flat attributes, and coordinates win
+	 * over the address.
+	 *
+	 * @param array<string, mixed> $attributes Block attributes.
+	 * @param string               $api_key    Google Maps API key.
+	 *
+	 * @return string Embed URL, or an empty string when the block has no location.
+	 */
+	private static function build_google_maps_embed_src( array $attributes, string $api_key ): string {
+		$location = isset( $attributes['location'] ) && is_array( $attributes['location'] ) ? $attributes['location'] : array();
+
+		$address = '';
+		if ( isset( $location['address'] ) && '' !== $location['address'] ) {
+			$address = (string) $location['address'];
+		} elseif ( isset( $attributes['address'] ) ) {
+			$address = (string) $attributes['address'];
+		}
+
+		$lat = null;
+		if ( isset( $location['lat'] ) && null !== $location['lat'] && '' !== $location['lat'] ) {
+			$lat = (float) $location['lat'];
+		} elseif ( isset( $attributes['lat'] ) && null !== $attributes['lat'] && '' !== $attributes['lat'] ) {
+			$lat = (float) $attributes['lat'];
+		}
+
+		$lng = null;
+		if ( isset( $location['lng'] ) && null !== $location['lng'] && '' !== $location['lng'] ) {
+			$lng = (float) $location['lng'];
+		} elseif ( isset( $attributes['lng'] ) && null !== $attributes['lng'] && '' !== $attributes['lng'] ) {
+			$lng = (float) $attributes['lng'];
+		}
+
+		$zoom = isset( $attributes['zoom'] ) ? (int) $attributes['zoom'] : 14;
+		if ( $zoom < 1 || $zoom > 21 ) {
+			$zoom = 14;
+		}
+
+		if ( null !== $lat && null !== $lng ) {
+			$query = $lat . ',' . $lng;
+		} elseif ( '' !== $address ) {
+			$query = $address;
+		} else {
+			return '';
+		}
+
+		return 'https://www.google.com/maps/embed/v1/place?key=' . rawurlencode( $api_key )
+			. '&q=' . rawurlencode( $query )
+			. '&zoom=' . $zoom;
 	}
 
 	/**
@@ -274,13 +390,52 @@ class Gutenberg {
 			BLOCKSHIFT_VERSION
 		);
 
+		$this->expose_google_maps_api_key_to_editor();
+
 		$this->enqueue_converted_post_fonts( $this->detect_editor_post_id() );
 	}
 
 	/**
+	 * Make the optional Google Maps API key readable by the Map block's editor
+	 * component, so the editor preview matches what the front end will render.
+	 *
+	 * The key is not part of any block attribute and is never written into post
+	 * content; it only reaches users who can already edit content.
+	 */
+	private function expose_google_maps_api_key_to_editor(): void {
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			return;
+		}
+
+		if ( ! wp_script_is( 'wp-blocks', 'registered' ) ) {
+			return;
+		}
+
+		wp_add_inline_script(
+			'wp-blocks',
+			'window.blockshiftGoogleMap = ' . wp_json_encode(
+				array(
+					'apiKey'      => Admin_Settings::get_google_maps_api_key(),
+					'settingsUrl' => admin_url( 'admin.php?page=blockshift-settings' ),
+				)
+			) . ';',
+			'before'
+		);
+	}
+
+	/**
 	 * Enqueue styles for admin screens.
+	 *
+	 * Scoped to the screens that need them: this plugin's own screens, which use
+	 * the icon font in their UI, and the block editor, where the icon blocks
+	 * render. Every other screen in wp-admin - core's and other plugins' - used
+	 * to load 102 KB of icon CSS and its webfonts for nothing.
 	 */
 	public function fontawesome_icon_block_enqueue_fontawesome() {
+		if ( ! $this->is_plugin_admin_screen() ) {
+			return;
+		}
+
 		wp_enqueue_style(
 			'font-awesome-custom',
 			BLOCKSHIFT_DIR_URL . '/assets/vendor/fontawesome/css/all.min.css',
@@ -297,9 +452,73 @@ class Gutenberg {
 	}
 
 	/**
+	 * Whether the current admin screen is one of this plugin's own screens, or a
+	 * block editor screen where this plugin's blocks can be rendered.
+	 */
+	private function is_plugin_admin_screen(): bool {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Reading the screen slug to decide whether to enqueue an asset; no state changes.
+		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+
+		$plugin_pages = array(
+			'blockshift-settings',
+			Batch_Convert_Wizard::MENU_SLUG,
+			Conversion_Log_Admin::MENU_SLUG,
+		);
+
+		if ( '' !== $page && in_array( $page, $plugin_pages, true ) ) {
+			return true;
+		}
+
+		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+		if ( is_object( $screen ) && method_exists( $screen, 'is_block_editor' ) && $screen->is_block_editor() ) {
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Whether the post being served carries any of this plugin's content.
+	 *
+	 * Converted pages and this plugin's blocks both leave "blockshift" in the
+	 * post content - as a `wp:blockshift/*` block name, a `blockshift-*` class,
+	 * or a converted-page wrapper id - so one lookup over content WordPress has
+	 * already loaded answers it.
+	 */
+	private function current_post_has_plugin_content(): bool {
+		if ( ! is_singular() ) {
+			return false;
+		}
+
+		$post_id = (int) get_queried_object_id();
+		if ( $post_id <= 0 ) {
+			return false;
+		}
+
+		$content = (string) get_post_field( 'post_content', $post_id );
+		if ( '' === $content ) {
+			return false;
+		}
+
+		return false !== strpos( $content, 'blockshift' );
+	}
+
+	/**
 	 * Enqueue scripts and styles.
+	 *
+	 * The converted-page fonts and the WooCommerce widget styles decide for
+	 * themselves, per post, whether they are needed. Everything else here belongs
+	 * to this plugin's own markup, so it is skipped entirely on pages that carry
+	 * none of it - which used to be every page on the site.
 	 */
 	public function enqueue_scripts(): void {
+		$this->enqueue_converted_post_fonts();
+		$this->enqueue_woocommerce_widget_styles();
+
+		if ( ! $this->current_post_has_plugin_content() ) {
+			return;
+		}
+
 		wp_enqueue_style(
 			'font-awesome-custom',
 			BLOCKSHIFT_DIR_URL . '/assets/vendor/fontawesome/css/all.min.css',
@@ -346,8 +565,6 @@ class Gutenberg {
 			);
 		}
 
-		$this->enqueue_converted_post_fonts();
-
 		// Enqueue form submission script if form block is present
 		if ( has_block( 'blockshift/form' ) ) {
 			wp_localize_script(
@@ -358,9 +575,131 @@ class Gutenberg {
 					'nonce'   => wp_create_nonce( 'blockshift_form_nonce' ),
 				)
 			);
+
+			$this->remember_declared_form_fields( (int) get_queried_object_id() );
+		}
+	}
+
+	/**
+	 * Record the fields each form block on a rendered page declares, so the
+	 * submission handler has an allow-list to work from without querying for it.
+	 *
+	 * @param int $post_id Post being rendered.
+	 */
+	private function remember_declared_form_fields( int $post_id ): void {
+		if ( $post_id <= 0 ) {
+			return;
 		}
 
-		$this->enqueue_woocommerce_widget_styles();
+		$declared = self::collect_declared_form_fields( (string) get_post_field( 'post_content', $post_id ) );
+		if ( empty( $declared ) ) {
+			return;
+		}
+
+		$stored = get_option( self::OPTION_FORM_FIELDS, array() );
+		$stored = is_array( $stored ) ? $stored : array();
+
+		$merged = array_merge( $stored, $declared );
+		if ( $merged === $stored ) {
+			return;
+		}
+
+		update_option( self::OPTION_FORM_FIELDS, $merged, false );
+	}
+
+	/**
+	 * Map of form name => declared field names, read out of the form blocks in
+	 * a piece of post content.
+	 *
+	 * @param string $content Post content.
+	 *
+	 * @return array<string, array<int, string>>
+	 */
+	private static function collect_declared_form_fields( string $content ): array {
+		$map = array();
+
+		if ( '' === $content || false === strpos( $content, 'wp:blockshift/form' ) ) {
+			return $map;
+		}
+
+		self::walk_blocks_for_form_fields( parse_blocks( $content ), $map );
+
+		return $map;
+	}
+
+	/**
+	 * Recursive worker for collect_declared_form_fields().
+	 *
+	 * @param array<int, array<string, mixed>> $blocks Parsed blocks.
+	 * @param array<string, array<int, string>> $map   Accumulator, by reference.
+	 */
+	private static function walk_blocks_for_form_fields( array $blocks, array &$map ): void {
+		foreach ( $blocks as $block ) {
+			if ( ! is_array( $block ) ) {
+				continue;
+			}
+
+			if ( isset( $block['blockName'] ) && 'blockshift/form' === $block['blockName'] ) {
+				$attrs = isset( $block['attrs'] ) && is_array( $block['attrs'] ) ? $block['attrs'] : array();
+
+				$form_name = isset( $attrs['formName'] ) ? sanitize_text_field( (string) $attrs['formName'] ) : self::DEFAULT_FORM_NAME;
+				if ( '' === $form_name ) {
+					$form_name = self::DEFAULT_FORM_NAME;
+				}
+
+				$fields = array();
+				if ( isset( $attrs['formFields'] ) && is_array( $attrs['formFields'] ) ) {
+					foreach ( $attrs['formFields'] as $field ) {
+						if ( ! is_array( $field ) || empty( $field['customId'] ) ) {
+							continue;
+						}
+
+						$key = sanitize_key( (string) $field['customId'] );
+						if ( '' !== $key ) {
+							$fields[] = $key;
+						}
+					}
+				}
+
+				// A form block that never overrode the attribute carries the
+				// defaults declared in block.json.
+				$map[ $form_name ] = empty( $fields ) ? self::DEFAULT_FORM_FIELDS : array_values( array_unique( $fields ) );
+			}
+
+			if ( ! empty( $block['innerBlocks'] ) && is_array( $block['innerBlocks'] ) ) {
+				self::walk_blocks_for_form_fields( $block['innerBlocks'], $map );
+			}
+		}
+	}
+
+	/**
+	 * The fields a submission for the given form name is allowed to carry.
+	 *
+	 * @param string $form_name Submitted form name.
+	 *
+	 * @return array<int, string>
+	 */
+	private function get_declared_form_fields( string $form_name ): array {
+		$stored = get_option( self::OPTION_FORM_FIELDS, array() );
+		if ( is_array( $stored ) && ! empty( $stored[ $form_name ] ) && is_array( $stored[ $form_name ] ) ) {
+			return $stored[ $form_name ];
+		}
+
+		// Nothing recorded for this form - which happens when a full-page cache
+		// means the front-end render never ran. Read the declaration off the page
+		// the submission came from instead.
+		$referer = wp_get_referer();
+		if ( is_string( $referer ) && '' !== $referer ) {
+			$post_id = url_to_postid( $referer );
+			if ( $post_id > 0 ) {
+				$declared = self::collect_declared_form_fields( (string) get_post_field( 'post_content', $post_id ) );
+				if ( ! empty( $declared[ $form_name ] ) ) {
+					return $declared[ $form_name ];
+				}
+			}
+		}
+
+		return self::DEFAULT_FORM_FIELDS;
 	}
 
 	/**
@@ -406,6 +745,15 @@ class Gutenberg {
 	 */
 	public function add_font_resource_hints( array $urls, string $relation_type ): array {
 		if ( 'preconnect' !== $relation_type ) {
+			return $urls;
+		}
+
+		// Only hint at hosts this response is actually going to use. The font
+		// stylesheet is enqueued conditionally, on wp_enqueue_scripts, which runs
+		// before wp_resource_hints - so if nothing was enqueued for this request,
+		// there is nothing to preconnect to, and a page with no converted fonts
+		// must not open a connection to Google.
+		if ( empty( $this->enqueued_font_handles ) ) {
 			return $urls;
 		}
 
@@ -506,11 +854,17 @@ class Gutenberg {
 		$form_name = isset( $_POST['form_name'] ) ? sanitize_text_field( wp_unslash( $_POST['form_name'] ) ) : '';
 		$form_data = array();
 
-		// Collect all form fields
-		foreach ( $_POST as $key => $value ) {
-			if ( ! in_array( $key, array( 'action', 'nonce', 'form_name' ), true ) ) {
-				$form_data[ sanitize_key( $key ) ] = sanitize_text_field( wp_unslash( $value ) );
+		// Collect only the fields the submitted form's block declares, and ignore
+		// everything else in the request: an anonymous caller no longer decides
+		// what ends up in the site owner's inbox.
+		foreach ( $this->get_declared_form_fields( $form_name ) as $field ) {
+			if ( ! isset( $_POST[ $field ] ) ) {
+				continue;
 			}
+
+			// sanitize_text_field() returns '' for arrays and objects, which is
+			// what keeps a crafted array value from causing a fatal here.
+			$form_data[ sanitize_key( $field ) ] = sanitize_text_field( wp_unslash( $_POST[ $field ] ) );
 		}
 
 		// Get admin email

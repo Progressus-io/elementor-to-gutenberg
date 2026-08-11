@@ -134,7 +134,9 @@ They're converted with a safe general-purpose fallback so the page still comes t
 
 = Do I need to pay for anything or get an "API key"? =
 
-No — the conversion is completely free and runs entirely on your own site. No account or API key is required.
+No — the conversion is completely free and runs entirely on your own site, and no account is required.
+
+One optional key exists: Settings > Integrations has a field for a Google Maps API key. Leave it empty (the default) and converted Map blocks keep using the keyless Google Maps embed, exactly as before. Fill it in and Map blocks are rendered through the Google Maps Embed API on your own Google account instead. It changes nothing else, it is applied when a page is rendered rather than saved into your pages, and clearing it puts every map straight back to the keyless embed.
 
 = Why isn't the converted page 100% identical? =
 
@@ -150,11 +152,11 @@ Yes. Converted pages use standard WordPress blocks, so they work with any modern
 
 = Is any of my data sent to outside services? =
 
-The conversion itself runs entirely on your own site. A few optional features do connect to outside services (address suggestions when editing a Map, any Google fonts/maps/videos your page already used, and sending feedback if you choose to). Each one is explained in full in the **External services** section below, and the feedback feature only ever runs when you choose to start it.
+The conversion itself runs entirely on your own site. A few optional features do connect to outside services (any Google fonts/maps/videos your page already used, and sending feedback if you choose to). Each one is explained in full in the **External services** section below, and the feedback feature only ever runs when you choose to start it.
 
 == External services ==
 
-This plugin can connect to the third-party services listed below. The feedback service is only contacted from the admin area, as part of an action you explicitly start (submitting feedback). The others load only when a converted page that uses those features is viewed, or while editing a Map block.
+This plugin can connect to the third-party services listed below. The feedback service is only contacted from the admin area, as part of an action you explicitly start (submitting feedback). The others load only when a converted page that uses those features is viewed, or while a Map block is open in the block editor.
 
 = Feedback service =
 
@@ -172,17 +174,19 @@ This service is provided by Google. Terms: https://policies.google.com/terms —
 
 = Embedded maps and videos =
 
-If a converted page contains a map or video, the page embeds it from Google Maps (https://maps.google.com) or YouTube (https://www.youtube.com), the same way the original Elementor page did. These embeds load only when such a page is viewed.
+If a converted page contains a map or video, the page embeds it from Google Maps (https://maps.google.com) or YouTube (https://www.youtube.com), the same way the original Elementor page did. These embeds load when such a page is viewed, and also in the block editor while a Map block is open, so that you can see a preview of the map you are editing. In the editor the preview is rebuilt once you stop typing, not on every keystroke.
+
+A Google Maps embed is a page served by Google inside an iframe. Once it loads, Google's own code in that iframe fetches map tiles and its supporting resources from further Google hosts: https://www.google.com, https://maps.googleapis.com, https://places.googleapis.com, https://maps.gstatic.com, https://fonts.googleapis.com and https://fonts.gstatic.com. The plugin sends Google only the address or the coordinates stored in the block, plus the zoom level.
 
 Provided by Google. Terms: https://policies.google.com/terms and https://www.youtube.com/t/terms — Privacy policy: https://policies.google.com/privacy
 
-= OpenStreetMap (Nominatim) =
+= Google Maps Embed API =
 
-Used for address autocomplete when you edit a Map block in the block editor.
+Only used if you enter a Google Maps API key in Settings > Integrations. There is no key by default and this service is not contacted until you set one.
 
-While editing a Map block, as you type an address (3 or more characters), the plugin sends that address text to the OpenStreetMap Nominatim geocoding service (https://nominatim.openstreetmap.org) and displays matching location suggestions. This happens only in the admin editor, never on the public-facing site.
+With a key set, Map blocks are embedded from the Google Maps Embed API (https://www.google.com/maps/embed/v1/place) instead of the keyless Google Maps embed, both on the public page and in the block editor preview. The plugin sends Google your API key, the address or coordinates stored in the block, and the zoom level.
 
-This service is provided by the OpenStreetMap Foundation. Usage policy: https://operations.osmfoundation.org/policies/nominatim/ — Privacy policy: https://wiki.osmfoundation.org/wiki/Privacy_Policy
+Provided by Google. Terms: https://policies.google.com/terms and https://cloud.google.com/maps-platform/terms — Privacy policy: https://policies.google.com/privacy
 
 == Screenshots ==
 

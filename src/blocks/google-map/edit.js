@@ -10,6 +10,96 @@ import {
 } from '@wordpress/components';
 import { Fragment, useState, useEffect, useRef } from '@wordpress/element';
 
+/**
+ * How long the address has to stay unchanged before the editor preview is
+ * rebuilt. Every rebuild loads a live Google Maps document in an iframe, which
+ * then fetches its own scripts and map tiles, so rebuilding per keystroke turns
+ * one edited address into dozens of third-party requests.
+ */
+const PREVIEW_DEBOUNCE_MS = 800;
+
+/**
+ * The optional Google Maps API key, as exposed to the editor by the plugin.
+ *
+ * Empty when the site owner has not set one, which is the default.
+ *
+ * @return {string} API key or an empty string.
+ */
+const getApiKey = () => {
+	if ( typeof window === 'undefined' || ! window.blockshiftGoogleMap ) {
+		return '';
+	}
+
+	const key = window.blockshiftGoogleMap.apiKey;
+
+	return typeof key === 'string' ? key : '';
+};
+
+/**
+ * URL of the plugin's Settings screen, as exposed to the editor.
+ *
+ * Falls back to the default admin path when the value is missing, which keeps
+ * the link working on a stock install.
+ *
+ * @return {string} Admin URL of the Settings screen.
+ */
+const getSettingsUrl = () => {
+	if (
+		typeof window !== 'undefined' &&
+		window.blockshiftGoogleMap &&
+		typeof window.blockshiftGoogleMap.settingsUrl === 'string' &&
+		window.blockshiftGoogleMap.settingsUrl
+	) {
+		return window.blockshiftGoogleMap.settingsUrl;
+	}
+
+	return '/wp-admin/admin.php?page=blockshift-settings';
+};
+
+/**
+ * Build the preview iframe URL for a location.
+ *
+ * Without a key this is the keyless embed URL that save.js writes into post
+ * content. With a key it is the Maps Embed API URL the front end substitutes at
+ * render time, so the preview shows what a visitor will get.
+ *
+ * @param {Object} location Debounced location: address, lat, lng, zoom.
+ * @param {string} apiKey   Google Maps API key, or an empty string.
+ *
+ * @return {string} Embed URL, or an empty string when there is no location.
+ */
+const buildEmbedSrc = ( location, apiKey ) => {
+	const hasCoordinates = location.lat !== null && location.lng !== null;
+
+	if ( ! hasCoordinates && ! location.address ) {
+		return '';
+	}
+
+	if ( apiKey ) {
+		const query = hasCoordinates
+			? `${ location.lat },${ location.lng }`
+			: location.address;
+
+		return `https://www.google.com/maps/embed/v1/place?key=${ encodeURIComponent(
+			apiKey
+		) }&q=${ encodeURIComponent( query ) }&zoom=${ encodeURIComponent(
+			location.zoom
+		) }`;
+	}
+
+	// Character for character what save.js writes, including the unencoded comma
+	// between coordinates, so a keyless preview matches the saved markup.
+	const keylessQuery = hasCoordinates
+		? `${ encodeURIComponent( location.lat ) },${ encodeURIComponent(
+				location.lng
+		  ) }`
+		: encodeURIComponent( location.address );
+
+	return `https://maps.google.com/maps?q=${ keylessQuery }&z=${ encodeURIComponent(
+		location.zoom
+	) }&output=embed`;
+};
+
 const mapTypes = [
 	{ label: __( 'Roadmap', 'migrate-off-elementor' ), value: 'roadmap' },
 	{ label: __( 'Satellite', 'migrate-off-elementor' ), value: 'satellite' },
@@ -44,16 +134,10 @@ const Edit = ( { attributes, setAttributes } ) => {
 
 	const blockProps = useBlockProps();
 	const mapContainerRef = useRef( null );
-	const inputRef = useRef( null );
 	const mapRef = useRef( null );
 	const markerRef = useRef( null );
-	const autocompleteRef = useRef( null );
-	const debounceRef = useRef( null );
 
 	const [ query, setQuery ] = useState( locAddress || '' );
-	const [ suggestions, setSuggestions ] = useState( [] );
-	const [ isLoading, setIsLoading ] = useState( false );
-	const [ showSuggestions, setShowSuggestions ] = useState( false );
 	// Helper to convert stored spacing values to CSS strings for BoxControl display.
 	const valueToCss = ( v ) => {
 		if ( v === undefined || v === null || v === '' ) {
@@ -94,70 +178,29 @@ const Edit = ( { attributes, setAttributes } ) => {
 		setQuery( locAddress || '' );
 	}, [ locAddress ] );
 
+	// Location the preview is currently built from. It lags the attributes by
+	// PREVIEW_DEBOUNCE_MS so that typing an address produces one preview, not one
+	// per keystroke. Seeded with the stored values so an existing block previews
+	// immediately on open.
+	const [ previewLocation, setPreviewLocation ] = useState( {
+		address: locAddress,
+		lat: locLat,
+		lng: locLng,
+		zoom,
+	} );
+
 	useEffect( () => {
-		// If Google Places is available, skip the Nominatim fallback here to avoid
-		// initializing autocomplete in the editor during build-time.
-		if (
-			typeof window !== 'undefined' &&
-			window.google &&
-			window.google.maps &&
-			window.google.maps.places
-		) {
-			return;
-		}
+		const timer = setTimeout( () => {
+			setPreviewLocation( {
+				address: locAddress,
+				lat: locLat,
+				lng: locLng,
+				zoom,
+			} );
+		}, PREVIEW_DEBOUNCE_MS );
 
-		if ( ! query || query.length < 3 ) {
-			setSuggestions( [] );
-			setShowSuggestions( false );
-			return;
-		}
-
-		setIsLoading( true );
-		setShowSuggestions( true );
-
-		if ( debounceRef.current ) {
-			clearTimeout( debounceRef.current );
-		}
-		debounceRef.current = setTimeout( () => {
-			const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=5&q=${ encodeURIComponent(
-				query
-			) }`;
-
-			fetch( url, { headers: { Accept: 'application/json' } } )
-				.then( ( res ) => res.json() )
-				.then( ( data ) => {
-					setSuggestions(
-						( data || [] ).map( ( item ) => ( {
-							label: item.display_name,
-							lat: item.lat,
-							lon: item.lon,
-						} ) )
-					);
-				} )
-				.catch( () => setSuggestions( [] ) )
-				.finally( () => setIsLoading( false ) );
-		}, 300 );
-
-		return () => clearTimeout( debounceRef.current );
-	}, [ query ] );
-
-	const selectSuggestion = ( s ) => {
-		const locationObj = {
-			address: s.label,
-			lat: parseFloat( s.lat ),
-			lng: parseFloat( s.lon ),
-		};
-		// Set both `location` (Elementor-style) and legacy fields for compatibility
-		setAttributes( {
-			location: locationObj,
-			address: s.label,
-			lat: locationObj.lat,
-			lng: locationObj.lng,
-		} );
-		setQuery( s.label );
-		setSuggestions( [] );
-		setShowSuggestions( false );
-	};
+		return () => clearTimeout( timer );
+	}, [ locAddress, locLat, locLng, zoom ] );
 
 	const onAddressChange = ( value ) => {
 		setQuery( value );
@@ -196,26 +239,29 @@ const Edit = ( { attributes, setAttributes } ) => {
 		// Create map
 		try {
 			const center =
-				locLat !== null && locLng !== null
-					? { lat: parseFloat( locLat ), lng: parseFloat( locLng ) }
+				previewLocation.lat !== null && previewLocation.lng !== null
+					? {
+							lat: parseFloat( previewLocation.lat ),
+							lng: parseFloat( previewLocation.lng ),
+					  }
 					: null;
 
 			mapRef.current = new window.google.maps.Map(
 				mapContainerRef.current,
 				{
-					zoom: zoom || 14,
+					zoom: previewLocation.zoom || 14,
 					mapTypeId: mapType || 'roadmap',
 				}
 			);
 
 			if ( center ) {
 				mapRef.current.setCenter( center );
-			} else if ( locAddress ) {
+			} else if ( previewLocation.address ) {
 				// Geocode address to center map in the editor preview
 				try {
 					const geocoder = new window.google.maps.Geocoder();
 					geocoder.geocode(
-						{ address: locAddress },
+						{ address: previewLocation.address },
 						( results, status ) => {
 							if ( status === 'OK' && results && results[ 0 ] ) {
 								mapRef.current.setCenter(
@@ -244,82 +290,16 @@ const Edit = ( { attributes, setAttributes } ) => {
 				}
 			} catch ( e ) {}
 		};
-	}, [ locLat, locLng, locAddress, zoom, mapType ] );
+	}, [ previewLocation, mapType ] );
 
-	// Initialize Places Autocomplete in the editor when available.
-	useEffect( () => {
-		if (
-			typeof window === 'undefined' ||
-			! window.google ||
-			! window.google.maps ||
-			! window.google.maps.places
-		) {
-			return;
-		}
-		if ( ! inputRef.current ) {
-			return;
-		}
-
-		try {
-			autocompleteRef.current =
-				new window.google.maps.places.Autocomplete( inputRef.current );
-			autocompleteRef.current.setFields( [
-				'formatted_address',
-				'geometry',
-			] );
-			const listener = () => {
-				const place = autocompleteRef.current.getPlace();
-				if ( ! place ) {
-					return;
-				}
-				const lat =
-					place.geometry && place.geometry.location
-						? place.geometry.location.lat()
-						: null;
-				const lng =
-					place.geometry && place.geometry.location
-						? place.geometry.location.lng()
-						: null;
-				const address =
-					place.formatted_address || inputRef.current.value || '';
-				const locationObj = { address, lat, lng };
-				setAttributes( {
-					location: locationObj,
-					address,
-					lat,
-					lng,
-				} );
-				setQuery( address );
-			};
-			autocompleteRef.current.addListener( 'place_changed', listener );
-
-			return () => {
-				try {
-					window.google.maps.event.clearInstanceListeners(
-						autocompleteRef.current
-					);
-				} catch ( e ) {}
-				autocompleteRef.current = null;
-			};
-		} catch ( e ) {
-			// ignore
-		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [] );
-
-	// Prepare iframe src like save.js
-	let src = '';
-	if ( locLat !== null && locLng !== null ) {
-		src = `https://maps.google.com/maps?q=${ encodeURIComponent(
-			locLat
-		) },${ encodeURIComponent( locLng ) }&z=${ encodeURIComponent(
-			zoom
-		) }&output=embed`;
-	} else if ( locAddress ) {
-		src = `https://maps.google.com/maps?q=${ encodeURIComponent(
-			locAddress
-		) }&z=${ encodeURIComponent( zoom ) }&output=embed`;
-	}
+	// Prepare iframe src, from the debounced location so the embed is created
+	// once the address settles rather than on every keystroke.
+	//
+	// With no API key stored this is the same keyless URL save.js writes, so the
+	// preview matches the front end. With a key stored, the front end swaps the
+	// same block over to the Maps Embed API when it renders it, and the preview
+	// follows. The key is never written into the block's attributes.
+	const src = buildEmbedSrc( previewLocation, getApiKey() );
 
 	return (
 		<Fragment>
@@ -330,11 +310,11 @@ const Edit = ( { attributes, setAttributes } ) => {
 				>
 					<p style={ { marginTop: 0, marginBottom: 8 } }>
 						{ __(
-							"Set your Google Maps API Key in the plugin's Integrations Settings page.",
+							"Optional: set a Google Maps API key under Integrations on the plugin's Settings page to render maps through the Google Maps Embed API. Without a key the map still works.",
 							'migrate-off-elementor'
 						) }{ ' ' }
 						<a
-							href="/wp-admin/admin.php?page=blockshift-settings"
+							href={ getSettingsUrl() }
 							target="_blank"
 							rel="noopener noreferrer"
 						>
@@ -359,81 +339,17 @@ const Edit = ( { attributes, setAttributes } ) => {
 						<input
 							id="google-map-address-input"
 							type="text"
-							ref={ inputRef }
 							className="components-text-control__input"
 							value={ query }
 							onChange={ ( e ) =>
 								onAddressChange( e.target.value )
 							}
-							onFocus={ () => {
-								if ( suggestions.length ) {
-									setShowSuggestions( true );
-								}
-							} }
-							onBlur={ () =>
-								setTimeout(
-									() => setShowSuggestions( false ),
-									150
-								)
-							}
 							placeholder={ __(
-								'Start typing an address…',
+								'Enter an address',
 								'migrate-off-elementor'
 							) }
 							style={ { width: '100%' } }
 						/>
-
-						{ showSuggestions && (
-							<div
-								style={ {
-									border: '1px solid #ddd',
-									background: '#fff',
-									maxHeight: 200,
-									overflowY: 'auto',
-									marginTop: 4,
-									zIndex: 9999,
-								} }
-							>
-								{ isLoading && (
-									<div style={ { padding: 8 } }>
-										{ __(
-											'Searching…',
-											'migrate-off-elementor'
-										) }
-									</div>
-								) }
-								{ ! isLoading && suggestions.length === 0 && (
-									<div style={ { padding: 8 } }>
-										{ __(
-											'No suggestions',
-											'migrate-off-elementor'
-										) }
-									</div>
-								) }
-								{ suggestions.map( ( s, i ) => (
-									<button
-										key={ i }
-										type="button"
-										className="components-button"
-										onMouseDown={ ( e ) => {
-											// prevent blur
-											e.preventDefault();
-											selectSuggestion( s );
-										} }
-										style={ {
-											display: 'block',
-											width: '100%',
-											textAlign: 'left',
-											padding: '8px 10px',
-											border: 'none',
-											background: 'transparent',
-										} }
-									>
-										{ s.label }
-									</button>
-								) ) }
-							</div>
-						) }
 					</div>
 
 					<TextControl

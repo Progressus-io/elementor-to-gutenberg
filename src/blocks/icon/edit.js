@@ -43,6 +43,8 @@ import { useState } from '@wordpress/element';
  */
 import './editor.scss';
 
+import sanitizeSvg from './sanitize-svg';
+
 // FontAwesome icons organized by categories
 const FONTAWESOME_ICONS = {
 	solid: [
@@ -413,7 +415,7 @@ export default function Edit( { attributes, setAttributes } ) {
 					style={ svgWrapperStyles }
 					aria-label={ ariaLabel }
 					aria-hidden={ ! ariaLabel ? 'true' : 'false' }
-					dangerouslySetInnerHTML={ { __html: svg } }
+					dangerouslySetInnerHTML={ { __html: sanitizeSvg( svg ) } }
 				/>
 			);
 		}
@@ -614,7 +616,9 @@ export default function Edit( { attributes, setAttributes } ) {
 							<div
 								className="svg-preview"
 								style={ { marginBottom: '8px' } }
-								dangerouslySetInnerHTML={ { __html: svg } }
+								dangerouslySetInnerHTML={ {
+									__html: sanitizeSvg( svg ),
+								} }
 							/>
 						) }
 						{ ! svg && svgUrl && (
@@ -640,8 +644,12 @@ export default function Edit( { attributes, setAttributes } ) {
 										fetch( url )
 											.then( ( res ) => res.text() )
 											.then( ( text ) =>
+												// Clean the fetched markup before
+												// it becomes a block attribute:
+												// what is stored here is emitted
+												// verbatim into post content.
 												setAttributes( {
-													svg: text,
+													svg: sanitizeSvg( text ),
 													svgUrl: url,
 												} )
 											);
