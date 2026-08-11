@@ -160,7 +160,7 @@ This plugin can connect to the third-party services listed below. The feedback s
 
 Used only if you choose to send feedback about a conversion to the plugin developer. It is never sent automatically; submission requires your explicit consent on the feedback screen.
 
-When you submit feedback, the plugin sends a feedback package to https://block-shift.com/wp-json/metg-feedback/v1/submit, authenticated with a per-site client ID/secret generated and stored on your site. The package contains: environment data (site domain, a hashed site URL, plugin/WordPress/PHP versions, active theme, locale), your browser/screen details, the conversion run data and summary, your rating and notes, and the converted content and artifacts (such as screenshots) for the pages you select.
+When you submit feedback, the plugin sends a feedback package to https://block-shift.com/wp-json/etg-feedback/v1/submit, authenticated with a per-site client ID/secret generated and stored on your site. The package contains: environment data (site domain, a hashed site URL, plugin/WordPress/PHP versions, active theme, locale), your browser/screen details, the conversion run data and summary, your rating and notes, and, for the pages you select, the original Elementor page data and the converted page content. Page content is sent as-is: it is not anonymised or filtered, so it may contain personal data if the page does.
 
 This service is operated by Progressus. Privacy policy: https://progressus.io/privacy-policy
 

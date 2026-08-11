@@ -1,6 +1,4 @@
 <?php
-// phpcs:ignoreFile
-
 /**
  * Assembles the feedback manifest from the job transient and available post meta.
  *
@@ -16,9 +14,9 @@ defined( 'ABSPATH' ) || exit;
  */
 class Feedback_Builder {
 
-	const CONSENT_VERSION = '1.0';
+	const CONSENT_VERSION = '2.0';
 
-	const CONSENT_TEXT = 'I consent to sharing this anonymised conversion report with the plugin developer for quality improvement purposes. No passwords, API keys, or personal data are included.';
+	const CONSENT_TEXT = 'I consent to sending this conversion report to the plugin developer for quality improvement. It includes my site domain and a hashed site URL, the plugin, WordPress and PHP versions, the active theme and locale, my browser and screen details, the conversion run data, my rating and notes, and the original Elementor data and converted content of each page I select. Page content is sent as-is, is not anonymised, and may contain personal data.';
 
 	/**
 	 * Assemble the manifest.
@@ -50,7 +48,7 @@ class Feedback_Builder {
 		$total_job_items = self::count_job_items( $job );
 		$item_count      = count( $selected_source_ids );
 
-		if ( $item_count === 1 ) {
+		if ( 1 === $item_count ) {
 			$scope = 'single_item';
 		} elseif ( $item_count >= $total_job_items ) {
 			$scope = 'run';
@@ -106,6 +104,8 @@ class Feedback_Builder {
 
 	/**
 	 * Count total items across pages + templates in a job.
+	 *
+	 * @param array<string,mixed> $job Job transient array.
 	 */
 	private static function count_job_items( array $job ): int {
 		$pages   = is_array( $job['pages'] ?? null ) ? count( $job['pages'] ) : 0;
@@ -124,15 +124,15 @@ class Feedback_Builder {
 		$theme = wp_get_theme();
 
 		return array(
-			'site_url_hash'              => hash( 'sha256', (string) home_url() ),
-			'site_domain'                => (string) wp_parse_url( home_url(), PHP_URL_HOST ),
-			'plugin_version'             => BLOCKSHIFT_VERSION,
-			'wordpress_version'          => get_bloginfo( 'version' ),
-			'php_version'                => PHP_VERSION,
-			'active_theme'               => (string) $theme->get( 'Name' ),
+			'site_url_hash'               => hash( 'sha256', (string) home_url() ),
+			'site_domain'                 => (string) wp_parse_url( home_url(), PHP_URL_HOST ),
+			'plugin_version'              => BLOCKSHIFT_VERSION,
+			'wordpress_version'           => get_bloginfo( 'version' ),
+			'php_version'                 => PHP_VERSION,
+			'active_theme'                => (string) $theme->get( 'Name' ),
 			'active_theme_is_block_theme' => wp_is_block_theme(),
-			'is_multisite'               => is_multisite(),
-			'locale'                     => get_locale(),
+			'is_multisite'                => is_multisite(),
+			'locale'                      => get_locale(),
 		);
 	}
 
@@ -218,12 +218,6 @@ class Feedback_Builder {
 
 			$jsonl_status = Diagnostic_Logger::derive_status( $raw_status, $widget_log );
 
-			// Screenshots from post meta — all four types are stored on the target post.
-			$src_urls        = $target_id > 0 ? self::get_screenshot_urls( $target_id, '_blockshift_ai_elementor_screenshot_url' ) : array();
-			$src_mob_urls    = $target_id > 0 ? self::get_screenshot_urls( $target_id, '_blockshift_ai_elementor_screenshot_mobile_url' ) : array();
-			$gb_urls         = $target_id > 0 ? self::get_screenshot_urls( $target_id, '_blockshift_ai_gutenberg_screenshot_url' ) : array();
-			$gb_mob_urls     = $target_id > 0 ? self::get_screenshot_urls( $target_id, '_blockshift_ai_gutenberg_screenshot_mobile_url' ) : array();
-
 			// Elementor JSON.
 			$elementor_json = self::get_elementor_json( $source_id );
 
@@ -278,41 +272,15 @@ class Feedback_Builder {
 				'item_rating'               => $item_rating,
 				'item_note'                 => $item_note,
 
-				'artifacts'                 => array(
-					'source_screenshot_url'          => $src_urls[0] ?? null,
-					'source_screenshot_mobile_url'   => $src_mob_urls[0] ?? null,
-					'gutenberg_screenshot_url'       => $gb_urls[0] ?? null,
-					'gutenberg_screenshot_mobile_url' => $gb_mob_urls[0] ?? null,
-				),
-
-				'elementor_json'   => $elementor_json,
-				'gutenberg_markup' => $gutenberg_markup,
-				'widget_log'       => $widget_log,
-				'item_log_entries' => $item_log_entries,
-				'failure_results'  => $failure_results,
+				'elementor_json'            => $elementor_json,
+				'gutenberg_markup'          => $gutenberg_markup,
+				'widget_log'                => $widget_log,
+				'item_log_entries'          => $item_log_entries,
+				'failure_results'           => $failure_results,
 			);
 		}
 
 		return $items;
-	}
-
-	/**
-	 * Read screenshot URLs from post meta (JSON-encoded array).
-	 *
-	 * @param int    $post_id  Post ID.
-	 * @param string $meta_key Meta key.
-	 *
-	 * @return string[]
-	 */
-	private static function get_screenshot_urls( int $post_id, string $meta_key ): array {
-		if ( $post_id <= 0 ) {
-			return array();
-		}
-
-		$raw     = get_post_meta( $post_id, $meta_key, true );
-		$decoded = json_decode( (string) $raw, true );
-
-		return is_array( $decoded ) ? array_values( array_filter( $decoded ) ) : array();
 	}
 
 	/**

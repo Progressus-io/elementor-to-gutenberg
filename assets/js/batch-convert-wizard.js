@@ -3279,7 +3279,7 @@
 				'font-size:12px;color:#50575e;line-height:1.5;';
 			consentSpan.textContent =
 				this.strings.feedbackConsentLabel ||
-				'I consent to sending this anonymised conversion report to the plugin developer for quality improvement. No passwords, API keys, or user data are included.';
+				'I consent to sending this conversion report to the plugin developer for quality improvement. It includes my site domain and a hashed site URL, the plugin, WordPress and PHP versions, the active theme and locale, my browser and screen details, the conversion run data, my rating and notes, and the original Elementor data and converted content of each page I select. Page content is sent as-is, is not anonymised, and may contain personal data.';
 			consentLbl.appendChild( consentCb );
 			consentLbl.appendChild( consentSpan );
 			modal.appendChild( consentLbl );
@@ -3474,7 +3474,7 @@
 				'font-size:12px;color:#50575e;line-height:1.5;';
 			consentSpan.textContent =
 				this.strings.feedbackConsentLabel ||
-				'I consent to sending this anonymised conversion report to the plugin developer for quality improvement. No passwords, API keys, or user data are included.';
+				'I consent to sending this conversion report to the plugin developer for quality improvement. It includes my site domain and a hashed site URL, the plugin, WordPress and PHP versions, the active theme and locale, my browser and screen details, the conversion run data, my rating and notes, and the original Elementor data and converted content of each page I select. Page content is sent as-is, is not anonymised, and may contain personal data.';
 			consentLbl.appendChild( consentCb );
 			consentLbl.appendChild( consentSpan );
 			modal.appendChild( consentLbl );
