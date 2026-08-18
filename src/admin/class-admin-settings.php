@@ -7,7 +7,6 @@
 
 namespace Progressus\BlockShift\Admin;
 
-use Progressus\BlockShift\Admin\Helper\File_Upload_Service;
 use Progressus\BlockShift\Admin\Helper\Block_Builder;
 use Progressus\BlockShift\Admin\Layout\Container_Classifier;
 use Progressus\BlockShift\Admin\Helper\Style_Parser;
@@ -559,130 +558,6 @@ class Admin_Settings {
 	 */
 	private function get_wizard_url(): string {
 		return admin_url( 'admin.php?page=' . Batch_Convert_Wizard::MENU_SLUG );
-	}
-
-	/**
-	 * Handle JSON file upload and conversion.
-	 *
-	 * @param mixed $option The option value.
-	 *
-	 * @return string The processed Gutenberg content or existing option.
-	 */
-	public function handle_json_upload( $option ): string {
-		// phpcs:disable WordPress.Security.NonceVerification.Missing -- The Settings API verifies the option-save nonce.
-		if ( empty( $_FILES['json_upload']['tmp_name'] ) ) {
-			// return a string to satisfy the declared return type.
-			if ( is_string( $option ) ) {
-				return $option;
-			}
-
-			return get_option( 'blockshift_json_data', '' );
-		}
-
-		// Accept only a genuine PHP upload, never an arbitrary server path, and sanitize the fields.
-		$tmp_name = sanitize_text_field( wp_unslash( $_FILES['json_upload']['tmp_name'] ) );
-		if ( '' === $tmp_name || ! is_uploaded_file( $tmp_name ) ) {
-			return get_option( 'blockshift_json_data', '' );
-		}
-
-		$file = array(
-			'name'     => isset( $_FILES['json_upload']['name'] ) ? sanitize_file_name( wp_unslash( $_FILES['json_upload']['name'] ) ) : '',
-			'tmp_name' => $tmp_name,
-		);
-		// phpcs:enable WordPress.Security.NonceVerification.Missing
-
-		$json_content = File_Upload_Service::upload_file( $file, 'json' );
-		if ( null === $json_content ) {
-			return get_option( 'blockshift_json_data', '' );
-		}
-
-		$data              = json_decode( $json_content, true );
-		$gutenberg_content = $this->convert_json_to_gutenberg_content( $data );
-
-		$post_title = $data['title'] ?? 'Untitled';
-		$post_type  = $data['type'] ?? 'page';
-
-		// Check if a post with the same title and type exists.
-		$existing_post = self::find_post_by_title( (string) $post_title, (string) $post_type );
-
-		if ( $existing_post ) {
-			// Update existing post
-			$new_post_id = wp_update_post(
-				array(
-					'ID'           => $existing_post->ID,
-					'post_content' => $gutenberg_content,
-					'post_status'  => 'publish',
-				)
-			);
-		} else {
-			// Create new post
-			$new_post_id = wp_insert_post(
-				array(
-					'post_title'   => sanitize_text_field( $post_title ),
-					'post_content' => $gutenberg_content,
-					'post_type'    => sanitize_key( $post_type ),
-					'post_status'  => 'publish',
-				)
-			);
-		}
-
-		if ( is_wp_error( $new_post_id ) ) {
-			add_settings_error(
-				'blockshift_json_data',
-				'json_upload_error',
-				esc_html__( 'Failed to create new page.', 'migrate-off-elementor' ),
-				'error'
-			);
-
-			return get_option( 'blockshift_json_data', '' );
-		}
-
-		add_settings_error(
-			'blockshift_json_data',
-			'json_upload_success',
-			esc_html__( 'JSON file uploaded and page created successfully!', 'migrate-off-elementor' ),
-			'updated'
-		);
-
-		return $gutenberg_content;
-	}
-
-	/**
-	 * Find a single post of a given type by its exact title.
-	 *
-	 * Drop-in replacement for `get_page_by_title()`, which core deprecated in
-	 * WordPress 6.2 - five minors below this plugin's declared floor. The query
-	 * arguments mirror core's own deprecated implementation exactly, so the
-	 * behaviour is unchanged: every registered post status is searched, the
-	 * oldest match wins, and `null` is returned when nothing matches.
-	 *
-	 * @param string $post_title Exact post title to look for.
-	 * @param string $post_type  Post type to search within.
-	 *
-	 * @return \WP_Post|null The matching post, or null when there is none.
-	 */
-	private static function find_post_by_title( string $post_title, string $post_type ): ?\WP_Post {
-		$query = new \WP_Query(
-			array(
-				'title'                  => $post_title,
-				'post_type'              => $post_type,
-				'post_status'            => get_post_stati(),
-				'posts_per_page'         => 1,
-				'update_post_term_cache' => false,
-				'update_post_meta_cache' => false,
-				'no_found_rows'          => true,
-				'orderby'                => 'post_date ID',
-				'order'                  => 'ASC',
-			)
-		);
-
-		if ( empty( $query->posts ) ) {
-			return null;
-		}
-
-		$post = get_post( $query->posts[0] );
-
-		return $post instanceof \WP_Post ? $post : null;
 	}
 
 	/**

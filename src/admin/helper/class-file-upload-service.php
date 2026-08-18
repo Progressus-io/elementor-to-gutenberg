@@ -13,59 +13,6 @@ defined( 'ABSPATH' ) || exit;
  */
 class File_Upload_Service {
 	/**
-	 * Upload a file to the WordPress media library or process JSON.
-	 *
-	 * @param array  $file The uploaded file array from $_FILES.
-	 * @param string $type The file type ('json' or 'image').
-	 * @return string|null The file URL or JSON content on success, null on failure.
-	 */
-	public static function upload_file( array $file, string $type = 'image' ): ?string {
-		$tmp_file = $file['tmp_name'];
-		if ( ! file_exists( $tmp_file ) ) {
-			return null;
-		}
-
-		if ( ! function_exists( 'WP_Filesystem' ) ) {
-			require_once ABSPATH . 'wp-admin/includes/file.php';
-		}
-		WP_Filesystem();
-		global $wp_filesystem;
-		$content = ( $wp_filesystem && method_exists( $wp_filesystem, 'get_contents' ) )
-			? $wp_filesystem->get_contents( $tmp_file )
-			: '';
-		if ( 'json' === $type ) {
-			$data = json_decode( $content, true );
-			if ( JSON_ERROR_NONE !== json_last_error() ) {
-				add_settings_error(
-					'blockshift_json_data',
-					'json_upload_error',
-					esc_html__( 'Invalid JSON file uploaded.', 'migrate-off-elementor' ),
-					'error'
-				);
-				return null;
-			}
-			return $content;
-		}
-
-		$file_array    = array(
-			'name'     => sanitize_file_name( basename( $file['name'] ) ),
-			'tmp_name' => $tmp_file,
-		);
-		$attachment_id = media_handle_sideload( $file_array, 0 );
-		if ( is_wp_error( $attachment_id ) ) {
-			add_settings_error(
-				'blockshift_json_data',
-				'json_upload_error',
-				esc_html__( 'Failed to upload file.', 'migrate-off-elementor' ),
-				'error'
-			);
-			return null;
-		}
-
-		return wp_get_attachment_url( $attachment_id );
-	}
-
-	/**
 	 * Download a file from a URL and upload to media library.
 	 *
 	 * @param string $url The URL of the file to download.
