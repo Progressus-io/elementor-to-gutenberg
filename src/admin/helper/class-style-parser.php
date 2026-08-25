@@ -855,9 +855,46 @@ class Style_Parser {
 	 * @return array<string, string> Map of top/right/bottom/left, or an empty array.
 	 */
 	public static function get_elementor_kit_dimensions( string $key ): array {
+		$kit = self::get_elementor_kit_settings();
+
+		return self::parse_dimensions( $kit[ $key ] ?? null );
+	}
+
+	/**
+	 * Read a single size control (unit + size) from the Elementor kit.
+	 *
+	 * @param string $key Kit setting key, e.g. `button_typography_font_size`.
+	 *
+	 * @return string CSS length, or an empty string when it cannot be resolved.
+	 */
+	public static function get_elementor_kit_size( string $key ): string {
 		$kit   = self::get_elementor_kit_settings();
 		$value = $kit[ $key ] ?? null;
 
+		if ( ! is_array( $value ) || ! isset( $value['size'] ) || ! is_numeric( $value['size'] ) ) {
+			return '';
+		}
+
+		$unit = isset( $value['unit'] ) && is_string( $value['unit'] ) ? $value['unit'] : 'px';
+		if ( ! in_array( $unit, array( 'px', 'em', 'rem', '%' ), true ) ) {
+			return '';
+		}
+
+		return ( (string) (float) $value['size'] ) . $unit;
+	}
+
+	/**
+	 * Convert an Elementor four-sided dimensions control into CSS values.
+	 *
+	 * Elementor leaves a side as an empty string when it is not set, which is not the
+	 * same as zero - an unset control means "inherit the kit default". Anything not
+	 * fully specified therefore yields an empty array so callers can fall back.
+	 *
+	 * @param mixed $value Raw dimensions control value.
+	 *
+	 * @return array<string, string> Map of top/right/bottom/left, or an empty array.
+	 */
+	public static function parse_dimensions( $value ): array {
 		if ( ! is_array( $value ) ) {
 			return array();
 		}

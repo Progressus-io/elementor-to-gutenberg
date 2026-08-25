@@ -45,6 +45,15 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 		$spacing      = Style_Parser::parse_spacing( $settings );
 		$spacing_attr = isset( $spacing['attributes'] ) ? $spacing['attributes'] : array();
 
+		/*
+		 * A button carries two separate padding controls. `text_padding` is the padding
+		 * inside the button - which is what core's button block puts on the link - while
+		 * `_padding` pads the widget wrapper around it. The generic spacing parser reads
+		 * `_padding`, so leaving it here handed the wrapper's padding to the button and
+		 * collapsed any button whose wrapper padding was 0 down to bare text.
+		 */
+		unset( $spacing_attr['padding'] );
+
 		$typography      = Style_Parser::parse_typography( $settings );
 		$typography_attr = isset( $typography['attributes'] ) ? $typography['attributes'] : array();
 
@@ -131,17 +140,36 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 		}
 
 		if ( empty( $button_attributes['style']['spacing']['padding'] ) ) {
-			// Elementor falls back to the kit's button padding before its own default.
-			$kit_padding = Style_Parser::get_elementor_kit_dimensions( 'button_padding' );
+			// The button's own padding, then the kit's, then Elementor's built-in default.
+			$padding = Style_Parser::parse_dimensions( $settings['text_padding'] ?? null );
 
-			$button_attributes['style']['spacing']['padding'] = ! empty( $kit_padding )
-				? $kit_padding
-				: array(
+			if ( empty( $padding ) ) {
+				$padding = Style_Parser::get_elementor_kit_dimensions( 'button_padding' );
+			}
+
+			if ( empty( $padding ) ) {
+				$padding = array(
 					'top'    => '12px',
 					'right'  => '24px',
 					'bottom' => '12px',
 					'left'   => '24px',
 				);
+			}
+
+			$button_attributes['style']['spacing']['padding'] = $padding;
+		}
+
+		if ( empty( $button_attributes['style']['typography']['fontSize'] ) ) {
+			/*
+			 * Same reasoning as the padding above: a button that never sets its own font
+			 * size inherits the kit's, not the theme's. Without this the button silently
+			 * picked up whatever size the active theme uses for buttons.
+			 */
+			$kit_font_size = Style_Parser::get_elementor_kit_size( 'button_typography_font_size' );
+
+			if ( '' !== $kit_font_size ) {
+				$button_attributes['style']['typography']['fontSize'] = $kit_font_size;
+			}
 		}
 
 		if ( empty( $button_attributes['style']['border']['radius'] ) ) {
