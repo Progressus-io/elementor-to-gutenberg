@@ -131,12 +131,17 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 		}
 
 		if ( empty( $button_attributes['style']['spacing']['padding'] ) ) {
-			$button_attributes['style']['spacing']['padding'] = array(
-				'top'    => '12px',
-				'right'  => '24px',
-				'bottom' => '12px',
-				'left'   => '24px',
-			);
+			// Elementor falls back to the kit's button padding before its own default.
+			$kit_padding = Style_Parser::get_elementor_kit_dimensions( 'button_padding' );
+
+			$button_attributes['style']['spacing']['padding'] = ! empty( $kit_padding )
+				? $kit_padding
+				: array(
+					'top'    => '12px',
+					'right'  => '24px',
+					'bottom' => '12px',
+					'left'   => '24px',
+				);
 		}
 
 		if ( empty( $button_attributes['style']['border']['radius'] ) ) {

@@ -1,5 +1,29 @@
-/* Vertically center CTA-style text groups inside columns */
-.wp-block-columns .wp-block-group.are-vertically-aligned-center {
+/*
+ * Themes commonly add default padding to top-level blocks inside .entry-content
+ * (Astra ships `.entry-content > .wp-block-group { padding: var(--wp--custom--ast-default-block-left-padding) }`).
+ * A converted page is a whole page layout whose own sections already carry their
+ * spacing, so that padding insets every section and full-width backgrounds stop
+ * reaching the viewport edge the way they did under Elementor.
+ */
+.entry-content > .wp-block-group[class*="blockshift-page-"] {
+    padding: 0;
+    max-width: none;
+}
+
+/*
+ * Elementor centres a container's children along the block axis with justify-content;
+ * Gutenberg has no equivalent, so without this a hero with a min-height renders its
+ * copy hard against the top of the section instead of in the middle.
+ *
+ * Flex the *parent* rather than the centred group itself. A constrained group carries
+ * WordPress's `margin-inline: auto !important`, which inside a flex container stops
+ * meaning "centre this max-width block" and starts meaning "shrink every child to its
+ * content and centre it" - which dragged left-aligned text into the middle of the
+ * column. Centring from the parent leaves the group in normal flow, so its children
+ * still span the full width and keep their own alignment.
+ */
+.blockshift-full-width-section:has(> .wp-block-group.are-vertically-aligned-center),
+.wp-block-column:has(> .wp-block-group.are-vertically-aligned-center) {
     display: flex;
     flex-direction: column;
     justify-content: center;

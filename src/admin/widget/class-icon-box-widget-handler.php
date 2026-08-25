@@ -43,7 +43,8 @@ class Icon_Box_Widget_Handler implements Widget_Handler_Interface {
 
 		$icon_data   = $this->resolve_icon_data( $settings );
 		$icon_value  = trim( $icon_data['class_name'] );
-		$size        = $this->sanitize_slider_value( $settings['size'] ?? null, 24 );
+		// 50px is Elementor's own default icon size for this widget.
+		$size        = $this->sanitize_slider_value( $settings['size'] ?? null, 50 );
 		$title       = isset( $settings['title_text'] ) ? (string) $settings['title_text'] : '';
 		$description = isset( $settings['description_text'] ) ? (string) $settings['description_text'] : '';
 
@@ -55,7 +56,24 @@ class Icon_Box_Widget_Handler implements Widget_Handler_Interface {
 			$alignment_value = 'right';
 		}
 		if ( '' === $alignment_value ) {
-			$alignment_value = 'left';
+			/*
+			 * Elementor aligns an icon box to match where the icon sits: stacked on top
+			 * means centred, beside the text means aligned to that side. Defaulting
+			 * everything to left pulled centred service cards out of line.
+			 */
+			$position = isset( $settings['position'] ) ? strtolower( trim( (string) $settings['position'] ) ) : '';
+
+			switch ( $position ) {
+				case 'left':
+					$alignment_value = 'left';
+					break;
+				case 'right':
+					$alignment_value = 'right';
+					break;
+				default:
+					$alignment_value = 'center';
+					break;
+			}
 		}
 
 		$align_payload = Alignment_Helper::build_text_alignment_payload( $alignment_value );
@@ -87,15 +105,24 @@ class Icon_Box_Widget_Handler implements Widget_Handler_Interface {
 
 		// Determine title/description typographic defaults (fall back to sensible values).
 		$title_size        = isset( $typography_attr['fontSize'] ) ? (int) $typography_attr['fontSize'] : 20;
-		$title_color       = isset( $typography_attr['color'] ) ? $typography_attr['color'] : '#000000';
 		$description_size  = isset( $typography_attr['descriptionSize'] ) ? (int) $typography_attr['descriptionSize'] : 14;
-		$description_color = isset( $typography_attr['descriptionColor'] ) ? $typography_attr['descriptionColor'] : '#666666';
+
+		/*
+		 * Only pin a colour when Elementor actually carried one. Elementor leaves an
+		 * unstyled icon box to the theme's heading and body colours; baking in black
+		 * and grey here made every converted card ignore the site palette.
+		 */
+		$title_color       = isset( $typography_attr['color'] ) ? (string) $typography_attr['color'] : '';
+		$description_color = isset( $typography_attr['descriptionColor'] ) ? (string) $typography_attr['descriptionColor'] : '';
+
+		$title_style       = 'font-size:' . $title_size . 'px' . ( '' !== $title_color ? ';color:' . $title_color : '' );
+		$description_style = 'font-size:' . $description_size . 'px' . ( '' !== $description_color ? ';color:' . $description_color : '' );
 
 		if ( '' !== trim( $title ) ) {
-			$segments[] = '<h3 class="icon-box-title" style="font-size:' . esc_attr( $title_size ) . 'px;color:' . esc_attr( $title_color ) . '">' . esc_html( $title ) . '</h3>';
+			$segments[] = '<h3 class="icon-box-title" style="' . esc_attr( $title_style ) . '">' . esc_html( $title ) . '</h3>';
 		}
 		if ( '' !== trim( $description ) ) {
-			$segments[] = '<div class="icon-box-description" style="font-size:' . esc_attr( $description_size ) . 'px;color:' . esc_attr( $description_color ) . '">' . wp_kses_post( $description ) . '</div>';
+			$segments[] = '<div class="icon-box-description" style="' . esc_attr( $description_style ) . '">' . wp_kses_post( $description ) . '</div>';
 		}
 
 		$wrapper_classes = array_merge( array( 'wp-block-icon-box' ), $align_payload['classes'], $custom_classes );
@@ -104,8 +131,16 @@ class Icon_Box_Widget_Handler implements Widget_Handler_Interface {
 			$wrapper_attrs[] = 'id="' . esc_attr( $custom_id ) . '"';
 		}
 
-		$alignment_value = '' !== $alignment ? $alignment : 'left';
-		$wrapper_attrs[] = 'style="text-align:' . esc_attr( $alignment_value ) . '"';
+		// $alignment_value is already normalised above - Elementor's raw "start"/"end"
+		// are not valid text-align keywords, and the default depends on icon position.
+		$wrapper_style = 'text-align:' . $alignment_value;
+
+		$wrapper_padding = $this->build_widget_padding( $settings['_padding'] ?? null );
+		if ( '' !== $wrapper_padding ) {
+			$wrapper_style .= ';padding:' . $wrapper_padding;
+		}
+
+		$wrapper_attrs[] = 'style="' . esc_attr( $wrapper_style ) . '"';
 
 		$content = '<div ' . implode( ' ', $wrapper_attrs ) . '>' . implode( '', $segments ) . '</div>';
 
@@ -218,6 +253,43 @@ class Icon_Box_Widget_Handler implements Widget_Handler_Interface {
 	/**
 	 * Sanitize slider or numeric values from Elementor settings.
 	 */
+	/**
+	 * Turn Elementor's widget `_padding` control into a CSS padding shorthand.
+	 *
+	 * Elementor applies this padding to the widget wrapper, which is what keeps a card's
+	 * text narrower than the image above it. Dropping it lets the copy run the full
+	 * width of the column and re-wrap differently from the original.
+	 *
+	 * @param mixed $padding Raw `_padding` control value.
+	 *
+	 * @return string CSS shorthand, or an empty string when nothing usable is set.
+	 */
+	private function build_widget_padding( $padding ): string {
+		if ( ! is_array( $padding ) ) {
+			return '';
+		}
+
+		$unit = isset( $padding['unit'] ) && is_string( $padding['unit'] ) ? $padding['unit'] : 'px';
+		if ( ! in_array( $unit, array( 'px', 'em', 'rem', '%' ), true ) ) {
+			return '';
+		}
+
+		$sides = array();
+		foreach ( array( 'top', 'right', 'bottom', 'left' ) as $side ) {
+			if ( ! isset( $padding[ $side ] ) || ! is_numeric( $padding[ $side ] ) ) {
+				return '';
+			}
+			$sides[] = ( (string) (float) $padding[ $side ] ) . $unit;
+		}
+
+		// Nothing to emit when every side is zero.
+		if ( array( '0' . $unit, '0' . $unit, '0' . $unit, '0' . $unit ) === $sides ) {
+			return '';
+		}
+
+		return implode( ' ', $sides );
+	}
+
 	private function sanitize_slider_value( $value, int $fallback ): int {
 		if ( is_array( $value ) ) {
 			if ( isset( $value['size'] ) && is_numeric( $value['size'] ) ) {

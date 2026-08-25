@@ -199,7 +199,15 @@ class Container_Classifier {
 			return true;
 		}
 
-		return '' === $direction && ( '' === $wrap_value || 'nowrap' !== $wrap_value );
+		unset( $wrap_value );
+
+		/*
+		 * Elementor containers default to `column`, so a container that never sets
+		 * `flex_direction` stacks its children vertically. Treating the unset case as
+		 * a row put headings, dividers and nested containers side by side instead of
+		 * one under the other.
+		 */
+		return false;
 	}
 
 	/**

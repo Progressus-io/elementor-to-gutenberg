@@ -1194,6 +1194,8 @@ class Admin_Settings {
 		$children           = is_array( $element['elements'] ?? null ) ? $element['elements'] : array();
 		$container_settings = is_array( $element['settings'] ?? null ) ? $element['settings'] : array();
 		$container_attr     = Style_Parser::parse_container_styles( $container_settings );
+		$container_attr     = $this->apply_container_background_overlay( $container_attr, $container_settings );
+		$container_attr     = $this->apply_container_gap( $container_attr, $container_settings );
 
 		$min_height_setting = $container_settings['min_height'] ?? null;
 
@@ -1318,6 +1320,116 @@ class Admin_Settings {
 		}
 
 		return $this->render_group( $container_attr, $child_blocks, $layout_type );
+	}
+
+	/**
+	 * Give a converted container Elementor's own spacing between its children.
+	 *
+	 * Elementor puts a fixed gap (20px unless the container overrides it) between the
+	 * widgets in a container. Left alone, a converted group instead inherits whatever
+	 * `blockGap` the active theme happens to use, so the whole page drifts out of its
+	 * original vertical rhythm.
+	 *
+	 * @param array $attributes Gutenberg block attributes.
+	 * @param array $settings   Elementor container settings.
+	 *
+	 * @return array
+	 */
+	private function apply_container_gap( array $attributes, array $settings ): array {
+		if ( isset( $attributes['style']['spacing']['blockGap'] ) ) {
+			return $attributes;
+		}
+
+		$gap  = '20px';
+		$data = $settings['flex_gap'] ?? null;
+
+		if ( is_array( $data ) ) {
+			$unit  = isset( $data['unit'] ) && is_string( $data['unit'] ) ? $data['unit'] : 'px';
+			$value = null;
+
+			foreach ( array( 'row', 'size', 'column' ) as $key ) {
+				if ( isset( $data[ $key ] ) && is_numeric( $data[ $key ] ) ) {
+					$value = (string) (float) $data[ $key ];
+					break;
+				}
+			}
+
+			if ( null !== $value && in_array( $unit, array( 'px', 'em', 'rem', '%' ), true ) ) {
+				$gap = $value . $unit;
+			}
+		}
+
+		$attributes['style']['spacing']['blockGap'] = $gap;
+
+		return $attributes;
+	}
+
+	/**
+	 * Reproduce an Elementor container's background overlay.
+	 *
+	 * Elementor paints the overlay on a pseudo-element stacked between the container
+	 * background and its children. Gutenberg has no equivalent attribute, so without
+	 * this a hero that relied on a dark overlay for text contrast converts to the bare
+	 * photograph and the copy on top of it becomes hard to read.
+	 *
+	 * @param array $attributes Gutenberg block attributes.
+	 * @param array $settings   Elementor container settings.
+	 *
+	 * @return array
+	 */
+	private function apply_container_background_overlay( array $attributes, array $settings ): array {
+		$type = $settings['background_overlay_background'] ?? '';
+		if ( ! is_string( $type ) || 'classic' !== strtolower( trim( $type ) ) ) {
+			return $attributes;
+		}
+
+		$color = Style_Parser::normalize_color_value( $settings['background_overlay_color'] ?? '' );
+		if ( '' === $color ) {
+			return $attributes;
+		}
+
+		// Elementor defaults the overlay opacity to 0.5; an explicit 0 means "no overlay".
+		$opacity     = 0.5;
+		$raw_opacity = $settings['background_overlay_opacity'] ?? null;
+		if ( is_array( $raw_opacity ) && isset( $raw_opacity['size'] ) && is_numeric( $raw_opacity['size'] ) ) {
+			$opacity = (float) $raw_opacity['size'];
+		} elseif ( is_numeric( $raw_opacity ) ) {
+			$opacity = (float) $raw_opacity;
+		}
+
+		if ( $opacity <= 0 ) {
+			return $attributes;
+		}
+		$opacity = min( 1.0, $opacity );
+
+		$collector = External_Style_Collector::get_active();
+		if ( ! $collector instanceof External_Style_Collector ) {
+			return $attributes;
+		}
+
+		$overlay = array(
+			'content'          => '""',
+			'position'         => 'absolute',
+			'inset'            => '0',
+			'pointer-events'   => 'none',
+			'background-color' => $color,
+			'opacity'          => rtrim( rtrim( number_format( $opacity, 2, '.', '' ), '0' ), '.' ),
+		);
+
+		$class = 'blockshift-ovl-' . substr( md5( (string) wp_json_encode( $overlay ) ), 0, 10 );
+
+		$collector->register_rule( '.' . $class, array( 'position' => 'relative' ), 'background-overlay' );
+		$collector->register_rule( '.' . $class . '::before', $overlay, 'background-overlay' );
+		$collector->register_rule(
+			'.' . $class . ' > *',
+			array(
+				'position' => 'relative',
+				'z-index'  => '1',
+			),
+			'background-overlay'
+		);
+
+		return $this->add_class_to_attributes( $attributes, $class );
 	}
 
 	/**
@@ -1724,7 +1836,20 @@ class Admin_Settings {
 	 */
 	private function render_vertical_stack_group( array $attributes, array $child_blocks, ?string $justify_content = null ): string {
 		if ( null === $justify_content || '' === $justify_content ) {
-			$justify_content = 'left';
+			/*
+			 * Elementor stretches a column container's children across its full width,
+			 * so each child's own alignment decides where its content sits. Falling back
+			 * to a flex layout here instead shrink-wrapped every child and pinned it to
+			 * the left, which knocked centred images and text out of position.
+			 */
+			$attributes = $this->maybe_add_group_has_background_class( $attributes );
+			$inner_html = trim( implode( '', $child_blocks ) );
+
+			if ( '' === $inner_html ) {
+				return '';
+			}
+
+			return Block_Builder::build( 'group', $attributes, $inner_html );
 		}
 
 		$attributes['layout'] = array(
@@ -2219,16 +2344,22 @@ class Admin_Settings {
 			return null;
 		}
 
+		$direction = isset( $settings['flex_direction'] ) ? (string) $settings['flex_direction'] : '';
+		$is_column = in_array( $direction, array( 'column', 'column-reverse', '' ), true );
+
+		/*
+		 * Which control drives the horizontal axis depends on the direction. In a column
+		 * container - Elementor's default - `flex_justify_content` distributes children
+		 * *vertically*, and the horizontal axis is `flex_align_items`. Reading
+		 * justify-content here regardless of direction horizontally centred content that
+		 * Elementor had only centred top-to-bottom.
+		 */
+		$keys = $is_column
+			? array( 'flex_align_items', 'horizontal_align' )
+			: array( 'flex_justify_content', 'justify_content', 'horizontal_align', 'content_position' );
+
 		// Priority keys for flex justify on containers.
-		$alignment = Alignment_Helper::detect_alignment(
-			$settings,
-			array(
-				'flex_justify_content',
-				'justify_content',
-				'horizontal_align',
-				'content_position',
-			)
-		);
+		$alignment = Alignment_Helper::detect_alignment( $settings, $keys );
 
 		if ( '' === $alignment ) {
 			return null;

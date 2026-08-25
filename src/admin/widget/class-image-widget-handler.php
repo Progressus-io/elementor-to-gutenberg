@@ -9,6 +9,7 @@ namespace Progressus\BlockShift\Admin\Widget;
 
 use Progressus\BlockShift\Admin\Helper\Alignment_Helper;
 use Progressus\BlockShift\Admin\Helper\Block_Builder;
+use Progressus\BlockShift\Admin\Helper\External_Style_Collector;
 use Progressus\BlockShift\Admin\Helper\File_Upload_Service;
 use Progressus\BlockShift\Admin\Helper\Style_Parser;
 use Progressus\BlockShift\Admin\Widget_Handler_Interface;
@@ -35,6 +36,11 @@ class Image_Widget_Handler implements Widget_Handler_Interface {
 		$settings      = is_array( $element['settings'] ?? null ) ? $element['settings'] : array();
 		$image         = is_array( $settings['image'] ?? null ) ? $settings['image'] : array();
 		$alignment_raw = Alignment_Helper::detect_alignment( $settings, array( 'align', 'image_align' ) );
+
+		// Elementor's image widget is centred unless told otherwise.
+		if ( ! is_string( $alignment_raw ) || '' === trim( $alignment_raw ) ) {
+			$alignment_raw = 'center';
+		}
 		$image_url     = isset( $image['url'] ) ? (string) $image['url'] : '';
 		$alt_text      = isset( $image['alt'] ) ? (string) $image['alt'] : '';
 		$attachment    = isset( $image['id'] ) ? (int) $image['id'] : 0;
@@ -48,7 +54,19 @@ class Image_Widget_Handler implements Widget_Handler_Interface {
 			return '';
 		}
 
-		if ( '' !== $image_url && function_exists( 'download_url' ) ) {
+		/*
+		 * When Elementor recorded an attachment ID, that file is already in this
+		 * media library - use it. The stored `url` goes stale whenever a site is
+		 * imported or migrated, and re-downloading it both hot-links the old host
+		 * and adds a duplicate copy to the library on every conversion.
+		 */
+		$local_url = $attachment > 0 && function_exists( 'wp_get_attachment_url' )
+			? wp_get_attachment_url( $attachment )
+			: '';
+
+		if ( is_string( $local_url ) && '' !== $local_url ) {
+			$image_url = $local_url;
+		} elseif ( '' !== $image_url && function_exists( 'download_url' ) ) {
 			$uploaded = File_Upload_Service::download_and_upload( $image_url );
 			if ( null !== $uploaded ) {
 				$image_url = $uploaded;
@@ -113,6 +131,28 @@ class Image_Widget_Handler implements Widget_Handler_Interface {
 		$width = $this->normalize_dimension( $settings['width'] ?? null );
 		if ( null !== $width ) {
 			$image_attrs['width'] = $width;
+
+			/*
+			 * Elementor constrains the <img> itself, so a 37px logo stays 37px however
+			 * wide its column is. The core image block has no equivalent attribute for
+			 * a unit-bearing width, so mirror Elementor's own rule in the page stylesheet.
+			 */
+			$unique_class = Style_Parser::get_element_unique_class( $element );
+			$collector    = External_Style_Collector::get_active();
+
+			if ( '' !== $unique_class && $collector instanceof External_Style_Collector ) {
+				$collector->register_rule(
+					'.' . $unique_class . ' img',
+					array(
+						'width'     => $width,
+						'max-width' => $width,
+					),
+					'widget-image-width'
+				);
+
+				$existing                 = isset( $image_attrs['className'] ) ? (string) $image_attrs['className'] : '';
+				$image_attrs['className'] = trim( $existing . ' ' . $unique_class );
+			}
 		}
 
 		$img_attributes = array();

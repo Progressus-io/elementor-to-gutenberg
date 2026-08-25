@@ -399,36 +399,22 @@ class Style_Parser {
 			return array();
 		}
 
-		$prefixes = array();
-		$handles  = array();
-
 		if ( 'body' === $context ) {
 			$prefixes = array( 'body_typography', 'body' );
-			$handles  = array( 'text', 'body' );
 		} elseif ( 'headings' === $context || 'heading' === $context ) {
 			$prefixes = array( 'heading_typography', 'headings_typography', 'heading', 'headings' );
-			$handles  = array( 'primary', 'secondary', 'heading' );
 		} else {
 			return array();
 		}
 
-		$settings = self::collect_typography_from_prefixes( $kit_settings, $prefixes );
-		if ( ! empty( $settings ) ) {
-			return $settings;
-		}
-
-		if ( empty( $handles ) ) {
-			return array();
-		}
-
-		$map = self::get_elementor_global_typography_map();
-		foreach ( $handles as $handle ) {
-			if ( isset( $map[ $handle ] ) && is_array( $map[ $handle ] ) ) {
-				return $map[ $handle ];
-			}
-		}
-
-		return array();
+		/*
+		 * Deliberately no fallback to the kit's `system_typography` entries here.
+		 * Those (primary, secondary, text, accent) are a palette that individual widgets
+		 * opt into through `__globals__` - Elementor does not apply them to every heading
+		 * on the site. Treating "primary" as a site-wide heading style stamped Elementor's
+		 * stock Roboto 600 over whatever fonts the active theme had been rendering.
+		 */
+		return self::collect_typography_from_prefixes( $kit_settings, $prefixes );
 	}
 
 	/**
@@ -801,10 +787,95 @@ class Style_Parser {
 			);
 		}
 
+		$theme_global = self::resolve_theme_global_color( $handle );
+		if ( '' !== $theme_global ) {
+			$slug = self::match_theme_color_slug( $theme_global );
+
+			return array(
+				'slug'  => null === $slug ? '' : $slug,
+				'color' => $theme_global,
+			);
+		}
+
 		return array(
 			'slug'  => '',
 			'color' => '',
 		);
+	}
+
+	/**
+	 * Resolve a global colour that the active theme - not Elementor - owns.
+	 *
+	 * Astra registers its palette with Elementor as `astglobalcolor0`..`astglobalcolor8`
+	 * at runtime, so those handles never appear in the Elementor kit's own
+	 * `system_colors` / `custom_colors`. Without this the colour is simply dropped and
+	 * the converted section loses its background. The palette itself lives in the
+	 * `astra-settings` option.
+	 *
+	 * @param string $handle Global colour handle taken from `__globals__`.
+	 *
+	 * @return string Normalised colour, or an empty string when it cannot be resolved.
+	 */
+	private static function resolve_theme_global_color( string $handle ): string {
+		if ( 1 !== preg_match( '/^astglobalcolor(\d+)$/i', $handle, $matches ) ) {
+			return '';
+		}
+
+		if ( ! function_exists( 'get_option' ) ) {
+			return '';
+		}
+
+		$settings = get_option( 'astra-settings' );
+		if ( ! is_array( $settings ) ) {
+			return '';
+		}
+
+		$palette = $settings['global-color-palette']['palette'] ?? null;
+		if ( ! is_array( $palette ) ) {
+			return '';
+		}
+
+		$index = (int) $matches[1];
+		if ( ! isset( $palette[ $index ] ) ) {
+			return '';
+		}
+
+		return self::normalize_color_value( $palette[ $index ] );
+	}
+
+	/**
+	 * Read a four-sided dimension (padding, margin, radius) from the Elementor kit.
+	 *
+	 * Kit-level defaults are what Elementor falls back to whenever a widget leaves a
+	 * control untouched, so a converter that ignores them reproduces the plugin's own
+	 * defaults rather than the site's.
+	 *
+	 * @param string $key Kit setting key, e.g. `button_padding`.
+	 *
+	 * @return array<string, string> Map of top/right/bottom/left, or an empty array.
+	 */
+	public static function get_elementor_kit_dimensions( string $key ): array {
+		$kit   = self::get_elementor_kit_settings();
+		$value = $kit[ $key ] ?? null;
+
+		if ( ! is_array( $value ) ) {
+			return array();
+		}
+
+		$unit = isset( $value['unit'] ) && is_string( $value['unit'] ) ? $value['unit'] : 'px';
+		if ( ! in_array( $unit, array( 'px', 'em', 'rem', '%' ), true ) ) {
+			return array();
+		}
+
+		$out = array();
+		foreach ( array( 'top', 'right', 'bottom', 'left' ) as $side ) {
+			if ( ! isset( $value[ $side ] ) || ! is_numeric( $value[ $side ] ) ) {
+				return array();
+			}
+			$out[ $side ] = ( (string) (float) $value[ $side ] ) . $unit;
+		}
+
+		return $out;
 	}
 
 	/**
@@ -2197,6 +2268,17 @@ class Style_Parser {
 	 */
 	private static function extract_image_url( $value ): string {
 		if ( is_array( $value ) ) {
+			/*
+			 * Prefer the attachment ID. Elementor resolves media through the ID, so on a
+			 * site whose content was imported or migrated the stored `url` is routinely
+			 * stale and still points at the source domain - which would leave the
+			 * converted page hot-linking someone else's server.
+			 */
+			$attachment_url = self::resolve_attachment_url( $value['id'] ?? null );
+			if ( '' !== $attachment_url ) {
+				return $attachment_url;
+			}
+
 			if ( ! empty( $value['url'] ) ) {
 				return esc_url_raw( (string) $value['url'] );
 			}
@@ -2211,6 +2293,31 @@ class Style_Parser {
 		}
 
 		return '';
+	}
+
+	/**
+	 * Resolve a media attachment ID to its URL on this site.
+	 *
+	 * @param mixed $id Raw attachment ID from an Elementor media control.
+	 *
+	 * @return string Attachment URL, or an empty string when it cannot be resolved.
+	 */
+	private static function resolve_attachment_url( $id ): string {
+		if ( ! is_scalar( $id ) ) {
+			return '';
+		}
+
+		$id = (int) $id;
+		if ( $id <= 0 || ! function_exists( 'wp_get_attachment_url' ) ) {
+			return '';
+		}
+
+		$url = wp_get_attachment_url( $id );
+		if ( ! is_string( $url ) || '' === $url ) {
+			return '';
+		}
+
+		return esc_url_raw( $url );
 	}
 
 	/**
