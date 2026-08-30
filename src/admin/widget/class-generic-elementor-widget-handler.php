@@ -288,7 +288,12 @@ class Generic_Elementor_Widget_Handler implements Widget_Handler_Interface {
 			return '';
 		}
 
-		$shortcode = \sprintf( '[suredonation_form id="%d"]', (int) $campaign );
+		/*
+		 * The widget points at a campaign, but the shortcode takes the ID of the
+		 * donation form belonging to it - handing it the campaign's own ID matches
+		 * no form, and SureDonation then renders nothing at all for a visitor.
+		 */
+		$shortcode = \sprintf( '[suredonation_form id="%d"]', $this->resolve_donation_form_id( (int) $campaign ) );
 
 		return $this->serialize_parsed_block(
 			array(
@@ -301,6 +306,34 @@ class Generic_Elementor_Widget_Handler implements Widget_Handler_Interface {
 		);
 	}
 
+
+	/**
+	 * Find the donation form that belongs to a campaign.
+	 *
+	 * @param int $campaign_id Campaign post ID.
+	 *
+	 * @return int Form ID, or the campaign ID when no form is linked to it.
+	 */
+	private function resolve_donation_form_id( int $campaign_id ): int {
+		if ( $campaign_id <= 0 ) {
+			return 0;
+		}
+
+		$forms = \get_posts(
+			array(
+				'post_type'      => 'suredonation_form',
+				'post_status'    => 'publish',
+				'posts_per_page' => 1,
+				'fields'         => 'ids',
+				// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+				'meta_key'       => '_suredonation_campaign_id',
+				// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+				'meta_value'     => (string) $campaign_id,
+			)
+		);
+
+		return ! empty( $forms ) ? (int) $forms[0] : $campaign_id;
+	}
 	/**
 	 * Build a Header Footer Elementor info card.
 	 *
