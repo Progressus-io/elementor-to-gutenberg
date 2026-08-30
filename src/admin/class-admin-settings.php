@@ -1750,10 +1750,14 @@ class Admin_Settings {
 	 * @param array $settings Elementor element settings.
 	 */
 	private function apply_full_width_section_attributes( array $attributes, array $settings ): array {
-		if ( $this->is_explicitly_boxed_section( $settings ) ) {
-			return $attributes;
-		}
-
+		/*
+		 * "Boxed" in Elementor caps the width of a container's *content*, not of
+		 * the container: the element still spans the viewport and still carries the
+		 * background. Treating boxed as a narrow section shrank the background with
+		 * it, so a dark header bar ended at the content width instead of running
+		 * edge to edge. The content stays capped through the constrained layout
+		 * this section is given separately.
+		 */
 		$attributes['align'] = 'full';
 		$attributes          = $this->add_class_to_attributes( $attributes, 'blockshift-full-width-section' );
 
@@ -1776,25 +1780,6 @@ class Admin_Settings {
 	 */
 	private function register_full_width_section_css(): void {
 		// Intentional no-op; see docblock.
-	}
-
-	/**
-	 * Return true when the Elementor section explicitly opts into a boxed layout.
-	 *
-	 * @param array $settings Elementor element settings.
-	 */
-	private function is_explicitly_boxed_section( array $settings ): bool {
-		$content_width = isset( $settings['content_width'] ) ? strtolower( (string) $settings['content_width'] ) : '';
-		if ( 'boxed' === $content_width ) {
-			return true;
-		}
-
-		$layout = isset( $settings['layout'] ) ? strtolower( (string) $settings['layout'] ) : '';
-		if ( 'boxed' === $layout ) {
-			return true;
-		}
-
-		return false;
 	}
 
 	/**

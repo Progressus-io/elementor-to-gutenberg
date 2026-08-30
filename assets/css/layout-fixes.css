@@ -11,6 +11,20 @@
 }
 
 /*
+ * A block theme that opts into root-padding-aware alignments pulls every
+ * `alignfull` child outwards by the root padding, so that it reaches the
+ * viewport edge from inside a padded wrapper. The rule above removes that
+ * padding, which leaves the pull with nothing to cancel and pushes each
+ * section past both edges - the page then scrolls sideways by twice the root
+ * padding. Sections start at the wrapper's own edges instead.
+ */
+.entry-content > .wp-block-group[class*="blockshift-page-"] > .alignfull {
+    margin-left: 0;
+    margin-right: 0;
+    max-width: none;
+}
+
+/*
  * Elementor centres a container's children along the block axis with justify-content;
  * Gutenberg has no equivalent, so without this a hero with a min-height renders its
  * copy hard against the top of the section instead of in the middle.

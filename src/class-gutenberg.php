@@ -380,6 +380,28 @@ class Gutenberg {
 	}
 
 	/**
+	 * Version string for one of the plugin's own asset files.
+	 *
+	 * The plugin version alone leaves a stylesheet cached across every change
+	 * made within a release, so a fix to the CSS never reaches a browser that
+	 * already has the file. The file's own modification time does.
+	 *
+	 * @param string $relative_path Path inside the plugin, e.g. `assets/css/layout-fixes.css`.
+	 */
+	private function asset_version( string $relative_path ): string {
+		$file = trailingslashit( BLOCKSHIFT_DIR_PATH ) . ltrim( $relative_path, '/' );
+
+		if ( is_readable( $file ) ) {
+			$modified = filemtime( $file );
+			if ( $modified ) {
+				return BLOCKSHIFT_VERSION . '.' . $modified;
+			}
+		}
+
+		return BLOCKSHIFT_VERSION;
+	}
+
+	/**
 	 * Enqueue styles for the block editor.
 	 */
 	public function enqueue_editor_assets(): void {
@@ -387,7 +409,7 @@ class Gutenberg {
 			'blockshift-layout-fixes',
 			BLOCKSHIFT_DIR_URL . '/assets/css/layout-fixes.css',
 			array(),
-			BLOCKSHIFT_VERSION
+			$this->asset_version( 'assets/css/layout-fixes.css' )
 		);
 
 		$this->expose_google_maps_api_key_to_editor();
@@ -447,7 +469,7 @@ class Gutenberg {
 			'blockshift-layout-fixes-admin',
 			BLOCKSHIFT_DIR_URL . '/assets/css/layout-fixes.css',
 			array(),
-			BLOCKSHIFT_VERSION
+			$this->asset_version( 'assets/css/layout-fixes.css' )
 		);
 	}
 
@@ -530,7 +552,7 @@ class Gutenberg {
 			'blockshift-layout-fixes',
 			BLOCKSHIFT_DIR_URL . '/assets/css/layout-fixes.css',
 			array(),
-			BLOCKSHIFT_VERSION
+			$this->asset_version( 'assets/css/layout-fixes.css' )
 		);
 
 		/*
@@ -545,7 +567,7 @@ class Gutenberg {
 			'blockshift-scripts',
 			BLOCKSHIFT_DIR_URL . '/assets/js/scripts.js',
 			array( 'jquery' ),
-			BLOCKSHIFT_VERSION,
+			$this->asset_version( 'assets/js/scripts.js' ),
 			array(
 				'in_footer' => true,
 				'strategy'  => 'defer',
