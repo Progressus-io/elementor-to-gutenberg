@@ -678,7 +678,17 @@ class Text_Editor_Widget_Handler implements Widget_Handler_Interface {
 		$libxml_previous = libxml_use_internal_errors( true );
 		$document        = new \DOMDocument();
 
-		$loaded = $document->loadHTML( '<div>' . $trimmed . '</div>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD );
+		/*
+		 * libxml assumes ISO-8859-1 when the markup declares no encoding, so it
+		 * reads UTF-8 bytes as single Latin-1 characters and re-encodes them -
+		 * turning a typographic apostrophe into mojibake. The XML declaration
+		 * tells it the real encoding; it parses as a node the div lookup below
+		 * ignores.
+		 */
+		$loaded = $document->loadHTML(
+			'<?xml encoding="UTF-8">' . '<div>' . $trimmed . '</div>',
+			LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD
+		);
 		libxml_clear_errors();
 		libxml_use_internal_errors( $libxml_previous );
 

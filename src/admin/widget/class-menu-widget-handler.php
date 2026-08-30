@@ -65,6 +65,30 @@ class Menu_Widget_Handler implements Widget_Handler_Interface {
 
 		$attributes = $this->build_navigation_block_attributes( $navigation_post_id );
 
+		/*
+		 * A menu in a dark header sets its own item colour. Without it the links
+		 * fall back to the theme's body colour and come out dark on dark.
+		 * core/navigation declares no colour support and reads its own
+		 * `customTextColor` attribute instead of `style.color.text`, so a colour
+		 * written the usual way is silently ignored.
+		 */
+		$item_color = $this->resolve_menu_item_color( $settings );
+		if ( '' !== $item_color ) {
+			$attributes['customTextColor'] = $item_color;
+		}
+
+		/*
+		 * A footer menu is usually a vertical list. Left alone the navigation
+		 * block lays its items out in a row and they wrap into an untidy grid.
+		 */
+		$menu_layout = isset( $settings['layout'] ) ? strtolower( trim( (string) $settings['layout'] ) ) : '';
+		if ( in_array( $menu_layout, array( 'vertical', 'expandible' ), true ) ) {
+			$attributes['layout'] = array(
+				'type'        => 'flex',
+				'orientation' => 'vertical',
+			);
+		}
+
 		// Encode attributes for the block.
 		$attributes_json = wp_json_encode( $attributes );
 
@@ -265,5 +289,25 @@ class Menu_Widget_Handler implements Widget_Handler_Interface {
 			'innerHTML'    => '',
 			'innerContent' => array(),
 		);
+	}
+
+	/**
+	 * Read the colour the widget gives its menu items.
+	 *
+	 * Elementor Pro names the control `color_menu_item_normal`; Header Footer
+	 * Elementor names it `color_menu_item`. Either may hold a palette reference
+	 * under `__globals__` rather than a literal colour.
+	 *
+	 * @param array $settings Elementor widget settings.
+	 */
+	private function resolve_menu_item_color( array $settings ): string {
+		foreach ( array( 'color_menu_item', 'color_menu_item_normal', 'menu_item_color' ) as $key ) {
+			$color = Style_Parser::extract_text_color_css_value( $settings, $key );
+			if ( ! empty( $color['color'] ) ) {
+				return (string) $color['color'];
+			}
+		}
+
+		return '';
 	}
 }
