@@ -41,6 +41,12 @@ class Generic_Elementor_Widget_Handler implements Widget_Handler_Interface {
 				return $this->handle_rating( $settings );
 			case 'sureforms_form':
 				return $this->handle_sureforms_form( $settings );
+			case 'copyright':
+				return $this->handle_copyright( $settings );
+			case 'hfe-site-title':
+				return $this->handle_site_block( 'core/site-title', $settings );
+			case 'hfe-site-tagline':
+				return $this->handle_site_block( 'core/site-tagline', $settings );
 			default:
 				return '';
 		}
@@ -196,6 +202,68 @@ class Generic_Elementor_Widget_Handler implements Widget_Handler_Interface {
 				'innerBlocks'  => array(),
 				'innerHTML'    => $shortcode,
 				'innerContent' => array( $shortcode ),
+			)
+		);
+	}
+
+	/**
+	 * Build a copyright line.
+	 *
+	 * The widget stores its text under `shortcode` because it lets an author mix
+	 * shortcodes into the line - `[hfe_current_year]` above all. A paragraph does
+	 * not run shortcodes, so a line that contains one becomes core/shortcode and
+	 * keeps working; a plain line stays an ordinary paragraph.
+	 *
+	 * @param array $settings Widget settings.
+	 */
+	private function handle_copyright( array $settings ): string {
+		$text = isset( $settings['shortcode'] ) ? \trim( (string) $settings['shortcode'] ) : '';
+		if ( '' === $text ) {
+			return '';
+		}
+
+		if ( \preg_match( '/\[[a-z0-9_-]+/i', $text ) ) {
+			return $this->serialize_parsed_block(
+				array(
+					'blockName'    => 'core/shortcode',
+					'attrs'        => array(),
+					'innerBlocks'  => array(),
+					'innerHTML'    => $text,
+					'innerContent' => array( $text ),
+				)
+			);
+		}
+
+		$style = array();
+		$color = Style_Parser::extract_text_color_css_value( $settings, 'title_color' );
+		if ( ! empty( $color['color'] ) ) {
+			$style['color'] = (string) $color['color'];
+		}
+
+		return $this->serialize_parsed_block( $this->build_paragraph_block( \wp_kses_post( $text ), $style ) );
+	}
+
+	/**
+	 * Build one of the site-identity blocks from its Elementor equivalent.
+	 *
+	 * @param string $block_name Core block to emit.
+	 * @param array  $settings   Widget settings.
+	 */
+	private function handle_site_block( string $block_name, array $settings ): string {
+		$attrs = array();
+
+		$align = isset( $settings['align'] ) ? \strtolower( \trim( (string) $settings['align'] ) ) : '';
+		if ( \in_array( $align, array( 'left', 'center', 'right' ), true ) ) {
+			$attrs['textAlign'] = $align;
+		}
+
+		return $this->serialize_parsed_block(
+			array(
+				'blockName'    => $block_name,
+				'attrs'        => $attrs,
+				'innerBlocks'  => array(),
+				'innerHTML'    => '',
+				'innerContent' => array(),
 			)
 		);
 	}
