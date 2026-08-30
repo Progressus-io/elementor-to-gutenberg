@@ -148,7 +148,7 @@ class Image_Widget_Handler implements Widget_Handler_Interface {
 		$figure_html = sprintf( '<figure %s>%s</figure>', implode( ' ', $figure_attrs ), $img_html );
 
 		if ( '' !== $custom_css ) {
-			Style_Parser::save_custom_css( $custom_css );
+			Style_Parser::note_skipped_custom_css( $custom_css );
 		}
 
 		return Block_Builder::build( 'image', $image_attrs, $figure_html );

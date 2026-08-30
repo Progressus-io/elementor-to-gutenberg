@@ -2319,15 +2319,16 @@ class Style_Parser {
 	}
 
 	/**
-	 * Save custom CSS to the Customizer's Additional CSS store when available.
+	 * Persist plugin-GENERATED CSS for the current conversion.
 	 *
-	 * @param string $css CSS string to append.
+	 * This handles only CSS the plugin produces itself from a widget's
+	 * structured settings (for example a generated selector rule). It is NOT
+	 * used for user-authored "Custom CSS" input, which is handled by
+	 * note_skipped_custom_css() and is never enqueued.
+	 *
+	 * @param string $css Generated CSS string to append.
 	 */
-	public static function save_custom_css( string $css ): void {
-		// Migrated custom CSS is page-specific author input (e.g. a rule the user
-		// wrote for one page). Route it into the active per-page stylesheet so it
-		// loads ONLY on the converted page and never leaks site-wide. It is
-		// sanitized when that page's file is written (External_CSS_Service::save_post_css).
+	public static function save_generated_css( string $css ): void {
 		$css = trim( $css );
 		if ( '' === $css ) {
 			return;
@@ -2336,6 +2337,30 @@ class Style_Parser {
 		$collector = External_Style_Collector::get_active();
 		if ( null !== $collector ) {
 			$collector->add_raw_css( $css );
+		}
+	}
+
+	/**
+	 * Handle a widget's raw Elementor "Custom CSS" input.
+	 *
+	 * WordPress.org does not permit plugins to save or enqueue arbitrary,
+	 * user-authored CSS. Migrated Custom CSS is therefore intentionally NOT
+	 * written to any stylesheet or enqueued. It is only recorded in the
+	 * conversion inventory so the user can retrieve it and, if they still need
+	 * it, paste it into Appearance -> Customize -> Additional CSS (WordPress's
+	 * own sanitized CSS editor).
+	 *
+	 * @param string $css Raw, user-authored custom CSS from the Elementor widget.
+	 */
+	public static function note_skipped_custom_css( string $css ): void {
+		$css = trim( $css );
+		if ( '' === $css ) {
+			return;
+		}
+
+		$collector = External_Style_Collector::get_active();
+		if ( null !== $collector ) {
+			$collector->record_dropped( 'page', 'custom-css', array( 'css' => $css ) );
 		}
 	}
 }

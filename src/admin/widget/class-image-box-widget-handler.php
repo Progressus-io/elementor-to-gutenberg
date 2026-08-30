@@ -289,7 +289,7 @@ class Image_Box_Widget_Handler implements Widget_Handler_Interface {
 		);
 
 		if ( '' !== $custom_css ) {
-			Style_Parser::save_custom_css( $custom_css );
+			Style_Parser::note_skipped_custom_css( $custom_css );
 		}
 
 		return Block_Builder::build( 'blockshift/image-box', $block_attributes, $content );

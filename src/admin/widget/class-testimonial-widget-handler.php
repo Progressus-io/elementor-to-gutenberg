@@ -81,7 +81,7 @@ class Testimonial_Widget_Handler implements Widget_Handler_Interface {
 		$custom_class   = implode( ' ', $custom_classes );
 
 		if ( '' !== $custom_css ) {
-			Style_Parser::save_custom_css( $custom_css );
+			Style_Parser::note_skipped_custom_css( $custom_css );
 		}
 
 		// ── Block attributes (must match block.json attribute names) ───────────

@@ -110,7 +110,7 @@ class Map_Widget_Handler implements Widget_Handler_Interface {
 
 		// Save any custom CSS into the Customizer so styles persist.
 		if ( ! empty( $custom_css ) ) {
-			Style_Parser::save_custom_css( $custom_css );
+			Style_Parser::note_skipped_custom_css( $custom_css );
 		}
 
 		// Build iframe src using lat/lng when available, otherwise address.

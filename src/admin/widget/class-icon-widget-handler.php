@@ -161,7 +161,7 @@ class Icon_Widget_Handler implements Widget_Handler_Interface {
 		$inner_html = sprintf( '<div %1$s>%2$s</div>', implode( ' ', $wrapper_attrs ), $icon_html );
 
 		if ( '' !== $custom_css ) {
-			Style_Parser::save_custom_css( $custom_css );
+			Style_Parser::note_skipped_custom_css( $custom_css );
 		}
 
 		return Block_Builder::build(

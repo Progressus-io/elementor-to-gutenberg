@@ -181,13 +181,13 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 		}
 
 		if ( '' !== $custom_css ) {
-			Style_Parser::save_custom_css( $custom_css );
+			Style_Parser::note_skipped_custom_css( $custom_css );
 		}
 
 		$icon_html = '';
 		if ( '' !== $icon_data['class_name'] ) {
 			$icon_html = '<span class="blockshift-button-icon ' . esc_attr( $icon_data['class_name'] ) . '" aria-hidden="true"></span>';
-			Style_Parser::save_custom_css( '/* icon class captured for ETG_EXTRA_ATTRS_MAP_V1 */' );
+			Style_Parser::save_generated_css( '/* icon class captured for ETG_EXTRA_ATTRS_MAP_V1 */' );
 		} elseif ( '' !== $icon_data['url'] ) {
 			$icon_html = '<span class="blockshift-button-icon"><img src="' . esc_url( $icon_data['url'] ) . '" alt="" aria-hidden="true" /></span>';
 		}
