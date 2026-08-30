@@ -307,14 +307,25 @@ class Admin_Settings {
 	 * them publish the page this handler creates. A nonce proves intent, not
 	 * authority, so it is checked in addition to - never instead of - these.
 	 *
+	 * The nonce is verified first, before any request input is trusted or acted
+	 * on. The only value read ahead of it is the page_id the nonce is scoped to,
+	 * which the check itself then binds the request to.
+	 *
 	 * @return void
 	 */
 	public function blockshift_handle_convert_page() {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only used to build the page-scoped nonce action verified on the next line; no state is read or changed before check_admin_referer().
 		if ( ! isset( $_GET['page_id'] ) ) {
 			wp_die( esc_html__( 'Page ID missing.', 'migrate-off-elementor' ) );
 		}
 
-		$page_id = absint( $_GET['page_id'] );
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Same as above; validated by the check_admin_referer() call immediately below.
+		$page_id = absint( wp_unslash( $_GET['page_id'] ) );
+
+		// Verify the request originated from the row-action link before trusting
+		// any of its input. The nonce action is page-scoped, so this also binds
+		// the request to this exact page_id.
+		check_admin_referer( 'blockshift_convert_page_' . $page_id );
 
 		if ( ! self::current_user_can_convert_post( $page_id ) ) {
 			wp_die(
@@ -323,9 +334,6 @@ class Admin_Settings {
 				array( 'response' => 403 )
 			);
 		}
-
-		// Verify nonce.
-		check_admin_referer( 'blockshift_convert_page_' . $page_id );
 
 		// Get JSON template stored in post meta.
 		$json_data = get_post_meta( $page_id, '_elementor_data', true );
