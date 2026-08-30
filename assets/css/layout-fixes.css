@@ -25,6 +25,25 @@
 }
 
 /*
+ * The plugin's own page template already gives the content the full width of
+ * the viewport, so nothing inside it needs to break out again. Themes stretch
+ * `alignfull` with `width: 100vw` and a negative margin, and `100vw` counts the
+ * scrollbar - so stretching a second time pushed the page half a scrollbar past
+ * each edge and it scrolled sideways.
+ */
+.blockshift-full-width-page > .wp-block-group[class*="blockshift-page-"],
+.blockshift-full-width-page > .wp-block-group[class*="blockshift-page-"] > .alignfull {
+    width: 100%;
+    max-width: none;
+    margin-left: 0;
+    margin-right: 0;
+}
+
+.blockshift-full-width-page > .wp-block-group[class*="blockshift-page-"] {
+    padding: 0;
+}
+
+/*
  * Elementor centres a container's children along the block axis with justify-content;
  * Gutenberg has no equivalent, so without this a hero with a min-height renders its
  * copy hard against the top of the section instead of in the middle.
