@@ -7,6 +7,7 @@
 
 namespace Progressus\BlockShift\Admin\Widget;
 
+use Progressus\BlockShift\Admin\Helper\Style_Parser;
 use Progressus\BlockShift\Admin\Widget_Handler_Interface;
 
 defined( 'ABSPATH' ) || exit;
@@ -36,6 +37,7 @@ class Generic_Elementor_Widget_Handler implements Widget_Handler_Interface {
 			case 'alert':
 				return $this->handle_alert( $settings );
 			case 'rating':
+			case 'star-rating':
 				return $this->handle_rating( $settings );
 			default:
 				return '';
@@ -124,14 +126,74 @@ class Generic_Elementor_Widget_Handler implements Widget_Handler_Interface {
 	 * @param array $settings Widget settings.
 	 */
 	private function handle_rating( array $settings ): string {
-		$rating = $this->extract_rating_value( $settings, array( 'rating', 'value' ) );
+		$scale  = $this->extract_rating_scale( $settings );
+		$rating = $this->extract_rating_value( $settings, array( 'rating', 'value' ), $scale );
+
+		/*
+		 * Elementor's star rating defaults to a full score, and a kit that never
+		 * touches the control stores no `rating` at all - dropping the widget in
+		 * that case lost stars the page was actually showing.
+		 */
 		if ( null === $rating ) {
-			return '';
+			$rating = (float) $scale;
 		}
 
-		$stars = \str_repeat( '★', $rating ) . \str_repeat( '☆', 5 - $rating );
+		$filled = (int) \max( 0, \min( $scale, (int) \round( $rating ) ) );
+		$stars  = \str_repeat( '★', $filled ) . \str_repeat( '☆', $scale - $filled );
 
-		return $this->serialize_parsed_block( $this->build_paragraph_block( $stars ) );
+		$title = $this->extract_text( $settings, array( 'title' ) );
+		if ( '' !== $title ) {
+			$stars = $title . ' ' . $stars;
+		}
+
+		return $this->serialize_parsed_block( $this->build_paragraph_block( $stars, $this->extract_rating_style( $settings ) ) );
+	}
+
+	/**
+	 * Read the widget's rating scale (Elementor offers 5 or 10).
+	 *
+	 * @param array $settings Widget settings.
+	 */
+	private function extract_rating_scale( array $settings ): int {
+		$scale = $settings['rating_scale'] ?? null;
+		if ( \is_array( $scale ) ) {
+			$scale = $scale['size'] ?? $scale['value'] ?? null;
+		}
+
+		$scale = \is_numeric( $scale ) ? (int) $scale : 5;
+
+		return ( $scale >= 1 && $scale <= 10 ) ? $scale : 5;
+	}
+
+	/**
+	 * Read the star colour and size so the converted rating keeps its styling.
+	 *
+	 * @param array $settings Widget settings.
+	 *
+	 * @return array<string, string>
+	 */
+	private function extract_rating_style( array $settings ): array {
+		$style   = array();
+		$globals = \is_array( $settings['__globals__'] ?? null ) ? $settings['__globals__'] : array();
+
+		foreach ( array( $settings['stars_color'] ?? '', $globals['stars_color'] ?? '' ) as $candidate ) {
+			if ( '' === $candidate || null === $candidate ) {
+				continue;
+			}
+
+			$resolved = Style_Parser::resolve_elementor_color_reference( $candidate );
+			if ( ! empty( $resolved['color'] ) ) {
+				$style['color'] = (string) $resolved['color'];
+				break;
+			}
+		}
+
+		$size = $settings['icon_size'] ?? null;
+		if ( \is_array( $size ) && \is_numeric( $size['size'] ?? null ) ) {
+			$style['fontSize'] = $size['size'] . ( $size['unit'] ?? 'px' );
+		}
+
+		return $style;
 	}
 
 	/**
@@ -139,18 +201,48 @@ class Generic_Elementor_Widget_Handler implements Widget_Handler_Interface {
 	 *
 	 * @param string $content Plain text content.
 	 */
-	private function build_paragraph_block( string $content ): array {
+	private function build_paragraph_block( string $content, array $style = array() ): array {
 		$content = \trim( $content );
 		if ( '' === $content ) {
 			return array();
 		}
 
+		$attrs   = array( 'content' => $content );
+		$classes = array();
+		$rules   = array();
+
+		if ( ! empty( $style['color'] ) ) {
+			$attrs['style']['color']['text'] = $style['color'];
+			$classes[]                       = 'has-text-color';
+			$rules[]                         = 'color:' . $style['color'];
+		}
+
+		if ( ! empty( $style['fontSize'] ) ) {
+			$attrs['style']['typography']['fontSize'] = $style['fontSize'];
+			$classes[]                                = 'has-custom-font-size';
+			$rules[]                                  = 'font-size:' . $style['fontSize'];
+		}
+
+		$attributes = '';
+		if ( array() !== $classes ) {
+			$attributes .= ' class="' . \esc_attr( \implode( ' ', $classes ) ) . '"';
+		}
+		if ( array() !== $rules ) {
+			$attributes .= ' style="' . \esc_attr( \implode( ';', $rules ) ) . '"';
+		}
+
+		/*
+		 * core/paragraph is a static block: the markup saved with it is what the
+		 * front end prints, so a `content` attribute on its own renders nothing.
+		 */
+		$markup = '<p' . $attributes . '>' . $content . '</p>';
+
 		return array(
 			'blockName'    => 'core/paragraph',
-			'attrs'        => array( 'content' => $content ),
+			'attrs'        => $attrs,
 			'innerBlocks'  => array(),
-			'innerHTML'    => '',
-			'innerContent' => array(),
+			'innerHTML'    => $markup,
+			'innerContent' => array( $markup ),
 		);
 	}
 
@@ -228,14 +320,19 @@ class Generic_Elementor_Widget_Handler implements Widget_Handler_Interface {
 	 * @param array $settings Source settings.
 	 * @param array $keys Candidate keys.
 	 */
-	private function extract_rating_value( array $settings, array $keys ): ?int {
+	private function extract_rating_value( array $settings, array $keys, int $scale = 5 ): ?float {
 		foreach ( $keys as $key ) {
-			if ( ! isset( $settings[ $key ] ) || ! \is_numeric( $settings[ $key ] ) ) {
+			$value = $settings[ $key ] ?? null;
+			if ( \is_array( $value ) ) {
+				$value = $value['size'] ?? $value['value'] ?? null;
+			}
+
+			if ( ! \is_numeric( $value ) ) {
 				continue;
 			}
 
-			$value = (int) $settings[ $key ];
-			if ( $value >= 1 && $value <= 5 ) {
+			$value = (float) $value;
+			if ( $value >= 0 && $value <= $scale ) {
 				return $value;
 			}
 		}
