@@ -39,6 +39,8 @@ class Generic_Elementor_Widget_Handler implements Widget_Handler_Interface {
 			case 'rating':
 			case 'star-rating':
 				return $this->handle_rating( $settings );
+			case 'sureforms_form':
+				return $this->handle_sureforms_form( $settings );
 			default:
 				return '';
 		}
@@ -149,6 +151,54 @@ class Generic_Elementor_Widget_Handler implements Widget_Handler_Interface {
 		return $this->serialize_parsed_block( $this->build_paragraph_block( $stars, $this->extract_rating_style( $settings ) ) );
 	}
 
+
+	/**
+	 * Build a SureForms widget -> the plugin's own shortcode.
+	 *
+	 * SureForms ships a block, but its markup is an implementation detail of
+	 * that plugin; the documented shortcode is the stable way to place a form
+	 * and it keeps working when the block's internals change.
+	 *
+	 * @param array $settings Widget settings.
+	 */
+	private function handle_sureforms_form( array $settings ): string {
+		$form_id = 0;
+
+		foreach ( array( 'srfm_form_block', 'form_id', 'sureforms_form' ) as $key ) {
+			$value = $settings[ $key ] ?? null;
+			if ( \is_array( $value ) ) {
+				$value = $value['id'] ?? $value['value'] ?? null;
+			}
+
+			if ( \is_numeric( $value ) && (int) $value > 0 ) {
+				$form_id = (int) $value;
+				break;
+			}
+		}
+
+		if ( 0 === $form_id ) {
+			return '';
+		}
+
+		$show_title = ! isset( $settings['srfm_show_form_title'] )
+			|| \filter_var( $settings['srfm_show_form_title'], FILTER_VALIDATE_BOOLEAN );
+
+		$shortcode = \sprintf(
+			'[sureforms id="%d" show_title="%s"]',
+			$form_id,
+			$show_title ? 'true' : 'false'
+		);
+
+		return $this->serialize_parsed_block(
+			array(
+				'blockName'    => 'core/shortcode',
+				'attrs'        => array(),
+				'innerBlocks'  => array(),
+				'innerHTML'    => $shortcode,
+				'innerContent' => array( $shortcode ),
+			)
+		);
+	}
 	/**
 	 * Read the widget's rating scale (Elementor offers 5 or 10).
 	 *

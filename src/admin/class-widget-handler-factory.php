@@ -68,6 +68,7 @@ class Widget_Handler_Factory {
 		'alert'                     => 'Progressus\BlockShift\Admin\Widget\Generic_Elementor_Widget_Handler',
 		'rating'                    => 'Progressus\BlockShift\Admin\Widget\Generic_Elementor_Widget_Handler',
 		'star-rating'               => 'Progressus\BlockShift\Admin\Widget\Generic_Elementor_Widget_Handler',
+		'sureforms_form'            => 'Progressus\BlockShift\Admin\Widget\Generic_Elementor_Widget_Handler',
 		'image-carousel'            => 'Progressus\BlockShift\Admin\Widget\Gallery_Widget_Handler',
 		'image_carousel'            => 'Progressus\BlockShift\Admin\Widget\Gallery_Widget_Handler',
 	);

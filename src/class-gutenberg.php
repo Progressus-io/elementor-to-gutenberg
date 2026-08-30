@@ -533,6 +533,14 @@ class Gutenberg {
 			BLOCKSHIFT_VERSION
 		);
 
+		/*
+		 * Conversion leaves a note in place of a widget it had no block for.
+		 * That note is for whoever edits the page, not for visitors, so the
+		 * front end hides it - the editor loads the same stylesheet without
+		 * this rule and keeps showing it.
+		 */
+		wp_add_inline_style( 'blockshift-layout-fixes', '.blockshift-unsupported-widget{display:none;}' );
+
 		wp_enqueue_script(
 			'blockshift-scripts',
 			BLOCKSHIFT_DIR_URL . '/assets/js/scripts.js',
