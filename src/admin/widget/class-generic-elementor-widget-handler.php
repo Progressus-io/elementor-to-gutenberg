@@ -37,9 +37,6 @@ class Generic_Elementor_Widget_Handler implements Widget_Handler_Interface {
 				return $this->handle_alert( $settings );
 			case 'rating':
 				return $this->handle_rating( $settings );
-			case 'image-carousel':
-			case 'image_carousel':
-				return $this->handle_image_carousel( $settings );
 			default:
 				return '';
 		}
@@ -135,39 +132,6 @@ class Generic_Elementor_Widget_Handler implements Widget_Handler_Interface {
 		$stars = \str_repeat( '★', $rating ) . \str_repeat( '☆', 5 - $rating );
 
 		return $this->serialize_parsed_block( $this->build_paragraph_block( $stars ) );
-	}
-
-	/**
-	 * Build image carousel -> core/gallery with inner core/image blocks.
-	 *
-	 * @param array $settings Widget settings.
-	 */
-	private function handle_image_carousel( array $settings ): string {
-		$ids = $this->extract_image_ids( $settings );
-		if ( array() === $ids ) {
-			return '';
-		}
-
-		$inner_blocks = array();
-		foreach ( $ids as $id ) {
-			$inner_blocks[] = array(
-				'blockName'    => 'core/image',
-				'attrs'        => array( 'id' => $id ),
-				'innerBlocks'  => array(),
-				'innerHTML'    => '',
-				'innerContent' => array(),
-			);
-		}
-
-		return $this->serialize_parsed_block(
-			array(
-				'blockName'    => 'core/gallery',
-				'attrs'        => array(),
-				'innerBlocks'  => $inner_blocks,
-				'innerHTML'    => '',
-				'innerContent' => array(),
-			)
-		);
 	}
 
 	/**
@@ -279,35 +243,4 @@ class Generic_Elementor_Widget_Handler implements Widget_Handler_Interface {
 		return null;
 	}
 
-	/**
-	 * Extract unique positive media IDs from carousel/slides/images arrays.
-	 *
-	 * @param array $settings Widget settings.
-	 *
-	 * @return array<int>
-	 */
-	private function extract_image_ids( array $settings ): array {
-		$keys = array( 'carousel', 'slides', 'images' );
-		$ids  = array();
-
-		foreach ( $keys as $key ) {
-			$items = $settings[ $key ] ?? null;
-			if ( ! \is_array( $items ) ) {
-				continue;
-			}
-
-			foreach ( $items as $item ) {
-				if ( ! \is_array( $item ) ) {
-					continue;
-				}
-
-				$id = \absint( $item['id'] ?? 0 );
-				if ( $id > 0 ) {
-					$ids[] = $id;
-				}
-			}
-		}
-
-		return \array_values( \array_unique( $ids ) );
-	}
 }

@@ -2487,54 +2487,7 @@ class Batch_Convert_Wizard {
 	 * @param bool $update_mode Whether we are updating the same post.
 	 */
 	private function copy_post_meta( int $source_id, int $target_id, bool $update_mode = false ): void {
-		if ( $update_mode ) {
-			$thumbnail_id = get_post_thumbnail_id( $source_id );
-			if ( $thumbnail_id ) {
-				set_post_thumbnail( $target_id, $thumbnail_id );
-			}
-
-			return;
-		}
-
-		$meta = get_post_meta( $source_id );
-		if ( empty( $meta ) ) {
-			$thumbnail_id = get_post_thumbnail_id( $source_id );
-			if ( $thumbnail_id ) {
-				set_post_thumbnail( $target_id, $thumbnail_id );
-			}
-
-			return;
-		}
-
-		$skip_keys = array( '_edit_lock', '_edit_last', '_elementor_data', '_wp_page_template', 'wp_template' );
-
-		foreach ( $meta as $key => $values ) {
-			if ( 0 === strpos( $key, '_elementor_' ) ) {
-				continue;
-			}
-			if ( 0 === strpos( $key, '_blockshift_' ) ) {
-				continue;
-			}
-			if ( in_array( $key, $skip_keys, true ) ) {
-				continue;
-			}
-			if ( '_thumbnail_id' === $key ) {
-				continue;
-			}
-
-			if ( ! $update_mode ) {
-				delete_post_meta( $target_id, $key );
-			}
-
-			foreach ( $values as $value ) {
-				add_post_meta( $target_id, $key, maybe_unserialize( $value ) );
-			}
-		}
-
-		$thumbnail_id = get_post_thumbnail_id( $source_id );
-		if ( $thumbnail_id ) {
-			set_post_thumbnail( $target_id, $thumbnail_id );
-		}
+		Admin_Settings::copy_source_post_meta( $source_id, $target_id, $update_mode );
 	}
 
 	/**

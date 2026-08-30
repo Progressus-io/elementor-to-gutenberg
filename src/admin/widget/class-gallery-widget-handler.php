@@ -26,7 +26,7 @@ class Gallery_Widget_Handler implements Widget_Handler_Interface {
 	 */
 	public function handle( array $element ): string {
 		$settings      = $element['settings'] ?? array();
-		$gallery_items = is_array( $settings['wp_gallery'] ?? null ) ? $settings['wp_gallery'] : array();
+		$gallery_items = self::extract_gallery_items( $settings );
 
 		// Map image IDs
 		$image_ids = array();
@@ -109,6 +109,11 @@ class Gallery_Widget_Handler implements Widget_Handler_Interface {
 			'linkTo'    => 'none',
 		);
 
+		$columns = self::extract_columns( $settings );
+		if ( $columns > 0 ) {
+			$gallery_attrs['columns'] = $columns;
+		}
+
 		if ( $style ) {
 			$gallery_attrs['style'] = $style;
 		}
@@ -148,5 +153,47 @@ class Gallery_Widget_Handler implements Widget_Handler_Interface {
 		}
 
 		return $block_content;
+	}
+
+	/**
+	 * Collect the images a gallery-like widget carries.
+	 *
+	 * The gallery widget stores them under `wp_gallery`; the image carousel -
+	 * which has no core equivalent and converts to a gallery too - uses
+	 * `carousel`, and a few Elementor versions use `slides` or `images`.
+	 *
+	 * @param array $settings Widget settings.
+	 *
+	 * @return array<int, array> Gallery items.
+	 */
+	private static function extract_gallery_items( array $settings ): array {
+		foreach ( array( 'wp_gallery', 'carousel', 'slides', 'images' ) as $key ) {
+			$items = $settings[ $key ] ?? null;
+			if ( is_array( $items ) && array() !== $items ) {
+				return $items;
+			}
+		}
+
+		return array();
+	}
+
+	/**
+	 * Read a column count from the widget's slides-per-view setting.
+	 *
+	 * A one-slide carousel says nothing useful about columns - it is a
+	 * slideshow - so it falls through to the gallery's own default rather than
+	 * stacking every image full width.
+	 *
+	 * @param array $settings Widget settings.
+	 */
+	private static function extract_columns( array $settings ): int {
+		$raw = $settings['slides_to_show'] ?? $settings['columns'] ?? null;
+		if ( is_array( $raw ) ) {
+			$raw = $raw['size'] ?? $raw['value'] ?? null;
+		}
+
+		$columns = is_numeric( $raw ) ? (int) $raw : 0;
+
+		return $columns > 1 ? min( 8, $columns ) : 0;
 	}
 }

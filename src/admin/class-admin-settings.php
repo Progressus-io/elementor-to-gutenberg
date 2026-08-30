@@ -479,7 +479,68 @@ class Admin_Settings {
 			)
 		);
 
+		if ( $new_page_id && ! is_wp_error( $new_page_id ) ) {
+			self::copy_source_post_meta( (int) $page_id, (int) $new_page_id );
+		}
+
 		return $new_page_id;
+	}
+
+	/**
+	 * Copy the source page's non-Elementor meta onto the converted page.
+	 *
+	 * Page layout lives in post meta for most themes - Astra stores
+	 * `site-content-layout`, `site-sidebar-layout` and the title/featured-image
+	 * toggles there, and other themes use their own keys - so a converted page
+	 * created without that meta falls back to the theme's boxed default and
+	 * renders narrower than the Elementor original even though the blocks are
+	 * correct. Elementor's own meta and the plugin's bookkeeping are skipped,
+	 * and `_wp_page_template` is left to the caller, which decides between the
+	 * source template and the plugin's full-width one.
+	 *
+	 * @param int  $source_id   Source post ID.
+	 * @param int  $target_id   Target post ID.
+	 * @param bool $update_mode Whether the conversion is overwriting the source post.
+	 */
+	public static function copy_source_post_meta( int $source_id, int $target_id, bool $update_mode = false ): void {
+		if ( $source_id <= 0 || $target_id <= 0 ) {
+			return;
+		}
+
+		if ( $update_mode ) {
+			$thumbnail_id = get_post_thumbnail_id( $source_id );
+			if ( $thumbnail_id ) {
+				set_post_thumbnail( $target_id, $thumbnail_id );
+			}
+
+			return;
+		}
+
+		$meta = get_post_meta( $source_id );
+
+		if ( ! empty( $meta ) ) {
+			$skip_keys = array( '_edit_lock', '_edit_last', '_elementor_data', '_wp_page_template', 'wp_template', '_thumbnail_id' );
+
+			foreach ( $meta as $key => $values ) {
+				if ( 0 === strpos( $key, '_elementor_' ) || 0 === strpos( $key, '_blockshift_' ) ) {
+					continue;
+				}
+				if ( in_array( $key, $skip_keys, true ) ) {
+					continue;
+				}
+
+				delete_post_meta( $target_id, $key );
+
+				foreach ( (array) $values as $value ) {
+					add_post_meta( $target_id, $key, maybe_unserialize( $value ) );
+				}
+			}
+		}
+
+		$thumbnail_id = get_post_thumbnail_id( $source_id );
+		if ( $thumbnail_id ) {
+			set_post_thumbnail( $target_id, $thumbnail_id );
+		}
 	}
 
 	/**
