@@ -32,7 +32,23 @@ class Icon_Box_Widget_Handler implements Widget_Handler_Interface {
 	 * @return string The Gutenberg block content.
 	 */
 	public function handle( array $element ): string {
-		$settings       = is_array( $element['settings'] ?? null ) ? $element['settings'] : array();
+		return $this->handle_settings(
+			is_array( $element['settings'] ?? null ) ? $element['settings'] : array()
+		);
+	}
+
+	/**
+	 * Build the block from a settings array.
+	 *
+	 * Split out so a widget with the same anatomy but different control names -
+	 * Header Footer Elementor's info card - can reuse this without pretending to
+	 * be an Elementor icon box.
+	 *
+	 * @param array $settings     Elementor widget settings.
+	 * @param bool  $default_icon Whether a missing icon falls back to Elementor's
+	 *                            own default star, which is what its icon box shows.
+	 */
+	public function handle_settings( array $settings, bool $default_icon = true ): string {
 		$custom_css     = isset( $settings['custom_css'] ) ? (string) $settings['custom_css'] : '';
 		$alignment      = Alignment_Helper::detect_alignment( $settings, array( 'align', 'alignment', 'text_align' ) );
 		$custom_id      = isset( $settings['_element_id'] ) ? trim( (string) $settings['_element_id'] ) : '';
@@ -92,16 +108,14 @@ class Icon_Box_Widget_Handler implements Widget_Handler_Interface {
 				esc_attr( $icon_value ),
 				$size
 			);
-		} else {
-			$icon_html = sprintf(
-				'<i class="fas fa-star" style="font-size:%2$dpx;"></i>',
-				esc_attr( $icon_value ),
-				$size
-			);
+		} elseif ( $default_icon ) {
+			$icon_html = sprintf( '<i class="fas fa-star" style="font-size:%1$dpx;"></i>', $size );
 		}
 
-		$segments   = array();
-		$segments[] = '<div class="icon-box-icon">' . $icon_html . '</div>';
+		$segments = array();
+		if ( '' !== $icon_html ) {
+			$segments[] = '<div class="icon-box-icon">' . $icon_html . '</div>';
+		}
 
 		// Determine title/description typographic defaults (fall back to sensible values).
 		$title_size        = isset( $typography_attr['fontSize'] ) ? (int) $typography_attr['fontSize'] : 20;

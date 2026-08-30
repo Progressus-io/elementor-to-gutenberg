@@ -7,6 +7,7 @@
 
 namespace Progressus\BlockShift\Admin\Widget;
 
+use Progressus\BlockShift\Admin\Helper\Block_Builder;
 use Progressus\BlockShift\Admin\Helper\Style_Parser;
 use Progressus\BlockShift\Admin\Widget_Handler_Interface;
 
@@ -41,6 +42,10 @@ class Generic_Elementor_Widget_Handler implements Widget_Handler_Interface {
 				return $this->handle_rating( $settings );
 			case 'sureforms_form':
 				return $this->handle_sureforms_form( $settings );
+			case 'suredonation-donation-form':
+				return $this->handle_suredonation_form( $settings );
+			case 'hfe-infocard':
+				return $this->handle_infocard( $settings );
 			case 'copyright':
 				return $this->handle_copyright( $settings );
 			case 'hfe-site-title':
@@ -266,6 +271,117 @@ class Generic_Elementor_Widget_Handler implements Widget_Handler_Interface {
 				'innerContent' => array(),
 			)
 		);
+	}
+
+	/**
+	 * Build a SureDonation widget -> the plugin's own shortcode.
+	 *
+	 * @param array $settings Widget settings.
+	 */
+	private function handle_suredonation_form( array $settings ): string {
+		$campaign = $settings['campaign_id'] ?? null;
+		if ( \is_array( $campaign ) ) {
+			$campaign = $campaign['id'] ?? $campaign['value'] ?? null;
+		}
+
+		if ( ! \is_numeric( $campaign ) || (int) $campaign <= 0 ) {
+			return '';
+		}
+
+		$shortcode = \sprintf( '[suredonation_form id="%d"]', (int) $campaign );
+
+		return $this->serialize_parsed_block(
+			array(
+				'blockName'    => 'core/shortcode',
+				'attrs'        => array(),
+				'innerBlocks'  => array(),
+				'innerHTML'    => $shortcode,
+				'innerContent' => array( $shortcode ),
+			)
+		);
+	}
+
+	/**
+	 * Build a Header Footer Elementor info card.
+	 *
+	 * It is an icon box under another name - icon, heading, description - so it
+	 * converts through the same handler, with the control names translated and
+	 * without the default star an Elementor icon box falls back to. Its optional
+	 * call to action follows as a button.
+	 *
+	 * @param array $settings Widget settings.
+	 */
+	private function handle_infocard( array $settings ): string {
+		$mapped = array(
+			'title_text'       => $settings['infocard_title'] ?? '',
+			'description_text' => $settings['infocard_description'] ?? '',
+			'align'            => $settings['infocard_overall_align'] ?? '',
+			'selected_icon'    => $settings['infocard_select_icon'] ?? null,
+			'size'             => $settings['infocard_icon_size'] ?? null,
+			'title_color'      => $settings['infocard_title_color'] ?? '',
+			'description_color' => $settings['infocard_desc_color'] ?? '',
+			'_css_classes'     => $settings['_css_classes'] ?? '',
+			'_element_id'      => $settings['_element_id'] ?? '',
+			'_padding'         => $settings['_padding'] ?? null,
+			'__globals__'      => $settings['__globals__'] ?? array(),
+		);
+
+		$handler = new Icon_Box_Widget_Handler();
+		$block   = $handler->handle_settings( $mapped, false );
+
+		if ( '' === $block ) {
+			return '';
+		}
+
+		return $block . $this->build_infocard_cta( $settings );
+	}
+
+	/**
+	 * Build the info card's call to action, when it has one.
+	 *
+	 * @param array $settings Widget settings.
+	 */
+	private function build_infocard_cta( array $settings ): string {
+		$type = \strtolower( \trim( (string) ( $settings['infocard_cta_type'] ?? 'none' ) ) );
+		if ( 'button' !== $type && 'link' !== $type ) {
+			return '';
+		}
+
+		$text = 'button' === $type
+			? (string) ( $settings['infocard_button_text'] ?? '' )
+			: (string) ( $settings['infocard_link_text'] ?? '' );
+		$text = \trim( \wp_strip_all_tags( $text ) );
+
+		if ( '' === $text ) {
+			return '';
+		}
+
+		$url = '';
+		if ( \is_array( $settings['infocard_text_link'] ?? null ) ) {
+			$url = (string) ( $settings['infocard_text_link']['url'] ?? '' );
+		}
+
+		$attrs = array();
+		if ( '' !== $url ) {
+			$attrs['url'] = \esc_url_raw( $url );
+		}
+
+		$button = Block_Builder::build_prepared(
+			'button',
+			$attrs,
+			static function ( array $prepared ) use ( $text ) {
+				$href = isset( $prepared['url'] ) ? (string) $prepared['url'] : '';
+
+				return \sprintf(
+					'<a class="%1$s"%2$s>%3$s</a>',
+					\esc_attr( Block_Builder::build_button_link_class( $prepared ) ),
+					'' === $href ? '' : ' href="' . \esc_url( $href ) . '"',
+					\esc_html( $text )
+				);
+			}
+		);
+
+		return Block_Builder::build( 'buttons', array(), $button );
 	}
 	/**
 	 * Read the widget's rating scale (Elementor offers 5 or 10).
