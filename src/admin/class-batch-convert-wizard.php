@@ -3682,6 +3682,9 @@ class Batch_Convert_Wizard {
 
 		if ( '' === $template_slug || 'default' === $template_slug ) {
 			update_post_meta( $target_id, '_wp_page_template', 'default' );
+		} elseif ( Gutenberg::FULL_WIDTH_PAGE_TEMPLATE_SLUG === $template_slug ) {
+			// Picks the PHP template or a block one, depending on the active theme.
+			Admin_Settings::assign_full_width_template( $target_id );
 		} else {
 			update_post_meta( $target_id, '_wp_page_template', $template_slug );
 		}
@@ -3704,6 +3707,12 @@ class Batch_Convert_Wizard {
 	 * @param string $json_data Raw Elementor JSON string.
 	 */
 	private function is_full_width_source_page( int $source_id, $decoded, string $json_data ): bool {
+		// A page that switched the theme's own title and container off renders as a
+		// bare canvas just as an Elementor full-width template does.
+		if ( Admin_Settings::source_hides_theme_page_chrome( $source_id ) ) {
+			return true;
+		}
+
 		$template_slug = (string) get_page_template_slug( $source_id );
 		if ( in_array( $template_slug, array( 'elementor_canvas', 'elementor_full_width', 'elementor_header_footer' ), true ) ) {
 			return true;

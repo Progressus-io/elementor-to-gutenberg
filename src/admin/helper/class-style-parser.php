@@ -1609,6 +1609,31 @@ class Style_Parser {
 			return strtolower( $hex );
 		}
 
+		/*
+		 * Keep a translucent colour translucent. Elementor uses `rgba()` for
+		 * overlays and for the faint fills behind icons and cards, and collapsing
+		 * those to an opaque hex turned a barely-there tint into a solid block.
+		 * It becomes eight-digit hex rather than staying `rgba()` because these
+		 * values end up in inline styles, and `safecss_filter_attr()` strips a
+		 * declaration containing a function call it does not know.
+		 */
+		if ( preg_match( '/^rgba\(\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*,\s*([0-9]*\.?[0-9]+)\s*\)$/', $color, $alpha_match ) ) {
+			$alpha = (float) $alpha_match[4];
+			if ( $alpha <= 0 ) {
+				return '';
+			}
+
+			if ( $alpha < 1 ) {
+				return sprintf(
+					'#%02x%02x%02x%02x',
+					min( 255, (int) $alpha_match[1] ),
+					min( 255, (int) $alpha_match[2] ),
+					min( 255, (int) $alpha_match[3] ),
+					(int) round( $alpha * 255 )
+				);
+			}
+		}
+
 		$rgb = self::parse_color_to_rgb( $color );
 		if ( null === $rgb ) {
 			return '';

@@ -341,7 +341,7 @@ class Admin_Settings {
 		$new_page_id = $this->insert_new_page( $page_id, $blocks );
 		if ( $new_page_id ) {
 			$this->finalize_converted_post( (int) $new_page_id, (string) $blocks, true );
-			if ( self::source_uses_elementor_full_width_template( (int) $page_id ) ) {
+			if ( self::source_wants_full_width_template( (int) $page_id ) ) {
 				$this->assign_blockshift_full_width_template( (int) $new_page_id );
 			}
 		}
@@ -437,6 +437,85 @@ class Admin_Settings {
 	}
 
 	/**
+	 * Decide whether the converted page should get the plugin's Full Width
+	 * Page template.
+	 *
+	 * True for a source built on one of Elementor's own full-width templates,
+	 * and also for one that reaches the same result through the theme - a kit
+	 * page that stays on the default template but switches the theme's own
+	 * page title and container off. Both render as a bare canvas in Elementor,
+	 * so a converted copy left on the theme's default template suddenly grew a
+	 * page title above a design that already has its own heading.
+	 *
+	 * @param int $source_id Source Elementor page ID.
+	 */
+	public static function source_wants_full_width_template( int $source_id ): bool {
+		if ( self::source_uses_elementor_full_width_template( $source_id ) ) {
+			return true;
+		}
+
+		return self::source_hides_theme_page_chrome( $source_id );
+	}
+
+	/**
+	 * Detect a source page that turned off the theme's page title or container.
+	 *
+	 * Themes keep this in their own post meta, so the keys are listed per theme
+	 * rather than guessed. `blockshift_theme_page_chrome_meta` lets a site add
+	 * the keys for a theme that is not covered here.
+	 *
+	 * @param int $source_id Source page ID.
+	 */
+	public static function source_hides_theme_page_chrome( int $source_id ): bool {
+		if ( $source_id <= 0 ) {
+			return false;
+		}
+
+		$keys = array(
+			// Astra.
+			'site-post-title'              => array( 'disabled' ),
+			'ast-title-bar-display'        => array( 'disabled' ),
+			'site-content-layout'          => array( 'page-builder', 'plain-container' ),
+			// GeneratePress.
+			'_generate-disable-post-title' => array( 'true', '1' ),
+			'_generate-full-width-content' => array( 'true', '1' ),
+			// OceanWP.
+			'ocean_disable_title'          => array( 'on', 'enable', '1' ),
+			'ocean_post_layout'            => array( 'full-width', 'full-screen' ),
+			// Kadence.
+			'_kad_post_title'              => array( 'hide', 'disable' ),
+			'_kad_post_layout'             => array( 'fullwidth' ),
+			// Neve.
+			'neve_meta_disable_title'      => array( 'on', '1' ),
+			'neve_meta_container'          => array( 'full-width' ),
+			// Blocksy.
+			'blocksy_page_title'           => array( 'hidden', 'no' ),
+			'page_structure_type'          => array( 'type-4' ),
+		);
+
+		/**
+		 * Filter the post meta that marks a page as rendering without the theme's
+		 * title and container.
+		 *
+		 * @param array<string, array<int, string>> $keys      Meta key => values that mean "hidden".
+		 * @param int                               $source_id Source page ID.
+		 */
+		$keys = (array) apply_filters( 'blockshift_theme_page_chrome_meta', $keys, $source_id );
+
+		foreach ( $keys as $key => $values ) {
+			$stored = get_post_meta( $source_id, (string) $key, true );
+			if ( ! is_scalar( $stored ) || '' === (string) $stored ) {
+				continue;
+			}
+
+			if ( in_array( strtolower( (string) $stored ), array_map( 'strtolower', (array) $values ), true ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+	/**
 	 * Assign the Full Width Page template to the converted page.
 	 *
 	 * Always stores the classic-template path slug (`templates/blockshift-full-width-page.php`)
@@ -451,15 +530,97 @@ class Admin_Settings {
 	 * @param int $target_id Converted page ID.
 	 */
 	private function assign_blockshift_full_width_template( int $target_id ): void {
+		self::assign_full_width_template( $target_id );
+	}
+
+	/**
+	 * Give a converted page a template that renders its content and nothing else.
+	 *
+	 * The plugin's PHP template does that on a classic theme. On a block theme it
+	 * would take the page out of the block template system altogether, losing the
+	 * theme's - or the conversion's own - header and footer parts, so a block
+	 * template is created instead: the same header and footer around bare post
+	 * content, and no post title above a design that already has its own heading.
+	 *
+	 * @param int $target_id Converted page ID.
+	 */
+	public static function assign_full_width_template( int $target_id ): void {
 		if ( $target_id <= 0 ) {
 			return;
 		}
 
-		$slug = \Progressus\BlockShift\Gutenberg::FULL_WIDTH_PAGE_TEMPLATE_SLUG;
+		$slug = '';
+
+		if ( function_exists( 'wp_is_block_theme' ) && wp_is_block_theme() ) {
+			$slug = self::ensure_block_full_width_template();
+		}
+
+		if ( '' === $slug ) {
+			$slug = \Progressus\BlockShift\Gutenberg::FULL_WIDTH_PAGE_TEMPLATE_SLUG;
+		}
 
 		update_post_meta( $target_id, '_wp_page_template', $slug );
 		delete_post_meta( $target_id, 'wp_template' );
 		clean_post_cache( $target_id );
+	}
+
+	/**
+	 * Create, or refresh, the block template converted pages use.
+	 *
+	 * @return string Template slug, or an empty string when it could not be saved.
+	 */
+	private static function ensure_block_full_width_template(): string {
+		$theme = get_stylesheet();
+		$slug  = 'page-blockshift-full-width';
+
+		$content = implode(
+			"\n",
+			array(
+				sprintf( '<!-- wp:template-part {"slug":"header","theme":"%s","tagName":"header"} /-->', $theme ),
+				'<!-- wp:post-content /-->',
+				sprintf( '<!-- wp:template-part {"slug":"footer","theme":"%s","tagName":"footer"} /-->', $theme ),
+			)
+		);
+
+		$existing = get_posts(
+			array(
+				'post_type'      => 'wp_template',
+				'post_status'    => 'any',
+				'name'           => $slug,
+				'posts_per_page' => 1,
+				'fields'         => 'ids',
+				'tax_query'      => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+					array(
+						'taxonomy' => 'wp_theme',
+						'field'    => 'name',
+						'terms'    => $theme,
+					),
+				),
+			)
+		);
+
+		$postarr = array(
+			'post_title'   => __( 'Converted Page: Full Width', 'migrate-off-elementor' ),
+			'post_name'    => $slug,
+			'post_content' => $content,
+			'post_status'  => 'publish',
+			'post_type'    => 'wp_template',
+		);
+
+		if ( ! empty( $existing ) ) {
+			$postarr['ID'] = (int) $existing[0];
+			$saved         = wp_update_post( $postarr, true );
+		} else {
+			$saved = wp_insert_post( $postarr, true );
+		}
+
+		if ( is_wp_error( $saved ) || ! $saved ) {
+			return '';
+		}
+
+		wp_set_post_terms( (int) $saved, array( $theme ), 'wp_theme', false );
+
+		return $slug;
 	}
 
 	/**

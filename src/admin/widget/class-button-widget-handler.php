@@ -134,9 +134,18 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 		}
 
 		if ( $this->should_drop_background( $settings, $computed_styles, $button_attributes ) ) {
-			if ( isset( $button_attributes['style']['color']['background'] ) ) {
-				$button_attributes['style']['color']['background'] = 'transparent';
-			}
+			$button_attributes['style']['color']['background'] = 'transparent';
+		}
+
+		/*
+		 * A theme that styles `.wp-element-button` paints its own background
+		 * whenever the block declares none, so an Elementor button drawn as a plain
+		 * text link came out as a solid block - and with the label's own colour on
+		 * top of it, unreadable. The button always states its background now: the
+		 * one the conversion resolved, or transparent when Elementor set none.
+		 */
+		if ( ! isset( $button_attributes['style']['color']['background'] ) ) {
+			$button_attributes['style']['color']['background'] = 'transparent';
 		}
 
 		if ( empty( $button_attributes['style']['spacing']['padding'] ) ) {
