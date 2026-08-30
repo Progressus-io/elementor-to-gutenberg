@@ -318,6 +318,17 @@ class Style_Parser {
 	 */
 	public static function extract_text_color_css_value( array $settings, string $key ): array {
 		$raw = isset( $settings[ $key ] ) ? self::sanitize_scalar( $settings[ $key ] ) : '';
+
+		/*
+		 * A widget that picks its colour from the site palette stores nothing under
+		 * the control name and puts a "globals/colors?id=..." reference under
+		 * `__globals__` instead. Reading only the literal key lost those colours -
+		 * a hero heading set to the palette white came out in the theme dark.
+		 */
+		if ( '' === $raw && isset( $settings['__globals__'][ $key ] ) ) {
+			$raw = self::sanitize_scalar( $settings['__globals__'][ $key ] );
+		}
+
 		if ( '' === $raw ) {
 			return array(
 				'color' => '',
