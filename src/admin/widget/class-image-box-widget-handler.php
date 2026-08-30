@@ -311,8 +311,17 @@ class Image_Box_Widget_Handler implements Widget_Handler_Interface {
 
 		// Check for image in settings.
 		if ( isset( $settings['image'] ) && is_array( $settings['image'] ) ) {
-			$image_data['url'] = isset( $settings['image']['url'] ) ? (string) $settings['image']['url'] : '';
-			$image_data['id']  = isset( $settings['image']['id'] ) ? (int) $settings['image']['id'] : 0;
+			$image_data['id'] = isset( $settings['image']['id'] ) ? (int) $settings['image']['id'] : 0;
+
+			/*
+			 * Resolve through the attachment ID first. Elementor keeps the URL the
+			 * image had when the widget was saved, so on an imported site it still
+			 * points at the source domain and the converted page would hot-link it.
+			 */
+			$image_data['url'] = Style_Parser::resolve_media_url( $settings['image'] );
+			if ( '' === $image_data['url'] ) {
+				$image_data['url'] = isset( $settings['image']['url'] ) ? (string) $settings['image']['url'] : '';
+			}
 		}
 
 		// Check for alt text.
@@ -375,8 +384,14 @@ class Image_Box_Widget_Handler implements Widget_Handler_Interface {
 	 * @return array{width:int,height:int}
 	 */
 	private function resolve_image_dimensions( array $settings ): array {
-		$default_width  = 100;
-		$default_height = 100;
+		/*
+		 * Elementor shows the image at its own size unless the widget overrides it,
+		 * so the attachment is the right fallback. A fixed 100x100 default shrank
+		 * every image box that simply used the picture as-is.
+		 */
+		$natural        = $this->resolve_attachment_dimensions( $settings );
+		$default_width  = $natural['width'] > 0 ? $natural['width'] : 100;
+		$default_height = $natural['height'] > 0 ? $natural['height'] : 100;
 
 		$custom_dimension = isset( $settings['thumbnail_custom_dimension'] ) && is_array( $settings['thumbnail_custom_dimension'] )
 			? $settings['thumbnail_custom_dimension']
@@ -561,5 +576,38 @@ class Image_Box_Widget_Handler implements Widget_Handler_Interface {
 		}
 
 		return 'flex-start';
+	}
+
+	/**
+	 * Read the size the widget's image actually has at its chosen thumbnail size.
+	 *
+	 * @param array $settings Elementor widget settings.
+	 *
+	 * @return array{width:int,height:int}
+	 */
+	private function resolve_attachment_dimensions( array $settings ): array {
+		$none = array(
+			'width'  => 0,
+			'height' => 0,
+		);
+
+		$attachment_id = isset( $settings['image']['id'] ) ? (int) $settings['image']['id'] : 0;
+		if ( $attachment_id <= 0 || ! function_exists( 'wp_get_attachment_image_src' ) ) {
+			return $none;
+		}
+
+		$size = isset( $settings['thumbnail_size'] ) && is_string( $settings['thumbnail_size'] ) && '' !== $settings['thumbnail_size']
+			? $settings['thumbnail_size']
+			: 'full';
+
+		$src = wp_get_attachment_image_src( $attachment_id, $size );
+		if ( ! is_array( $src ) || empty( $src[1] ) || empty( $src[2] ) ) {
+			return $none;
+		}
+
+		return array(
+			'width'  => (int) $src[1],
+			'height' => (int) $src[2],
+		);
 	}
 }

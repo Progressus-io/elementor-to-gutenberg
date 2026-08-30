@@ -2371,6 +2371,20 @@ class Style_Parser {
 	}
 
 	/**
+	 * Resolve an Elementor media control to a URL on this site.
+	 *
+	 * Elementor keeps both an attachment `id` and the `url` the media had when
+	 * the widget was saved. After an import or a domain change only the ID is
+	 * still meaningful, so callers outside this class resolve media through
+	 * here rather than reading `url` directly and hot-linking the old site.
+	 *
+	 * @param mixed $media Elementor media setting, or a plain URL string.
+	 */
+	public static function resolve_media_url( $media ): string {
+		return self::extract_image_url( $media );
+	}
+
+	/**
 	 * Resolve a media attachment ID to its URL on this site.
 	 *
 	 * @param mixed $id Raw attachment ID from an Elementor media control.

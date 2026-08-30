@@ -222,7 +222,13 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 			$icon_html = '<span class="blockshift-button-icon ' . esc_attr( $icon_data['class_name'] ) . '" aria-hidden="true"></span>';
 			Style_Parser::save_custom_css( '/* icon class captured for ETG_EXTRA_ATTRS_MAP_V1 */' );
 		} elseif ( '' !== $icon_data['url'] ) {
-			$icon_html = '<span class="blockshift-button-icon"><img src="' . esc_url( $icon_data['url'] ) . '" alt="" aria-hidden="true" /></span>';
+			/*
+			 * Elementor renders a button's SVG icon inline and scales it with the
+			 * label, so it never affects the button's height. An <img> with no
+			 * size falls back to the file's intrinsic dimensions instead, which
+			 * stretched the button to several times its height.
+			 */
+			$icon_html = '<span class="blockshift-button-icon"><img src="' . esc_url( $icon_data['url'] ) . '" alt="" aria-hidden="true" style="width:1em;height:1em;vertical-align:middle" /></span>';
 		}
 
 		// Normalize typography for core/button to avoid Gutenberg dropping/reshuffling values.
