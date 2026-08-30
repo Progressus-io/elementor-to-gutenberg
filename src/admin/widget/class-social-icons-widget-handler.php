@@ -83,16 +83,26 @@ class Social_Icons_Widget_Handler implements Widget_Handler_Interface {
 				continue;
 			}
 
-			$url = is_array( $icon['link'] ?? null ) ? (string) ( $icon['link']['url'] ?? '' ) : '';
+			$url     = is_array( $icon['link'] ?? null ) ? (string) ( $icon['link']['url'] ?? '' ) : '';
+			$service = $this->detect_service( $icon );
+
+			/*
+			 * Elementor shows an icon whether or not a link was filled in, and kits
+			 * routinely ship them unlinked. core/social-link renders nothing without
+			 * a URL, so an unlinked icon gets the same '#' Elementor itself outputs
+			 * rather than being dropped along with the rest of the widget.
+			 */
 			if ( '' === $url ) {
-				continue;
+				if ( '' === $service ) {
+					continue;
+				}
+
+				$url = '#';
 			}
 
 			if ( ! empty( $icon['link']['is_external'] ) ) {
 				$open_new_tab = true;
 			}
-
-			$service = $this->detect_service( $icon );
 
 			$link_attrs = array( 'url' => $url );
 			if ( '' !== $service ) {
