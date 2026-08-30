@@ -1383,7 +1383,30 @@ class Admin_Settings {
 			return $attributes;
 		}
 
-		$color = Style_Parser::normalize_color_value( $settings['background_overlay_color'] ?? '' );
+		/*
+		 * The colour may be a literal, or a reference into the Elementor kit / theme
+		 * palette stored under `__globals__`. Reading only the literal dropped the
+		 * overlay entirely on any section that picked its colour from the palette,
+		 * which is how most kits are built.
+		 */
+		$globals   = is_array( $settings['__globals__'] ?? null ) ? $settings['__globals__'] : array();
+		$candidates = array(
+			$settings['background_overlay_color'] ?? '',
+			$globals['background_overlay_color'] ?? '',
+		);
+
+		$color = '';
+		foreach ( $candidates as $candidate ) {
+			if ( '' === $candidate || null === $candidate ) {
+				continue;
+			}
+			$resolved = Style_Parser::resolve_elementor_color_reference( $candidate );
+			if ( ! empty( $resolved['color'] ) ) {
+				$color = (string) $resolved['color'];
+				break;
+			}
+		}
+
 		if ( '' === $color ) {
 			return $attributes;
 		}
@@ -1401,6 +1424,23 @@ class Admin_Settings {
 			return $attributes;
 		}
 		$opacity = min( 1.0, $opacity );
+
+		/*
+		 * With nothing to sit on top of, the overlay is just a translucent fill - so
+		 * express it as the group's own background colour. That renders identically
+		 * (same colour, same compositing) while staying a standard core attribute, so
+		 * the colour shows up in the editor's background control and stays editable.
+		 * A pseudo-element would have rendered the same but been invisible to the editor.
+		 */
+		if ( ! $this->container_has_background_layer( $settings ) ) {
+			$rgba = Style_Parser::to_rgba_string( $color, $opacity );
+
+			if ( '' !== $rgba ) {
+				$attributes['style']['color']['background'] = $rgba;
+
+				return $this->maybe_add_group_has_background_class( $attributes );
+			}
+		}
 
 		$collector = External_Style_Collector::get_active();
 		if ( ! $collector instanceof External_Style_Collector ) {
@@ -1430,6 +1470,55 @@ class Admin_Settings {
 		);
 
 		return $this->add_class_to_attributes( $attributes, $class );
+	}
+
+	/**
+	 * Whether a container paints anything the overlay would have to sit on top of.
+	 *
+	 * Only an image, gradient or video makes the overlay genuinely a *layer*. A plain
+	 * background colour beneath it could be flattened, but the two are kept separate
+	 * here so an existing colour is never silently overwritten.
+	 *
+	 * @param array $settings Elementor container settings.
+	 *
+	 * @return bool
+	 */
+	private function container_has_background_layer( array $settings ): bool {
+		$globals = is_array( $settings['__globals__'] ?? null ) ? $settings['__globals__'] : array();
+
+		$layer_keys = array(
+			'background_image',
+			'_background_image',
+			'background_video_link',
+			'background_slideshow_gallery',
+		);
+
+		foreach ( $layer_keys as $key ) {
+			$value = $settings[ $key ] ?? null;
+
+			if ( is_array( $value ) ) {
+				if ( ! empty( $value['url'] ) || ! empty( $value['id'] ) ) {
+					return true;
+				}
+				continue;
+			}
+
+			if ( ! empty( $value ) ) {
+				return true;
+			}
+		}
+
+		$type = $settings['background_background'] ?? '';
+		if ( is_string( $type ) && in_array( strtolower( trim( $type ) ), array( 'gradient', 'video', 'slideshow' ), true ) ) {
+			return true;
+		}
+
+		// A colour already on the container would be hidden if we replaced it.
+		if ( ! empty( $settings['background_color'] ) || ! empty( $globals['background_color'] ) ) {
+			return true;
+		}
+
+		return false;
 	}
 
 	/**

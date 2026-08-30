@@ -861,6 +861,44 @@ class Style_Parser {
 	}
 
 	/**
+	 * Combine a colour and an opacity into a single CSS `rgba()` value.
+	 *
+	 * Lets a translucent layer be expressed as one ordinary colour value, which core
+	 * blocks accept, rather than needing a separate opacity declaration.
+	 *
+	 * @param string $color   Colour value (hex, #RRGGBBAA, rgb()/rgba(), or a named colour).
+	 * @param float  $opacity Opacity between 0 and 1. Multiplied with any alpha the colour already carries.
+	 *
+	 * @return string `rgba(...)` string, or an empty string when the colour cannot be parsed.
+	 */
+	public static function to_rgba_string( string $color, float $opacity ): string {
+		$color = self::normalize_color_value( $color );
+		if ( '' === $color ) {
+			return '';
+		}
+
+		$alpha = max( 0.0, min( 1.0, $opacity ) );
+
+		// #RRGGBBAA - fold the colour's own alpha into the requested opacity.
+		if ( 1 === preg_match( '/^#([0-9a-f]{6})([0-9a-f]{2})$/i', $color, $m ) ) {
+			$alpha *= hexdec( $m[2] ) / 255;
+			$color  = '#' . $m[1];
+		}
+
+		$rgb = self::parse_color_to_rgb( $color );
+		if ( ! is_array( $rgb ) || count( $rgb ) < 3 ) {
+			return '';
+		}
+
+		$alpha = rtrim( rtrim( number_format( $alpha, 3, '.', '' ), '0' ), '.' );
+		if ( '' === $alpha ) {
+			$alpha = '0';
+		}
+
+		return sprintf( 'rgba(%d,%d,%d,%s)', (int) $rgb[0], (int) $rgb[1], (int) $rgb[2], $alpha );
+	}
+
+	/**
 	 * Read a single size control (unit + size) from the Elementor kit.
 	 *
 	 * @param string $key Kit setting key, e.g. `button_typography_font_size`.
