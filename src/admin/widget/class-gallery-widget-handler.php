@@ -35,9 +35,19 @@ class Gallery_Widget_Handler implements Widget_Handler_Interface {
 			'url' => array(),
 		);
 		foreach ( $gallery_items as $item ) {
-			$item          = is_array( $item ) ? $item : array();
-			$url           = isset( $item['url'] ) ? (string) $item['url'] : '';
-			$new_url       = File_Upload_Service::download_and_upload( $url ) ?? $url;
+			$item = is_array( $item ) ? $item : array();
+			$url  = isset( $item['url'] ) ? (string) $item['url'] : '';
+
+			/*
+			 * The attachment ID survives an import; the stored URL does not, so
+			 * resolve through it first and only fall back to downloading the
+			 * remote file when the media is genuinely not on this site.
+			 */
+			$new_url = Style_Parser::resolve_media_url( $item );
+			if ( '' === $new_url ) {
+				$new_url = File_Upload_Service::download_and_upload( $url ) ?? $url;
+			}
+
 			$attachment_id = ( ! empty( $new_url ) ? attachment_url_to_postid( $new_url ) : 0 );
 			if ( $attachment_id ) {
 				$image_ids[]     = $attachment_id;

@@ -1178,7 +1178,7 @@ class Admin_Settings {
 
 		if ( $is_top_level ) {
 			$attributes           = $this->apply_full_width_section_attributes( $attributes, $settings );
-			$attributes['layout'] = $this->build_top_level_constrained_layout();
+			$attributes['layout'] = $this->section_content_layout( $settings );
 		}
 
 		return Block_Builder::build( 'group', $attributes, $inner_html );
@@ -1370,14 +1370,14 @@ class Admin_Settings {
 			return $this->render_vertical_stack_group( $container_attr, $child_blocks, $justify_content );
 		}
 
-		$layout_type = in_array( 'e-con-full', $container_classes, true ) ? 'default' : 'constrained';
+		$layout_type = $this->wants_full_width_content( $container_settings, $container_classes ) ? 'default' : 'constrained';
 
 		if ( $is_top_level ) {
 			$container_attr           = $this->apply_full_width_section_attributes( $container_attr, $container_settings );
-			$container_attr['layout'] = $this->build_top_level_constrained_layout();
+			$container_attr['layout'] = $this->section_content_layout( $container_settings, $container_classes );
 
 			// render_group will set layout from $attributes['layout'] when present.
-			return $this->render_group( $container_attr, $child_blocks, 'constrained' );
+			return $this->render_group( $container_attr, $child_blocks, $layout_type );
 		}
 
 		return $this->render_group( $container_attr, $child_blocks, $layout_type );
@@ -1667,6 +1667,44 @@ class Admin_Settings {
 		}
 
 		return Block_Builder::build( 'group', $outer_attrs, $columns_inner_html );
+	}
+
+	/**
+	 * Pick the layout a converted top-level section should use.
+	 *
+	 * A section whose Elementor content width is "full" wants its children to
+	 * reach the viewport edges; constraining them to the kit width made those
+	 * sections visibly narrower than the original. Everything else keeps the
+	 * boxed treatment.
+	 *
+	 * @param array $settings Elementor element settings.
+	 * @param array $classes  Classes captured for the element, when available.
+	 */
+	private function section_content_layout( array $settings, array $classes = array() ): array {
+		if ( $this->wants_full_width_content( $settings, $classes ) ) {
+			return array( 'type' => 'default' );
+		}
+
+		return $this->build_top_level_constrained_layout();
+	}
+
+	/**
+	 * Detect a full-width content width on either a container or a legacy section.
+	 *
+	 * Containers store it as `content_width: "full"`; a container rendered by
+	 * Elementor also carries the `e-con-full` class, which is the only signal
+	 * available when the element's classes were captured but its settings were
+	 * not.
+	 *
+	 * @param array $settings Elementor element settings.
+	 * @param array $classes  Classes captured for the element.
+	 */
+	private function wants_full_width_content( array $settings, array $classes = array() ): bool {
+		if ( in_array( 'e-con-full', $classes, true ) ) {
+			return true;
+		}
+
+		return $this->section_wants_full_width_content( $settings );
 	}
 
 	/**

@@ -552,8 +552,13 @@ class Call_To_Action_Widget_Handler implements Widget_Handler_Interface {
 		);
 
 		if ( isset( $settings['bg_image'] ) && is_array( $settings['bg_image'] ) ) {
-			$image_data['url'] = isset( $settings['bg_image']['url'] ) ? (string) $settings['bg_image']['url'] : '';
-			$image_data['id']  = isset( $settings['bg_image']['id'] ) ? (int) $settings['bg_image']['id'] : 0;
+			$image_data['id'] = isset( $settings['bg_image']['id'] ) ? (int) $settings['bg_image']['id'] : 0;
+
+			// Resolve through the attachment; the saved URL is stale on an imported site.
+			$image_data['url'] = Style_Parser::resolve_media_url( $settings['bg_image'] );
+			if ( '' === $image_data['url'] ) {
+				$image_data['url'] = isset( $settings['bg_image']['url'] ) ? (string) $settings['bg_image']['url'] : '';
+			}
 		}
 
 		return $image_data;
