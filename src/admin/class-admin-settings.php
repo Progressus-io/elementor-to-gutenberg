@@ -1660,11 +1660,7 @@ class Admin_Settings {
 		//     We emit `layout:default` so the wp:group does not constrain children.
 		//   - All other sections get the boxed treatment: alignfull background,
 		//     constrained inner content at the kit container width.
-		if ( $this->section_wants_full_width_content( $settings ) ) {
-			$outer_attrs['layout'] = array( 'type' => 'default' );
-		} else {
-			$outer_attrs['layout'] = $this->build_top_level_constrained_layout();
-		}
+		$outer_attrs['layout'] = $this->section_content_layout( $settings );
 
 		return Block_Builder::build( 'group', $outer_attrs, $columns_inner_html );
 	}
@@ -1685,8 +1681,56 @@ class Admin_Settings {
 			return array( 'type' => 'default' );
 		}
 
-		return $this->build_top_level_constrained_layout();
+		$layout = $this->build_top_level_constrained_layout();
+
+		/*
+		 * A boxed Elementor container can narrow its own content (`boxed_width`),
+		 * which is how kits build centred hero copy. Falling back to the kit width
+		 * let that copy run the full container and changed how the text wrapped.
+		 */
+		$boxed = $this->read_section_boxed_width( $settings );
+		if ( '' !== $boxed ) {
+			$layout['contentSize'] = $boxed;
+			$layout['wideSize']    = $boxed;
+		}
+
+		return $layout;
 	}
+
+	/**
+	 * Read the width a boxed section pins its own content to.
+	 *
+	 * Containers store it as `boxed_width`; legacy sections store the same idea
+	 * in `content_width`, which is a slider there and a keyword on containers -
+	 * hence the array check rather than a plain read.
+	 *
+	 * @param array $settings Elementor element settings.
+	 *
+	 * @return string CSS length, or an empty string when the section does not set one.
+	 */
+	private function read_section_boxed_width( array $settings ): string {
+		foreach ( array( 'boxed_width', 'content_width' ) as $key ) {
+			$value = $settings[ $key ] ?? null;
+			if ( ! is_array( $value ) || ! is_numeric( $value['size'] ?? null ) ) {
+				continue;
+			}
+
+			$size = (float) $value['size'];
+			if ( $size <= 0 ) {
+				continue;
+			}
+
+			$unit = isset( $value['unit'] ) ? (string) $value['unit'] : 'px';
+			if ( ! in_array( $unit, array( 'px', '%', 'em', 'rem', 'vw' ), true ) ) {
+				$unit = 'px';
+			}
+
+			return ( (float) (int) $size === $size ? (string) (int) $size : (string) $size ) . $unit;
+		}
+
+		return '';
+	}
+
 
 	/**
 	 * Detect a full-width content width on either a container or a legacy section.
