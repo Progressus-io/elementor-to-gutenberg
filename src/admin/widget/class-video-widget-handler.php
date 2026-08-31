@@ -40,7 +40,7 @@ class Video_Widget_Handler implements Widget_Handler_Interface {
 		}
 
 		if ( '' !== $custom ) {
-			Style_Parser::save_custom_css( $custom );
+			Style_Parser::note_skipped_custom_css( $custom );
 		}
 
 		$attrs = array(

@@ -171,7 +171,10 @@ class Diagnostic_Logger {
 		}
 
 		$files = array(
-			'index.php'   => "<?php\n// Silence is golden.\n",
+			// An EMPTY index.php only: WordPress.org does not allow plugins to write
+			// PHP code files anywhere except an empty index.php. Directory listing is
+			// blocked here by the empty index files plus the deny rules below.
+			'index.php'   => '',
 			'index.html'  => '',
 			'.htaccess'   => "# Apache 2.4\n<IfModule mod_authz_core.c>\n\tRequire all denied\n</IfModule>\n# Apache 2.2\n<IfModule !mod_authz_core.c>\n\tOrder allow,deny\n\tDeny from all\n</IfModule>\n",
 			'web.config'  => "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<configuration>\n\t<system.webServer>\n\t\t<authorization>\n\t\t\t<deny users=\"*\" />\n\t\t</authorization>\n\t</system.webServer>\n</configuration>\n",

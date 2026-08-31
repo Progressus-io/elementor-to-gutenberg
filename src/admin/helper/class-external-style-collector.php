@@ -422,7 +422,7 @@ class External_Style_Collector {
 
 	/**
 	 * Register the collector for the current conversion so static callers
-	 * (e.g. Style_Parser::save_custom_css) can route raw CSS into this page.
+	 * (e.g. Style_Parser::save_generated_css) can route generated CSS into this page.
 	 *
 	 * @param External_Style_Collector|null $collector Collector, or null to clear.
 	 *

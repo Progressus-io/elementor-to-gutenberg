@@ -172,9 +172,9 @@ class Icon_List_Widget_Handler implements Widget_Handler_Interface {
 
 		$list_items = implode( "\n", $parts );
 
-		// Save custom CSS if present.
+		// Raw user-authored Custom CSS is not enqueued; record it for the user.
 		if ( '' !== $custom_css ) {
-			Style_Parser::save_custom_css( $custom_css );
+			Style_Parser::note_skipped_custom_css( $custom_css );
 		}
 
 		// wp-block-list is always output by Gutenberg's save function — include it
@@ -184,7 +184,7 @@ class Icon_List_Widget_Handler implements Widget_Handler_Interface {
 		// Remove bullets via injected CSS (avoids style attribute mismatches with
 		// Gutenberg's block validator).
 		$no_bullets_css = '.wp-block-list';
-		Style_Parser::save_custom_css( $no_bullets_css );
+		Style_Parser::save_generated_css( $no_bullets_css );
 		$classes[] = 'no-bullets';
 
 		$attrs_json = '';

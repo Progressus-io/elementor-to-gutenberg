@@ -73,7 +73,7 @@ class Menu_Widget_Handler implements Widget_Handler_Interface {
 
 		// Save custom CSS to the Customizer's Additional CSS.
 		if ( ! empty( $custom_css ) ) {
-			Style_Parser::save_custom_css( $custom_css );
+			Style_Parser::note_skipped_custom_css( $custom_css );
 		}
 
 		return $block_content . "\n";

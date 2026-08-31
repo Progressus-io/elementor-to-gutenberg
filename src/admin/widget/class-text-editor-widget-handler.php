@@ -324,7 +324,7 @@ class Text_Editor_Widget_Handler implements Widget_Handler_Interface {
 		$segments = $this->extract_structured_segments( $content );
 
 		if ( '' !== $custom_css ) {
-			Style_Parser::save_custom_css( $custom_css );
+			Style_Parser::note_skipped_custom_css( $custom_css );
 		}
 
 		if ( null === $segments ) {

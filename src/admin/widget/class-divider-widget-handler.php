@@ -41,7 +41,10 @@ class Divider_Widget_Handler implements Widget_Handler_Interface {
 		$inline_style  = '';
 		$custom_class  = $settings['_css_classes'] ?? '';
 		$custom_id     = $settings['_element_id'] ?? '';
-		$custom_css    = $settings['custom_css'] ?? '';
+		// Only plugin-generated rules are enqueued below; the widget's raw
+		// user-authored Custom CSS is recorded for the user but never enqueued.
+		Style_Parser::note_skipped_custom_css( (string) ( $settings['custom_css'] ?? '' ) );
+		$custom_css    = '';
 		$unique_class  = 'divider-' . uniqid();
 		$custom_class .= ' ' . $unique_class;
 
@@ -222,7 +225,7 @@ class Divider_Widget_Handler implements Widget_Handler_Interface {
 			$custom_css      .= sprintf( '%s{ %s }', $element_selector, $inline_style );
 		}
 		if ( ! empty( $custom_css ) ) {
-			Style_Parser::save_custom_css( $custom_css );
+			Style_Parser::save_generated_css( $custom_css );
 		}
 
 		return $block_content;
