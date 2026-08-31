@@ -152,16 +152,23 @@ class Site_Logo_Widget_Handler implements Widget_Handler_Interface {
 			$attributes['width'] = $width . 'px';
 		}
 
+		/*
+		 * A sized image block marks the figure `is-resized` and puts the width in
+		 * the image's own style, not in a `width` attribute. Writing it the other
+		 * way left the header template part unopenable in the editor.
+		 */
 		$img = '<img src="' . esc_url( $logo['url'] ) . '" alt="' . esc_attr( get_bloginfo( 'name' ) ) . '"';
 		if ( $logo['id'] > 0 ) {
 			$img .= ' class="wp-image-' . esc_attr( (string) $logo['id'] ) . '"';
 		}
 		if ( $width ) {
-			$img .= ' width="' . esc_attr( (string) $width ) . '"';
+			$img .= ' style="width:' . esc_attr( (string) $width ) . 'px"';
 		}
 		$img .= '/>';
 
-		$figure = '<figure class="wp-block-image size-full"><a href="' . esc_url( home_url( '/' ) ) . '">' . $img . '</a></figure>';
+		$figure_class = 'wp-block-image size-full' . ( $width ? ' is-resized' : '' );
+
+		$figure = '<figure class="' . esc_attr( $figure_class ) . '"><a href="' . esc_url( home_url( '/' ) ) . '">' . $img . '</a></figure>';
 
 		if ( '' !== $custom_css ) {
 			Style_Parser::save_custom_css( $custom_css );
