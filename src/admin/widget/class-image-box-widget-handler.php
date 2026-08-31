@@ -170,7 +170,7 @@ class Image_Box_Widget_Handler implements Widget_Handler_Interface {
 			if ( $title_word_spacing ) {
 				$title_style_parts[] = 'word-spacing:' . esc_attr( $title_word_spacing );
 			}
-			$segments[] = '<h3 class="image-box-title" style="' . implode( ';', $title_style_parts ) . '">' . esc_html( $title ) . '</h3>';
+			$segments[] = '<h3 class="image-box-title" style="' . implode( ';', $title_style_parts ) . '">' . wp_kses_post( $title ) . '</h3>';
 		}
 		if ( '' !== trim( $description ) ) {
 			$sanitized_description = wp_kses_post( $description );
@@ -260,7 +260,7 @@ class Image_Box_Widget_Handler implements Widget_Handler_Interface {
 			'link'                      => isset( $settings['link']['url'] ) ? (string) $settings['link']['url'] : '',
 			'linkTarget'                => ! empty( $settings['link']['is_external'] ),
 			'nofollow'                  => ! empty( $settings['link']['nofollow'] ),
-			'title'                     => $title,
+			'title'                     => wp_kses_post( $title ),
 			'description'               => $sanitized_description_no_newlines,
 			'titleSize'                 => $title_size,
 			'titleColor'                => $title_color,

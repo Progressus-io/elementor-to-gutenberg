@@ -2151,6 +2151,15 @@ class Style_Parser {
 			if ( '' !== $repeat ) {
 				$attributes['style']['background']['repeat'] = $repeat;
 			}
+
+			/*
+			 * A fixed background is what gives an Elementor section its parallax
+			 * look; dropping it left the image scrolling with the content.
+			 */
+			$attachment = strtolower( self::sanitize_scalar( $settings['background_attachment'] ?? $settings['_background_attachment'] ?? '' ) );
+			if ( in_array( $attachment, array( 'fixed', 'scroll', 'local' ), true ) ) {
+				$attributes['style']['background']['attachment'] = $attachment;
+			}
 		}
 
 		$min_height = self::parse_min_height( $settings );

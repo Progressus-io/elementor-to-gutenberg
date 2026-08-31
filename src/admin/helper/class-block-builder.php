@@ -609,6 +609,10 @@ class Block_Builder {
 			if ( isset( $style['background']['repeat'] ) ) {
 				$style_rules[] = 'background-repeat:' . self::normalize_style_value( $style['background']['repeat'] );
 			}
+
+			if ( isset( $style['background']['attachment'] ) ) {
+				$style_rules[] = 'background-attachment:' . self::normalize_style_value( $style['background']['attachment'] );
+			}
 		}
 
 		if ( isset( $style['dimensions']['minHeight'] ) ) {

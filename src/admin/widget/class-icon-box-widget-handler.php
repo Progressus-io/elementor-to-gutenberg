@@ -133,7 +133,7 @@ class Icon_Box_Widget_Handler implements Widget_Handler_Interface {
 		$description_style = 'font-size:' . $description_size . 'px' . ( '' !== $description_color ? ';color:' . $description_color : '' );
 
 		if ( '' !== trim( $title ) ) {
-			$segments[] = '<h3 class="icon-box-title" style="' . esc_attr( $title_style ) . '">' . esc_html( $title ) . '</h3>';
+			$segments[] = '<h3 class="icon-box-title" style="' . esc_attr( $title_style ) . '">' . wp_kses_post( $title ) . '</h3>';
 		}
 		if ( '' !== trim( $description ) ) {
 			$segments[] = '<div class="icon-box-description" style="' . esc_attr( $description_style ) . '">' . wp_kses_post( $description ) . '</div>';
@@ -172,7 +172,7 @@ class Icon_Box_Widget_Handler implements Widget_Handler_Interface {
 				? ( 'width:' . $size . 'px;height:auto;' )
 				: '',
 			'size'             => $size,
-			'title'            => $title,
+			'title'            => wp_kses_post( $title ),
 			'description'      => $description,
 			'titleSize'        => $title_size,
 			'titleColor'       => $title_color,

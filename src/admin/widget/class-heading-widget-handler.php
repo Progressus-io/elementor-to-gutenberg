@@ -16,6 +16,8 @@ use Progressus\BlockShift\Admin\Widget_Handler_Interface;
 
 use function esc_html;
 
+use function wp_kses_post;
+
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -99,7 +101,7 @@ class Heading_Widget_Handler implements Widget_Handler_Interface {
 
 					return sprintf(
 						'<p %2$s>%1$s</p>',
-						esc_html( $title ),
+						wp_kses_post( $title ),
 						Html_Attribute_Builder::build( $inner_attrs )
 					);
 				}
@@ -139,7 +141,7 @@ class Heading_Widget_Handler implements Widget_Handler_Interface {
 				return sprintf(
 					'<%1$s %3$s>%2$s</%1$s>',
 					$header_size,
-					esc_html( $title ),
+					wp_kses_post( $title ),
 					Html_Attribute_Builder::build( $inner_attrs )
 				);
 			}

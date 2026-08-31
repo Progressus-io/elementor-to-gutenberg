@@ -238,7 +238,7 @@ class Call_To_Action_Widget_Handler implements Widget_Handler_Interface {
 				$title_style_parts[] = 'word-spacing:' . esc_attr( $title_word_spacing );
 			}
 
-			$segments[] = '<h2 class="call-to-action-title" style="' . implode( ';', $title_style_parts ) . '">' . esc_html( $title ) . '</h2>';
+			$segments[] = '<h2 class="call-to-action-title" style="' . implode( ';', $title_style_parts ) . '">' . wp_kses_post( $title ) . '</h2>';
 		}
 
 		if ( '' !== trim( $sanitized_description_no_newlines ) ) {
@@ -472,7 +472,7 @@ class Call_To_Action_Widget_Handler implements Widget_Handler_Interface {
 			'layout'                    => $layout,
 			'bgImageUrl'                => $bg_image_url,
 			'bgImageId'                 => $bg_image_id,
-			'title'                     => $title,
+			'title'                     => wp_kses_post( $title ),
 			'description'               => $sanitized_description_no_newlines,
 			'buttonText'                => $button_text,
 			'buttonUrl'                 => $button_url,
