@@ -94,22 +94,42 @@ class Icon_Box_Widget_Handler implements Widget_Handler_Interface {
 
 		$align_payload = Alignment_Helper::build_text_alignment_payload( $alignment_value );
 
+		/*
+		 * The icon has to be decided once and then used for both the markup and
+		 * the block attributes. The block's save() draws the icon from
+		 * `iconStyle` and `icon`, so anything written here that those two do not
+		 * spell out - Elementor's full class list, or a star that only the
+		 * markup knows about - is a difference the editor reports as invalid
+		 * content.
+		 */
+		$svg_url    = ( 'svg' === $icon_data['type'] && '' !== $icon_data['url'] ) ? (string) $icon_data['url'] : '';
+		$icon_style = $this->sanitize_class_tokens( isset( $icon_data['style_class'] ) ? (string) $icon_data['style_class'] : '' );
+		$icon_slug  = $this->sanitize_class_tokens( isset( $icon_data['slug'] ) ? (string) $icon_data['slug'] : '' );
+
+		if ( '' === $svg_url && '' === $icon_slug && '' === $icon_value && $default_icon ) {
+			// Elementor's icon box shows a star when nothing has been picked.
+			$icon_style = 'fas';
+			$icon_slug  = 'fa-star';
+		}
+
+		if ( '' === $icon_style ) {
+			$icon_style = 'fas';
+		}
+
 		$icon_html = '';
 
-		if ( 'svg' === $icon_data['type'] && '' !== $icon_data['url'] ) {
+		if ( '' !== $svg_url ) {
 			$icon_html = sprintf(
-				'<img src="%1$s" alt="" style="width:%2$dpx;height:auto;" class="svg-icon" />',
-				esc_url( $icon_data['url'] ),
+				'<img src="%1$s" alt="" style="width:%2$dpx;height:auto;" class="svg-icon"/>',
+				esc_url( $svg_url ),
 				$size
 			);
-		} elseif ( '' !== $icon_value ) {
+		} elseif ( '' !== $icon_slug ) {
 			$icon_html = sprintf(
-				'<i class="%1$s" style="font-size:%2$dpx;"></i>',
-				esc_attr( $icon_value ),
+				'<i class="%1$s" style="font-size:%2$dpx"></i>',
+				esc_attr( $icon_style . ' ' . $icon_slug ),
 				$size
 			);
-		} elseif ( $default_icon ) {
-			$icon_html = sprintf( '<i class="fas fa-star" style="font-size:%1$dpx;"></i>', $size );
 		}
 
 		$segments = array();
@@ -165,12 +185,10 @@ class Icon_Box_Widget_Handler implements Widget_Handler_Interface {
 		// those positions can legitimately hold before they are stored, rather
 		// than only when they are printed.
 		$block_attributes = array(
-			'icon'             => $this->sanitize_class_tokens( isset( $icon_data['slug'] ) ? (string) $icon_data['slug'] : '' ),
-			'iconStyle'        => $this->sanitize_class_tokens( isset( $icon_data['style_class'] ) ? (string) $icon_data['style_class'] : 'fas' ),
-			'svgUrl'           => isset( $icon_data['url'] ) ? esc_url_raw( (string) $icon_data['url'] ) : '',
-			'svgStyle'         => ( 'svg' === $icon_data['type'] && '' !== $icon_data['url'] )
-				? ( 'width:' . $size . 'px;height:auto;' )
-				: '',
+			'icon'             => $icon_slug,
+			'iconStyle'        => $icon_style,
+			'svgUrl'           => '' !== $svg_url ? esc_url_raw( $svg_url ) : '',
+			'svgStyle'         => '' !== $svg_url ? ( 'width:' . $size . 'px;height:auto;' ) : '',
 			'size'             => $size,
 			'title'            => wp_kses_post( $title ),
 			'description'      => $description,

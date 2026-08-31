@@ -25,6 +25,29 @@ const parseStyleString = ( str ) => {
 		}, {} );
 };
 
+/**
+ * Build the style for the title or the description.
+ *
+ * An icon box converted from a widget Elementor left unstyled carries an empty
+ * colour so the theme keeps deciding it. Passing that through would serialise as
+ * a bare `color:` - a declaration the converter does not write - so the key is
+ * left out entirely instead.
+ *
+ * @param {number} size  Font size in pixels.
+ * @param {string} color Colour, or an empty string for none.
+ *
+ * @return {Object} Style object.
+ */
+const textStyle = ( size, color ) => {
+	const style = { fontSize: `${ size }px` };
+
+	if ( color ) {
+		style.color = color;
+	}
+
+	return style;
+};
+
 export default function save( { attributes } ) {
 	const {
 		icon,
@@ -54,23 +77,34 @@ export default function save( { attributes } ) {
 	// containing a quote escape its attribute. React escapes each one for the
 	// context it lands in. The previous markup is preserved in deprecated.js so
 	// icon boxes already in posts keep validating.
-	const iconElement = svgUrl ? (
-		<img
-			src={ svgUrl }
-			alt=""
-			style={
-				svgStyle
-					? parseStyleString( svgStyle )
-					: { width: `${ size }px`, height: 'auto' }
-			}
-			className="svg-icon"
-		/>
-	) : (
-		<i
-			className={ `${ iconStyle } ${ icon }` }
-			style={ { fontSize: `${ size }px` } }
-		/>
-	);
+	//
+	// An icon box converted from a widget that had no icon - Header Footer
+	// Elementor's info card, for one - stores an empty `icon` and no `svgUrl`.
+	// Drawing a star there would put an element in the markup that whoever
+	// wrote the block never asked for.
+	let iconElement = null;
+
+	if ( svgUrl ) {
+		iconElement = (
+			<img
+				src={ svgUrl }
+				alt=""
+				style={
+					svgStyle
+						? parseStyleString( svgStyle )
+						: { width: `${ size }px`, height: 'auto' }
+				}
+				className="svg-icon"
+			/>
+		);
+	} else if ( icon ) {
+		iconElement = (
+			<i
+				className={ `${ iconStyle } ${ icon }` }
+				style={ { fontSize: `${ size }px` } }
+			/>
+		);
+	}
 
 	return (
 		<div
@@ -78,16 +112,15 @@ export default function save( { attributes } ) {
 			style={ { textAlign: alignment } }
 			id={ anchor || undefined }
 		>
-			<div className="icon-box-icon">{ iconElement }</div>
+			{ iconElement && (
+				<div className="icon-box-icon">{ iconElement }</div>
+			) }
 			{ title && (
 				<RichText.Content
 					tagName="h3"
 					className="icon-box-title"
 					value={ title }
-					style={ {
-						fontSize: `${ titleSize }px`,
-						color: titleColor,
-					} }
+					style={ textStyle( titleSize, titleColor ) }
 				/>
 			) }
 			{ description && (
@@ -95,10 +128,7 @@ export default function save( { attributes } ) {
 					tagName="div"
 					className="icon-box-description"
 					value={ description }
-					style={ {
-						fontSize: `${ descriptionSize }px`,
-						color: descriptionColor,
-					} }
+					style={ textStyle( descriptionSize, descriptionColor ) }
 				/>
 			) }
 		</div>
