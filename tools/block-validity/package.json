@@ -1,0 +1,13 @@
+{
+	"name": "blockshift-block-validity",
+	"version": "1.0.0",
+	"private": true,
+	"description": "Checks that converted post content matches what each block's save() would produce.",
+	"license": "GPL-2.0-or-later",
+	"bin": {
+		"validate-blocks": "./validate.js"
+	},
+	"dependencies": {
+		"jsdom": "^24.1.3"
+	}
+}

@@ -8,3 +8,4 @@ pnpm-lock.yaml
 /.claude
 /wiki/
 /ideas/
+/tools/block-validity/node_modules/
