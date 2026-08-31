@@ -53,13 +53,21 @@ class Gutenberg_Supports_Mapper {
 					'className' => true,
 				),
 			),
+
+			/*
+			 * `background` is absent on purpose. Elementor's background controls
+			 * arrive under keys of their own making - image, position, repeat,
+			 * attachment - which core/group's save() does not write, so leaving
+			 * them in the attributes produced markup the editor could not
+			 * validate. Listing them nowhere sends the whole branch to the
+			 * conversion's stylesheet, which renders the same thing.
+			 */
 			'group'     => array(
 				'style' => array(
 					'spacing'    => true,
 					'color'      => true,
 					'typography' => true,
 					'dimensions' => true,
-					'background' => true,
 					'border'     => true,
 				),
 				'attrs' => array(

@@ -95,11 +95,12 @@ class Block_Builder {
 
 		$block_slug = self::get_block_slug( $block );
 		$bypass     = self::should_bypass_hardening( $block, $options );
+		$keep_empty = self::empty_attributes_are_meaningful( $block );
 		if ( ! $bypass ) {
-			$attrs      = Block_Output_Builder::prepare_attributes( $block_slug, self::normalize_attributes( $attrs ) );
+			$attrs      = Block_Output_Builder::prepare_attributes( $block_slug, self::normalize_attributes( $attrs, $keep_empty ) );
 			$inner_html = Block_Output_Builder::sanitize_inner_html( $block_slug, $inner_html );
 		} else {
-			$attrs             = self::normalize_attributes( $attrs );
+			$attrs             = self::normalize_attributes( $attrs, $keep_empty );
 			$inner_html        = (string) $inner_html;
 			$options['strict'] = false;
 		}
@@ -110,13 +111,17 @@ class Block_Builder {
 			$inner_html = $normalized['inner_html'];
 		}
 
+		$is_wrapper = in_array( $block_slug, self::$wrapper_blocks, true );
+
+		if ( $is_wrapper ) {
+			$attrs = self::externalize_offsetting_margins( $block_slug, $attrs );
+		}
+
 		if ( 'button' === $block && '' === trim( $inner_html ) ) {
 			$attr_json = empty( $attrs ) ? '' : ' ' . self::encode_attributes( $attrs );
 
 			return sprintf( '<!-- wp:%s%s /-->%s', $block, $attr_json, "\n" );
 		}
-
-		$is_wrapper = in_array( $block_slug, self::$wrapper_blocks, true );
 
 		if ( self::should_use_strict_serialization( $block_slug, $options ) && ! $is_wrapper ) {
 			return self::build_strict_serialized( $block, $attrs, $inner_html );
@@ -152,6 +157,75 @@ class Block_Builder {
 		$wrapper_html = rtrim( (string) $wrapper_html, "\n" );
 
 		return $opening . "\n" . $wrapper_html . "\n" . $closing . "\n";
+	}
+
+	/**
+	 * Move a section's own horizontal margin into the conversion's stylesheet.
+	 *
+	 * Gutenberg's constrained layout centres every child with
+	 * `margin-inline: auto !important`, so a section Elementor had pushed to one
+	 * side comes out centred unless something outranks that. An inline
+	 * `!important` did the job but is a thing no block's save() writes, which
+	 * left the markup unable to validate. A rule of the plugin's own carries the
+	 * `!important` instead, on a selector specific enough to win outright, and
+	 * the inline style stays the plain declaration save() expects.
+	 *
+	 * @param string $block_slug Block slug (e.g. group).
+	 * @param array  $attrs      Prepared block attributes.
+	 *
+	 * @return array The attributes, with the generated class added when needed.
+	 */
+	private static function externalize_offsetting_margins( string $block_slug, array $attrs ): array {
+		// A button keeps its margin on the link inside the wrapper, out of the
+		// reach of the layout rule; a copy on the wrapper would indent it twice.
+		if ( 'button' === $block_slug ) {
+			return $attrs;
+		}
+
+		$margin = $attrs['style']['spacing']['margin'] ?? null;
+		if ( ! is_array( $margin ) ) {
+			return $attrs;
+		}
+
+		$declarations = array();
+		foreach ( array( 'left', 'right' ) as $side ) {
+			if ( ! array_key_exists( $side, $margin ) ) {
+				continue;
+			}
+
+			$value = self::normalize_style_value( $margin[ $side ] );
+			if ( '' === $value || in_array( $value, array( '0', 'auto' ), true ) || 0 === (int) $value ) {
+				continue;
+			}
+
+			$declarations[ 'margin-' . $side ] = $value . ' !important';
+		}
+
+		if ( empty( $declarations ) ) {
+			return $attrs;
+		}
+
+		$collector = Block_Output_Builder::get_collector();
+		if ( ! $collector instanceof External_Style_Collector ) {
+			return $attrs;
+		}
+
+		$class = 'blockshift-mgn-' . substr( md5( wp_json_encode( $declarations ) ), 0, 10 );
+
+		// Two class names in the selector so it outranks the layout rule, which
+		// only ever has one.
+		$collector->register_rule(
+			'.wp-block-' . $block_slug . '.' . $class,
+			$declarations,
+			'offsetting-margin'
+		);
+
+		$attrs['className'] = Html_Attribute_Builder::merge_classes(
+			isset( $attrs['className'] ) ? (string) $attrs['className'] : '',
+			$class
+		);
+
+		return $attrs;
 	}
 
 	/**
@@ -361,17 +435,24 @@ class Block_Builder {
 
 		$block_slug = self::get_block_slug( $block );
 
-		$bypass = self::should_bypass_hardening( $block, $options );
+		$bypass     = self::should_bypass_hardening( $block, $options );
+		$keep_empty = self::empty_attributes_are_meaningful( $block );
 
 		if ( ! $bypass ) {
-			$attrs      = Block_Output_Builder::prepare_attributes( $block_slug, self::normalize_attributes( $attrs ) );
+			$attrs      = Block_Output_Builder::prepare_attributes( $block_slug, self::normalize_attributes( $attrs, $keep_empty ) );
 			$inner_html = (string) call_user_func( $inner_builder, $attrs );
 			$inner_html = Block_Output_Builder::sanitize_inner_html( $block_slug, $inner_html );
 		} else {
-			$attrs             = self::normalize_attributes( $attrs );
+			$attrs             = self::normalize_attributes( $attrs, $keep_empty );
 			$inner_html        = (string) call_user_func( $inner_builder, $attrs );
 			$inner_html        = wp_kses_post( (string) $inner_html );
 			$options['strict'] = false;
+		}
+
+		$is_wrapper = in_array( $block_slug, self::$wrapper_blocks, true );
+
+		if ( $is_wrapper ) {
+			$attrs = self::externalize_offsetting_margins( $block_slug, $attrs );
 		}
 
 		if ( 'button' === $block && '' === trim( $inner_html ) ) {
@@ -379,8 +460,6 @@ class Block_Builder {
 
 			return sprintf( '<!-- wp:%s%s /-->%s', $block, $attr_json, "\n" );
 		}
-
-		$is_wrapper = in_array( $block_slug, self::$wrapper_blocks, true );
 
 		$attr_json    = empty( $attrs ) ? '' : ' ' . self::encode_attributes( $attrs );
 		$opening      = sprintf( '<!-- wp:%s%s -->', $block, $attr_json );
@@ -520,21 +599,12 @@ class Block_Builder {
 
 		$style = $attrs['style'];
 
-		// Keep margin only (matches Gutenberg serialization).
+		/*
+		 * A button carries none of its styling on the wrapper. Core's save()
+		 * puts every declaration - margin included - on the link inside it, so
+		 * a margin written here is a rule save() would not produce.
+		 */
 		if ( 'button' === $block_slug ) {
-			if ( isset( $style['spacing']['margin'] ) && is_array( $style['spacing']['margin'] ) ) {
-				foreach ( array( 'top', 'right', 'bottom', 'left' ) as $side ) {
-					if ( ! array_key_exists( $side, $style['spacing']['margin'] ) ) {
-						continue;
-					}
-					$val = $style['spacing']['margin'][ $side ];
-					if ( null === $val || '' === (string) $val ) {
-						continue;
-					}
-					$style_rules[] = 'margin-' . $side . ':' . self::normalize_style_value( $val );
-				}
-			}
-
 			if ( empty( $style_rules ) ) {
 				return '';
 			}
@@ -542,14 +612,14 @@ class Block_Builder {
 			return esc_attr( implode( ';', $style_rules ) );
 		}
 
-		if ( isset( $style['spacing'] ) && is_array( $style['spacing'] ) && array_key_exists( 'blockGap', $style['spacing'] ) ) {
-			$gap = $style['spacing']['blockGap'];
-			if ( null !== $gap && '' !== (string) $gap ) {
-				$style_rules[] = 'gap:' . self::normalize_style_value( $gap );
-			}
-		}
-
-
+		/*
+		 * `blockGap` deliberately produces no inline rule. WordPress turns the
+		 * attribute into the block's layout stylesheet - a `gap` for flex and
+		 * grid containers, sibling margins for flow ones - and a block's own
+		 * save() never writes it inline. Writing it here made the stored markup
+		 * differ from what save() produces, which is what the editor calls
+		 * invalid content.
+		 */
 		foreach ( array( 'margin', 'padding' ) as $type ) {
 			if ( empty( $style['spacing'][ $type ] ) || ! is_array( $style['spacing'][ $type ] ) ) {
 				continue;
@@ -566,28 +636,7 @@ class Block_Builder {
 					continue;
 				}
 
-				$value = self::normalize_style_value( $val );
-
-				/*
-				 * Gutenberg's constrained layout centres every child with
-				 * `margin-inline: auto !important`, which outranks a plain inline
-				 * style - so a section Elementor had pushed to one side with a
-				 * horizontal margin came out centred and full width instead. Only
-				 * an inline `!important` wins that, and only a margin that actually
-				 * offsets something needs it.
-				 */
-				$needs_important = 'margin' === $type
-					&& in_array( $side, array( 'left', 'right' ), true )
-					&& ! in_array( $value, array( '0', 'auto' ), true )
-					&& 0 !== (int) $value;
-
-				$style_rules[] = sprintf(
-					'%s-%s:%s%s',
-					$type,
-					$side,
-					$value,
-					$needs_important ? ' !important' : ''
-				);
+				$style_rules[] = sprintf( '%s-%s:%s', $type, $side, self::normalize_style_value( $val ) );
 			}
 		}
 
@@ -608,28 +657,11 @@ class Block_Builder {
 			$style_rules[] = 'background-color:' . self::normalize_style_value( $style['color']['background'] );
 		}
 
-
-		if ( ! empty( $style['background'] ) && is_array( $style['background'] ) ) {
-			if ( ! empty( $style['background']['image'] ) ) {
-				$style_rules[] = 'background-image:url(' . self::normalize_style_value( $style['background']['image'] ) . ')';
-			}
-
-			if ( isset( $style['background']['position'] ) ) {
-				$style_rules[] = 'background-position:' . self::normalize_style_value( $style['background']['position'] );
-			}
-
-			if ( isset( $style['background']['size'] ) ) {
-				$style_rules[] = 'background-size:' . self::normalize_style_value( $style['background']['size'] );
-			}
-
-			if ( isset( $style['background']['repeat'] ) ) {
-				$style_rules[] = 'background-repeat:' . self::normalize_style_value( $style['background']['repeat'] );
-			}
-
-			if ( isset( $style['background']['attachment'] ) ) {
-				$style_rules[] = 'background-attachment:' . self::normalize_style_value( $style['background']['attachment'] );
-			}
-		}
+		/*
+		 * Background image, position, size, repeat and attachment are written to
+		 * the conversion's own stylesheet instead. A block's save() emits none of
+		 * them, so an inline copy only made the markup disagree with it.
+		 */
 
 		if ( isset( $style['dimensions']['minHeight'] ) ) {
 			$style_rules[] = 'min-height:' . self::normalize_style_value( $style['dimensions']['minHeight'] );
@@ -747,16 +779,19 @@ class Block_Builder {
 			$rules[] = 'word-spacing:' . self::normalize_style_value( $typo['wordSpacing'] );
 		}
 
-		if ( isset( $style['spacing']['padding'] ) && is_array( $style['spacing']['padding'] ) ) {
+		foreach ( array( 'margin', 'padding' ) as $type ) {
+			if ( ! isset( $style['spacing'][ $type ] ) || ! is_array( $style['spacing'][ $type ] ) ) {
+				continue;
+			}
 			foreach ( array( 'top', 'right', 'bottom', 'left' ) as $side ) {
-				if ( ! array_key_exists( $side, $style['spacing']['padding'] ) ) {
+				if ( ! array_key_exists( $side, $style['spacing'][ $type ] ) ) {
 					continue;
 				}
-				$val = $style['spacing']['padding'][ $side ];
+				$val = $style['spacing'][ $type ][ $side ];
 				if ( null === $val || '' === (string) $val ) {
 					continue;
 				}
-				$rules[] = 'padding-' . $side . ':' . self::normalize_style_value( $val );
+				$rules[] = $type . '-' . $side . ':' . self::normalize_style_value( $val );
 			}
 		}
 
@@ -803,21 +838,36 @@ class Block_Builder {
 	/**
 	 * Normalise attributes by removing empty values recursively.
 	 *
-	 * @param array $attrs Raw attributes.
+	 * @param array $attrs       Raw attributes.
+	 * @param bool  $keep_empty  Whether an empty string is a value in its own right.
 	 */
-	private static function normalize_attributes( array $attrs ): array {
+	private static function normalize_attributes( array $attrs, bool $keep_empty = false ): array {
 		foreach ( $attrs as $key => $value ) {
 			if ( is_array( $value ) ) {
-				$attrs[ $key ] = self::normalize_attributes( $value );
+				$attrs[ $key ] = self::normalize_attributes( $value, $keep_empty );
 				if ( empty( $attrs[ $key ] ) ) {
 					unset( $attrs[ $key ] );
 				}
-			} elseif ( null === $value || '' === $value ) {
+			} elseif ( null === $value || ( '' === $value && ! $keep_empty ) ) {
 				unset( $attrs[ $key ] );
 			}
 		}
 
 		return $attrs;
+	}
+
+	/**
+	 * Whether dropping an empty attribute would change what the block renders.
+	 *
+	 * The plugin's own blocks declare defaults in their block.json - an icon, a
+	 * title colour - so an attribute left out is not the same as one set to
+	 * nothing: the default takes over and the block draws something the
+	 * converter never wrote. Core blocks are happy either way.
+	 *
+	 * @param string $block Block name as passed to build().
+	 */
+	private static function empty_attributes_are_meaningful( string $block ): bool {
+		return 0 !== strpos( self::to_full_block_name( $block ), 'core/' );
 	}
 
 	/**
