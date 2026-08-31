@@ -57,6 +57,7 @@ export default function save( { attributes } ) {
 		size,
 		title,
 		description,
+		titleTag,
 		titleSize,
 		titleColor,
 		descriptionSize,
@@ -117,7 +118,7 @@ export default function save( { attributes } ) {
 			) }
 			{ title && (
 				<RichText.Content
-					tagName="h3"
+					tagName={ titleTag }
 					className="icon-box-title"
 					value={ title }
 					style={ textStyle( titleSize, titleColor ) }

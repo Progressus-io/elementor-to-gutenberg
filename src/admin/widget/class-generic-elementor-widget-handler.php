@@ -346,17 +346,18 @@ class Generic_Elementor_Widget_Handler implements Widget_Handler_Interface {
 	 */
 	private function handle_infocard( array $settings ): string {
 		$mapped = array(
-			'title_text'       => $settings['infocard_title'] ?? '',
-			'description_text' => $settings['infocard_description'] ?? '',
-			'align'            => $settings['infocard_overall_align'] ?? '',
-			'selected_icon'    => $settings['infocard_select_icon'] ?? null,
-			'size'             => $settings['infocard_icon_size'] ?? null,
-			'title_color'      => $settings['infocard_title_color'] ?? '',
+			'title_text'        => $settings['infocard_title'] ?? '',
+			'title_size'        => $settings['infocard_title_tag'] ?? '',
+			'description_text'  => $settings['infocard_description'] ?? '',
+			'align'             => $settings['infocard_overall_align'] ?? '',
+			'selected_icon'     => $settings['infocard_select_icon'] ?? null,
+			'size'              => $settings['infocard_icon_size'] ?? null,
+			'title_color'       => $settings['infocard_title_color'] ?? '',
 			'description_color' => $settings['infocard_desc_color'] ?? '',
-			'_css_classes'     => $settings['_css_classes'] ?? '',
-			'_element_id'      => $settings['_element_id'] ?? '',
-			'_padding'         => $settings['_padding'] ?? null,
-			'__globals__'      => $settings['__globals__'] ?? array(),
+			'_css_classes'      => $settings['_css_classes'] ?? '',
+			'_element_id'       => $settings['_element_id'] ?? '',
+			'_padding'          => $settings['_padding'] ?? null,
+			'__globals__'       => $settings['__globals__'] ?? array(),
 		);
 
 		$handler = new Icon_Box_Widget_Handler();
