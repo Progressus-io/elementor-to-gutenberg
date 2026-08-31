@@ -566,11 +566,27 @@ class Block_Builder {
 					continue;
 				}
 
+				$value = self::normalize_style_value( $val );
+
+				/*
+				 * Gutenberg's constrained layout centres every child with
+				 * `margin-inline: auto !important`, which outranks a plain inline
+				 * style - so a section Elementor had pushed to one side with a
+				 * horizontal margin came out centred and full width instead. Only
+				 * an inline `!important` wins that, and only a margin that actually
+				 * offsets something needs it.
+				 */
+				$needs_important = 'margin' === $type
+					&& in_array( $side, array( 'left', 'right' ), true )
+					&& ! in_array( $value, array( '0', 'auto' ), true )
+					&& 0 !== (int) $value;
+
 				$style_rules[] = sprintf(
-					'%s-%s:%s',
+					'%s-%s:%s%s',
 					$type,
 					$side,
-					self::normalize_style_value( $val )
+					$value,
+					$needs_important ? ' !important' : ''
 				);
 			}
 		}
