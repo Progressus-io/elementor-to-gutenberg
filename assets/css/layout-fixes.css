@@ -62,6 +62,32 @@
     justify-content: center;
 }
 
+/*
+ * Elementor's cross-axis alignment belongs to the container that declares it: it
+ * places that container's own children. A section carrying the class is what has
+ * to become the flex column, or the class does nothing and a hero built to sit at
+ * the bottom of a tall image renders at the top, behind the header. The rule above
+ * is the other case - the class landing on a child, which is centred by its parent.
+ */
+.wp-block-group.are-vertically-aligned-top,
+.wp-block-group.are-vertically-aligned-center,
+.wp-block-group.are-vertically-aligned-bottom {
+    display: flex;
+    flex-direction: column;
+}
+
+.wp-block-group.are-vertically-aligned-top {
+    justify-content: flex-start;
+}
+
+.wp-block-group.are-vertically-aligned-center {
+    justify-content: center;
+}
+
+.wp-block-group.are-vertically-aligned-bottom {
+    justify-content: flex-end;
+}
+
 .wp-block-columns .wp-block-group.are-vertically-aligned-center h2,
 .wp-block-columns .wp-block-group.are-vertically-aligned-center h3 {
     margin-top: 0;
