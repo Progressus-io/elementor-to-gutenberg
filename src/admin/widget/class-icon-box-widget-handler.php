@@ -9,6 +9,7 @@ namespace Progressus\BlockShift\Admin\Widget;
 
 use Progressus\BlockShift\Admin\Helper\Alignment_Helper;
 use Progressus\BlockShift\Admin\Helper\Block_Builder;
+use Progressus\BlockShift\Admin\Helper\External_Style_Collector;
 use Progressus\BlockShift\Admin\Helper\Icon_Parser;
 use Progressus\BlockShift\Admin\Helper\Style_Parser;
 use Progressus\BlockShift\Admin\Widget_Handler_Interface;
@@ -152,11 +153,38 @@ class Icon_Box_Widget_Handler implements Widget_Handler_Interface {
 		$title_style       = 'font-size:' . $title_size . 'px' . ( '' !== $title_color ? ';color:' . $title_color : '' );
 		$description_style = 'font-size:' . $description_size . 'px' . ( '' !== $description_color ? ';color:' . $description_color : '' );
 
+		// Elementor lets the card's heading sit at whatever level suits the page.
+		$title_tag = $this->sanitize_title_tag( $settings['title_size'] ?? null );
+
 		if ( '' !== trim( $title ) ) {
-			$segments[] = '<h3 class="icon-box-title" style="' . esc_attr( $title_style ) . '">' . wp_kses_post( $title ) . '</h3>';
+			$segments[] = sprintf(
+				'<%1$s class="icon-box-title" style="%2$s">%3$s</%1$s>',
+				$title_tag,
+				esc_attr( $title_style ),
+				wp_kses_post( $title )
+			);
 		}
 		if ( '' !== trim( $description ) ) {
 			$segments[] = '<div class="icon-box-description" style="' . esc_attr( $description_style ) . '">' . wp_kses_post( $description ) . '</div>';
+		}
+
+		/*
+		 * Elementor applies the widget's own padding to the card wrapper, which is
+		 * what keeps a card's text narrower than the image above it. The block's
+		 * save() writes nothing but the text alignment there, so the padding goes
+		 * to the conversion's stylesheet under a class of its own rather than
+		 * inline, where it would leave the card unopenable in the editor.
+		 */
+		$wrapper_padding = $this->build_widget_padding( $settings['_padding'] ?? null );
+		$collector       = External_Style_Collector::get_active();
+		if ( '' !== $wrapper_padding && $collector instanceof External_Style_Collector ) {
+			$padding_class = $collector->externalize_declarations(
+				'icon-box',
+				array( 'padding' => $wrapper_padding )
+			);
+			if ( '' !== $padding_class ) {
+				$custom_classes[] = $padding_class;
+			}
 		}
 
 		$wrapper_classes = array_merge( array( 'wp-block-icon-box' ), $align_payload['classes'], $custom_classes );
@@ -168,11 +196,6 @@ class Icon_Box_Widget_Handler implements Widget_Handler_Interface {
 		// $alignment_value is already normalised above - Elementor's raw "start"/"end"
 		// are not valid text-align keywords, and the default depends on icon position.
 		$wrapper_style = 'text-align:' . $alignment_value;
-
-		$wrapper_padding = $this->build_widget_padding( $settings['_padding'] ?? null );
-		if ( '' !== $wrapper_padding ) {
-			$wrapper_style .= ';padding:' . $wrapper_padding;
-		}
 
 		$wrapper_attrs[] = 'style="' . esc_attr( $wrapper_style ) . '"';
 
@@ -192,6 +215,7 @@ class Icon_Box_Widget_Handler implements Widget_Handler_Interface {
 			'size'             => $size,
 			'title'            => wp_kses_post( $title ),
 			'description'      => $description,
+			'titleTag'         => $title_tag,
 			'titleSize'        => $title_size,
 			'titleColor'       => $title_color,
 			'descriptionSize'  => $description_size,
@@ -204,6 +228,20 @@ class Icon_Box_Widget_Handler implements Widget_Handler_Interface {
 		}
 
 		return Block_Builder::build( 'blockshift/icon-box', $block_attributes, $content );
+	}
+
+	/**
+	 * Reduce Elementor's heading tag control to a tag the block can render.
+	 *
+	 * @param mixed $value Raw control value.
+	 *
+	 * @return string The tag name, falling back to the block's own default.
+	 */
+	private function sanitize_title_tag( $value ): string {
+		$allowed = array( 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'div', 'span' );
+		$tag     = is_string( $value ) ? strtolower( trim( $value ) ) : '';
+
+		return in_array( $tag, $allowed, true ) ? $tag : 'h3';
 	}
 
 	/**
