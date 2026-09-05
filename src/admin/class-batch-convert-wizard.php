@@ -2699,7 +2699,7 @@ class Batch_Convert_Wizard {
 		$postarr = array(
 			'post_title'   => $post_title,
 			'post_name'    => $slug,
-			'post_content' => $content,
+			'post_content' => wp_slash( $content ),
 			'post_status'  => 'publish',
 			'post_type'    => 'wp_template_part',
 			'post_author'  => (int) $source_post->post_author,
@@ -2968,7 +2968,7 @@ class Batch_Convert_Wizard {
 		$postarr = array(
 			'post_title'   => $post_title,
 			'post_name'    => $slug,
-			'post_content' => $content,
+			'post_content' => wp_slash( $content ),
 			'post_status'  => 'publish',
 			'post_type'    => 'wp_template',
 			'post_author'  => (int) get_post_field( 'post_author', $converted_page_id ),
