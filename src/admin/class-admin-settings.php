@@ -503,7 +503,7 @@ class Admin_Settings {
 			'manage_options',
 			'blockshift-settings',
 			array( $this, 'settings_page_content' ),
-			'dashicons-migrate',
+			$this->get_menu_icon(),
 			76
 		);
 
@@ -517,6 +517,24 @@ class Admin_Settings {
 		);
 
 		add_action( 'admin_menu', array( $this, 'reorder_submenu' ), 999 );
+	}
+
+	/**
+	 * Build the admin-menu icon as a data URI from the bundled BlockShift mark.
+	 *
+	 * Why: shows the real brand logo in the sidebar (like Elementor) instead of
+	 * a generic dashicon. Falls back to the dashicon if the asset is missing.
+	 */
+	private function get_menu_icon(): string {
+		$path = BLOCKSHIFT_DIR_PATH . '/assets/images/blockshift-mark.svg';
+		if ( ! file_exists( $path ) ) {
+			return 'dashicons-migrate';
+		}
+		$svg = file_get_contents( $path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Reading a small bundled SVG to build a menu-icon data URI; no remote access.
+		if ( ! is_string( $svg ) || '' === $svg ) {
+			return 'dashicons-migrate';
+		}
+		return 'data:image/svg+xml;base64,' . base64_encode( $svg ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- Data-URI encoding for a menu icon, not code obfuscation.
 	}
 
 	/**
@@ -579,7 +597,7 @@ class Admin_Settings {
         <div class="pgs-screen" data-screen-label="Settings">
 
             <header class="pgs-pluginhead">
-                <span class="pgs-pluginhead__brand"><span class="pgs-pluginhead__name"><?php esc_html_e( 'Migrate Off Elementor', 'migrate-off-elementor' ); ?></span></span>
+                <span class="pgs-pluginhead__brand"><img class="pgs-pluginhead__logo" src="<?php echo esc_url( BLOCKSHIFT_DIR_URL . '/assets/images/blockshift-logo-full.svg' ); ?>" alt="<?php esc_attr_e( 'BlockShift — Migrate Off Elementor', 'migrate-off-elementor' ); ?>" width="159" height="44" /></span>
             </header>
             <hr class="wp-header-end" style="margin:0;border:0;">
 
