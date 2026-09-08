@@ -264,7 +264,7 @@ class Conversion_Log_Admin {
 		<div class="pgs-screen" data-screen-label="Conversion Log">
 
 			<header class="pgs-pluginhead">
-				<span class="pgs-pluginhead__brand"><span class="pgs-pluginhead__name"><?php esc_html_e( 'Migrate Off Elementor', 'migrate-off-elementor' ); ?></span></span>
+				<span class="pgs-pluginhead__brand"><img class="pgs-pluginhead__logo" src="<?php echo esc_url( BLOCKSHIFT_DIR_URL . '/assets/images/blockshift-logo-full.svg' ); ?>" alt="<?php esc_attr_e( 'BlockShift — Migrate Off Elementor', 'migrate-off-elementor' ); ?>" width="159" height="44" /></span>
 			</header>
 			<hr class="wp-header-end" style="margin:0;border:0;">
 

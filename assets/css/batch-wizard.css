@@ -143,14 +143,14 @@
 /* ============================================================
    ELEMENTOR-TO-GUTENBERG WIZARD — DESIGN SYSTEM
    Reskinned to the Progressus Migration design language
-   (indigo brand, emerald success, slate neutrals, brand fonts).
+   (BlockShift lime brand, emerald success, slate neutrals, brand fonts).
    ============================================================ */
 
 .blockshift-wizard-wrap {
-    --blockshift-primary: #4f44dd;
-    --blockshift-primary-hover: #4035bd;
-    --blockshift-primary-soft: #eef0ff;
-    --blockshift-primary-soft-border: #c6caff;
+    --blockshift-primary: #4f6a1c;
+    --blockshift-primary-hover: #405417;
+    --blockshift-primary-soft: #f3f8e6;
+    --blockshift-primary-soft-border: #cfe29b;
 
     --blockshift-success: #12a16d;
     --blockshift-success-hover: #096748;
@@ -356,7 +356,7 @@
 .blockshift-alert-info {
     background: var(--blockshift-primary-soft);
     border-color: var(--blockshift-primary-soft-border);
-    color: #352e98;
+    color: #33440f;
 }
 
 .blockshift-alert-warning {
@@ -528,6 +528,65 @@
 .blockshift-wizard-buttons .button.button-primary[disabled] {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+/* ------------------------------------------------------------
+   Brand the WordPress core buttons + native controls used in the
+   JS wizard (they otherwise inherit wp-admin blue). Scoped to the
+   wizard wrapper so the rest of wp-admin is untouched.
+   ------------------------------------------------------------ */
+.blockshift-wizard-wrap { accent-color: var(--blockshift-primary); }
+
+.blockshift-wizard-wrap .button-primary {
+    background: var(--blockshift-primary);
+    border-color: var(--blockshift-primary);
+    color: #fff;
+    text-shadow: none;
+    box-shadow: none;
+}
+.blockshift-wizard-wrap .button-primary:hover,
+.blockshift-wizard-wrap .button-primary:active {
+    background: var(--blockshift-primary-hover);
+    border-color: var(--blockshift-primary-hover);
+    color: #fff;
+}
+.blockshift-wizard-wrap .button-primary:focus {
+    background: var(--blockshift-primary-hover);
+    border-color: var(--blockshift-primary-hover);
+    color: #fff;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--blockshift-primary) 40%, transparent);
+}
+
+.blockshift-wizard-wrap .button-secondary,
+.blockshift-wizard-wrap .button:not(.button-primary) {
+    background: #fff;
+    border-color: var(--blockshift-border-strong);
+    color: var(--blockshift-text-secondary);
+}
+.blockshift-wizard-wrap .button-secondary:hover,
+.blockshift-wizard-wrap .button:not(.button-primary):hover {
+    background: var(--blockshift-surface-alt);
+    border-color: var(--blockshift-border-strong);
+    color: var(--blockshift-text);
+}
+.blockshift-wizard-wrap .button-secondary:focus,
+.blockshift-wizard-wrap .button:not(.button-primary):focus {
+    border-color: var(--blockshift-primary);
+    color: var(--blockshift-text);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--blockshift-primary) 30%, transparent);
+}
+
+/* Kill the blue wp-admin focus ring on native fields/selects/checkboxes. */
+.blockshift-wizard-wrap input[type="text"]:focus,
+.blockshift-wizard-wrap input[type="search"]:focus,
+.blockshift-wizard-wrap input[type="number"]:focus,
+.blockshift-wizard-wrap select:focus,
+.blockshift-wizard-wrap input[type="checkbox"]:focus,
+.blockshift-wizard-wrap input[type="radio"]:focus {
+    border-color: var(--blockshift-primary);
+    box-shadow: 0 0 0 1px var(--blockshift-primary);
+    outline: 2px solid transparent;
+    outline-offset: 0;
 }
 
 .blockshift-wizard-buttons-left,
@@ -1257,7 +1316,7 @@
     border: 1px solid var(--blockshift-primary-soft-border);
     border-radius: var(--blockshift-radius-md);
     font-size: 13px;
-    color: #352e98;
+    color: #33440f;
     line-height: 1.5;
 }
 
@@ -1287,7 +1346,7 @@
     bottom: 0;
     width: 0;
     border-radius: inherit;
-    background: linear-gradient(90deg, var(--blockshift-primary) 0%, #635bed 100%);
+    background: linear-gradient(90deg, var(--blockshift-primary) 0%, #8fb035 100%);
     transition: width 0.3s ease;
 }
 
@@ -2538,7 +2597,7 @@
 }
 
 .blockshift-warn-popover-section-title--error   { color: #a32420; }
-.blockshift-warn-popover-section-title--info    { color: var(--blockshift-primary, #4f44dd); }
+.blockshift-warn-popover-section-title--info    { color: var(--blockshift-primary, #4f6a1c); }
 .blockshift-warn-popover-section-title--warning { color: #934b08; }
 
 .blockshift-warn-popover-desc {
@@ -2669,10 +2728,11 @@
   --slate-600: #4c5769; --slate-700: #36404f; --slate-800: #232b38;
   --slate-900: #151b26; --slate-950: #0c1018;
 
-  /* Brand (indigo) */
-  --indigo-50:  #eef0ff; --indigo-100: #e0e3ff; --indigo-200: #c6caff;
-  --indigo-300: #a3a8fb; --indigo-400: #8083f5; --indigo-500: #635bed;
-  --indigo-600: #4f44dd; --indigo-700: #4035bd; --indigo-800: #352e98;
+  /* Brand — BlockShift lime (#8FB035) + accessible deep green.
+     Lime is the identity accent; deep green carries white text on solids. */
+  --lime-50:  #f3f8e6; --lime-100: #e5f1c8; --lime-200: #cfe29b;
+  --lime-300: #b4d066; --lime-400: #9dc043; --lime-500: #8fb035; --lime-600: #7a9a2c;
+  --green-700: #4f6a1c; --green-800: #405417; --green-900: #33440f;
 
   /* Success (emerald) */
   --emerald-50: #e9fbf2; --emerald-100: #c9f4e0; --emerald-200: #97e8c4;
@@ -2694,7 +2754,7 @@
   --surface-sunken:   var(--slate-50);
   --surface-code:     var(--slate-950);
   --surface-hover:    var(--slate-50);
-  --surface-selected: var(--indigo-50);
+  --surface-selected: var(--lime-50);
 
   /* Text */
   --text-strong: var(--slate-900);
@@ -2702,22 +2762,27 @@
   --text-muted:  var(--slate-500);
   --text-faint:  var(--slate-400);
   --text-on-brand: #ffffff;
-  --text-link:   var(--indigo-600);
+  --text-link:   var(--green-700);
   --text-code:   #d7def0;
 
   /* Borders */
   --border-subtle:  var(--slate-200);
   --border-default: var(--slate-300);
   --border-strong:  var(--slate-400);
-  --border-brand:   var(--indigo-600);
+  --border-brand:   var(--green-700);
 
-  /* Brand / interactive */
-  --brand:           var(--indigo-600);
-  --brand-hover:     var(--indigo-700);
-  --brand-active:    var(--indigo-800);
-  --brand-subtle:    var(--indigo-50);
-  --brand-on-subtle: var(--indigo-700);
-  --focus-ring:      color-mix(in srgb, var(--indigo-500) 45%, transparent);
+  /* Brand / interactive
+     --brand* = lime accents (links use --text-link, not lime, for readability).
+     --brand-strong* = deep green for solid surfaces carrying white text. */
+  --brand:           var(--lime-500);
+  --brand-hover:     var(--lime-600);
+  --brand-active:    var(--green-700);
+  --brand-subtle:    var(--lime-50);
+  --brand-on-subtle: var(--green-700);
+  --brand-strong:        var(--green-700);
+  --brand-strong-hover:  var(--green-800);
+  --brand-strong-active: var(--green-900);
+  --focus-ring:      color-mix(in srgb, var(--lime-500) 55%, transparent);
 
   /* Status triplets */
   --success-fg: var(--emerald-700); --success-solid: var(--emerald-500);
@@ -2732,7 +2797,7 @@
   --neutral-border: var(--slate-200);
 
   /* Migration motif */
-  --gradient-migrate: linear-gradient(90deg, var(--indigo-500) 0%, var(--emerald-400) 100%);
+  --gradient-migrate: linear-gradient(90deg, var(--lime-500) 0%, var(--emerald-400) 100%);
 
   /* Typography */
   --font-display: "Schibsted Grotesk", "Hanken Grotesk", system-ui, sans-serif;
@@ -2772,7 +2837,7 @@
   --shadow-md: 0 2px 4px hsl(var(--shadow-color) / 0.06), 0 4px 12px hsl(var(--shadow-color) / 0.08);
   --ring: 0 0 0 3px var(--focus-ring);
   --glow-brand: 0 1px 2px hsl(var(--shadow-color) / 0.10),
-                0 4px 14px color-mix(in srgb, var(--indigo-600) 30%, transparent);
+                0 4px 14px color-mix(in srgb, var(--brand-strong) 30%, transparent);
   --elevation-card: var(--shadow-sm);
   --elevation-raised: var(--shadow-md);
 
@@ -2820,7 +2885,7 @@
 
 /* ================= BUTTON ================= */
 .pgs .pgs-btn {
-  --_bg: var(--brand); --_bg-hover: var(--brand-hover); --_bg-active: var(--brand-active);
+  --_bg: var(--brand-strong); --_bg-hover: var(--brand-strong-hover); --_bg-active: var(--brand-strong-active);
   --_fg: var(--text-on-brand); --_border: transparent; --_shadow: none;
   font-family: var(--font-sans); font-weight: var(--weight-semibold);
   display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
@@ -2846,7 +2911,7 @@
   --_fg: var(--text-body); --_border: transparent;
 }
 .pgs .pgs-btn--subtle {
-  --_bg: var(--brand-subtle); --_bg-hover: var(--indigo-100); --_bg-active: var(--indigo-200);
+  --_bg: var(--brand-subtle); --_bg-hover: var(--lime-100); --_bg-active: var(--lime-200);
   --_fg: var(--brand-on-subtle); --_border: transparent;
 }
 .pgs .pgs-btn--danger {
@@ -3011,10 +3076,10 @@
 }
 .pgs .pgs-stepper__seg { flex: 1; height: 2px; background: var(--border-default); margin-top: 16px; min-width: 18px;
   transition: background var(--duration-normal) var(--ease-standard); }
-.pgs .pgs-stepper__seg--done { background: var(--brand); }
-.pgs .pgs-stepper__step--done .pgs-stepper__node { background: var(--brand); border-color: var(--brand); color: #fff; }
+.pgs .pgs-stepper__seg--done { background: var(--brand-strong); }
+.pgs .pgs-stepper__step--done .pgs-stepper__node { background: var(--brand-strong); border-color: var(--brand-strong); color: #fff; }
 .pgs .pgs-stepper__step--active .pgs-stepper__node {
-  background: var(--brand); border-color: var(--brand); color: #fff;
+  background: var(--brand-strong); border-color: var(--brand-strong); color: #fff;
   box-shadow: 0 0 0 4px var(--brand-subtle);
 }
 .pgs .pgs-stepper__step--active .pgs-stepper__label { color: var(--text-strong); font-weight: var(--weight-semibold); }
@@ -3080,7 +3145,7 @@
 }
 .pgs .pgs-check__box svg { width: 13px; height: 13px; stroke-width: 3; opacity: 0; transform: scale(0.6); transition: opacity var(--duration-fast) var(--ease-standard), transform var(--duration-fast) var(--ease-spring); }
 .pgs .pgs-check__input { position: absolute; opacity: 0; width: 0; height: 0; margin: 0; }
-.pgs .pgs-check__input:checked + .pgs-check__box { background: var(--brand); border-color: var(--brand); }
+.pgs .pgs-check__input:checked + .pgs-check__box { background: var(--brand-strong); border-color: var(--brand-strong); }
 .pgs .pgs-check__input:checked + .pgs-check__box svg { opacity: 1; transform: scale(1); }
 .pgs .pgs-check__input:focus-visible + .pgs-check__box { box-shadow: var(--ring); }
 .pgs .pgs-check:hover .pgs-check__input:not(:checked):not(:disabled) + .pgs-check__box { border-color: var(--brand); }
@@ -3102,7 +3167,7 @@
   transition: transform var(--duration-fast) var(--ease-spring);
 }
 .pgs .pgs-radio__input { position: absolute; opacity: 0; width: 0; height: 0; margin: 0; }
-.pgs .pgs-radio__input:checked + .pgs-radio__dot { background: var(--brand); border-color: var(--brand); }
+.pgs .pgs-radio__input:checked + .pgs-radio__dot { background: var(--brand-strong); border-color: var(--brand-strong); }
 .pgs .pgs-radio__input:checked + .pgs-radio__dot::after { transform: scale(1); }
 .pgs .pgs-radio__input:focus-visible + .pgs-radio__dot { box-shadow: var(--ring); }
 .pgs .pgs-radio:hover .pgs-radio__input:not(:checked):not(:disabled) + .pgs-radio__dot { border-color: var(--brand); }
@@ -3122,7 +3187,7 @@
   transition: transform var(--duration-normal) var(--ease-spring);
 }
 .pgs .pgs-switch__input { position: absolute; opacity: 0; width: 0; height: 0; margin: 0; }
-.pgs .pgs-switch__input:checked + .pgs-switch__track { background: var(--brand); }
+.pgs .pgs-switch__input:checked + .pgs-switch__track { background: var(--brand-strong); }
 .pgs .pgs-switch__input:checked + .pgs-switch__track::after { transform: translateX(16px); }
 .pgs .pgs-switch__input:focus-visible + .pgs-switch__track { box-shadow: var(--ring); }
 .pgs .pgs-switch__label { font: var(--type-body); color: var(--text-strong); }
@@ -3159,7 +3224,7 @@
   font-family: var(--font-mono); background: transparent;
 }
 .pgs .pgs-code__pre--wrap { white-space: pre-wrap; word-break: break-word; }
-.pgs .pgs-code__pre::selection { background: color-mix(in srgb, var(--indigo-500) 50%, transparent); }
+.pgs .pgs-code__pre::selection { background: color-mix(in srgb, var(--lime-500) 50%, transparent); }
 .pgs .pgs-code__pre::-webkit-scrollbar { width: 10px; height: 10px; }
 .pgs .pgs-code__pre::-webkit-scrollbar-thumb { background: var(--slate-700); border-radius: 999px; border: 2px solid var(--surface-code); }
 
@@ -3199,7 +3264,8 @@
   display: flex; align-items: center; justify-content: space-between;
   padding: 12px 28px; position: sticky; top: 0; z-index: 5;
 }
-.pgs .pgs-pluginhead__brand { display: inline-flex; }
+.pgs .pgs-pluginhead__brand { display: inline-flex; align-items: center; }
+.pgs .pgs-pluginhead__logo { height: 44px; width: auto; flex: none; display: block; }
 .pgs .pgs-pluginhead__util { display: flex; gap: 4px; }
 .pgs .pgs-pluginhead__util a {
   display: inline-flex; align-items: center; gap: 6px; padding: 7px 11px;
@@ -3249,7 +3315,7 @@
   background: linear-gradient(135deg, var(--slate-100), var(--slate-200));
   display: flex; align-items: center; justify-content: center; color: var(--slate-400);
 }
-.pgs .pgs-theme__thumb.is-current { background: linear-gradient(135deg, var(--brand-subtle), var(--indigo-100)); color: var(--indigo-300); }
+.pgs .pgs-theme__thumb.is-current { background: linear-gradient(135deg, var(--brand-subtle), var(--lime-100)); color: var(--lime-600); }
 .pgs .pgs-theme__thumb svg { width: 30px; height: 30px; }
 .pgs .pgs-theme__flag { position: absolute; top: 8px; left: 8px; background: var(--success-solid); color: #fff; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: var(--radius-sm); text-transform: uppercase; letter-spacing: .04em; }
 .pgs .pgs-theme__foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
