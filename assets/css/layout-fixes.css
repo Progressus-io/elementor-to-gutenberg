@@ -68,28 +68,31 @@
  * to become the flex column, or the class does nothing and a hero built to sit at
  * the bottom of a tall image renders at the top, behind the header. The rule above
  * is the other case - the class landing on a child, which is centred by its parent.
+ *
+ * Scoped under the converted-page wrapper so upgrading the plugin never restyles a
+ * group on a page this plugin did not build.
  */
-.wp-block-group.are-vertically-aligned-top,
-.wp-block-group.are-vertically-aligned-center,
-.wp-block-group.are-vertically-aligned-bottom {
+[class*="blockshift-page-"] .wp-block-group.are-vertically-aligned-top,
+[class*="blockshift-page-"] .wp-block-group.are-vertically-aligned-center,
+[class*="blockshift-page-"] .wp-block-group.are-vertically-aligned-bottom {
     display: flex;
     flex-direction: column;
 }
 
-.wp-block-group.are-vertically-aligned-top {
+[class*="blockshift-page-"] .wp-block-group.are-vertically-aligned-top {
     justify-content: flex-start;
 }
 
-.wp-block-group.are-vertically-aligned-center {
+[class*="blockshift-page-"] .wp-block-group.are-vertically-aligned-center {
     justify-content: center;
 }
 
-.wp-block-group.are-vertically-aligned-bottom {
+[class*="blockshift-page-"] .wp-block-group.are-vertically-aligned-bottom {
     justify-content: flex-end;
 }
 
-.wp-block-columns .wp-block-group.are-vertically-aligned-center h2,
-.wp-block-columns .wp-block-group.are-vertically-aligned-center h3 {
+[class*="blockshift-page-"] .wp-block-columns .wp-block-group.are-vertically-aligned-center h2,
+[class*="blockshift-page-"] .wp-block-columns .wp-block-group.are-vertically-aligned-center h3 {
     margin-top: 0;
     margin-bottom: 0.4em;
 }
