@@ -163,6 +163,13 @@ class Divider_Widget_Handler implements Widget_Handler_Interface {
 				$group_attrs ? wp_json_encode( $group_attrs ) : ''
 			);
 
+			// core/separator's save() prints has-text-color has-background whenever a
+			// colour style is set, so the first separator has to carry them too or the
+			// editor sees markup its own save() would not write and flags it invalid.
+			if ( true === $has_custom_color ) {
+				$separator_attrs['className'] = trim( 'has-text-color has-background ' . $separator_attrs['className'] );
+			}
+
 			$separator_attrs['className'] = self::normalize_separator_classes(
 				$separator_attrs['className'] . ' has-alpha-channel-opacity'
 			);
