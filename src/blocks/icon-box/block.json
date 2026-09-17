@@ -45,6 +45,10 @@
       "type": "string",
       "default": "left"
     },
+    "titleTag": {
+      "type": "string",
+      "default": "h3"
+    },
     "titleSize": {
       "type": "number",
       "default": 20

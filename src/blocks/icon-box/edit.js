@@ -332,6 +332,7 @@ export default function Edit( { attributes, setAttributes } ) {
 		title = '',
 		description = '',
 		ariaLabel = '',
+		titleTag = 'h3',
 		titleSize = 0,
 		titleColor = '',
 		descriptionSize = 0,
@@ -842,6 +843,22 @@ export default function Edit( { attributes, setAttributes } ) {
 						title={ __( 'Title Styles', 'gutenberg' ) }
 						initialOpen={ false }
 					>
+						<SelectControl
+							label={ __( 'Title Tag', 'gutenberg' ) }
+							value={ titleTag }
+							options={ [
+								{ label: 'H1', value: 'h1' },
+								{ label: 'H2', value: 'h2' },
+								{ label: 'H3', value: 'h3' },
+								{ label: 'H4', value: 'h4' },
+								{ label: 'H5', value: 'h5' },
+								{ label: 'H6', value: 'h6' },
+								{ label: __( 'Paragraph', 'gutenberg' ), value: 'p' },
+								{ label: __( 'Div', 'gutenberg' ), value: 'div' },
+								{ label: __( 'Span', 'gutenberg' ), value: 'span' },
+							] }
+							onChange={ ( v ) => setAttributes( { titleTag: v } ) }
+						/>
 						<RangeControl
 							label={ __( 'Title Size', 'gutenberg' ) }
 							value={ titleSize }
@@ -950,7 +967,7 @@ export default function Edit( { attributes, setAttributes } ) {
 
 					<div className="icon-box__content">
 						<RichText
-							tagName="h3"
+							tagName={ titleTag }
 							value={ title }
 							onChange={ ( v ) => setAttributes( { title: v } ) }
 							style={ { textAlign: titleAlign } }

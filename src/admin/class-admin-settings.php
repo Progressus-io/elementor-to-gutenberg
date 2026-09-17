@@ -610,7 +610,7 @@ class Admin_Settings {
 		$postarr = array(
 			'post_title'   => __( 'Converted Page: Full Width', 'migrate-off-elementor' ),
 			'post_name'    => $slug,
-			'post_content' => $content,
+			'post_content' => wp_slash( $content ),
 			'post_status'  => 'publish',
 			'post_type'    => 'wp_template',
 		);
@@ -644,7 +644,7 @@ class Admin_Settings {
 				'post_title'   => get_the_title( $page_id ) . ' (Gutenberg)',
 				'post_type'    => 'page',
 				'post_status'  => 'publish',
-				'post_content' => $blocks,
+				'post_content' => wp_slash( $blocks ),
 			)
 		);
 
@@ -1014,7 +1014,7 @@ class Admin_Settings {
 			wp_update_post(
 				array(
 					'ID'           => $post_id,
-					'post_content' => $updated_content,
+					'post_content' => wp_slash( $updated_content ),
 				)
 			);
 		}

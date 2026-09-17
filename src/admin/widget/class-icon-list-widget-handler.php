@@ -8,6 +8,7 @@
 namespace Progressus\BlockShift\Admin\Widget;
 
 use Progressus\BlockShift\Admin\Widget_Handler_Interface;
+use Progressus\BlockShift\Admin\Helper\Block_Builder;
 use Progressus\BlockShift\Admin\Helper\Style_Parser;
 use Progressus\BlockShift\Admin\Helper\Alignment_Helper;
 
@@ -197,9 +198,16 @@ class Icon_List_Widget_Handler implements Widget_Handler_Interface {
 			$class_attr = ' class="' . esc_attr( implode( ' ', $classes ) ) . '"';
 		}
 
+		// core/list's save() prints its typography inline. Storing the values in
+		// the block's attributes without also writing them here left the editor
+		// comparing a styled list against an unstyled one.
+		$style_attr = Block_Builder::build_style_attribute( $attrs );
+		$style_attr = '' !== $style_attr ? ' style="' . $style_attr . '"' : '';
+
 		return sprintf(
-			'<!-- wp:list%s --><ul%s>%s</ul><!-- /wp:list -->' . "\n",
+			'<!-- wp:list%s --><ul%s%s>%s</ul><!-- /wp:list -->' . "\n",
 			$attrs_json,
+			$style_attr,
 			$class_attr,
 			$list_items
 		);

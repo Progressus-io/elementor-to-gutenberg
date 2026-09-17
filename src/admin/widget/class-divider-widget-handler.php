@@ -166,12 +166,23 @@ class Divider_Widget_Handler implements Widget_Handler_Interface {
 				$group_attrs ? wp_json_encode( $group_attrs ) : ''
 			);
 
+			// core/separator's save() prints has-text-color has-background whenever a
+			// colour style is set, so the first separator has to carry them too or the
+			// editor sees markup its own save() would not write and flags it invalid.
+			if ( true === $has_custom_color ) {
+				$separator_attrs['className'] = trim( 'has-text-color has-background ' . $separator_attrs['className'] );
+			}
+
+			$separator_attrs['className'] = self::normalize_separator_classes(
+				$separator_attrs['className'] . ' has-alpha-channel-opacity'
+			);
+
 			// First separator.
 			$block_content .= sprintf(
 				'<!-- wp:separator %s --><hr class="wp-block-separator %s" style="%s"/><!-- /wp:separator -->' . "\n",
 				$separator_attrs ? wp_json_encode( $separator_attrs ) : '',
 				esc_attr( $separator_attrs['className'] ),
-				esc_attr( $inline_style )
+				esc_attr( self::build_separator_style( $separator_attrs ) )
 			);
 
 			// Text.
@@ -199,15 +210,21 @@ class Divider_Widget_Handler implements Widget_Handler_Interface {
 
 			// Gutenberg adds these classes when color style exists.
 			if ( true === $has_custom_color ) {
-				$separator_attrs['className'] = trim( 'has-text-color has-alpha-channel-opacity has-background ' . $separator_attrs['className'] );
+				$separator_attrs['className'] = trim( 'has-text-color has-background ' . $separator_attrs['className'] );
 			}
 
-			// Normalize classes (remove duplicates + clean spaces).
-			$separator_class_parts        = preg_split( '/\s+/', trim( (string) $separator_attrs['className'] ) );
-			$separator_class_parts        = is_array( $separator_class_parts ) ? $separator_class_parts : array();
-			$separator_attrs['className'] = implode( ' ', array_values( array_unique( array_filter( $separator_class_parts ) ) ) );
+			/*
+			 * A separator's `opacity` attribute defaults to `alpha-channel`, and
+			 * its save() turns that into this class whether or not a colour was
+			 * set. Adding it only alongside a colour left the rest looking like
+			 * markup from an older version of the block, which the editor either
+			 * migrates behind the user's back or rejects outright.
+			 */
+			$separator_attrs['className'] = self::normalize_separator_classes(
+				$separator_attrs['className'] . ' has-alpha-channel-opacity'
+			);
 
-			$inline_style_attr = rtrim( trim( (string) $inline_style ), ';' );
+			$inline_style_attr = self::build_separator_style( $separator_attrs );
 			$id_attr           = '' !== trim( (string) $custom_id ) ? ' id="' . esc_attr( $custom_id ) . '"' : '';
 
 			$block_content .= sprintf(
@@ -229,5 +246,54 @@ class Divider_Widget_Handler implements Widget_Handler_Interface {
 		}
 
 		return $block_content;
+	}
+
+	/**
+	 * Build the `style` attribute core/separator's save() would write.
+	 *
+	 * Everything else Elementor asks for - width, border thickness, padding -
+	 * reaches the separator through the generated `divider-…` class instead.
+	 * Printing it inline as well made the stored markup differ from save().
+	 *
+	 * @param array $separator_attrs Block attributes for the separator.
+	 *
+	 * @return string CSS declarations, without a trailing semicolon.
+	 */
+	private static function build_separator_style( array $separator_attrs ): string {
+		$rules      = array();
+		$background = $separator_attrs['style']['color']['background'] ?? '';
+
+		if ( '' !== trim( (string) $background ) ) {
+			$rules[] = 'background-color:' . $background;
+			$rules[] = 'color:' . $background;
+		}
+
+		$margin = $separator_attrs['style']['spacing']['margin'] ?? array();
+		if ( is_array( $margin ) ) {
+			foreach ( array( 'top', 'right', 'bottom', 'left' ) as $side ) {
+				if ( ! isset( $margin[ $side ] ) || '' === trim( (string) $margin[ $side ] ) ) {
+					continue;
+				}
+				$rules[] = 'margin-' . $side . ':' . $margin[ $side ];
+			}
+		}
+
+		return implode( ';', $rules );
+	}
+
+	/**
+	 * Drop duplicate and empty class names from a separator's class list.
+	 *
+	 * @param string $classes Space-separated class names.
+	 *
+	 * @return string The cleaned list.
+	 */
+	private static function normalize_separator_classes( string $classes ): string {
+		$parts = preg_split( '/\s+/', trim( $classes ) );
+		if ( ! is_array( $parts ) ) {
+			return '';
+		}
+
+		return implode( ' ', array_values( array_unique( array_filter( $parts ) ) ) );
 	}
 }

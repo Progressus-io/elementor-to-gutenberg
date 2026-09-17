@@ -251,7 +251,7 @@ class Menu_Widget_Handler implements Widget_Handler_Interface {
 		wp_update_post(
 			array(
 				'ID'           => $navigation_post_id,
-				'post_content' => $post_content,
+				'post_content' => wp_slash( $post_content ),
 			)
 		);
 	}

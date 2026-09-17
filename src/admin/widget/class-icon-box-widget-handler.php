@@ -9,6 +9,7 @@ namespace Progressus\BlockShift\Admin\Widget;
 
 use Progressus\BlockShift\Admin\Helper\Alignment_Helper;
 use Progressus\BlockShift\Admin\Helper\Block_Builder;
+use Progressus\BlockShift\Admin\Helper\External_Style_Collector;
 use Progressus\BlockShift\Admin\Helper\Icon_Parser;
 use Progressus\BlockShift\Admin\Helper\Style_Parser;
 use Progressus\BlockShift\Admin\Widget_Handler_Interface;
@@ -94,22 +95,42 @@ class Icon_Box_Widget_Handler implements Widget_Handler_Interface {
 
 		$align_payload = Alignment_Helper::build_text_alignment_payload( $alignment_value );
 
+		/*
+		 * The icon has to be decided once and then used for both the markup and
+		 * the block attributes. The block's save() draws the icon from
+		 * `iconStyle` and `icon`, so anything written here that those two do not
+		 * spell out - Elementor's full class list, or a star that only the
+		 * markup knows about - is a difference the editor reports as invalid
+		 * content.
+		 */
+		$svg_url    = ( 'svg' === $icon_data['type'] && '' !== $icon_data['url'] ) ? (string) $icon_data['url'] : '';
+		$icon_style = $this->sanitize_class_tokens( isset( $icon_data['style_class'] ) ? (string) $icon_data['style_class'] : '' );
+		$icon_slug  = $this->sanitize_class_tokens( isset( $icon_data['slug'] ) ? (string) $icon_data['slug'] : '' );
+
+		if ( '' === $svg_url && '' === $icon_slug && '' === $icon_value && $default_icon ) {
+			// Elementor's icon box shows a star when nothing has been picked.
+			$icon_style = 'fas';
+			$icon_slug  = 'fa-star';
+		}
+
+		if ( '' === $icon_style ) {
+			$icon_style = 'fas';
+		}
+
 		$icon_html = '';
 
-		if ( 'svg' === $icon_data['type'] && '' !== $icon_data['url'] ) {
+		if ( '' !== $svg_url ) {
 			$icon_html = sprintf(
-				'<img src="%1$s" alt="" style="width:%2$dpx;height:auto;" class="svg-icon" />',
-				esc_url( $icon_data['url'] ),
+				'<img src="%1$s" alt="" style="width:%2$dpx;height:auto;" class="svg-icon"/>',
+				esc_url( $svg_url ),
 				$size
 			);
-		} elseif ( '' !== $icon_value ) {
+		} elseif ( '' !== $icon_slug ) {
 			$icon_html = sprintf(
-				'<i class="%1$s" style="font-size:%2$dpx;"></i>',
-				esc_attr( $icon_value ),
+				'<i class="%1$s" style="font-size:%2$dpx"></i>',
+				esc_attr( $icon_style . ' ' . $icon_slug ),
 				$size
 			);
-		} elseif ( $default_icon ) {
-			$icon_html = sprintf( '<i class="fas fa-star" style="font-size:%1$dpx;"></i>', $size );
 		}
 
 		$segments = array();
@@ -132,11 +153,38 @@ class Icon_Box_Widget_Handler implements Widget_Handler_Interface {
 		$title_style       = 'font-size:' . $title_size . 'px' . ( '' !== $title_color ? ';color:' . $title_color : '' );
 		$description_style = 'font-size:' . $description_size . 'px' . ( '' !== $description_color ? ';color:' . $description_color : '' );
 
+		// Elementor lets the card's heading sit at whatever level suits the page.
+		$title_tag = $this->sanitize_title_tag( $settings['title_size'] ?? null );
+
 		if ( '' !== trim( $title ) ) {
-			$segments[] = '<h3 class="icon-box-title" style="' . esc_attr( $title_style ) . '">' . wp_kses_post( $title ) . '</h3>';
+			$segments[] = sprintf(
+				'<%1$s class="icon-box-title" style="%2$s">%3$s</%1$s>',
+				$title_tag,
+				esc_attr( $title_style ),
+				wp_kses_post( $title )
+			);
 		}
 		if ( '' !== trim( $description ) ) {
 			$segments[] = '<div class="icon-box-description" style="' . esc_attr( $description_style ) . '">' . wp_kses_post( $description ) . '</div>';
+		}
+
+		/*
+		 * Elementor applies the widget's own padding to the card wrapper, which is
+		 * what keeps a card's text narrower than the image above it. The block's
+		 * save() writes nothing but the text alignment there, so the padding goes
+		 * to the conversion's stylesheet under a class of its own rather than
+		 * inline, where it would leave the card unopenable in the editor.
+		 */
+		$wrapper_padding = $this->build_widget_padding( $settings['_padding'] ?? null );
+		$collector       = External_Style_Collector::get_active();
+		if ( '' !== $wrapper_padding && $collector instanceof External_Style_Collector ) {
+			$padding_class = $collector->externalize_declarations(
+				'icon-box',
+				array( 'padding' => $wrapper_padding )
+			);
+			if ( '' !== $padding_class ) {
+				$custom_classes[] = $padding_class;
+			}
 		}
 
 		$wrapper_classes = array_merge( array( 'wp-block-icon-box' ), $align_payload['classes'], $custom_classes );
@@ -149,11 +197,6 @@ class Icon_Box_Widget_Handler implements Widget_Handler_Interface {
 		// are not valid text-align keywords, and the default depends on icon position.
 		$wrapper_style = 'text-align:' . $alignment_value;
 
-		$wrapper_padding = $this->build_widget_padding( $settings['_padding'] ?? null );
-		if ( '' !== $wrapper_padding ) {
-			$wrapper_style .= ';padding:' . $wrapper_padding;
-		}
-
 		$wrapper_attrs[] = 'style="' . esc_attr( $wrapper_style ) . '"';
 
 		$content = '<div ' . implode( ' ', $wrapper_attrs ) . '>' . implode( '', $segments ) . '</div>';
@@ -165,15 +208,14 @@ class Icon_Box_Widget_Handler implements Widget_Handler_Interface {
 		// those positions can legitimately hold before they are stored, rather
 		// than only when they are printed.
 		$block_attributes = array(
-			'icon'             => $this->sanitize_class_tokens( isset( $icon_data['slug'] ) ? (string) $icon_data['slug'] : '' ),
-			'iconStyle'        => $this->sanitize_class_tokens( isset( $icon_data['style_class'] ) ? (string) $icon_data['style_class'] : 'fas' ),
-			'svgUrl'           => isset( $icon_data['url'] ) ? esc_url_raw( (string) $icon_data['url'] ) : '',
-			'svgStyle'         => ( 'svg' === $icon_data['type'] && '' !== $icon_data['url'] )
-				? ( 'width:' . $size . 'px;height:auto;' )
-				: '',
+			'icon'             => $icon_slug,
+			'iconStyle'        => $icon_style,
+			'svgUrl'           => '' !== $svg_url ? esc_url_raw( $svg_url ) : '',
+			'svgStyle'         => '' !== $svg_url ? ( 'width:' . $size . 'px;height:auto;' ) : '',
 			'size'             => $size,
 			'title'            => wp_kses_post( $title ),
 			'description'      => $description,
+			'titleTag'         => $title_tag,
 			'titleSize'        => $title_size,
 			'titleColor'       => $title_color,
 			'descriptionSize'  => $description_size,
@@ -186,6 +228,20 @@ class Icon_Box_Widget_Handler implements Widget_Handler_Interface {
 		}
 
 		return Block_Builder::build( 'blockshift/icon-box', $block_attributes, $content );
+	}
+
+	/**
+	 * Reduce Elementor's heading tag control to a tag the block can render.
+	 *
+	 * @param mixed $value Raw control value.
+	 *
+	 * @return string The tag name, falling back to the block's own default.
+	 */
+	private function sanitize_title_tag( $value ): string {
+		$allowed = array( 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'div', 'span' );
+		$tag     = is_string( $value ) ? strtolower( trim( $value ) ) : '';
+
+		return in_array( $tag, $allowed, true ) ? $tag : 'h3';
 	}
 
 	/**
