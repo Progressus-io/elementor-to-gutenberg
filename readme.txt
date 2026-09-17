@@ -3,7 +3,7 @@ Contributors: shadim
 Tags: gutenberg, migration, conversion, blocks
 Requires at least: 6.7
 Tested up to: 7.1
-Stable tag: 1.0.0
+Stable tag: 1.1.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -146,10 +146,25 @@ Lucide line icons (ISC) are inlined uncompressed in assets/js/pgs-icons.js. Sour
 
 == Changelog ==
 
+= 1.1.0 =
+* Improve: Converted pages now closely match the original Elementor design - row/column layout, vertical alignment, spacing and section widths all follow the original.
+* Improve: Section and container backgrounds now carry over, including overlays and colours taken from your theme or Elementor palette.
+* Fix: Background and content images reuse the image already in your Media Library instead of downloading a fresh copy each time or linking back to the old site.
+* Improve: Images keep their set size and alignment.
+* Improve: Icon boxes, buttons, headings, image boxes, galleries, social icons, testimonials, menus and the site logo convert more faithfully - size, padding, colours and fonts now follow the original.
+* Add: Headers and footers built with Elementor's Header & Footer widgets now convert.
+* Fix: Converted pages use your theme's full-width layout where the original was full width, and no longer scroll sideways.
+* Improve: Converted pages no longer load any Elementor stylesheets or scripts, so they are lighter and faster.
+* Fix: Converted pages now open cleanly in the WordPress block editor - blocks no longer show an "unexpected or invalid content" warning, so you can edit a converted page like any other.
+* Fix: An icon box now keeps its original heading level instead of always becoming an H3.
+
 = 1.0.0 =
 * Initial release.
 
 == Upgrade Notice ==
+
+= 1.1.0 =
+Converted pages now match their Elementor originals far more closely and open cleanly in the block editor. Existing converted pages are unaffected until you convert again.
 
 = 1.0.0 =
 Initial release.
