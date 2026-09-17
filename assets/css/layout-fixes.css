@@ -1,12 +1,98 @@
-/* Vertically center CTA-style text groups inside columns */
-.wp-block-columns .wp-block-group.are-vertically-aligned-center {
+/*
+ * Themes commonly add default padding to top-level blocks inside .entry-content
+ * (Astra ships `.entry-content > .wp-block-group { padding: var(--wp--custom--ast-default-block-left-padding) }`).
+ * A converted page is a whole page layout whose own sections already carry their
+ * spacing, so that padding insets every section and full-width backgrounds stop
+ * reaching the viewport edge the way they did under Elementor.
+ */
+.entry-content > .wp-block-group[class*="blockshift-page-"] {
+    padding: 0;
+    max-width: none;
+}
+
+/*
+ * A block theme that opts into root-padding-aware alignments pulls every
+ * `alignfull` child outwards by the root padding, so that it reaches the
+ * viewport edge from inside a padded wrapper. The rule above removes that
+ * padding, which leaves the pull with nothing to cancel and pushes each
+ * section past both edges - the page then scrolls sideways by twice the root
+ * padding. Sections start at the wrapper's own edges instead.
+ */
+.entry-content > .wp-block-group[class*="blockshift-page-"] > .alignfull {
+    margin-left: 0;
+    margin-right: 0;
+    max-width: none;
+}
+
+/*
+ * The plugin's own page template already gives the content the full width of
+ * the viewport, so nothing inside it needs to break out again. Themes stretch
+ * `alignfull` with `width: 100vw` and a negative margin, and `100vw` counts the
+ * scrollbar - so stretching a second time pushed the page half a scrollbar past
+ * each edge and it scrolled sideways.
+ */
+.blockshift-full-width-page > .wp-block-group[class*="blockshift-page-"],
+.blockshift-full-width-page > .wp-block-group[class*="blockshift-page-"] > .alignfull {
+    width: 100%;
+    max-width: none;
+    margin-left: 0;
+    margin-right: 0;
+}
+
+.blockshift-full-width-page > .wp-block-group[class*="blockshift-page-"] {
+    padding: 0;
+}
+
+/*
+ * Elementor centres a container's children along the block axis with justify-content;
+ * Gutenberg has no equivalent, so without this a hero with a min-height renders its
+ * copy hard against the top of the section instead of in the middle.
+ *
+ * Flex the *parent* rather than the centred group itself. A constrained group carries
+ * WordPress's `margin-inline: auto !important`, which inside a flex container stops
+ * meaning "centre this max-width block" and starts meaning "shrink every child to its
+ * content and centre it" - which dragged left-aligned text into the middle of the
+ * column. Centring from the parent leaves the group in normal flow, so its children
+ * still span the full width and keep their own alignment.
+ */
+.blockshift-full-width-section:has(> .wp-block-group.are-vertically-aligned-center),
+.wp-block-column:has(> .wp-block-group.are-vertically-aligned-center) {
     display: flex;
     flex-direction: column;
     justify-content: center;
 }
 
-.wp-block-columns .wp-block-group.are-vertically-aligned-center h2,
-.wp-block-columns .wp-block-group.are-vertically-aligned-center h3 {
+/*
+ * Elementor's cross-axis alignment belongs to the container that declares it: it
+ * places that container's own children. A section carrying the class is what has
+ * to become the flex column, or the class does nothing and a hero built to sit at
+ * the bottom of a tall image renders at the top, behind the header. The rule above
+ * is the other case - the class landing on a child, which is centred by its parent.
+ *
+ * Scoped under the converted-page wrapper so upgrading the plugin never restyles a
+ * group on a page this plugin did not build.
+ */
+[class*="blockshift-page-"] .wp-block-group.are-vertically-aligned-top,
+[class*="blockshift-page-"] .wp-block-group.are-vertically-aligned-center,
+[class*="blockshift-page-"] .wp-block-group.are-vertically-aligned-bottom {
+    display: flex;
+    flex-direction: column;
+}
+
+[class*="blockshift-page-"] .wp-block-group.are-vertically-aligned-top {
+    justify-content: flex-start;
+}
+
+[class*="blockshift-page-"] .wp-block-group.are-vertically-aligned-center {
+    justify-content: center;
+}
+
+[class*="blockshift-page-"] .wp-block-group.are-vertically-aligned-bottom {
+    justify-content: flex-end;
+}
+
+[class*="blockshift-page-"] .wp-block-columns .wp-block-group.are-vertically-aligned-center h2,
+[class*="blockshift-page-"] .wp-block-columns .wp-block-group.are-vertically-aligned-center h3 {
     margin-top: 0;
     margin-bottom: 0.4em;
 }

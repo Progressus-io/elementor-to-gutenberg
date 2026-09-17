@@ -318,6 +318,17 @@ class Style_Parser {
 	 */
 	public static function extract_text_color_css_value( array $settings, string $key ): array {
 		$raw = isset( $settings[ $key ] ) ? self::sanitize_scalar( $settings[ $key ] ) : '';
+
+		/*
+		 * A widget that picks its colour from the site palette stores nothing under
+		 * the control name and puts a "globals/colors?id=..." reference under
+		 * `__globals__` instead. Reading only the literal key lost those colours -
+		 * a hero heading set to the palette white came out in the theme dark.
+		 */
+		if ( '' === $raw && isset( $settings['__globals__'][ $key ] ) ) {
+			$raw = self::sanitize_scalar( $settings['__globals__'][ $key ] );
+		}
+
 		if ( '' === $raw ) {
 			return array(
 				'color' => '',
@@ -399,36 +410,22 @@ class Style_Parser {
 			return array();
 		}
 
-		$prefixes = array();
-		$handles  = array();
-
 		if ( 'body' === $context ) {
 			$prefixes = array( 'body_typography', 'body' );
-			$handles  = array( 'text', 'body' );
 		} elseif ( 'headings' === $context || 'heading' === $context ) {
 			$prefixes = array( 'heading_typography', 'headings_typography', 'heading', 'headings' );
-			$handles  = array( 'primary', 'secondary', 'heading' );
 		} else {
 			return array();
 		}
 
-		$settings = self::collect_typography_from_prefixes( $kit_settings, $prefixes );
-		if ( ! empty( $settings ) ) {
-			return $settings;
-		}
-
-		if ( empty( $handles ) ) {
-			return array();
-		}
-
-		$map = self::get_elementor_global_typography_map();
-		foreach ( $handles as $handle ) {
-			if ( isset( $map[ $handle ] ) && is_array( $map[ $handle ] ) ) {
-				return $map[ $handle ];
-			}
-		}
-
-		return array();
+		/*
+		 * Deliberately no fallback to the kit's `system_typography` entries here.
+		 * Those (primary, secondary, text, accent) are a palette that individual widgets
+		 * opt into through `__globals__` - Elementor does not apply them to every heading
+		 * on the site. Treating "primary" as a site-wide heading style stamped Elementor's
+		 * stock Roboto 600 over whatever fonts the active theme had been rendering.
+		 */
+		return self::collect_typography_from_prefixes( $kit_settings, $prefixes );
 	}
 
 	/**
@@ -801,10 +798,170 @@ class Style_Parser {
 			);
 		}
 
+		$theme_global = self::resolve_theme_global_color( $handle );
+		if ( '' !== $theme_global ) {
+			$slug = self::match_theme_color_slug( $theme_global );
+
+			return array(
+				'slug'  => null === $slug ? '' : $slug,
+				'color' => $theme_global,
+			);
+		}
+
 		return array(
 			'slug'  => '',
 			'color' => '',
 		);
+	}
+
+	/**
+	 * Resolve a global colour that the active theme - not Elementor - owns.
+	 *
+	 * Astra registers its palette with Elementor as `astglobalcolor0`..`astglobalcolor8`
+	 * at runtime, so those handles never appear in the Elementor kit's own
+	 * `system_colors` / `custom_colors`. Without this the colour is simply dropped and
+	 * the converted section loses its background. The palette itself lives in the
+	 * `astra-settings` option.
+	 *
+	 * @param string $handle Global colour handle taken from `__globals__`.
+	 *
+	 * @return string Normalised colour, or an empty string when it cannot be resolved.
+	 */
+	private static function resolve_theme_global_color( string $handle ): string {
+		if ( 1 !== preg_match( '/^astglobalcolor(\d+)$/i', $handle, $matches ) ) {
+			return '';
+		}
+
+		if ( ! function_exists( 'get_option' ) ) {
+			return '';
+		}
+
+		$settings = get_option( 'astra-settings' );
+		if ( ! is_array( $settings ) ) {
+			return '';
+		}
+
+		$palette = $settings['global-color-palette']['palette'] ?? null;
+		if ( ! is_array( $palette ) ) {
+			return '';
+		}
+
+		$index = (int) $matches[1];
+		if ( ! isset( $palette[ $index ] ) ) {
+			return '';
+		}
+
+		return self::normalize_color_value( $palette[ $index ] );
+	}
+
+	/**
+	 * Read a four-sided dimension (padding, margin, radius) from the Elementor kit.
+	 *
+	 * Kit-level defaults are what Elementor falls back to whenever a widget leaves a
+	 * control untouched, so a converter that ignores them reproduces the plugin's own
+	 * defaults rather than the site's.
+	 *
+	 * @param string $key Kit setting key, e.g. `button_padding`.
+	 *
+	 * @return array<string, string> Map of top/right/bottom/left, or an empty array.
+	 */
+	public static function get_elementor_kit_dimensions( string $key ): array {
+		$kit = self::get_elementor_kit_settings();
+
+		return self::parse_dimensions( $kit[ $key ] ?? null );
+	}
+
+	/**
+	 * Combine a colour and an opacity into a single CSS `rgba()` value.
+	 *
+	 * Lets a translucent layer be expressed as one ordinary colour value, which core
+	 * blocks accept, rather than needing a separate opacity declaration.
+	 *
+	 * @param string $color   Colour value (hex, #RRGGBBAA, rgb()/rgba(), or a named colour).
+	 * @param float  $opacity Opacity between 0 and 1. Multiplied with any alpha the colour already carries.
+	 *
+	 * @return string `rgba(...)` string, or an empty string when the colour cannot be parsed.
+	 */
+	public static function to_rgba_string( string $color, float $opacity ): string {
+		$color = self::normalize_color_value( $color );
+		if ( '' === $color ) {
+			return '';
+		}
+
+		$alpha = max( 0.0, min( 1.0, $opacity ) );
+
+		// #RRGGBBAA - fold the colour's own alpha into the requested opacity.
+		if ( 1 === preg_match( '/^#([0-9a-f]{6})([0-9a-f]{2})$/i', $color, $m ) ) {
+			$alpha *= hexdec( $m[2] ) / 255;
+			$color  = '#' . $m[1];
+		}
+
+		$rgb = self::parse_color_to_rgb( $color );
+		if ( ! is_array( $rgb ) || count( $rgb ) < 3 ) {
+			return '';
+		}
+
+		$alpha = rtrim( rtrim( number_format( $alpha, 3, '.', '' ), '0' ), '.' );
+		if ( '' === $alpha ) {
+			$alpha = '0';
+		}
+
+		return sprintf( 'rgba(%d,%d,%d,%s)', (int) $rgb[0], (int) $rgb[1], (int) $rgb[2], $alpha );
+	}
+
+	/**
+	 * Read a single size control (unit + size) from the Elementor kit.
+	 *
+	 * @param string $key Kit setting key, e.g. `button_typography_font_size`.
+	 *
+	 * @return string CSS length, or an empty string when it cannot be resolved.
+	 */
+	public static function get_elementor_kit_size( string $key ): string {
+		$kit   = self::get_elementor_kit_settings();
+		$value = $kit[ $key ] ?? null;
+
+		if ( ! is_array( $value ) || ! isset( $value['size'] ) || ! is_numeric( $value['size'] ) ) {
+			return '';
+		}
+
+		$unit = isset( $value['unit'] ) && is_string( $value['unit'] ) ? $value['unit'] : 'px';
+		if ( ! in_array( $unit, array( 'px', 'em', 'rem', '%' ), true ) ) {
+			return '';
+		}
+
+		return ( (string) (float) $value['size'] ) . $unit;
+	}
+
+	/**
+	 * Convert an Elementor four-sided dimensions control into CSS values.
+	 *
+	 * Elementor leaves a side as an empty string when it is not set, which is not the
+	 * same as zero - an unset control means "inherit the kit default". Anything not
+	 * fully specified therefore yields an empty array so callers can fall back.
+	 *
+	 * @param mixed $value Raw dimensions control value.
+	 *
+	 * @return array<string, string> Map of top/right/bottom/left, or an empty array.
+	 */
+	public static function parse_dimensions( $value ): array {
+		if ( ! is_array( $value ) ) {
+			return array();
+		}
+
+		$unit = isset( $value['unit'] ) && is_string( $value['unit'] ) ? $value['unit'] : 'px';
+		if ( ! in_array( $unit, array( 'px', 'em', 'rem', '%' ), true ) ) {
+			return array();
+		}
+
+		$out = array();
+		foreach ( array( 'top', 'right', 'bottom', 'left' ) as $side ) {
+			if ( ! isset( $value[ $side ] ) || ! is_numeric( $value[ $side ] ) ) {
+				return array();
+			}
+			$out[ $side ] = ( (string) (float) $value[ $side ] ) . $unit;
+		}
+
+		return $out;
 	}
 
 	/**
@@ -1452,6 +1609,31 @@ class Style_Parser {
 			return strtolower( $hex );
 		}
 
+		/*
+		 * Keep a translucent colour translucent. Elementor uses `rgba()` for
+		 * overlays and for the faint fills behind icons and cards, and collapsing
+		 * those to an opaque hex turned a barely-there tint into a solid block.
+		 * It becomes eight-digit hex rather than staying `rgba()` because these
+		 * values end up in inline styles, and `safecss_filter_attr()` strips a
+		 * declaration containing a function call it does not know.
+		 */
+		if ( preg_match( '/^rgba\(\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*,\s*([0-9]*\.?[0-9]+)\s*\)$/', $color, $alpha_match ) ) {
+			$alpha = (float) $alpha_match[4];
+			if ( $alpha <= 0 ) {
+				return '';
+			}
+
+			if ( $alpha < 1 ) {
+				return sprintf(
+					'#%02x%02x%02x%02x',
+					min( 255, (int) $alpha_match[1] ),
+					min( 255, (int) $alpha_match[2] ),
+					min( 255, (int) $alpha_match[3] ),
+					(int) round( $alpha * 255 )
+				);
+			}
+		}
+
 		$rgb = self::parse_color_to_rgb( $color );
 		if ( null === $rgb ) {
 			return '';
@@ -1969,6 +2151,15 @@ class Style_Parser {
 			if ( '' !== $repeat ) {
 				$attributes['style']['background']['repeat'] = $repeat;
 			}
+
+			/*
+			 * A fixed background is what gives an Elementor section its parallax
+			 * look; dropping it left the image scrolling with the content.
+			 */
+			$attachment = strtolower( self::sanitize_scalar( $settings['background_attachment'] ?? $settings['_background_attachment'] ?? '' ) );
+			if ( in_array( $attachment, array( 'fixed', 'scroll', 'local' ), true ) ) {
+				$attributes['style']['background']['attachment'] = $attachment;
+			}
 		}
 
 		$min_height = self::parse_min_height( $settings );
@@ -2197,6 +2388,17 @@ class Style_Parser {
 	 */
 	private static function extract_image_url( $value ): string {
 		if ( is_array( $value ) ) {
+			/*
+			 * Prefer the attachment ID. Elementor resolves media through the ID, so on a
+			 * site whose content was imported or migrated the stored `url` is routinely
+			 * stale and still points at the source domain - which would leave the
+			 * converted page hot-linking someone else's server.
+			 */
+			$attachment_url = self::resolve_attachment_url( $value['id'] ?? null );
+			if ( '' !== $attachment_url ) {
+				return $attachment_url;
+			}
+
 			if ( ! empty( $value['url'] ) ) {
 				return esc_url_raw( (string) $value['url'] );
 			}
@@ -2211,6 +2413,45 @@ class Style_Parser {
 		}
 
 		return '';
+	}
+
+	/**
+	 * Resolve an Elementor media control to a URL on this site.
+	 *
+	 * Elementor keeps both an attachment `id` and the `url` the media had when
+	 * the widget was saved. After an import or a domain change only the ID is
+	 * still meaningful, so callers outside this class resolve media through
+	 * here rather than reading `url` directly and hot-linking the old site.
+	 *
+	 * @param mixed $media Elementor media setting, or a plain URL string.
+	 */
+	public static function resolve_media_url( $media ): string {
+		return self::extract_image_url( $media );
+	}
+
+	/**
+	 * Resolve a media attachment ID to its URL on this site.
+	 *
+	 * @param mixed $id Raw attachment ID from an Elementor media control.
+	 *
+	 * @return string Attachment URL, or an empty string when it cannot be resolved.
+	 */
+	private static function resolve_attachment_url( $id ): string {
+		if ( ! is_scalar( $id ) ) {
+			return '';
+		}
+
+		$id = (int) $id;
+		if ( $id <= 0 || ! function_exists( 'wp_get_attachment_url' ) ) {
+			return '';
+		}
+
+		$url = wp_get_attachment_url( $id );
+		if ( ! is_string( $url ) || '' === $url ) {
+			return '';
+		}
+
+		return esc_url_raw( $url );
 	}
 
 	/**

@@ -37,8 +37,12 @@ class Testimonial_Widget_Handler implements Widget_Handler_Interface {
 
 		// Image data.
 		$image_data = isset( $settings['testimonial_image'] ) && is_array( $settings['testimonial_image'] ) ? $settings['testimonial_image'] : array();
-		$image_url  = isset( $image_data['url'] ) ? (string) $image_data['url'] : '';
 		$image_id   = isset( $image_data['id'] ) ? (int) $image_data['id'] : 0;
+		// Resolve through the attachment; the saved URL is stale on an imported site.
+		$image_url = Style_Parser::resolve_media_url( $image_data );
+		if ( '' === $image_url ) {
+			$image_url = isset( $image_data['url'] ) ? (string) $image_data['url'] : '';
+		}
 
 		// Image dimensions.
 		$img_size = $this->resolve_slider_size( $settings['image_size'] ?? null, 63 );

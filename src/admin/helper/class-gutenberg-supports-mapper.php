@@ -106,6 +106,28 @@ class Gutenberg_Supports_Mapper {
 					'layout'            => true,
 				),
 			),
+			/*
+			 * core/social-links keeps its colours in attributes of its own rather
+			 * than under `style`, so they have to be listed here or they are
+			 * dropped and the icons fall back to each network's brand colour.
+			 */
+			'social-links' => array(
+				'style' => array(
+					'spacing' => true,
+				),
+				'attrs' => array(
+					'iconColor'                 => true,
+					'customIconColor'           => true,
+					'iconBackgroundColor'       => true,
+					'customIconBackgroundColor' => true,
+					'iconColorValue'            => true,
+					'iconBackgroundColorValue'  => true,
+					'size'                      => true,
+					'openInNewTab'              => true,
+					'showLabels'                => true,
+					'layout'                    => true,
+				),
+			),
 		);
 	}
 

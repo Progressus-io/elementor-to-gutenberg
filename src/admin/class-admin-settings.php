@@ -349,7 +349,7 @@ class Admin_Settings {
 		$new_page_id = $this->insert_new_page( $page_id, $blocks );
 		if ( $new_page_id ) {
 			$this->finalize_converted_post( (int) $new_page_id, (string) $blocks, true );
-			if ( self::source_uses_elementor_full_width_template( (int) $page_id ) ) {
+			if ( self::source_wants_full_width_template( (int) $page_id ) ) {
 				$this->assign_blockshift_full_width_template( (int) $new_page_id );
 			}
 		}
@@ -445,6 +445,85 @@ class Admin_Settings {
 	}
 
 	/**
+	 * Decide whether the converted page should get the plugin's Full Width
+	 * Page template.
+	 *
+	 * True for a source built on one of Elementor's own full-width templates,
+	 * and also for one that reaches the same result through the theme - a kit
+	 * page that stays on the default template but switches the theme's own
+	 * page title and container off. Both render as a bare canvas in Elementor,
+	 * so a converted copy left on the theme's default template suddenly grew a
+	 * page title above a design that already has its own heading.
+	 *
+	 * @param int $source_id Source Elementor page ID.
+	 */
+	public static function source_wants_full_width_template( int $source_id ): bool {
+		if ( self::source_uses_elementor_full_width_template( $source_id ) ) {
+			return true;
+		}
+
+		return self::source_hides_theme_page_chrome( $source_id );
+	}
+
+	/**
+	 * Detect a source page that turned off the theme's page title or container.
+	 *
+	 * Themes keep this in their own post meta, so the keys are listed per theme
+	 * rather than guessed. `blockshift_theme_page_chrome_meta` lets a site add
+	 * the keys for a theme that is not covered here.
+	 *
+	 * @param int $source_id Source page ID.
+	 */
+	public static function source_hides_theme_page_chrome( int $source_id ): bool {
+		if ( $source_id <= 0 ) {
+			return false;
+		}
+
+		$keys = array(
+			// Astra.
+			'site-post-title'              => array( 'disabled' ),
+			'ast-title-bar-display'        => array( 'disabled' ),
+			'site-content-layout'          => array( 'page-builder', 'plain-container' ),
+			// GeneratePress.
+			'_generate-disable-post-title' => array( 'true', '1' ),
+			'_generate-full-width-content' => array( 'true', '1' ),
+			// OceanWP.
+			'ocean_disable_title'          => array( 'on', 'enable', '1' ),
+			'ocean_post_layout'            => array( 'full-width', 'full-screen' ),
+			// Kadence.
+			'_kad_post_title'              => array( 'hide', 'disable' ),
+			'_kad_post_layout'             => array( 'fullwidth' ),
+			// Neve.
+			'neve_meta_disable_title'      => array( 'on', '1' ),
+			'neve_meta_container'          => array( 'full-width' ),
+			// Blocksy.
+			'blocksy_page_title'           => array( 'hidden', 'no' ),
+			'page_structure_type'          => array( 'type-4' ),
+		);
+
+		/**
+		 * Filter the post meta that marks a page as rendering without the theme's
+		 * title and container.
+		 *
+		 * @param array<string, array<int, string>> $keys      Meta key => values that mean "hidden".
+		 * @param int                               $source_id Source page ID.
+		 */
+		$keys = (array) apply_filters( 'blockshift_theme_page_chrome_meta', $keys, $source_id );
+
+		foreach ( $keys as $key => $values ) {
+			$stored = get_post_meta( $source_id, (string) $key, true );
+			if ( ! is_scalar( $stored ) || '' === (string) $stored ) {
+				continue;
+			}
+
+			if ( in_array( strtolower( (string) $stored ), array_map( 'strtolower', (array) $values ), true ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+	/**
 	 * Assign the Full Width Page template to the converted page.
 	 *
 	 * Always stores the classic-template path slug (`templates/blockshift-full-width-page.php`)
@@ -459,15 +538,97 @@ class Admin_Settings {
 	 * @param int $target_id Converted page ID.
 	 */
 	private function assign_blockshift_full_width_template( int $target_id ): void {
+		self::assign_full_width_template( $target_id );
+	}
+
+	/**
+	 * Give a converted page a template that renders its content and nothing else.
+	 *
+	 * The plugin's PHP template does that on a classic theme. On a block theme it
+	 * would take the page out of the block template system altogether, losing the
+	 * theme's - or the conversion's own - header and footer parts, so a block
+	 * template is created instead: the same header and footer around bare post
+	 * content, and no post title above a design that already has its own heading.
+	 *
+	 * @param int $target_id Converted page ID.
+	 */
+	public static function assign_full_width_template( int $target_id ): void {
 		if ( $target_id <= 0 ) {
 			return;
 		}
 
-		$slug = \Progressus\BlockShift\Gutenberg::FULL_WIDTH_PAGE_TEMPLATE_SLUG;
+		$slug = '';
+
+		if ( function_exists( 'wp_is_block_theme' ) && wp_is_block_theme() ) {
+			$slug = self::ensure_block_full_width_template();
+		}
+
+		if ( '' === $slug ) {
+			$slug = \Progressus\BlockShift\Gutenberg::FULL_WIDTH_PAGE_TEMPLATE_SLUG;
+		}
 
 		update_post_meta( $target_id, '_wp_page_template', $slug );
 		delete_post_meta( $target_id, 'wp_template' );
 		clean_post_cache( $target_id );
+	}
+
+	/**
+	 * Create, or refresh, the block template converted pages use.
+	 *
+	 * @return string Template slug, or an empty string when it could not be saved.
+	 */
+	private static function ensure_block_full_width_template(): string {
+		$theme = get_stylesheet();
+		$slug  = 'page-blockshift-full-width';
+
+		$content = implode(
+			"\n",
+			array(
+				sprintf( '<!-- wp:template-part {"slug":"header","theme":"%s","tagName":"header"} /-->', $theme ),
+				'<!-- wp:post-content /-->',
+				sprintf( '<!-- wp:template-part {"slug":"footer","theme":"%s","tagName":"footer"} /-->', $theme ),
+			)
+		);
+
+		$existing = get_posts(
+			array(
+				'post_type'      => 'wp_template',
+				'post_status'    => 'any',
+				'name'           => $slug,
+				'posts_per_page' => 1,
+				'fields'         => 'ids',
+				'tax_query'      => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+					array(
+						'taxonomy' => 'wp_theme',
+						'field'    => 'name',
+						'terms'    => $theme,
+					),
+				),
+			)
+		);
+
+		$postarr = array(
+			'post_title'   => __( 'Converted Page: Full Width', 'migrate-off-elementor' ),
+			'post_name'    => $slug,
+			'post_content' => $content,
+			'post_status'  => 'publish',
+			'post_type'    => 'wp_template',
+		);
+
+		if ( ! empty( $existing ) ) {
+			$postarr['ID'] = (int) $existing[0];
+			$saved         = wp_update_post( $postarr, true );
+		} else {
+			$saved = wp_insert_post( $postarr, true );
+		}
+
+		if ( is_wp_error( $saved ) || ! $saved ) {
+			return '';
+		}
+
+		wp_set_post_terms( (int) $saved, array( $theme ), 'wp_theme', false );
+
+		return $slug;
 	}
 
 	/**
@@ -487,7 +648,68 @@ class Admin_Settings {
 			)
 		);
 
+		if ( $new_page_id && ! is_wp_error( $new_page_id ) ) {
+			self::copy_source_post_meta( (int) $page_id, (int) $new_page_id );
+		}
+
 		return $new_page_id;
+	}
+
+	/**
+	 * Copy the source page's non-Elementor meta onto the converted page.
+	 *
+	 * Page layout lives in post meta for most themes - Astra stores
+	 * `site-content-layout`, `site-sidebar-layout` and the title/featured-image
+	 * toggles there, and other themes use their own keys - so a converted page
+	 * created without that meta falls back to the theme's boxed default and
+	 * renders narrower than the Elementor original even though the blocks are
+	 * correct. Elementor's own meta and the plugin's bookkeeping are skipped,
+	 * and `_wp_page_template` is left to the caller, which decides between the
+	 * source template and the plugin's full-width one.
+	 *
+	 * @param int  $source_id   Source post ID.
+	 * @param int  $target_id   Target post ID.
+	 * @param bool $update_mode Whether the conversion is overwriting the source post.
+	 */
+	public static function copy_source_post_meta( int $source_id, int $target_id, bool $update_mode = false ): void {
+		if ( $source_id <= 0 || $target_id <= 0 ) {
+			return;
+		}
+
+		if ( $update_mode ) {
+			$thumbnail_id = get_post_thumbnail_id( $source_id );
+			if ( $thumbnail_id ) {
+				set_post_thumbnail( $target_id, $thumbnail_id );
+			}
+
+			return;
+		}
+
+		$meta = get_post_meta( $source_id );
+
+		if ( ! empty( $meta ) ) {
+			$skip_keys = array( '_edit_lock', '_edit_last', '_elementor_data', '_wp_page_template', 'wp_template', '_thumbnail_id' );
+
+			foreach ( $meta as $key => $values ) {
+				if ( 0 === strpos( $key, '_elementor_' ) || 0 === strpos( $key, '_blockshift_' ) ) {
+					continue;
+				}
+				if ( in_array( $key, $skip_keys, true ) ) {
+					continue;
+				}
+
+				delete_post_meta( $target_id, $key );
+
+				foreach ( (array) $values as $value ) {
+					add_post_meta( $target_id, $key, maybe_unserialize( $value ) );
+				}
+			}
+		}
+
+		$thumbnail_id = get_post_thumbnail_id( $source_id );
+		if ( $thumbnail_id ) {
+			set_post_thumbnail( $target_id, $thumbnail_id );
+		}
 	}
 
 	/**
@@ -1143,7 +1365,7 @@ class Admin_Settings {
 
 		if ( $is_top_level ) {
 			$attributes           = $this->apply_full_width_section_attributes( $attributes, $settings );
-			$attributes['layout'] = $this->build_top_level_constrained_layout();
+			$attributes['layout'] = $this->section_content_layout( $settings );
 		}
 
 		return Block_Builder::build( 'group', $attributes, $inner_html );
@@ -1220,6 +1442,8 @@ class Admin_Settings {
 		$children           = is_array( $element['elements'] ?? null ) ? $element['elements'] : array();
 		$container_settings = is_array( $element['settings'] ?? null ) ? $element['settings'] : array();
 		$container_attr     = Style_Parser::parse_container_styles( $container_settings );
+		$container_attr     = $this->apply_container_background_overlay( $container_attr, $container_settings );
+		$container_attr     = $this->apply_container_gap( $container_attr, $container_settings );
 
 		$min_height_setting = $container_settings['min_height'] ?? null;
 
@@ -1333,17 +1557,216 @@ class Admin_Settings {
 			return $this->render_vertical_stack_group( $container_attr, $child_blocks, $justify_content );
 		}
 
-		$layout_type = in_array( 'e-con-full', $container_classes, true ) ? 'default' : 'constrained';
+		$layout_type = $this->wants_full_width_content( $container_settings, $container_classes ) ? 'default' : 'constrained';
 
 		if ( $is_top_level ) {
 			$container_attr           = $this->apply_full_width_section_attributes( $container_attr, $container_settings );
-			$container_attr['layout'] = $this->build_top_level_constrained_layout();
+			$container_attr['layout'] = $this->section_content_layout( $container_settings, $container_classes );
 
 			// render_group will set layout from $attributes['layout'] when present.
-			return $this->render_group( $container_attr, $child_blocks, 'constrained' );
+			return $this->render_group( $container_attr, $child_blocks, $layout_type );
 		}
 
 		return $this->render_group( $container_attr, $child_blocks, $layout_type );
+	}
+
+	/**
+	 * Give a converted container Elementor's own spacing between its children.
+	 *
+	 * Elementor puts a fixed gap (20px unless the container overrides it) between the
+	 * widgets in a container. Left alone, a converted group instead inherits whatever
+	 * `blockGap` the active theme happens to use, so the whole page drifts out of its
+	 * original vertical rhythm.
+	 *
+	 * @param array $attributes Gutenberg block attributes.
+	 * @param array $settings   Elementor container settings.
+	 *
+	 * @return array
+	 */
+	private function apply_container_gap( array $attributes, array $settings ): array {
+		if ( isset( $attributes['style']['spacing']['blockGap'] ) ) {
+			return $attributes;
+		}
+
+		$gap  = '20px';
+		$data = $settings['flex_gap'] ?? null;
+
+		if ( is_array( $data ) ) {
+			$unit  = isset( $data['unit'] ) && is_string( $data['unit'] ) ? $data['unit'] : 'px';
+			$value = null;
+
+			foreach ( array( 'row', 'size', 'column' ) as $key ) {
+				if ( isset( $data[ $key ] ) && is_numeric( $data[ $key ] ) ) {
+					$value = (string) (float) $data[ $key ];
+					break;
+				}
+			}
+
+			if ( null !== $value && in_array( $unit, array( 'px', 'em', 'rem', '%' ), true ) ) {
+				$gap = $value . $unit;
+			}
+		}
+
+		$attributes['style']['spacing']['blockGap'] = $gap;
+
+		return $attributes;
+	}
+
+	/**
+	 * Reproduce an Elementor container's background overlay.
+	 *
+	 * Elementor paints the overlay on a pseudo-element stacked between the container
+	 * background and its children. Gutenberg has no equivalent attribute, so without
+	 * this a hero that relied on a dark overlay for text contrast converts to the bare
+	 * photograph and the copy on top of it becomes hard to read.
+	 *
+	 * @param array $attributes Gutenberg block attributes.
+	 * @param array $settings   Elementor container settings.
+	 *
+	 * @return array
+	 */
+	private function apply_container_background_overlay( array $attributes, array $settings ): array {
+		$type = $settings['background_overlay_background'] ?? '';
+		if ( ! is_string( $type ) || 'classic' !== strtolower( trim( $type ) ) ) {
+			return $attributes;
+		}
+
+		/*
+		 * The colour may be a literal, or a reference into the Elementor kit / theme
+		 * palette stored under `__globals__`. Reading only the literal dropped the
+		 * overlay entirely on any section that picked its colour from the palette,
+		 * which is how most kits are built.
+		 */
+		$globals   = is_array( $settings['__globals__'] ?? null ) ? $settings['__globals__'] : array();
+		$candidates = array(
+			$settings['background_overlay_color'] ?? '',
+			$globals['background_overlay_color'] ?? '',
+		);
+
+		$color = '';
+		foreach ( $candidates as $candidate ) {
+			if ( '' === $candidate || null === $candidate ) {
+				continue;
+			}
+			$resolved = Style_Parser::resolve_elementor_color_reference( $candidate );
+			if ( ! empty( $resolved['color'] ) ) {
+				$color = (string) $resolved['color'];
+				break;
+			}
+		}
+
+		if ( '' === $color ) {
+			return $attributes;
+		}
+
+		// Elementor defaults the overlay opacity to 0.5; an explicit 0 means "no overlay".
+		$opacity     = 0.5;
+		$raw_opacity = $settings['background_overlay_opacity'] ?? null;
+		if ( is_array( $raw_opacity ) && isset( $raw_opacity['size'] ) && is_numeric( $raw_opacity['size'] ) ) {
+			$opacity = (float) $raw_opacity['size'];
+		} elseif ( is_numeric( $raw_opacity ) ) {
+			$opacity = (float) $raw_opacity;
+		}
+
+		if ( $opacity <= 0 ) {
+			return $attributes;
+		}
+		$opacity = min( 1.0, $opacity );
+
+		/*
+		 * With nothing to sit on top of, the overlay is just a translucent fill - so
+		 * express it as the group's own background colour. That renders identically
+		 * (same colour, same compositing) while staying a standard core attribute, so
+		 * the colour shows up in the editor's background control and stays editable.
+		 * A pseudo-element would have rendered the same but been invisible to the editor.
+		 */
+		if ( ! $this->container_has_background_layer( $settings ) ) {
+			$rgba = Style_Parser::to_rgba_string( $color, $opacity );
+
+			if ( '' !== $rgba ) {
+				$attributes['style']['color']['background'] = $rgba;
+
+				return $this->maybe_add_group_has_background_class( $attributes );
+			}
+		}
+
+		$collector = External_Style_Collector::get_active();
+		if ( ! $collector instanceof External_Style_Collector ) {
+			return $attributes;
+		}
+
+		$overlay = array(
+			'content'          => '""',
+			'position'         => 'absolute',
+			'inset'            => '0',
+			'pointer-events'   => 'none',
+			'background-color' => $color,
+			'opacity'          => rtrim( rtrim( number_format( $opacity, 2, '.', '' ), '0' ), '.' ),
+		);
+
+		$class = 'blockshift-ovl-' . substr( md5( (string) wp_json_encode( $overlay ) ), 0, 10 );
+
+		$collector->register_rule( '.' . $class, array( 'position' => 'relative' ), 'background-overlay' );
+		$collector->register_rule( '.' . $class . '::before', $overlay, 'background-overlay' );
+		$collector->register_rule(
+			'.' . $class . ' > *',
+			array(
+				'position' => 'relative',
+				'z-index'  => '1',
+			),
+			'background-overlay'
+		);
+
+		return $this->add_class_to_attributes( $attributes, $class );
+	}
+
+	/**
+	 * Whether a container paints anything the overlay would have to sit on top of.
+	 *
+	 * Only an image, gradient or video makes the overlay genuinely a *layer*. A plain
+	 * background colour beneath it could be flattened, but the two are kept separate
+	 * here so an existing colour is never silently overwritten.
+	 *
+	 * @param array $settings Elementor container settings.
+	 *
+	 * @return bool
+	 */
+	private function container_has_background_layer( array $settings ): bool {
+		$globals = is_array( $settings['__globals__'] ?? null ) ? $settings['__globals__'] : array();
+
+		$layer_keys = array(
+			'background_image',
+			'_background_image',
+			'background_video_link',
+			'background_slideshow_gallery',
+		);
+
+		foreach ( $layer_keys as $key ) {
+			$value = $settings[ $key ] ?? null;
+
+			if ( is_array( $value ) ) {
+				if ( ! empty( $value['url'] ) || ! empty( $value['id'] ) ) {
+					return true;
+				}
+				continue;
+			}
+
+			if ( ! empty( $value ) ) {
+				return true;
+			}
+		}
+
+		$type = $settings['background_background'] ?? '';
+		if ( is_string( $type ) && in_array( strtolower( trim( $type ) ), array( 'gradient', 'video', 'slideshow' ), true ) ) {
+			return true;
+		}
+
+		// A colour already on the container would be hidden if we replaced it.
+		if ( ! empty( $settings['background_color'] ) || ! empty( $globals['background_color'] ) ) {
+			return true;
+		}
+
+		return false;
 	}
 
 	/**
@@ -1353,10 +1776,14 @@ class Admin_Settings {
 	 * @param array $settings Elementor element settings.
 	 */
 	private function apply_full_width_section_attributes( array $attributes, array $settings ): array {
-		if ( $this->is_explicitly_boxed_section( $settings ) ) {
-			return $attributes;
-		}
-
+		/*
+		 * "Boxed" in Elementor caps the width of a container's *content*, not of
+		 * the container: the element still spans the viewport and still carries the
+		 * background. Treating boxed as a narrow section shrank the background with
+		 * it, so a dark header bar ended at the content width instead of running
+		 * edge to edge. The content stays capped through the constrained layout
+		 * this section is given separately.
+		 */
 		$attributes['align'] = 'full';
 		$attributes          = $this->add_class_to_attributes( $attributes, 'blockshift-full-width-section' );
 
@@ -1379,25 +1806,6 @@ class Admin_Settings {
 	 */
 	private function register_full_width_section_css(): void {
 		// Intentional no-op; see docblock.
-	}
-
-	/**
-	 * Return true when the Elementor section explicitly opts into a boxed layout.
-	 *
-	 * @param array $settings Elementor element settings.
-	 */
-	private function is_explicitly_boxed_section( array $settings ): bool {
-		$content_width = isset( $settings['content_width'] ) ? strtolower( (string) $settings['content_width'] ) : '';
-		if ( 'boxed' === $content_width ) {
-			return true;
-		}
-
-		$layout = isset( $settings['layout'] ) ? strtolower( (string) $settings['layout'] ) : '';
-		if ( 'boxed' === $layout ) {
-			return true;
-		}
-
-		return false;
 	}
 
 	/**
@@ -1424,13 +1832,95 @@ class Admin_Settings {
 		//     We emit `layout:default` so the wp:group does not constrain children.
 		//   - All other sections get the boxed treatment: alignfull background,
 		//     constrained inner content at the kit container width.
-		if ( $this->section_wants_full_width_content( $settings ) ) {
-			$outer_attrs['layout'] = array( 'type' => 'default' );
-		} else {
-			$outer_attrs['layout'] = $this->build_top_level_constrained_layout();
-		}
+		$outer_attrs['layout'] = $this->section_content_layout( $settings );
 
 		return Block_Builder::build( 'group', $outer_attrs, $columns_inner_html );
+	}
+
+	/**
+	 * Pick the layout a converted top-level section should use.
+	 *
+	 * A section whose Elementor content width is "full" wants its children to
+	 * reach the viewport edges; constraining them to the kit width made those
+	 * sections visibly narrower than the original. Everything else keeps the
+	 * boxed treatment.
+	 *
+	 * @param array $settings Elementor element settings.
+	 * @param array $classes  Classes captured for the element, when available.
+	 */
+	private function section_content_layout( array $settings, array $classes = array() ): array {
+		if ( $this->wants_full_width_content( $settings, $classes ) ) {
+			return array( 'type' => 'default' );
+		}
+
+		$layout = $this->build_top_level_constrained_layout();
+
+		/*
+		 * A boxed Elementor container can narrow its own content (`boxed_width`),
+		 * which is how kits build centred hero copy. Falling back to the kit width
+		 * let that copy run the full container and changed how the text wrapped.
+		 */
+		$boxed = $this->read_section_boxed_width( $settings );
+		if ( '' !== $boxed ) {
+			$layout['contentSize'] = $boxed;
+			$layout['wideSize']    = $boxed;
+		}
+
+		return $layout;
+	}
+
+	/**
+	 * Read the width a boxed section pins its own content to.
+	 *
+	 * Containers store it as `boxed_width`; legacy sections store the same idea
+	 * in `content_width`, which is a slider there and a keyword on containers -
+	 * hence the array check rather than a plain read.
+	 *
+	 * @param array $settings Elementor element settings.
+	 *
+	 * @return string CSS length, or an empty string when the section does not set one.
+	 */
+	private function read_section_boxed_width( array $settings ): string {
+		foreach ( array( 'boxed_width', 'content_width' ) as $key ) {
+			$value = $settings[ $key ] ?? null;
+			if ( ! is_array( $value ) || ! is_numeric( $value['size'] ?? null ) ) {
+				continue;
+			}
+
+			$size = (float) $value['size'];
+			if ( $size <= 0 ) {
+				continue;
+			}
+
+			$unit = isset( $value['unit'] ) ? (string) $value['unit'] : 'px';
+			if ( ! in_array( $unit, array( 'px', '%', 'em', 'rem', 'vw' ), true ) ) {
+				$unit = 'px';
+			}
+
+			return ( (float) (int) $size === $size ? (string) (int) $size : (string) $size ) . $unit;
+		}
+
+		return '';
+	}
+
+
+	/**
+	 * Detect a full-width content width on either a container or a legacy section.
+	 *
+	 * Containers store it as `content_width: "full"`; a container rendered by
+	 * Elementor also carries the `e-con-full` class, which is the only signal
+	 * available when the element's classes were captured but its settings were
+	 * not.
+	 *
+	 * @param array $settings Elementor element settings.
+	 * @param array $classes  Classes captured for the element.
+	 */
+	private function wants_full_width_content( array $settings, array $classes = array() ): bool {
+		if ( in_array( 'e-con-full', $classes, true ) ) {
+			return true;
+		}
+
+		return $this->section_wants_full_width_content( $settings );
 	}
 
 	/**
@@ -1750,7 +2240,20 @@ class Admin_Settings {
 	 */
 	private function render_vertical_stack_group( array $attributes, array $child_blocks, ?string $justify_content = null ): string {
 		if ( null === $justify_content || '' === $justify_content ) {
-			$justify_content = 'left';
+			/*
+			 * Elementor stretches a column container's children across its full width,
+			 * so each child's own alignment decides where its content sits. Falling back
+			 * to a flex layout here instead shrink-wrapped every child and pinned it to
+			 * the left, which knocked centred images and text out of position.
+			 */
+			$attributes = $this->maybe_add_group_has_background_class( $attributes );
+			$inner_html = trim( implode( '', $child_blocks ) );
+
+			if ( '' === $inner_html ) {
+				return '';
+			}
+
+			return Block_Builder::build( 'group', $attributes, $inner_html );
 		}
 
 		$attributes['layout'] = array(
@@ -2245,16 +2748,22 @@ class Admin_Settings {
 			return null;
 		}
 
+		$direction = isset( $settings['flex_direction'] ) ? (string) $settings['flex_direction'] : '';
+		$is_column = in_array( $direction, array( 'column', 'column-reverse', '' ), true );
+
+		/*
+		 * Which control drives the horizontal axis depends on the direction. In a column
+		 * container - Elementor's default - `flex_justify_content` distributes children
+		 * *vertically*, and the horizontal axis is `flex_align_items`. Reading
+		 * justify-content here regardless of direction horizontally centred content that
+		 * Elementor had only centred top-to-bottom.
+		 */
+		$keys = $is_column
+			? array( 'flex_align_items', 'horizontal_align' )
+			: array( 'flex_justify_content', 'justify_content', 'horizontal_align', 'content_position' );
+
 		// Priority keys for flex justify on containers.
-		$alignment = Alignment_Helper::detect_alignment(
-			$settings,
-			array(
-				'flex_justify_content',
-				'justify_content',
-				'horizontal_align',
-				'content_position',
-			)
-		);
+		$alignment = Alignment_Helper::detect_alignment( $settings, $keys );
 
 		if ( '' === $alignment ) {
 			return null;

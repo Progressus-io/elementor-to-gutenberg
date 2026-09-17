@@ -45,6 +45,15 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 		$spacing      = Style_Parser::parse_spacing( $settings );
 		$spacing_attr = isset( $spacing['attributes'] ) ? $spacing['attributes'] : array();
 
+		/*
+		 * A button carries two separate padding controls. `text_padding` is the padding
+		 * inside the button - which is what core's button block puts on the link - while
+		 * `_padding` pads the widget wrapper around it. The generic spacing parser reads
+		 * `_padding`, so leaving it here handed the wrapper's padding to the button and
+		 * collapsed any button whose wrapper padding was 0 down to bare text.
+		 */
+		unset( $spacing_attr['padding'] );
+
 		$typography      = Style_Parser::parse_typography( $settings );
 		$typography_attr = isset( $typography['attributes'] ) ? $typography['attributes'] : array();
 
@@ -125,18 +134,54 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 		}
 
 		if ( $this->should_drop_background( $settings, $computed_styles, $button_attributes ) ) {
-			if ( isset( $button_attributes['style']['color']['background'] ) ) {
-				$button_attributes['style']['color']['background'] = 'transparent';
-			}
+			$button_attributes['style']['color']['background'] = 'transparent';
+		}
+
+		/*
+		 * A button that names a text colour but no background needs one stated,
+		 * or the theme paints its own behind that text - which is how a plain
+		 * Elementor text link became a dark label on a dark box. A button that
+		 * names neither is left alone on purpose: Elementor was letting the theme
+		 * style it, and the theme styles the converted button the same way.
+		 */
+		$has_text_color = isset( $button_attributes['style']['color']['text'] )
+			&& '' !== trim( (string) $button_attributes['style']['color']['text'] );
+
+		if ( $has_text_color && ! isset( $button_attributes['style']['color']['background'] ) ) {
+			$button_attributes['style']['color']['background'] = 'transparent';
 		}
 
 		if ( empty( $button_attributes['style']['spacing']['padding'] ) ) {
-			$button_attributes['style']['spacing']['padding'] = array(
-				'top'    => '12px',
-				'right'  => '24px',
-				'bottom' => '12px',
-				'left'   => '24px',
-			);
+			// The button's own padding, then the kit's, then Elementor's built-in default.
+			$padding = Style_Parser::parse_dimensions( $settings['text_padding'] ?? null );
+
+			if ( empty( $padding ) ) {
+				$padding = Style_Parser::get_elementor_kit_dimensions( 'button_padding' );
+			}
+
+			if ( empty( $padding ) ) {
+				$padding = array(
+					'top'    => '12px',
+					'right'  => '24px',
+					'bottom' => '12px',
+					'left'   => '24px',
+				);
+			}
+
+			$button_attributes['style']['spacing']['padding'] = $padding;
+		}
+
+		if ( empty( $button_attributes['style']['typography']['fontSize'] ) ) {
+			/*
+			 * Same reasoning as the padding above: a button that never sets its own font
+			 * size inherits the kit's, not the theme's. Without this the button silently
+			 * picked up whatever size the active theme uses for buttons.
+			 */
+			$kit_font_size = Style_Parser::get_elementor_kit_size( 'button_typography_font_size' );
+
+			if ( '' !== $kit_font_size ) {
+				$button_attributes['style']['typography']['fontSize'] = $kit_font_size;
+			}
 		}
 
 		if ( empty( $button_attributes['style']['border']['radius'] ) ) {
@@ -189,7 +234,13 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 			$icon_html = '<span class="blockshift-button-icon ' . esc_attr( $icon_data['class_name'] ) . '" aria-hidden="true"></span>';
 			Style_Parser::save_generated_css( '/* icon class captured for ETG_EXTRA_ATTRS_MAP_V1 */' );
 		} elseif ( '' !== $icon_data['url'] ) {
-			$icon_html = '<span class="blockshift-button-icon"><img src="' . esc_url( $icon_data['url'] ) . '" alt="" aria-hidden="true" /></span>';
+			/*
+			 * Elementor renders a button's SVG icon inline and scales it with the
+			 * label, so it never affects the button's height. An <img> with no
+			 * size falls back to the file's intrinsic dimensions instead, which
+			 * stretched the button to several times its height.
+			 */
+			$icon_html = '<span class="blockshift-button-icon"><img src="' . esc_url( $icon_data['url'] ) . '" alt="" aria-hidden="true" style="width:1em;height:1em;vertical-align:middle" /></span>';
 		}
 
 		// Normalize typography for core/button to avoid Gutenberg dropping/reshuffling values.

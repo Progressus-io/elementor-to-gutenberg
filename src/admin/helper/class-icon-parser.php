@@ -44,7 +44,12 @@ class Icon_Parser {
 
 			if ( is_array( $value ) && isset( $value['url'] ) ) {
 				$result['type'] = 'svg';
-				$result['url']  = (string) $value['url'];
+				// Resolve through the attachment ID first; the stored URL still
+				// points at the original site after an import.
+				$result['url'] = Style_Parser::resolve_media_url( $value );
+				if ( '' === $result['url'] ) {
+					$result['url'] = (string) $value['url'];
+				}
 
 				$parsed_url = wp_parse_url( $result['url'] );
 				if ( is_array( $parsed_url ) && isset( $parsed_url['path'] ) ) {

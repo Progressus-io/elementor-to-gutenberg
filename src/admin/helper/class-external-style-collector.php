@@ -777,6 +777,14 @@ class External_Style_Collector {
 				continue;
 			}
 
+			/*
+			 * Some of these arrive named the way a block attribute names them -
+			 * `boxShadow`, `minHeight` - because that is the shape they were read
+			 * from. A stylesheet needs the CSS property, and a browser drops the
+			 * whole declaration when it does not recognise the name.
+			 */
+			$prop = strtolower( (string) preg_replace( '/([a-z0-9])([A-Z])/', '$1-$2', $prop ) );
+
 			if ( 'background-image' === $prop ) {
 				$val = $this->format_background_image( (string) $val );
 			}

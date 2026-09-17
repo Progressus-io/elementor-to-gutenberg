@@ -111,10 +111,7 @@ class Block_Builder {
 		}
 
 		if ( 'button' === $block && '' === trim( $inner_html ) ) {
-			$attr_json = empty( $attrs ) ? '' : ' ' . wp_json_encode(
-					$attrs,
-					JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
-				);
+			$attr_json = empty( $attrs ) ? '' : ' ' . self::encode_attributes( $attrs );
 
 			return sprintf( '<!-- wp:%s%s /-->%s', $block, $attr_json, "\n" );
 		}
@@ -125,10 +122,7 @@ class Block_Builder {
 			return self::build_strict_serialized( $block, $attrs, $inner_html );
 		}
 
-		$attr_json    = empty( $attrs ) ? '' : ' ' . wp_json_encode(
-				$attrs,
-				JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
-			);
+		$attr_json    = empty( $attrs ) ? '' : ' ' . self::encode_attributes( $attrs );
 		$opening      = sprintf( '<!-- wp:%s%s -->', $block, $attr_json );
 		$closing      = sprintf( '<!-- /wp:%s -->', $block );
 		$wrapper_html = $inner_html;
@@ -335,7 +329,7 @@ class Block_Builder {
 			return serialize_block( $parsed ) . "\n";
 		}
 
-		$attr_json = empty( $attrs ) ? '' : ' ' . wp_json_encode( $attrs, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
+		$attr_json = empty( $attrs ) ? '' : ' ' . self::encode_attributes( $attrs );
 
 		return sprintf(
 			"<!-- wp:%s%s -->\n%s\n<!-- /wp:%s -->\n",
@@ -381,20 +375,14 @@ class Block_Builder {
 		}
 
 		if ( 'button' === $block && '' === trim( $inner_html ) ) {
-			$attr_json = empty( $attrs ) ? '' : ' ' . wp_json_encode(
-					$attrs,
-					JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
-				);
+			$attr_json = empty( $attrs ) ? '' : ' ' . self::encode_attributes( $attrs );
 
 			return sprintf( '<!-- wp:%s%s /-->%s', $block, $attr_json, "\n" );
 		}
 
 		$is_wrapper = in_array( $block_slug, self::$wrapper_blocks, true );
 
-		$attr_json    = empty( $attrs ) ? '' : ' ' . wp_json_encode(
-				$attrs,
-				JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
-			);
+		$attr_json    = empty( $attrs ) ? '' : ' ' . self::encode_attributes( $attrs );
 		$opening      = sprintf( '<!-- wp:%s%s -->', $block, $attr_json );
 		$closing      = sprintf( '<!-- /wp:%s -->', $block );
 		$wrapper_html = $inner_html;
@@ -428,6 +416,31 @@ class Block_Builder {
 		$wrapper_html = rtrim( (string) $wrapper_html, "\n" );
 
 		return $opening . "\n" . $wrapper_html . "\n" . $closing . "\n";
+	}
+
+	/**
+	 * Encode block attributes the way WordPress serializes them in block comments.
+	 *
+	 * `serialize_block_attributes()` escapes `<`, `>`, `&`, `"` and `--` so that a
+	 * value can never close the surrounding HTML comment. Encoding by hand skipped
+	 * that, so an attribute holding markup (an icon-box description with `<br>`, a
+	 * title with `&`) produced a block comment the parser re-serializes differently
+	 * - and a value containing `-->` would truncate the block outright.
+	 *
+	 * @param array $attrs Prepared block attributes.
+	 *
+	 * @return string Encoded attributes, or an empty string when there are none.
+	 */
+	private static function encode_attributes( array $attrs ): string {
+		if ( empty( $attrs ) ) {
+			return '';
+		}
+
+		if ( function_exists( 'serialize_block_attributes' ) ) {
+			return serialize_block_attributes( $attrs );
+		}
+
+		return (string) wp_json_encode( $attrs, JSON_HEX_AMP | JSON_HEX_QUOT | JSON_HEX_TAG );
 	}
 
 	/**
@@ -553,11 +566,27 @@ class Block_Builder {
 					continue;
 				}
 
+				$value = self::normalize_style_value( $val );
+
+				/*
+				 * Gutenberg's constrained layout centres every child with
+				 * `margin-inline: auto !important`, which outranks a plain inline
+				 * style - so a section Elementor had pushed to one side with a
+				 * horizontal margin came out centred and full width instead. Only
+				 * an inline `!important` wins that, and only a margin that actually
+				 * offsets something needs it.
+				 */
+				$needs_important = 'margin' === $type
+					&& in_array( $side, array( 'left', 'right' ), true )
+					&& ! in_array( $value, array( '0', 'auto' ), true )
+					&& 0 !== (int) $value;
+
 				$style_rules[] = sprintf(
-					'%s-%s:%s',
+					'%s-%s:%s%s',
 					$type,
 					$side,
-					self::normalize_style_value( $val )
+					$value,
+					$needs_important ? ' !important' : ''
 				);
 			}
 		}
@@ -595,6 +624,10 @@ class Block_Builder {
 
 			if ( isset( $style['background']['repeat'] ) ) {
 				$style_rules[] = 'background-repeat:' . self::normalize_style_value( $style['background']['repeat'] );
+			}
+
+			if ( isset( $style['background']['attachment'] ) ) {
+				$style_rules[] = 'background-attachment:' . self::normalize_style_value( $style['background']['attachment'] );
 			}
 		}
 

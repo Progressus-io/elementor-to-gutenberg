@@ -53,26 +53,37 @@ class Social_Icons_Widget_Handler implements Widget_Handler_Interface {
 			}
 		}
 
-		$icon_color = isset( $settings['icon_color'] ) ? strtolower( (string) $settings['icon_color'] ) : '';
-		if ( '' !== $icon_color ) {
-			if ( $this->is_preset_slug( $icon_color ) ) {
-				$attributes['iconColor'] = $icon_color;
-			} else {
-				$attributes['customIconColor'] = $icon_color;
-			}
-			$class_names[]  = 'has-icon-color';
-			$list_classes[] = 'has-icon-color';
-		}
+		/*
+		 * `icon_color` is a mode - '' for each network's own brand colour, 'custom'
+		 * for the two colours below it. Writing that switch straight into
+		 * `customIconColor` produced the literal value "custom", which core ignores,
+		 * so a widget styled to sit on a dark footer kept its brand colours.
+		 */
+		$uses_custom_colors = 'custom' === strtolower( trim( (string) ( $settings['icon_color'] ?? '' ) ) );
 
-		$icon_background = isset( $settings['icon_background_color'] ) ? strtolower( (string) $settings['icon_background_color'] ) : '';
-		if ( '' !== $icon_background ) {
-			if ( $this->is_preset_slug( $icon_background ) ) {
-				$attributes['iconBackgroundColor'] = $icon_background;
-			} else {
-				$attributes['customIconBackgroundColor'] = $icon_background;
+		if ( $uses_custom_colors ) {
+			// Elementor's primary colour paints the shape, the secondary one the glyph.
+			$shape = $this->resolve_color( $settings, array( 'icon_primary_color' ) );
+			$glyph = $this->resolve_color( $settings, array( 'icon_secondary_color' ) );
+
+			/*
+			 * `customIconColor` is what the editor stores; `iconColorValue` is what
+			 * the render callback passes down to each icon, so both are needed for
+			 * the colour to survive a save and still show on the front end.
+			 */
+			if ( '' !== $glyph ) {
+				$attributes['customIconColor'] = $glyph;
+				$attributes['iconColorValue']  = $glyph;
+				$class_names[]                 = 'has-icon-color';
+				$list_classes[]                = 'has-icon-color';
 			}
-			$class_names[]  = 'has-icon-background-color';
-			$list_classes[] = 'has-icon-background-color';
+
+			if ( '' !== $shape ) {
+				$attributes['customIconBackgroundColor'] = $shape;
+				$attributes['iconBackgroundColorValue']  = $shape;
+				$class_names[]                           = 'has-icon-background-color';
+				$list_classes[]                          = 'has-icon-background-color';
+			}
 		}
 
 		$open_new_tab = false;
@@ -83,16 +94,26 @@ class Social_Icons_Widget_Handler implements Widget_Handler_Interface {
 				continue;
 			}
 
-			$url = is_array( $icon['link'] ?? null ) ? (string) ( $icon['link']['url'] ?? '' ) : '';
+			$url     = is_array( $icon['link'] ?? null ) ? (string) ( $icon['link']['url'] ?? '' ) : '';
+			$service = $this->detect_service( $icon );
+
+			/*
+			 * Elementor shows an icon whether or not a link was filled in, and kits
+			 * routinely ship them unlinked. core/social-link renders nothing without
+			 * a URL, so an unlinked icon gets the same '#' Elementor itself outputs
+			 * rather than being dropped along with the rest of the widget.
+			 */
 			if ( '' === $url ) {
-				continue;
+				if ( '' === $service ) {
+					continue;
+				}
+
+				$url = '#';
 			}
 
 			if ( ! empty( $icon['link']['is_external'] ) ) {
 				$open_new_tab = true;
 			}
-
-			$service = $this->detect_service( $icon );
 
 			$link_attrs = array( 'url' => $url );
 			if ( '' !== $service ) {
@@ -167,11 +188,19 @@ class Social_Icons_Widget_Handler implements Widget_Handler_Interface {
 	}
 
 	/**
-	 * Check whether a color is a preset slug.
+	 * Resolve the first of the given colour settings that yields a colour.
 	 *
-	 * @param string $color Color string.
+	 * @param array         $settings Widget settings.
+	 * @param array<string> $keys     Control names to try, in order.
 	 */
-	private function is_preset_slug( string $color ): bool {
-		return '' !== $color && false === strpos( $color, '#' ) && false === strpos( $color, 'rgb' );
+	private function resolve_color( array $settings, array $keys ): string {
+		foreach ( $keys as $key ) {
+			$color = Style_Parser::extract_text_color_css_value( $settings, $key );
+			if ( ! empty( $color['color'] ) ) {
+				return (string) $color['color'];
+			}
+		}
+
+		return '';
 	}
 }

@@ -49,6 +49,12 @@ class Widget_Handler_Factory {
 		'form'                      => 'Progressus\BlockShift\Admin\Widget\Form_Widget_Handler',
 		'nav-menu'                  => 'Progressus\BlockShift\Admin\Widget\Menu_Widget_Handler',
 		'theme-site-logo'           => 'Progressus\BlockShift\Admin\Widget\Site_Logo_Widget_Handler',
+		// Header Footer Elementor's own header/footer widgets.
+		'site-logo'                 => 'Progressus\BlockShift\Admin\Widget\Site_Logo_Widget_Handler',
+		'navigation-menu'           => 'Progressus\BlockShift\Admin\Widget\Menu_Widget_Handler',
+		'copyright'                 => 'Progressus\BlockShift\Admin\Widget\Generic_Elementor_Widget_Handler',
+		'hfe-site-title'            => 'Progressus\BlockShift\Admin\Widget\Generic_Elementor_Widget_Handler',
+		'hfe-site-tagline'          => 'Progressus\BlockShift\Admin\Widget\Generic_Elementor_Widget_Handler',
 		'woocommerce-products'      => 'Progressus\BlockShift\Admin\Widget\Woo_Products_Widget_Handler',
 		'woocommerce-cart'          => 'Progressus\BlockShift\Admin\Widget\Woo_Cart_Widget_Handler',
 		'woocommerce_cart'          => 'Progressus\BlockShift\Admin\Widget\Woo_Cart_Widget_Handler',
@@ -67,8 +73,12 @@ class Widget_Handler_Factory {
 		'soundcloud'                => 'Progressus\BlockShift\Admin\Widget\Generic_Elementor_Widget_Handler',
 		'alert'                     => 'Progressus\BlockShift\Admin\Widget\Generic_Elementor_Widget_Handler',
 		'rating'                    => 'Progressus\BlockShift\Admin\Widget\Generic_Elementor_Widget_Handler',
-		'image-carousel'            => 'Progressus\BlockShift\Admin\Widget\Generic_Elementor_Widget_Handler',
-		'image_carousel'            => 'Progressus\BlockShift\Admin\Widget\Generic_Elementor_Widget_Handler',
+		'star-rating'               => 'Progressus\BlockShift\Admin\Widget\Generic_Elementor_Widget_Handler',
+		'sureforms_form'            => 'Progressus\BlockShift\Admin\Widget\Generic_Elementor_Widget_Handler',
+		'suredonation-donation-form' => 'Progressus\BlockShift\Admin\Widget\Generic_Elementor_Widget_Handler',
+		'hfe-infocard'              => 'Progressus\BlockShift\Admin\Widget\Generic_Elementor_Widget_Handler',
+		'image-carousel'            => 'Progressus\BlockShift\Admin\Widget\Gallery_Widget_Handler',
+		'image_carousel'            => 'Progressus\BlockShift\Admin\Widget\Gallery_Widget_Handler',
 	);
 
 	/**

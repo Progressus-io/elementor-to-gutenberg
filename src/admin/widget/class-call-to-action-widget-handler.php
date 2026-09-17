@@ -238,7 +238,7 @@ class Call_To_Action_Widget_Handler implements Widget_Handler_Interface {
 				$title_style_parts[] = 'word-spacing:' . esc_attr( $title_word_spacing );
 			}
 
-			$segments[] = '<h2 class="call-to-action-title" style="' . implode( ';', $title_style_parts ) . '">' . esc_html( $title ) . '</h2>';
+			$segments[] = '<h2 class="call-to-action-title" style="' . implode( ';', $title_style_parts ) . '">' . wp_kses_post( $title ) . '</h2>';
 		}
 
 		if ( '' !== trim( $sanitized_description_no_newlines ) ) {
@@ -472,7 +472,7 @@ class Call_To_Action_Widget_Handler implements Widget_Handler_Interface {
 			'layout'                    => $layout,
 			'bgImageUrl'                => $bg_image_url,
 			'bgImageId'                 => $bg_image_id,
-			'title'                     => $title,
+			'title'                     => wp_kses_post( $title ),
 			'description'               => $sanitized_description_no_newlines,
 			'buttonText'                => $button_text,
 			'buttonUrl'                 => $button_url,
@@ -552,8 +552,13 @@ class Call_To_Action_Widget_Handler implements Widget_Handler_Interface {
 		);
 
 		if ( isset( $settings['bg_image'] ) && is_array( $settings['bg_image'] ) ) {
-			$image_data['url'] = isset( $settings['bg_image']['url'] ) ? (string) $settings['bg_image']['url'] : '';
-			$image_data['id']  = isset( $settings['bg_image']['id'] ) ? (int) $settings['bg_image']['id'] : 0;
+			$image_data['id'] = isset( $settings['bg_image']['id'] ) ? (int) $settings['bg_image']['id'] : 0;
+
+			// Resolve through the attachment; the saved URL is stale on an imported site.
+			$image_data['url'] = Style_Parser::resolve_media_url( $settings['bg_image'] );
+			if ( '' === $image_data['url'] ) {
+				$image_data['url'] = isset( $settings['bg_image']['url'] ) ? (string) $settings['bg_image']['url'] : '';
+			}
 		}
 
 		return $image_data;

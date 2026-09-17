@@ -47,7 +47,7 @@ class Testimonial_Carousel_Widget_Handler implements Widget_Handler_Interface {
 					'content'  => $content,
 					'name'     => $name,
 					'title'    => $title,
-					'imageUrl' => isset( $slide['image']['url'] ) ? (string) $slide['image']['url'] : '',
+					'imageUrl' => $this->resolve_slide_image_url( $slide ),
 					'imageId'  => isset( $slide['image']['id'] ) ? (int) $slide['image']['id'] : 0,
 				);
 			}
@@ -624,5 +624,24 @@ class Testimonial_Carousel_Widget_Handler implements Widget_Handler_Interface {
 		}
 
 		return $a === $b;
+	}
+
+	/**
+	 * Resolve a carousel slide's avatar to a URL on this site.
+	 *
+	 * @param array $slide Raw slide settings.
+	 */
+	private function resolve_slide_image_url( array $slide ): string {
+		$image = isset( $slide['image'] ) && is_array( $slide['image'] ) ? $slide['image'] : array();
+		if ( array() === $image ) {
+			return '';
+		}
+
+		$url = Style_Parser::resolve_media_url( $image );
+		if ( '' !== $url ) {
+			return $url;
+		}
+
+		return isset( $image['url'] ) ? (string) $image['url'] : '';
 	}
 }
