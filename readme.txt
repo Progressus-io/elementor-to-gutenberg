@@ -139,10 +139,12 @@ Lucide line icons (ISC) are inlined uncompressed in assets/js/pgs-icons.js. Sour
 
 == Screenshots ==
 
-1. The Conversion Wizard - pick your Elementor pages and convert them to blocks.
-2. Conversion results, with a summary for each page.
-3. The Conversion Log - which elements converted cleanly and which need a look.
-4. Settings - page width, conversion defaults, and logging.
+1. Choose a conversion mode - convert every Elementor page automatically, or hand-pick pages for a staged migration.
+2. Check theme compatibility - keep your current theme or switch to a compatible block theme before converting.
+3. Convert your Elementor header and footer templates and set the defaults used after conversion.
+4. Select the exact pages and templates to convert, with a per-item compatibility check.
+5. Review the full plan - scope, theme, templates and conflicts - before anything changes on your site.
+6. Track progress and see a per-page summary of what converted, what was skipped, and any errors.
 
 == Changelog ==
 
