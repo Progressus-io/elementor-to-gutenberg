@@ -5,7 +5,7 @@
  * Plugin URI: https://block-shift.com/
  * Author: Progressus
  * Author URI: https://progressus.io/
- * Version: 1.0.0
+ * Version: 1.1.0
  * Requires at least: 6.7
  * Requires PHP: 7.4
  * License: GPLv2 or later
@@ -24,7 +24,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 if ( ! defined( 'BLOCKSHIFT_VERSION' ) ) {
-	define( 'BLOCKSHIFT_VERSION', '1.0.0' );
+	define( 'BLOCKSHIFT_VERSION', '1.1.0' );
 }
 if ( ! defined( 'BLOCKSHIFT_DEBUG' ) ) {
 	define( 'BLOCKSHIFT_DEBUG', false );
