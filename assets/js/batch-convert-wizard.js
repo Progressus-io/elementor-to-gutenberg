@@ -335,6 +335,99 @@
 			);
 		}
 
+		/**
+		 * Name of the theme the run will leave active.
+		 *
+		 * @return {string} Theme name, falling back to its slug.
+		 */
+		getTargetThemeName() {
+			const selectedTheme = this.getSelectedTheme();
+			return (
+				( selectedTheme && selectedTheme.name ) ||
+				this.state.selectedThemeSlug ||
+				this.getCurrentThemeName()
+			);
+		}
+
+		/**
+		 * Number of detected Elementor header and footer templates.
+		 *
+		 * @return {number} Headers plus footers.
+		 */
+		getElementorTemplateCount() {
+			return (
+				this.getTemplatesFor( 'header' ).length +
+				this.getTemplatesFor( 'footer' ).length
+			);
+		}
+
+		/**
+		 * Whether the run swaps a classic theme, which can display Elementor
+		 * headers and footers, for a block theme, which cannot.
+		 *
+		 * @return {boolean} True when Elementor headers/footers stop rendering.
+		 */
+		willHideElementorTemplates() {
+			if ( ! this.willChangeTheme() || this.isCurrentThemeBlock() ) {
+				return false;
+			}
+			const selectedTheme = this.getSelectedTheme();
+			if ( selectedTheme && selectedTheme.isBlockTheme === false ) {
+				return false;
+			}
+			return this.getElementorTemplateCount() > 0;
+		}
+
+		/**
+		 * Warning for headers or footers left unconverted while the run
+		 * switches to a theme that will not display them.
+		 *
+		 * @return {?Element} Alert element, or null when nothing is left out.
+		 */
+		renderUnconvertedTemplatesWarning() {
+			if ( ! this.willHideElementorTemplates() ) {
+				return null;
+			}
+
+			const headersLeft =
+				this.getTemplatesFor( 'header' ).length > 0 &&
+				this.state.selectedHeaderIds.size === 0;
+			const footersLeft =
+				this.getTemplatesFor( 'footer' ).length > 0 &&
+				this.state.selectedFooterIds.size === 0;
+			const noneSelected =
+				this.state.selectedHeaderIds.size === 0 &&
+				this.state.selectedFooterIds.size === 0;
+			const themeName = this.getTargetThemeName();
+
+			if ( noneSelected ) {
+				return createElement(
+					'div',
+					'blockshift-alert blockshift-alert-error blockshift-theme-templates-warning',
+					formatString(
+						this.strings.partsNoneThemeWarning ||
+							'No headers or footers are selected, but this run switches the whole site to %s. Your Elementor headers and footers will disappear from every page and post, and the new theme’s own header and footer will be shown instead. Select them to convert them, or go back and keep your current theme.',
+						themeName
+					)
+				);
+			}
+
+			if ( headersLeft || footersLeft ) {
+				const message = headersLeft
+					? this.strings.partsNoHeaderWarning ||
+					  'No headers are selected, but this run switches the whole site to %s. Your Elementor headers will disappear from every page and post.'
+					: this.strings.partsNoFooterWarning ||
+					  'No footers are selected, but this run switches the whole site to %s. Your Elementor footers will disappear from every page and post.';
+				return createElement(
+					'div',
+					'blockshift-alert blockshift-alert-warning blockshift-theme-templates-warning',
+					formatString( message, themeName )
+				);
+			}
+
+			return null;
+		}
+
 		shouldCopyCss() {
 			if ( ! this.willChangeTheme() ) {
 				return false;
@@ -1237,7 +1330,9 @@
 				createElement(
 					'span',
 					'blockshift-theme-chip',
-					this.strings.themeBlockLabel || 'Block theme'
+					theme.isBlockTheme
+						? this.strings.themeBlockLabel || 'Block theme'
+						: this.strings.themeClassicLabel || 'Classic theme'
 				)
 			);
 			if ( isSelected && ! isActive ) {
@@ -1317,6 +1412,7 @@
 				name: this.getCurrentThemeName(),
 				isActive: true,
 				isInstalled: true,
+				isBlockTheme: this.isCurrentThemeBlock(),
 				screenshot:
 					this.themes.currentTheme &&
 					this.themes.currentTheme.screenshot
@@ -1344,12 +1440,30 @@
 
 			container.appendChild( browser );
 
-			if ( this.willChangeTheme() && this.strings.themeChangeWarning ) {
+			if ( this.willChangeTheme() ) {
 				container.appendChild(
 					createElement(
 						'div',
 						'blockshift-alert blockshift-alert-warning blockshift-theme-change-warning',
-						this.strings.themeChangeWarning
+						formatString(
+							this.strings.themeChangeWarning ||
+								'Switching themes is a site-wide change: %s becomes the active theme for every page and post on your site as soon as the conversion starts, before any page is converted. Test on a staging site first when possible.',
+							this.getTargetThemeName()
+						)
+					)
+				);
+			}
+
+			if ( this.willHideElementorTemplates() ) {
+				container.appendChild(
+					createElement(
+						'div',
+						'blockshift-alert blockshift-alert-warning blockshift-theme-templates-warning',
+						formatString(
+							this.strings.themePartsWarning ||
+								'Your site uses %d Elementor header and footer templates. Block themes do not display them, so any you do not convert will stop showing on every page of your site, including pages you do not convert.',
+							this.getElementorTemplateCount()
+						)
 					)
 				);
 			}
@@ -2076,6 +2190,11 @@
 			);
 			container.appendChild( footerSection );
 
+			const templatesWarning = this.renderUnconvertedTemplatesWarning();
+			if ( templatesWarning ) {
+				container.appendChild( templatesWarning );
+			}
+
 			const buttons = createElement( 'div', 'blockshift-wizard-buttons' );
 			const backBtn = createButton(
 				this.strings.back || 'Back',
@@ -2361,6 +2480,27 @@
 				container.appendChild( reviewWarnings );
 			}
 
+			if ( this.willChangeTheme() ) {
+				container.appendChild(
+					createElement(
+						'div',
+						'blockshift-alert blockshift-alert-warning blockshift-review-theme-switch',
+						formatString(
+							this.strings.reviewThemeSwitchNotice ||
+								'Site-wide change: starting this conversion switches the active theme from %1$s to %2$s for your entire site, before any page is converted. Cancelling the conversion does not switch it back. To undo it, activate %1$s again under Appearance > Themes.',
+							this.getCurrentThemeName(),
+							this.getTargetThemeName()
+						)
+					)
+				);
+			}
+
+			const reviewTemplatesWarning =
+				this.renderUnconvertedTemplatesWarning();
+			if ( reviewTemplatesWarning ) {
+				container.appendChild( reviewTemplatesWarning );
+			}
+
 			const selectedCount = this.state.selectedPageIds.size;
 			const convertedSelected = this.getSelectedPages().filter(
 				( page ) => page.conversionStatus === 'converted'
@@ -2445,18 +2585,17 @@
 					this.strings.reviewSectionTheme || 'Theme',
 					'theme',
 					( body ) => {
-						const selectedTheme = this.getSelectedTheme();
 						const ul = document.createElement( 'ul' );
 						if ( this.willChangeTheme() ) {
-							const themeName =
-								( selectedTheme && selectedTheme.name ) ||
-								this.state.selectedThemeSlug ||
-								'';
 							ul.appendChild(
 								createElement(
 									'li',
 									null,
-									'Switching to: ' + themeName
+									formatString(
+										this.strings.reviewThemeSwitchingTo ||
+											'Switching the whole site to: %s',
+										this.getTargetThemeName()
+									)
 								)
 							);
 							if ( this.shouldCopyCss() ) {

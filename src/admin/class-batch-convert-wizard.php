@@ -1253,11 +1253,12 @@ class Batch_Convert_Wizard {
 		foreach ( wp_get_themes() as $slug => $theme ) {
 			if ( method_exists( $theme, 'is_block_theme' ) && $theme->is_block_theme() ) {
 				$installed[] = array(
-					'name'        => $theme->get( 'Name' ),
-					'slug'        => $slug,
-					'isActive'    => $slug === $current_stylesheet,
-					'screenshot'  => $theme->get_screenshot(),
-					'isInstalled' => true,
+					'name'         => $theme->get( 'Name' ),
+					'slug'         => $slug,
+					'isActive'     => $slug === $current_stylesheet,
+					'isBlockTheme' => true,
+					'screenshot'   => $theme->get_screenshot(),
+					'isInstalled'  => true,
 				);
 			}
 		}
@@ -1275,9 +1276,10 @@ class Batch_Convert_Wizard {
 				continue;
 			}
 
-			$theme['isInstalled'] = false;
-			$theme['screenshot']  = 'https://s.w.org/themes/' . $theme['slug'] . '/screenshot.png';
-			$suggested[]          = $theme;
+			$theme['isInstalled']  = false;
+			$theme['isBlockTheme'] = true;
+			$theme['screenshot']   = 'https://s.w.org/themes/' . $theme['slug'] . '/screenshot.png';
+			$suggested[]           = $theme;
 		}
 
 		return array(
@@ -3357,7 +3359,7 @@ class Batch_Convert_Wizard {
 			'conflictSkip'             => __( 'Skip those pages', 'migrate-off-elementor' ),
 			'conflictDuplicate'        => __( 'Create duplicates with “(Converted)” suffix', 'migrate-off-elementor' ),
 			'themeStepTitle'           => __( 'Theme compatibility', 'migrate-off-elementor' ),
-			'themeStepDesc'            => __( 'Block themes work best with Gutenberg. You can keep your current theme or switch to a compatible one before conversion.', 'migrate-off-elementor' ),
+			'themeStepDesc'            => __( 'Converted pages work with your current theme, so switching is optional. A new theme changes the design of every page, post and archive on your site, not only the pages you convert.', 'migrate-off-elementor' ),
 			'themeCompatibilityNote'   => __( 'Some themes may require a newer WordPress version.', 'migrate-off-elementor' ),
 			'themeCurrentGood'         => __( 'Your current theme already supports Gutenberg and block templates.', 'migrate-off-elementor' ),
 			'themeSelectPrompt'        => __( 'Select a block theme for best compatibility.', 'migrate-off-elementor' ),
@@ -3372,6 +3374,7 @@ class Batch_Convert_Wizard {
 			'themeStatusInstalled'     => __( 'Installed', 'migrate-off-elementor' ),
 			'themeStatusNotInstalled'  => __( 'Not installed', 'migrate-off-elementor' ),
 			'themeBlockLabel'          => __( 'Block theme', 'migrate-off-elementor' ),
+			'themeClassicLabel'        => __( 'Classic theme', 'migrate-off-elementor' ),
 			'themeSelected'            => __( 'Selected', 'migrate-off-elementor' ),
 			'themeActionUseTheme'      => __( 'Use this theme', 'migrate-off-elementor' ),
 			'themeActionInstall'       => __( 'Install', 'migrate-off-elementor' ),
@@ -3411,7 +3414,20 @@ class Batch_Convert_Wizard {
 			'resultsNeedsAttention'    => __( 'Needs attention', 'migrate-off-elementor' ),
 			'resultsCompleted'         => __( 'Completed successfully', 'migrate-off-elementor' ),
 			'errorNoOutput'            => __( 'No Gutenberg output was generated. The source may contain unsupported widgets or empty content.', 'migrate-off-elementor' ),
-			'themeChangeWarning'       => __( 'Changing the active theme may affect the live site appearance. Test on staging when possible.', 'migrate-off-elementor' ),
+			/* translators: %s: name of the theme the site will switch to */
+			'themeChangeWarning'       => __( 'Switching themes is a site-wide change: %s becomes the active theme for every page and post on your site as soon as the conversion starts, before any page is converted. Test on a staging site first when possible.', 'migrate-off-elementor' ),
+			/* translators: %d: number of Elementor header and footer templates found */
+			'themePartsWarning'        => __( 'Your site uses %d Elementor header and footer templates. Block themes do not display them, so any you do not convert will stop showing on every page of your site, including pages you do not convert.', 'migrate-off-elementor' ),
+			/* translators: %s: name of the theme the site will switch to */
+			'partsNoneThemeWarning'    => __( 'No headers or footers are selected, but this run switches the whole site to %s. Your Elementor headers and footers will disappear from every page and post, and the new theme\'s own header and footer will be shown instead. Select them to convert them, or go back and keep your current theme.', 'migrate-off-elementor' ),
+			/* translators: %s: name of the theme the site will switch to */
+			'partsNoHeaderWarning'     => __( 'No headers are selected, but this run switches the whole site to %s. Your Elementor headers will disappear from every page and post.', 'migrate-off-elementor' ),
+			/* translators: %s: name of the theme the site will switch to */
+			'partsNoFooterWarning'     => __( 'No footers are selected, but this run switches the whole site to %s. Your Elementor footers will disappear from every page and post.', 'migrate-off-elementor' ),
+			/* translators: 1: current theme name, 2: name of the theme the site will switch to */
+			'reviewThemeSwitchNotice'  => __( 'Site-wide change: starting this conversion switches the active theme from %1$s to %2$s for your entire site, before any page is converted. Cancelling the conversion does not switch it back. To undo it, activate %1$s again under Appearance > Themes.', 'migrate-off-elementor' ),
+			/* translators: %s: name of the theme the site will switch to */
+			'reviewThemeSwitchingTo'   => __( 'Switching the whole site to: %s', 'migrate-off-elementor' ),
 			'statusConverted'          => __( 'Converted', 'migrate-off-elementor' ),
 			'statusNotConverted'       => __( 'Not converted', 'migrate-off-elementor' ),
 			'statusPartial'            => __( 'Partial', 'migrate-off-elementor' ),
