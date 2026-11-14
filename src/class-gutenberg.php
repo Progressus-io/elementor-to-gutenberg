@@ -16,6 +16,7 @@ use Progressus\BlockShift\Admin\Data_Migration;
 use Progressus\BlockShift\Admin\Helper\External_CSS_Service;
 use Progressus\BlockShift\Admin\Helper\Elementor_Fonts_Service;
 use Progressus\BlockShift\Admin\Helper\Style_Parser;
+use Progressus\BlockShift\Admin\Widget\Video_Widget_Handler;
 
 /**
  * Class Gutenberg
@@ -61,7 +62,7 @@ class Gutenberg {
 	 * The converted-page wrapper is matched separately by its
 	 * `blockshift-page-` prefix, since its suffix is the post ID.
 	 */
-	private const PLUGIN_CONTENT_CLASSES = array( 'blockshift-full-width-section', 'blockshift-unsupported-widget' );
+	private const PLUGIN_CONTENT_CLASSES = array( 'blockshift-full-width-section', 'blockshift-unsupported-widget', 'blockshift-video', 'blockshift-video-overlay' );
 
 
 	/**
@@ -290,6 +291,70 @@ class Gutenberg {
 		add_filter( 'wp_theme_json_data_default', array( $this, 'inject_elementor_typography_theme_json' ) );
 		add_filter( 'wp_resource_hints', array( $this, 'add_font_resource_hints' ), 10, 2 );
 		add_filter( 'render_block_blockshift/google-map', array( $this, 'apply_google_maps_api_key' ), 10, 2 );
+		add_filter( 'render_block_core/embed', array( $this, 'apply_video_embed_options' ), 10, 2 );
+	}
+
+	/**
+	 * Carry the player options of a converted video onto its embed iframe.
+	 *
+	 * The core/embed block has no autoplay, mute, loop, controls or end-time attributes, so
+	 * the conversion keeps them as query arguments of the block URL and this
+	 * copies the supported ones to the iframe the provider returned.
+	 *
+	 * @param string               $block_content Rendered block HTML.
+	 * @param array<string, mixed> $block         Parsed block, including its attributes.
+	 *
+	 * @return string
+	 */
+	public function apply_video_embed_options( $block_content, $block ): string {
+		$block_content = (string) $block_content;
+		$class_name    = isset( $block['attrs']['className'] ) ? (string) $block['attrs']['className'] : '';
+		$url           = isset( $block['attrs']['url'] ) ? (string) $block['attrs']['url'] : '';
+
+		if ( '' === $url || ! in_array( Video_Widget_Handler::EMBED_CLASS, preg_split( '/\s+/', $class_name ), true ) ) {
+			return $block_content;
+		}
+
+		$query = array();
+		parse_str( (string) wp_parse_url( $url, PHP_URL_QUERY ), $query );
+
+		$options = array();
+		foreach ( array( 'start', 'end', 'autoplay', 'mute', 'muted', 'loop', 'controls' ) as $key ) {
+			if ( isset( $query[ $key ] ) && is_numeric( $query[ $key ] ) ) {
+				$options[ $key ] = (int) $query[ $key ];
+			}
+		}
+
+		if ( ! empty( $options['loop'] ) && ! empty( $query['v'] ) && is_string( $query['v'] ) ) {
+			$options['playlist'] = preg_replace( '/[^a-zA-Z0-9_-]/', '', $query['v'] );
+		}
+
+		$fragment = (string) wp_parse_url( $url, PHP_URL_FRAGMENT );
+		if ( ! preg_match( '/^t=\d+s$/', $fragment ) ) {
+			$fragment = '';
+		}
+
+		if ( empty( $options ) && '' === $fragment ) {
+			return $block_content;
+		}
+
+		$processor = new \WP_HTML_Tag_Processor( $block_content );
+		if ( ! $processor->next_tag( 'iframe' ) ) {
+			return $block_content;
+		}
+
+		$src = (string) $processor->get_attribute( 'src' );
+		if ( '' === $src ) {
+			return $block_content;
+		}
+
+		$src = add_query_arg( $options, strtok( $src, '#' ) );
+		$processor->set_attribute( 'src', '' === $fragment ? $src : $src . '#' . $fragment );
+		if ( ! empty( $options['autoplay'] ) ) {
+			$processor->set_attribute( 'allow', 'autoplay; fullscreen; picture-in-picture; encrypted-media' );
+		}
+
+		return $processor->get_updated_html();
 	}
 
 	/**
