@@ -28,7 +28,7 @@ It reads the Elementor data already stored on each page, rebuilds the layout wit
 
 **WooCommerce:** product grids, cart, checkout, mini-cart, product categories, store notices, "my account", and add-to-cart.
 
-A widget the plugin does not support is replaced by a hidden placeholder and flagged in the Conversion Log. Its content is not carried over, so rebuild that part of the page with blocks.
+HTML widgets, menu anchors, Template widgets, global widgets and the Elementor 4 heading, paragraph, button, image, divider and video elements are converted too. A widget the plugin has no block for keeps its text, links and images as plain headings, paragraphs, buttons and images, with a note only editors see, and is flagged in the Conversion Log. Its layout and behaviour are not carried over, so rebuild that part of the page with blocks.
 
 = What a conversion changes on your site =
 
@@ -46,7 +46,7 @@ Choosing "Keep current theme" in the theme step skips the theme install, the the
 Most pages land very close to the original straight away. Elementor and the block editor handle layout and styling differently, so some things are approximated rather than copied one to one, mostly on busier and highly customised designs. The Conversion Log lists, page by page, what converted cleanly and what is worth a look, and because the result is ordinary block content you fix anything in the editor you already know. Specifically:
 
 * Complex pages usually need a few small tweaks after conversion.
-* Elementor Pro and third-party widgets the plugin does not support are replaced by a hidden placeholder and flagged in the Conversion Log. Their content is not carried over and needs rebuilding with blocks.
+* Elementor Pro and third-party widgets the plugin does not support keep their text, links and images as plain blocks and are flagged in the Conversion Log. Their layout and behaviour are not carried over and need rebuilding with blocks.
 * Motion effects, some pop-ups, and similar builder-only extras may not carry across and can need rebuilding with block tools.
 * Global Elementor styles (theme-wide colors and fonts set in Elementor) are matched as closely as possible but may need a final check against your theme.
 

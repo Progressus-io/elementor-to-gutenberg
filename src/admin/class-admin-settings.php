@@ -14,6 +14,11 @@ use Progressus\BlockShift\Admin\Helper\Alignment_Helper;
 use Progressus\BlockShift\Admin\Helper\External_CSS_Service;
 use Progressus\BlockShift\Admin\Helper\External_Style_Collector;
 use Progressus\BlockShift\Admin\Helper\Visibility_Helper;
+use Progressus\BlockShift\Admin\Helper\Anchor_Helper;
+use Progressus\BlockShift\Admin\Helper\Content_Extractor;
+use Progressus\BlockShift\Admin\Widget\Atomic_Widget_Handler;
+use Progressus\BlockShift\Admin\Widget\Fallback_Widget_Handler;
+use Progressus\BlockShift\Admin\Widget\Html_Widget_Handler;
 use Progressus\BlockShift\Admin\Conversion_Log;
 use Progressus\BlockShift\Admin\Conversion_Log_Admin;
 
@@ -87,6 +92,25 @@ class Admin_Settings {
 	 * @var Conversion_Log|null
 	 */
 	private ?Conversion_Log $conversion_log = null;
+
+	/**
+	 * How deep Template widgets may nest before the conversion stops following them.
+	 */
+	private const MAX_TEMPLATE_DEPTH = 5;
+
+	/**
+	 * Menu Anchor waiting for the next converted block.
+	 *
+	 * @var string
+	 */
+	private string $pending_anchor = '';
+
+	/**
+	 * IDs of the templates currently being converted in place, outermost first.
+	 *
+	 * @var array<int, int>
+	 */
+	private array $template_stack = array();
 
 	/**
 	 * Get global conversion preferences with defaults applied.
@@ -1005,15 +1029,23 @@ class Admin_Settings {
 		Block_Builder::bootstrap( $this->external_css_collector );
 
 		$this->conversion_log = self::is_logging_enabled() ? new Conversion_Log() : null;
+		$this->pending_anchor = '';
+		$this->template_stack = array();
+		Html_Widget_Handler::reset();
 
 		if ( empty( $json_data['content'] ) || ! is_array( $json_data['content'] ) ) {
 			return '';
 		}
 
 		$content = $this->parse_elementor_elements( $json_data['content'] );
+		if ( '' !== $this->pending_anchor ) {
+			$content             .= Anchor_Helper::build_anchor_block( $this->pending_anchor );
+			$this->pending_anchor = '';
+		}
+
 		$content = $this->wrap_converted_content( $content );
 
-		return $content;
+		return Html_Widget_Handler::restore( $content );
 	}
 
 	/**
@@ -1326,7 +1358,183 @@ class Admin_Settings {
 	private function render_element( array $element, bool $is_top_level = false ): string {
 		$settings = is_array( $element['settings'] ?? null ) ? $element['settings'] : array();
 
-		return Visibility_Helper::apply( $this->render_element_markup( $element, $is_top_level ), $settings );
+		$anchor               = $this->pending_anchor;
+		$this->pending_anchor = '';
+
+		$output = Visibility_Helper::apply( $this->render_element_markup( $element, $is_top_level ), $settings );
+		if ( '' === $anchor ) {
+			return $output;
+		}
+
+		if ( '' !== trim( $output ) ) {
+			return Anchor_Helper::apply( $output, $anchor );
+		}
+
+		if ( '' === $this->pending_anchor ) {
+			$this->pending_anchor = $anchor;
+
+			return $output;
+		}
+
+		return Anchor_Helper::build_anchor_block( $anchor );
+	}
+
+	/**
+	 * Convert the widgets that need the pipeline itself rather than a handler.
+	 *
+	 * A Menu Anchor is held back for the next block, and a Template widget or a
+	 * global widget is replaced by the converted template it points to.
+	 *
+	 * @param array  $element     Elementor widget element.
+	 * @param string $widget_type Elementor widget type.
+	 *
+	 * @return string|null Block markup, or null when the widget is an ordinary one.
+	 */
+	private function render_pipeline_widget( array $element, string $widget_type ): ?string {
+		$settings = is_array( $element['settings'] ?? null ) ? $element['settings'] : array();
+
+		if ( 'menu-anchor' === $widget_type ) {
+			$this->pending_anchor = Anchor_Helper::sanitize( (string) ( $settings['anchor'] ?? '' ) );
+
+			return '';
+		}
+
+		$template_id = 0;
+		if ( 'template' === $widget_type ) {
+			$template_id = (int) ( $settings['template_id'] ?? 0 );
+		} elseif ( 'global' === $widget_type || ! empty( $element['templateID'] ) ) {
+			$template_id = (int) ( $element['templateID'] ?? 0 );
+		}
+
+		if ( $template_id <= 0 ) {
+			return 'template' === $widget_type || 'global' === $widget_type ? '' : null;
+		}
+
+		return $this->render_template( $template_id, $widget_type );
+	}
+
+	/**
+	 * Convert the Elementor data of a saved template in place.
+	 *
+	 * @param int    $template_id Template post ID.
+	 * @param string $widget_type Widget type that references the template.
+	 *
+	 * @return string Block markup, empty when the template is missing, unreadable or already being converted.
+	 */
+	private function render_template( int $template_id, string $widget_type ): string {
+		if ( in_array( $template_id, $this->template_stack, true ) || count( $this->template_stack ) >= self::MAX_TEMPLATE_DEPTH ) {
+			if ( null !== $this->conversion_log ) {
+				/* translators: %d: Elementor template ID. */
+				$this->conversion_log->record_warning( $widget_type, sprintf( __( 'Template %d includes itself, so the nested copy was skipped.', 'migrate-off-elementor' ), $template_id ) );
+			}
+
+			return '';
+		}
+
+		$template = get_post( $template_id );
+		if ( ! $template instanceof \WP_Post || ( 'publish' !== $template->post_status && ! current_user_can( 'edit_post', $template_id ) ) ) {
+			return '';
+		}
+
+		$data = get_post_meta( $template_id, '_elementor_data', true );
+		if ( is_string( $data ) ) {
+			$data = json_decode( $data, true );
+		}
+		if ( ! is_array( $data ) || empty( $data ) ) {
+			return '';
+		}
+
+		$this->template_stack[] = $template_id;
+		$output                 = $this->parse_nested_elements( $data );
+		array_pop( $this->template_stack );
+
+		return $output;
+	}
+
+	/**
+	 * Convert an Elementor 4 atomic layout element, which nests other elements.
+	 *
+	 * @param array $element Atomic element such as a div block, flexbox, tabs or accordion.
+	 *
+	 * @return string Block markup.
+	 */
+	private function render_atomic_container( array $element ): string {
+		$children = is_array( $element['elements'] ?? null ) ? $element['elements'] : array();
+		$inner    = trim( $this->parse_nested_elements( $children ) );
+
+		if ( '' === $inner ) {
+			$settings = Atomic_Widget_Handler::unwrap( is_array( $element['settings'] ?? null ) ? $element['settings'] : array() );
+			$inner    = trim( ( new Fallback_Widget_Handler() )->render_items( Content_Extractor::extract( is_array( $settings ) ? $settings : array() ) ) );
+		}
+
+		if ( '' === $inner ) {
+			return '';
+		}
+
+		$direction = Atomic_Widget_Handler::read_flex_direction( $element );
+		if ( 'row' === $direction ) {
+			return Block_Builder::build(
+				'group',
+				array(
+					'layout' => array(
+						'type'     => 'flex',
+						'flexWrap' => 'wrap',
+					),
+				),
+				$inner
+			);
+		}
+
+		return Block_Builder::build( 'group', array( 'layout' => array( 'type' => 'default' ) ), $inner );
+	}
+
+	/**
+	 * Record how a widget converted, warning when content it held did not make it into the output.
+	 *
+	 * @param string $widget_type Elementor widget type.
+	 * @param array  $settings    Widget settings.
+	 * @param string $output      Block markup produced for the widget.
+	 *
+	 * @return void
+	 */
+	private function log_widget_result( string $widget_type, array $settings, string $output ): void {
+		if ( null === $this->conversion_log ) {
+			return;
+		}
+
+		$expected = Content_Extractor::extract_plain_texts( $settings );
+
+		if ( '' === trim( $output ) ) {
+			if ( empty( $expected ) ) {
+				$this->conversion_log->record_empty_output( $widget_type );
+			} else {
+				$this->conversion_log->record_content_lost( $widget_type, $expected );
+			}
+
+			return;
+		}
+
+		// Block comments stay in the haystack because some blocks keep their text in attributes only.
+		$haystack = (string) preg_replace_callback(
+			'/\\\\u([0-9a-fA-F]{4})/',
+			static function ( array $matches ): string {
+				return (string) mb_convert_encoding( pack( 'H*', $matches[1] ), 'UTF-8', 'UTF-16BE' );
+			},
+			str_replace( array( '<!--', '-->' ), ' ', Html_Widget_Handler::restore( $output ) )
+		);
+		$haystack = Content_Extractor::normalize_text( $haystack );
+		$missing  = array();
+		foreach ( $expected as $text ) {
+			if ( false === strpos( $haystack, $text ) ) {
+				$missing[] = $text;
+			}
+		}
+
+		if ( empty( $missing ) ) {
+			$this->conversion_log->record_converted( $widget_type );
+		} else {
+			$this->conversion_log->record_partial_output( $widget_type, $missing );
+		}
 	}
 
 	/**
@@ -1352,24 +1560,41 @@ class Admin_Settings {
 		}
 
 		if ( 'widget' === $el_type || isset( $element['widgetType'] ) ) {
-			$widget_type = $element['widgetType'] ?? '';
-			$handler     = Widget_Handler_Factory::get_handler( $widget_type );
+			$widget_type = (string) ( $element['widgetType'] ?? '' );
+			$settings    = is_array( $element['settings'] ?? null ) ? $element['settings'] : array();
+
+			$output = $this->render_pipeline_widget( $element, $widget_type );
+			if ( null !== $output ) {
+				if ( null !== $this->conversion_log ) {
+					$this->conversion_log->record_converted( $widget_type );
+				}
+
+				return $output;
+			}
+
+			if ( 0 === strpos( $widget_type, 'e-' ) ) {
+				$settings            = Atomic_Widget_Handler::unwrap( $settings );
+				$settings            = is_array( $settings ) ? $settings : array();
+				$element['settings'] = $settings;
+			}
+
+			$handler = Widget_Handler_Factory::get_handler( $widget_type );
 			if ( null !== $handler ) {
 				$output = $handler->handle( $element );
-				if ( null !== $this->conversion_log ) {
-					if ( '' === $output ) {
-						$this->conversion_log->record_empty_output( $widget_type );
-					} else {
-						$this->conversion_log->record_converted( $widget_type );
-					}
-				}
+				$this->log_widget_result( $widget_type, $settings, $output );
+
 				return $output;
 			}
 
 			if ( null !== $this->conversion_log ) {
 				$this->conversion_log->record_unsupported( $widget_type );
 			}
-			return $this->render_placeholder_block( $element );
+
+			return ( new Fallback_Widget_Handler() )->handle( $element );
+		}
+
+		if ( is_string( $el_type ) && 0 === strpos( $el_type, 'e-' ) ) {
+			return $this->render_atomic_container( $element );
 		}
 
 		if ( null !== $this->conversion_log ) {

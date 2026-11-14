@@ -720,12 +720,12 @@ class Batch_Convert_Wizard {
 								'status'        => $_jstatus,
 								'severity'      => $_ci['severity'],
 								'issue_code'    => $_ci['code'],
-								'issue_message' => ( $_entry['type'] ?? '' ) . ': ' . ( $_entry['widget'] ?? '' ),
+								'issue_message' => ( $_entry['type'] ?? '' ) . ': ' . ( $_entry['widget'] ?? '' ) . ( isset( $_entry['message'] ) ? ' - ' . $_entry['message'] : '' ),
 								'widget_type'   => $_entry['widget'] ?? null,
 								'widget_id'     => null,
 								'source_id'     => $_src_id,
 								'target_id'     => $_tgt_id > 0 ? $_tgt_id : null,
-								'action_taken'  => 'unsupported' === ( $_entry['type'] ?? '' ) ? 'placeholder_rendered' : 'empty_output',
+								'action_taken'  => 'unsupported' === ( $_entry['type'] ?? '' ) ? 'fallback_rendered' : (string) ( $_entry['type'] ?? 'empty_output' ),
 								'context'       => array(),
 							)
 						);
@@ -3632,6 +3632,7 @@ class Batch_Convert_Wizard {
 			'time'                => $time,
 			'stats'               => $widget_log['stats'] ?? null,
 			'unsupported_by_type' => $widget_log['unsupported_by_type'] ?? array(),
+			'warnings'            => $widget_log['warnings'] ?? array(),
 		);
 
 		// Store on the original Elementor page.
@@ -3664,6 +3665,7 @@ class Batch_Convert_Wizard {
 				'duration'            => (float) ( $result_entry['duration'] ?? 0 ),
 				'stats'               => $widget_log['stats'] ?? null,
 				'unsupported_by_type' => $widget_log['unsupported_by_type'] ?? array(),
+				'warnings'            => $widget_log['warnings'] ?? array(),
 			)
 		);
 	}
@@ -3836,6 +3838,7 @@ class Batch_Convert_Wizard {
 			'time'                => $time,
 			'stats'               => $widget_log['stats'] ?? null,
 			'unsupported_by_type' => $widget_log['unsupported_by_type'] ?? array(),
+			'warnings'            => $widget_log['warnings'] ?? array(),
 		);
 
 		update_post_meta( $template_id, '_blockshift_last_result', $data );
@@ -3857,6 +3860,7 @@ class Batch_Convert_Wizard {
 				'duration'            => (float) ( $result_entry['duration'] ?? 0 ),
 				'stats'               => $widget_log['stats'] ?? null,
 				'unsupported_by_type' => $widget_log['unsupported_by_type'] ?? array(),
+				'warnings'            => $widget_log['warnings'] ?? array(),
 			)
 		);
 	}

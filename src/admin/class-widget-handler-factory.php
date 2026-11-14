@@ -79,6 +79,14 @@ class Widget_Handler_Factory {
 		'hfe-infocard'              => 'Progressus\BlockShift\Admin\Widget\Generic_Elementor_Widget_Handler',
 		'image-carousel'            => 'Progressus\BlockShift\Admin\Widget\Gallery_Widget_Handler',
 		'image_carousel'            => 'Progressus\BlockShift\Admin\Widget\Gallery_Widget_Handler',
+		'html'                      => 'Progressus\BlockShift\Admin\Widget\Html_Widget_Handler',
+		'e-heading'                 => 'Progressus\BlockShift\Admin\Widget\Atomic_Widget_Handler',
+		'e-paragraph'               => 'Progressus\BlockShift\Admin\Widget\Atomic_Widget_Handler',
+		'e-button'                  => 'Progressus\BlockShift\Admin\Widget\Atomic_Widget_Handler',
+		'e-image'                   => 'Progressus\BlockShift\Admin\Widget\Atomic_Widget_Handler',
+		'e-divider'                 => 'Progressus\BlockShift\Admin\Widget\Atomic_Widget_Handler',
+		'e-youtube'                 => 'Progressus\BlockShift\Admin\Widget\Atomic_Widget_Handler',
+		'e-self-hosted-video'       => 'Progressus\BlockShift\Admin\Widget\Atomic_Widget_Handler',
 	);
 
 	/**
@@ -116,6 +124,7 @@ class Widget_Handler_Factory {
 	 * @return array<int,string>
 	 */
 	public static function get_supported_types(): array {
-		return array_keys( self::$handlers );
+		// Menu anchors, Template widgets and global widgets are converted by the pipeline itself.
+		return array_merge( array_keys( self::$handlers ), array( 'menu-anchor', 'template', 'global' ) );
 	}
 }
