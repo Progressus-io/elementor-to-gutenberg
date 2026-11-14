@@ -26,7 +26,7 @@ class Widget_Handler_Factory {
 		'heading'                   => 'Progressus\BlockShift\Admin\Widget\Heading_Widget_Handler',
 		'text-editor'               => 'Progressus\BlockShift\Admin\Widget\Text_Editor_Widget_Handler',
 		'image'                     => 'Progressus\BlockShift\Admin\Widget\Image_Widget_Handler',
-		'gallery'                   => 'Progressus\BlockShift\Admin\Widget\Image_Widget_Handler',
+		'gallery'                   => 'Progressus\BlockShift\Admin\Widget\Gallery_Widget_Handler',
 		'google_maps'               => 'Progressus\BlockShift\Admin\Widget\Map_Widget_Handler',
 		'button'                    => 'Progressus\BlockShift\Admin\Widget\Button_Widget_Handler',
 		'video'                     => 'Progressus\BlockShift\Admin\Widget\Video_Widget_Handler',

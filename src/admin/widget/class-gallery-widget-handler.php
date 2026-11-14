@@ -60,7 +60,11 @@ class Gallery_Widget_Handler implements Widget_Handler_Interface {
 		}
 
 		// Map thumbnail size
-		$size_slug = isset( $settings['thumbnail_size'] ) ? $settings['thumbnail_size'] : 'full';
+		$is_pro_gallery = 'gallery' === ( $element['widgetType'] ?? '' );
+		$size_slug      = $settings['thumbnail_size'] ?? $settings['thumbnail_image_size'] ?? ( $is_pro_gallery ? 'medium' : 'full' );
+		if ( 'custom' === $size_slug ) {
+			$size_slug = 'full';
+		}
 
 		// Map custom classes
 		$custom_classes = array();
@@ -86,6 +90,13 @@ class Gallery_Widget_Handler implements Widget_Handler_Interface {
 		) {
 			$spacing                          = intval( $settings['image_spacing_custom']['size'] );
 			$style['spacing']['blockGap']     = $spacing . 'px';
+		} elseif ( $is_pro_gallery && isset( $settings['gap']['size'] ) && is_numeric( $settings['gap']['size'] ) ) {
+			$gap_unit = (string) ( $settings['gap']['unit'] ?? 'px' );
+			if ( ! in_array( $gap_unit, array( 'px', 'em', 'rem', '%', 'vw' ), true ) ) {
+				$gap_unit = 'px';
+			}
+
+			$style['spacing']['blockGap'] = (float) $settings['gap']['size'] . $gap_unit;
 		}
 
 		$radius = isset( $settings['image_border_radius'] ) && is_array( $settings['image_border_radius'] )
@@ -122,7 +133,12 @@ class Gallery_Widget_Handler implements Widget_Handler_Interface {
 			'linkTo'    => 'none',
 		);
 
-		$columns = self::extract_columns( $settings, count( $image_ids ) );
+		$column_settings = $settings;
+		if ( $is_pro_gallery && ! isset( $column_settings['columns'] ) ) {
+			$column_settings['columns'] = 4;
+		}
+
+		$columns = self::extract_columns( $column_settings, count( $image_ids ) );
 		if ( $columns > 0 ) {
 			$gallery_attrs['columns'] = $columns;
 		}
@@ -181,7 +197,9 @@ class Gallery_Widget_Handler implements Widget_Handler_Interface {
 	/**
 	 * Collect the images a gallery-like widget carries.
 	 *
-	 * The gallery widget stores them under `wp_gallery`; the image carousel -
+	 * The gallery widget stores them under `wp_gallery`; the Pro gallery under
+	 * `gallery`, or per tab in `galleries[].multiple_gallery` for the multiple
+	 * type, whose tabs are merged into one gallery. The image carousel -
 	 * which has no core equivalent and converts to a gallery too - uses
 	 * `carousel`, and a few Elementor versions use `slides` or `images`.
 	 *
@@ -190,7 +208,18 @@ class Gallery_Widget_Handler implements Widget_Handler_Interface {
 	 * @return array<int, array> Gallery items.
 	 */
 	private static function extract_gallery_items( array $settings ): array {
-		foreach ( array( 'wp_gallery', 'carousel', 'slides', 'images' ) as $key ) {
+		if ( 'multiple' === ( $settings['gallery_type'] ?? '' ) && is_array( $settings['galleries'] ?? null ) ) {
+			$items = array();
+			foreach ( $settings['galleries'] as $gallery ) {
+				if ( is_array( $gallery ) && is_array( $gallery['multiple_gallery'] ?? null ) ) {
+					$items = array_merge( $items, array_values( $gallery['multiple_gallery'] ) );
+				}
+			}
+
+			return $items;
+		}
+
+		foreach ( array( 'wp_gallery', 'gallery', 'carousel', 'slides', 'images' ) as $key ) {
 			$items = $settings[ $key ] ?? null;
 			if ( is_array( $items ) && array() !== $items ) {
 				return $items;

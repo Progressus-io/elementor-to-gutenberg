@@ -28,7 +28,7 @@ It reads the Elementor data already stored on each page, rebuilds the layout wit
 
 **WooCommerce:** product grids, cart, checkout, mini-cart, product categories, store notices, "my account", and add-to-cart.
 
-Anything with no exact block equivalent is converted with a general-purpose fallback and flagged in the Conversion Log.
+A widget the plugin does not support is replaced by a hidden placeholder and flagged in the Conversion Log. Its content is not carried over, so rebuild that part of the page with blocks.
 
 = What a conversion changes on your site =
 
@@ -39,14 +39,14 @@ Converted pages are saved as brand-new pages, and your Elementor originals are n
 * **Additional CSS is merged.** When the theme is switched, the previous theme's Additional CSS is appended to the new theme's Additional CSS, marked with a "Migrated from" comment. It is on by default, you can turn it off in the wizard, and it always runs in automatic mode.
 * **Template parts.** Converted Elementor headers and footers are saved as block template parts. On a block theme, the converted header and footer marked as default take the place of the theme's own header and footer across the whole site.
 
-Choosing "Keep current theme" in the theme step skips all four.
+Choosing "Keep current theme" in the theme step skips the theme install, the theme switch and the Additional CSS merge. On a block theme, converted headers and footers still take the place of the theme's own.
 
 = What to expect =
 
 Most pages land very close to the original straight away. Elementor and the block editor handle layout and styling differently, so some things are approximated rather than copied one to one, mostly on busier and highly customised designs. The Conversion Log lists, page by page, what converted cleanly and what is worth a look, and because the result is ordinary block content you fix anything in the editor you already know. Specifically:
 
 * Complex pages usually need a few small tweaks after conversion.
-* Elementor Pro and third-party widgets with no block equivalent are converted with a safe fallback and flagged, rather than recreated exactly.
+* Elementor Pro and third-party widgets the plugin does not support are replaced by a hidden placeholder and flagged in the Conversion Log. Their content is not carried over and needs rebuilding with blocks.
 * Motion effects, some pop-ups, and similar builder-only extras may not carry across and can need rebuilding with block tools.
 * Global Elementor styles (theme-wide colors and fonts set in Elementor) are matched as closely as possible but may need a final check against your theme.
 
@@ -156,7 +156,7 @@ Lucide line icons (ISC) are inlined uncompressed in assets/js/pgs-icons.js. Sour
 * Improve: Icon boxes, buttons, headings, image boxes, galleries, social icons, testimonials, menus and the site logo convert more faithfully - size, padding, colours and fonts now follow the original.
 * Add: Headers and footers built with Elementor's Header & Footer widgets now convert.
 * Fix: Converted pages use your theme's full-width layout where the original was full width, and no longer scroll sideways.
-* Improve: Converted pages no longer load any Elementor stylesheets or scripts, so they are lighter and faster.
+* Improve: Once Elementor is deactivated, converted pages load none of its stylesheets or scripts, so they are lighter and faster. While Elementor is active, it still loads them.
 * Fix: Converted pages now open cleanly in the WordPress block editor - blocks no longer show an "unexpected or invalid content" warning, so you can edit a converted page like any other.
 * Fix: An icon box now keeps its original heading level instead of always becoming an H3.
 
@@ -166,7 +166,7 @@ Lucide line icons (ISC) are inlined uncompressed in assets/js/pgs-icons.js. Sour
 == Upgrade Notice ==
 
 = 1.1.0 =
-Converted pages now match their Elementor originals far more closely and open cleanly in the block editor. Existing converted pages are unaffected until you convert again.
+Converted pages now match their Elementor originals far more closely and open cleanly in the block editor. Pages converted with 1.0.0 do not change on their own: to get these fixes, convert them again with "Choose specific pages" (custom mode) and the "overwrite" conflict option.
 
 = 1.0.0 =
 Initial release.

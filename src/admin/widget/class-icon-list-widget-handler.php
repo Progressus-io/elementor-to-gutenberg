@@ -141,8 +141,7 @@ class Icon_List_Widget_Handler implements Widget_Handler_Interface {
 				continue;
 			}
 
-			// Match the design: uppercase social names.
-			$label = $label_raw;
+			$label = wp_kses_post( $label_raw );
 
 			$url = '';
 			if (
