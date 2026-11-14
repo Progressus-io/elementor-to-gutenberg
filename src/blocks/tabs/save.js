@@ -1,8 +1,22 @@
-import { useBlockProps } from '@wordpress/block-editor';
+import { useBlockProps, InnerBlocks } from '@wordpress/block-editor';
+
+/**
+ * Drop declarations whose value is empty, so a style object never serializes `color:;`.
+ *
+ * @param {Object} style Style object.
+ * @return {Object} Style object without empty values.
+ */
+const withoutEmptyValues = ( style ) =>
+	Object.fromEntries(
+		Object.entries( style ).filter(
+			( [ , value ] ) => undefined !== value && '' !== value
+		)
+	);
 
 const Save = ( { attributes } ) => {
 	const {
 		tabs,
+		innerTabs,
 		activeTab,
 		tabStyle,
 		tabColor,
@@ -87,6 +101,55 @@ const Save = ( { attributes } ) => {
 		lineHeight: contentTypography?.lineHeight || undefined,
 		fontFamily: contentTypography?.fontFamily || undefined,
 	};
+
+	if ( innerTabs ) {
+		const headerStyle = withoutEmptyValues( tabHeaderStyle );
+		const activeHeaderStyle = withoutEmptyValues( activeTabHeaderStyle );
+
+		return (
+			<div { ...blockProps }>
+				<div
+					className="blockshift-tabs"
+					style={ tabsStyle }
+					data-tab-style={ tabStyle }
+					data-active-tab={ activeTab }
+				>
+					<div
+						className="blockshift-tabs-headers"
+						style={ {
+							display: 'flex',
+							flexDirection:
+								tabStyle === 'vertical' ? 'column' : 'row',
+						} }
+					>
+						{ tabs.map( ( tab, index ) => (
+							<div
+								key={ index }
+								className={ `blockshift-tab-header ${
+									index === activeTab ? 'active' : ''
+								}` }
+								style={
+									index === activeTab
+										? activeHeaderStyle
+										: headerStyle
+								}
+								data-tab-index={ index }
+							>
+								{ tab.title }
+							</div>
+						) ) }
+					</div>
+
+					<div
+						className="blockshift-tabs-content"
+						style={ withoutEmptyValues( contentStyle ) }
+					>
+						<InnerBlocks.Content />
+					</div>
+				</div>
+			</div>
+		);
+	}
 
 	return (
 		<div { ...blockProps }>

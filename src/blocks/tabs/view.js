@@ -3,10 +3,10 @@ document.addEventListener( 'DOMContentLoaded', function () {
 
 	tabsBlocks.forEach( function ( tabsBlock ) {
 		const tabHeaders = tabsBlock.querySelectorAll(
-			'.blockshift-tab-header'
+			':scope > .blockshift-tabs-headers > .blockshift-tab-header'
 		);
 		const tabContents = tabsBlock.querySelectorAll(
-			'.blockshift-tab-content'
+			':scope > .blockshift-tabs-content > .blockshift-tab-content'
 		);
 
 		// Store original styles for each tab header
@@ -23,6 +23,7 @@ document.addEventListener( 'DOMContentLoaded', function () {
 
 		// Set initial active state
 		setActiveTab( initialActiveTab );
+		tabsBlock.classList.add( 'is-ready' );
 
 		// Add click event listeners to tab headers
 		tabHeaders.forEach( function ( header, index ) {
