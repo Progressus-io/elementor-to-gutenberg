@@ -640,19 +640,51 @@ class Admin_Settings {
 	 * @return int New page ID.
 	 */
 	public function insert_new_page( $page_id, $blocks ): int {
-		$new_page_id = wp_insert_post( array(
-				'post_title'   => get_the_title( $page_id ) . ' (Gutenberg)',
-				'post_type'    => 'page',
-				'post_status'  => 'publish',
-				'post_content' => wp_slash( $blocks ),
+		$source = get_post( $page_id );
+		if ( ! $source instanceof \WP_Post ) {
+			return 0;
+		}
+
+		$new_page_id = wp_insert_post(
+			array_merge(
+				array(
+					'post_title'   => get_the_title( $page_id ) . ' (Gutenberg)',
+					'post_type'    => 'page',
+					'post_content' => wp_slash( $blocks ),
+				),
+				self::get_source_visibility_fields( $source )
 			)
 		);
 
-		if ( $new_page_id && ! is_wp_error( $new_page_id ) ) {
+		if ( ! $new_page_id || is_wp_error( $new_page_id ) ) {
+			return 0;
+		}
+
+		if ( self::is_copy_meta_enabled() ) {
 			self::copy_source_post_meta( (int) $page_id, (int) $new_page_id );
 		}
 
-		return $new_page_id;
+		return (int) $new_page_id;
+	}
+
+	/**
+	 * Get the fields that decide who can see a post, so a converted copy is never more visible than its source.
+	 *
+	 * Covers the status, password, publish date (a scheduled source stays scheduled)
+	 * and parent. The values are slashed for wp_insert_post().
+	 *
+	 * @param \WP_Post $source The source post.
+	 *
+	 * @return array Post fields for wp_insert_post().
+	 */
+	public static function get_source_visibility_fields( \WP_Post $source ): array {
+		return array(
+			'post_status'   => $source->post_status,
+			'post_password' => wp_slash( $source->post_password ),
+			'post_date'     => $source->post_date,
+			'post_date_gmt' => $source->post_date_gmt,
+			'post_parent'   => (int) $source->post_parent,
+		);
 	}
 
 	/**
@@ -690,9 +722,14 @@ class Admin_Settings {
 		if ( ! empty( $meta ) ) {
 			$skip_keys = array( '_edit_lock', '_edit_last', '_elementor_data', '_wp_page_template', 'wp_template', '_thumbnail_id' );
 
+			// Elementor's data, the plugin's bookkeeping and third-party caches built from the Elementor layout.
+			$skip_prefixes = array( '_elementor_', '_blockshift_', '_uag_', '_astra_sites_' );
+
 			foreach ( $meta as $key => $values ) {
-				if ( 0 === strpos( $key, '_elementor_' ) || 0 === strpos( $key, '_blockshift_' ) ) {
-					continue;
+				foreach ( $skip_prefixes as $skip_prefix ) {
+					if ( 0 === strpos( $key, $skip_prefix ) ) {
+						continue 2;
+					}
 				}
 				if ( in_array( $key, $skip_keys, true ) ) {
 					continue;
@@ -1252,6 +1289,26 @@ class Admin_Settings {
 			}
 
 			$blocks .= $this->render_element( $element, true );
+		}
+
+		return $blocks;
+	}
+
+	/**
+	 * Convert Elementor elements that sit inside a widget, such as the item containers of a nested accordion.
+	 *
+	 * @param array $elements The Elementor elements array.
+	 *
+	 * @return string The converted Gutenberg block content.
+	 */
+	public function parse_nested_elements( array $elements ): string {
+		$blocks = '';
+		foreach ( $elements as $element ) {
+			if ( ! is_array( $element ) ) {
+				continue;
+			}
+
+			$blocks .= $this->render_element( $element, false );
 		}
 
 		return $blocks;

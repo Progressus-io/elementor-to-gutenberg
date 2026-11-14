@@ -21,7 +21,7 @@ class Shortcode_Widget_Handler implements Widget_Handler_Interface {
 	 */
 	public function handle( array $element ): string {
 		$settings  = is_array( $element['settings'] ?? null ) ? $element['settings'] : array();
-		$shortcode = isset( $settings['shortcode'] ) ? trim( (string) $settings['shortcode'] ) : '';
+		$shortcode = isset( $settings['shortcode'] ) ? $this->sanitize_shortcode_text( (string) $settings['shortcode'] ) : '';
 
 		if ( '' === $shortcode ) {
 			return '';
@@ -56,6 +56,31 @@ class Shortcode_Widget_Handler implements Widget_Handler_Interface {
 		}
 
 		return $this->serialize_block( 'core/shortcode', array(), $shortcode );
+	}
+
+	/**
+	 * Keep the shortcode tokens of the widget text and escape everything else.
+	 *
+	 * The core/shortcode block prints its text as raw HTML, so markup around a
+	 * token, or inside an unregistered one, would otherwise run on the front end.
+	 *
+	 * @param string $text The widget's shortcode text.
+	 *
+	 * @return string The sanitized shortcode text.
+	 */
+	private function sanitize_shortcode_text( string $text ): string {
+		$parts = preg_split( '/(\[\[?\/?[A-Za-z0-9_-]+[^\[\]]*\]\]?)/', $text, -1, PREG_SPLIT_DELIM_CAPTURE );
+		if ( ! is_array( $parts ) ) {
+			return '';
+		}
+
+		$output = '';
+		foreach ( $parts as $index => $part ) {
+			// Odd indexes are the captured shortcode tokens.
+			$output .= 1 === $index % 2 ? wp_strip_all_tags( $part ) : esc_html( $part );
+		}
+
+		return trim( $output );
 	}
 
 	/**

@@ -39,6 +39,11 @@ class Feedback_Builder {
 			return null;
 		}
 
+		// Only the user who ran the job may report on it, as with polling and cancelling.
+		if ( get_current_user_id() !== (int) ( $job['user_id'] ?? 0 ) ) {
+			return null;
+		}
+
 		$selected_source_ids = array_values( array_unique( array_filter( array_map( 'intval', $selected_source_ids ) ) ) );
 		if ( empty( $selected_source_ids ) ) {
 			return null;

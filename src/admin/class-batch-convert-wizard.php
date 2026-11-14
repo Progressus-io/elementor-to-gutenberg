@@ -426,12 +426,6 @@ class Batch_Convert_Wizard {
 			);
 		}
 
-		$theme_result = $this->maybe_switch_theme( $change_theme, $new_theme, $copy_custom_css, $mode );
-		$warnings     = array();
-		if ( is_wp_error( $theme_result ) ) {
-			$warnings[] = $this->build_theme_warning_from_error( $theme_result );
-		}
-
 		$pages     = $this->prepare_job_pages( $selected_page_ids );
 		$templates = $this->prepare_job_templates(
 			$mode,
@@ -441,12 +435,19 @@ class Batch_Convert_Wizard {
 			$default_footer
 		);
 
+		// Validate the selection before the theme step, so a rejected run never installs or switches a theme.
 		if ( empty( $pages ) && empty( $templates['headers'] ) && empty( $templates['footers'] ) ) {
 			wp_send_json_error(
 				array(
 					'message' => esc_html__( 'Select at least one page or template before starting a conversion.', 'migrate-off-elementor' ),
 				)
 			);
+		}
+
+		$theme_result = $this->maybe_switch_theme( $change_theme, $new_theme, $copy_custom_css, $mode );
+		$warnings     = array();
+		if ( is_wp_error( $theme_result ) ) {
+			$warnings[] = $this->build_theme_warning_from_error( $theme_result );
 		}
 
 		$options = $this->build_job_options( $mode, $conflict_policy, $skip_converted );
@@ -1278,7 +1279,7 @@ class Batch_Convert_Wizard {
 
 			$theme['isInstalled']  = false;
 			$theme['isBlockTheme'] = true;
-			$theme['screenshot']   = 'https://s.w.org/themes/' . $theme['slug'] . '/screenshot.png';
+			$theme['screenshot']   = $this->get_remote_theme_screenshot( (string) $theme['slug'] );
 			$suggested[]           = $theme;
 		}
 
@@ -1287,6 +1288,46 @@ class Batch_Convert_Wizard {
 			'installedBlockThemes' => $installed,
 			'suggestedCoreThemes'  => $suggested,
 		);
+	}
+
+	/**
+	 * Get the screenshot URL of a theme that is not installed, from the WordPress.org themes API.
+	 *
+	 * The result is cached for a day, or for an hour when the API fails, and an
+	 * empty string means the card shows no image.
+	 *
+	 * @param string $slug Theme slug.
+	 *
+	 * @return string The screenshot URL, or an empty string.
+	 */
+	private function get_remote_theme_screenshot( string $slug ): string {
+		$cache_key = 'blockshift_theme_screenshot_' . sanitize_key( $slug );
+		$cached    = get_transient( $cache_key );
+		if ( is_string( $cached ) ) {
+			return $cached;
+		}
+
+		require_once ABSPATH . 'wp-admin/includes/theme.php';
+
+		$api = themes_api(
+			'theme_information',
+			array(
+				'slug'   => $slug,
+				'fields' => array(
+					'sections'       => false,
+					'screenshot_url' => true,
+				),
+			)
+		);
+
+		$screenshot = ! is_wp_error( $api ) && ! empty( $api->screenshot_url ) ? esc_url_raw( (string) $api->screenshot_url ) : '';
+		if ( 0 === strpos( $screenshot, '//' ) ) {
+			$screenshot = 'https:' . $screenshot;
+		}
+
+		set_transient( $cache_key, $screenshot, '' === $screenshot ? HOUR_IN_SECONDS : DAY_IN_SECONDS );
+
+		return $screenshot;
 	}
 
 	/**
@@ -2366,8 +2407,6 @@ class Batch_Convert_Wizard {
 			$content = Admin_Settings::instance()->wrap_content_full_width( $content );
 		}
 
-		$content = Admin_Settings::instance()->replace_page_wrapper_token( $content, $source_id );
-
 		$write_id           = 0;
 		$created_new_target = false;
 
@@ -2398,13 +2437,14 @@ class Batch_Convert_Wizard {
 			);
 		} else {
 			$save               = wp_insert_post(
-				array(
-					'post_title'   => get_the_title( $source_id ) . ' (Gutenberg)',
-					'post_type'    => get_post_type( $source_id ),
-					'post_status'  => get_post_status( $source_id ),
-					'post_author'  => (int) $post->post_author,
-					'post_parent'  => (int) $post->post_parent,
-					'post_content' => wp_slash( $content ),
+				array_merge(
+					array(
+						'post_title'   => get_the_title( $source_id ) . ' (Gutenberg)',
+						'post_type'    => get_post_type( $source_id ),
+						'post_author'  => (int) $post->post_author,
+						'post_content' => wp_slash( $content ),
+					),
+					Admin_Settings::get_source_visibility_fields( $post )
 				),
 				true
 			);
@@ -2440,7 +2480,8 @@ class Batch_Convert_Wizard {
 			}
 		}
 
-		Admin_Settings::instance()->finalize_converted_post( $write_id, $content, $created_new_target );
+		// The page wrapper token becomes the target ID here, in the content and in its stylesheet alike.
+		Admin_Settings::instance()->finalize_converted_post( $write_id, $content, true );
 
 		$is_full_width_source = $this->is_full_width_source_page( $source_id, $decoded, $json_data );
 		$target_template      = $this->determine_target_template_slug( $source_id, $is_full_width_source );
@@ -3387,7 +3428,7 @@ class Batch_Convert_Wizard {
 			/* translators: 1: total selected pages, 2: pages to convert, 3: pages to skip */
 			'reviewSummary'            => __( '%1$d pages selected — %2$d will be converted, %3$d skipped.', 'migrate-off-elementor' ),
 			'startConversion'          => __( 'Start Conversion', 'migrate-off-elementor' ),
-			'backgroundInfo'           => __( 'Conversion runs in the background. You can safely close this page.', 'migrate-off-elementor' ),
+			'backgroundInfo'           => __( 'Keep this tab open until the conversion finishes. The conversion only runs while this page is open.', 'migrate-off-elementor' ),
 			'progressTitle'            => __( 'Progress & Results', 'migrate-off-elementor' ),
 			'converted'                => __( 'Converted', 'migrate-off-elementor' ),
 			'skipped'                  => __( 'Skipped', 'migrate-off-elementor' ),
@@ -3410,12 +3451,12 @@ class Batch_Convert_Wizard {
 			'reviewSectionTheme'       => __( 'Theme', 'migrate-off-elementor' ),
 			'reviewSectionTemplates'   => __( 'Templates', 'migrate-off-elementor' ),
 			'reviewSectionConflicts'   => __( 'Conflicts', 'migrate-off-elementor' ),
-			'safetyNote'               => __( 'Recommended to run on a staging environment if your site is live. Conversion runs in the background — you can safely close this page.', 'migrate-off-elementor' ),
+			'safetyNote'               => __( 'Recommended to run on a staging environment if your site is live. Keep this tab open until the conversion finishes.', 'migrate-off-elementor' ),
 			'resultsNeedsAttention'    => __( 'Needs attention', 'migrate-off-elementor' ),
 			'resultsCompleted'         => __( 'Completed successfully', 'migrate-off-elementor' ),
 			'errorNoOutput'            => __( 'No Gutenberg output was generated. The source may contain unsupported widgets or empty content.', 'migrate-off-elementor' ),
 			/* translators: %s: name of the theme the site will switch to */
-			'themeChangeWarning'       => __( 'Switching themes is a site-wide change: %s becomes the active theme for every page and post on your site as soon as the conversion starts, before any page is converted. Test on a staging site first when possible.', 'migrate-off-elementor' ),
+			'themeChangeWarning'       => __( 'Switching themes is a site-wide change: %s becomes the active theme for every page and post on your site as soon as the conversion starts, before any page is converted. Test on a staging site first when possible. Elementor also clears its cached CSS for every page when the theme changes.', 'migrate-off-elementor' ),
 			/* translators: %d: number of Elementor header and footer templates found */
 			'themePartsWarning'        => __( 'Your site uses %d Elementor header and footer templates. Block themes do not display them, so any you do not convert will stop showing on every page of your site, including pages you do not convert.', 'migrate-off-elementor' ),
 			/* translators: %s: name of the theme the site will switch to */

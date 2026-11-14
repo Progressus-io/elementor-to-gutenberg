@@ -30,7 +30,7 @@ class Accordion_Widget_Handler implements Widget_Handler_Interface {
 	 */
 	public function handle( array $element ): string {
 		$settings   = is_array( $element['settings'] ?? null ) ? $element['settings'] : array();
-		$accordions = is_array( $settings['accordions'] ?? null ) ? $settings['accordions'] : array();
+		$accordions = $this->get_items( $settings );
 
 		if ( empty( $accordions ) ) {
 			return '';
@@ -52,8 +52,8 @@ class Accordion_Widget_Handler implements Widget_Handler_Interface {
 		$items_html = array();
 
 		foreach ( $accordions as $item ) {
-			$title   = isset( $item['title'] ) ? wp_kses_post( $item['title'] ) : '';
-			$content = isset( $item['content'] ) ? wp_kses_post( $item['content'] ) : '';
+			$title   = wp_kses_post( (string) ( $item['tab_title'] ?? $item['title'] ?? '' ) );
+			$content = wp_kses_post( (string) ( $item['tab_content'] ?? $item['content'] ?? '' ) );
 
 			if ( '' === trim( $title ) || '' === trim( $content ) ) {
 				continue;
@@ -117,6 +117,25 @@ class Accordion_Widget_Handler implements Widget_Handler_Interface {
 		}
 
 		return Block_Builder::build( 'html', array(), implode( '', $items_html ) );
+	}
+
+	/**
+	 * Get the accordion items from the widget settings.
+	 *
+	 * Elementor stores them under `tabs`; `accordions` is kept as a fallback for older data.
+	 *
+	 * @param array $settings The widget settings.
+	 *
+	 * @return array The accordion items.
+	 */
+	private function get_items( array $settings ): array {
+		foreach ( array( 'tabs', 'accordions' ) as $key ) {
+			if ( ! empty( $settings[ $key ] ) && is_array( $settings[ $key ] ) ) {
+				return array_filter( $settings[ $key ], 'is_array' );
+			}
+		}
+
+		return array();
 	}
 
 	/**

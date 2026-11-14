@@ -68,11 +68,13 @@ class Heading_Widget_Handler implements Widget_Handler_Interface {
 
 		$this->register_heading_external_styles( $unique_class, $settings, $is_heading ? 'wp-block-heading' : 'wp-block-paragraph' );
 
+		$title_html = $this->wrap_in_link( wp_kses_post( $title ), $settings['link'] ?? null );
+
 		if ( ! $is_heading ) {
 			return Block_Builder::build_prepared(
 				'paragraph',
 				$attrs,
-				static function ( array $prepared_attrs ) use ( $title ): string {
+				static function ( array $prepared_attrs ) use ( $title_html ): string {
 					$classes = array( 'wp-block-paragraph' );
 
 					if ( isset( $prepared_attrs['textAlign'] ) && is_string( $prepared_attrs['textAlign'] ) && '' !== $prepared_attrs['textAlign'] ) {
@@ -101,7 +103,7 @@ class Heading_Widget_Handler implements Widget_Handler_Interface {
 
 					return sprintf(
 						'<p %2$s>%1$s</p>',
-						wp_kses_post( $title ),
+						$title_html,
 						Html_Attribute_Builder::build( $inner_attrs )
 					);
 				}
@@ -111,7 +113,7 @@ class Heading_Widget_Handler implements Widget_Handler_Interface {
 		return Block_Builder::build_prepared(
 			'heading',
 			$attrs,
-			static function ( array $prepared_attrs ) use ( $header_size, $title ): string {
+			static function ( array $prepared_attrs ) use ( $header_size, $title_html ): string {
 				$classes = array( 'wp-block-heading' );
 
 				if ( isset( $prepared_attrs['textAlign'] ) && is_string( $prepared_attrs['textAlign'] ) && '' !== $prepared_attrs['textAlign'] ) {
@@ -141,11 +143,44 @@ class Heading_Widget_Handler implements Widget_Handler_Interface {
 				return sprintf(
 					'<%1$s %3$s>%2$s</%1$s>',
 					$header_size,
-					wp_kses_post( $title ),
+					$title_html,
 					Html_Attribute_Builder::build( $inner_attrs )
 				);
 			}
 		);
+	}
+
+	/**
+	 * Wrap the heading text in the link the widget sets, if any.
+	 *
+	 * @param string $title_html The sanitized heading text.
+	 * @param mixed  $link       The Elementor link setting.
+	 *
+	 * @return string The heading text, linked when the widget has a URL.
+	 */
+	private function wrap_in_link( string $title_html, $link ): string {
+		$url = is_array( $link ) ? esc_url_raw( trim( (string) ( $link['url'] ?? '' ) ) ) : '';
+		if ( '' === $url ) {
+			return $title_html;
+		}
+
+		$link_attrs = array( 'href' => $url );
+		$rel        = array();
+
+		if ( ! empty( $link['is_external'] ) ) {
+			$link_attrs['target'] = '_blank';
+			$rel[]                = 'noopener';
+		}
+
+		if ( ! empty( $link['nofollow'] ) ) {
+			$rel[] = 'nofollow';
+		}
+
+		if ( ! empty( $rel ) ) {
+			$link_attrs['rel'] = implode( ' ', $rel );
+		}
+
+		return sprintf( '<a %1$s>%2$s</a>', Html_Attribute_Builder::build( $link_attrs ), $title_html );
 	}
 
 	/**

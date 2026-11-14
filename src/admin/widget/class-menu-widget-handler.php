@@ -257,7 +257,10 @@ class Menu_Widget_Handler implements Widget_Handler_Interface {
 	}
 
 	/**
-	 * Build a navigation-link block with nested items.
+	 * Build a navigation-link block, or a navigation-submenu block for an item with children.
+	 *
+	 * Serialize_block() writes inner blocks only where innerContent holds a null
+	 * placeholder, so each child gets one.
 	 *
 	 * @param array $items_by_id Items keyed by ID with children.
 	 * @param int   $item_id Menu item ID.
@@ -283,11 +286,11 @@ class Menu_Widget_Handler implements Widget_Handler_Interface {
 		}
 
 		return array(
-			'blockName'    => 'core/navigation-link',
+			'blockName'    => empty( $inner_blocks ) ? 'core/navigation-link' : 'core/navigation-submenu',
 			'attrs'        => $attributes,
 			'innerBlocks'  => $inner_blocks,
 			'innerHTML'    => '',
-			'innerContent' => array(),
+			'innerContent' => array_fill( 0, count( $inner_blocks ), null ),
 		);
 	}
 
