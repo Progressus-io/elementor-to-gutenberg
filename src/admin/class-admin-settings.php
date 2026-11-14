@@ -13,6 +13,7 @@ use Progressus\BlockShift\Admin\Helper\Style_Parser;
 use Progressus\BlockShift\Admin\Helper\Alignment_Helper;
 use Progressus\BlockShift\Admin\Helper\External_CSS_Service;
 use Progressus\BlockShift\Admin\Helper\External_Style_Collector;
+use Progressus\BlockShift\Admin\Helper\Visibility_Helper;
 use Progressus\BlockShift\Admin\Conversion_Log;
 use Progressus\BlockShift\Admin\Conversion_Log_Admin;
 
@@ -1315,11 +1316,28 @@ class Admin_Settings {
 	}
 
 	/**
-	 * Render an Elementor element into block markup.
+	 * Render an Elementor element into block markup, keeping its "hide on device" settings.
 	 *
-	 * @param array $element Elementor element.
+	 * @param array $element      Elementor element.
+	 * @param bool  $is_top_level Whether the element sits at the top of the page.
+	 *
+	 * @return string Block markup.
 	 */
 	private function render_element( array $element, bool $is_top_level = false ): string {
+		$settings = is_array( $element['settings'] ?? null ) ? $element['settings'] : array();
+
+		return Visibility_Helper::apply( $this->render_element_markup( $element, $is_top_level ), $settings );
+	}
+
+	/**
+	 * Render an Elementor element into block markup.
+	 *
+	 * @param array $element      Elementor element.
+	 * @param bool  $is_top_level Whether the element sits at the top of the page.
+	 *
+	 * @return string Block markup.
+	 */
+	private function render_element_markup( array $element, bool $is_top_level = false ): string {
 		$el_type = $element['elType'] ?? '';
 		if ( 'container' === $el_type ) {
 			return $this->render_container( $element, $is_top_level );
@@ -1384,7 +1402,7 @@ class Admin_Settings {
 		if ( count( $column_children ) >= 2 ) {
 			$inner_html = '';
 			foreach ( $column_children as $column_element ) {
-				$content = $this->render_legacy_column( $column_element );
+				$content = $this->render_element( $column_element );
 				if ( '' === trim( $content ) ) {
 					continue;
 				}
@@ -2352,11 +2370,13 @@ class Admin_Settings {
 				continue;
 			}
 
-			$inner_html .= Block_Builder::build(
-				'group',
-				array( 'layout' => array( 'type' => 'constrained' ) ),
-				$content
-			);
+			$cell_attributes = array( 'layout' => array( 'type' => 'constrained' ) );
+			$hide_classes    = Visibility_Helper::get_class_name( is_array( $child['element']['settings'] ?? null ) ? $child['element']['settings'] : array() );
+			if ( '' !== $hide_classes ) {
+				$cell_attributes['className'] = $hide_classes;
+			}
+
+			$inner_html .= Block_Builder::build( 'group', $cell_attributes, $content );
 		}
 
 		$inner_html = trim( (string) $inner_html );
@@ -2479,9 +2499,14 @@ class Admin_Settings {
 				$columns_alignments[]              = $vertical_align;
 			}
 
+			$hide_classes = Visibility_Helper::get_class_name( $settings );
+			if ( '' !== $hide_classes ) {
+				$column_attrs['className'] = $hide_classes;
+			}
+
 			$attrs_json = '';
 			if ( ! empty( $column_attrs ) ) {
-				$attrs_json = ' ' . wp_json_encode( $column_attrs );
+				$attrs_json = ' ' . serialize_block_attributes( $column_attrs );
 			}
 
 			$style_attr  = '';
@@ -2493,6 +2518,10 @@ class Admin_Settings {
 
 			if ( null !== $vertical_align ) {
 				$class_names[] = 'is-vertically-aligned-' . sanitize_html_class( $vertical_align );
+			}
+
+			if ( '' !== $hide_classes ) {
+				$class_names[] = $hide_classes;
 			}
 
 			$inner_html .= sprintf(
