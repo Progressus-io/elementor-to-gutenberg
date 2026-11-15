@@ -465,6 +465,11 @@ class Batch_Convert_Wizard {
 		$options                       = $this->build_job_options( $mode, $conflict_policy, $skip_converted );
 		$options['reconvert_outdated'] = $reconvert_old;
 
+		// Taking over the theme's header and footer is opt-in. Left unsaid, it follows the theme choice:
+		// on when the run switches theme, off when the current theme is kept.
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified in verify_ajax_request()
+		$options['replace_theme_parts'] = isset( $_POST['replaceThemeParts'] ) ? ! empty( $_POST['replaceThemeParts'] ) : $change_theme;
+
 		$job_id = uniqid( 'blockshift_', true );
 
 		$job = array(
@@ -2653,6 +2658,18 @@ class Batch_Convert_Wizard {
 			return $result;
 		}
 
+		// The conflict policy covers template parts as it does pages: an existing part is only rewritten on "overwrite".
+		$conflict_policy = isset( $options['conflict_policy'] ) ? sanitize_key( (string) $options['conflict_policy'] ) : 'skip';
+		if ( $existing_target && 'skip' === $conflict_policy ) {
+			$edit_link = get_edit_post_link( $existing_target, '' );
+
+			$result['message']  = esc_html__( 'Skipped: this template already has a converted template part.', 'migrate-off-elementor' );
+			$result['target']   = $existing_target;
+			$result['view_url'] = $edit_link ? (string) $edit_link : admin_url( 'post.php?post=' . $existing_target . '&action=edit' );
+
+			return $result;
+		}
+
 		$json_data = get_post_meta( $post->ID, '_elementor_data', true );
 		if ( empty( $json_data ) ) {
 			$message   = esc_html__( 'Skipped: Elementor data not found.', 'migrate-off-elementor' );
@@ -2710,7 +2727,7 @@ class Batch_Convert_Wizard {
 			return $result;
 		}
 
-		$target_id = $this->save_template_part( $template_info, $post, $content, $existing_target );
+		$target_id = $this->save_template_part( $template_info, $post, $content, 'duplicate' === $conflict_policy ? 0 : $existing_target );
 		if ( ! $target_id ) {
 			$message           = esc_html__( 'Failed: could not save Gutenberg template.', 'migrate-off-elementor' );
 			$result['status']  = 'error';
@@ -2726,15 +2743,16 @@ class Batch_Convert_Wizard {
 		$this->store_template_part_meta( $target_id, $template_info );
 		$this->update_template_part_role( $target_id, (string) $template_info['role'], (string) $template_info['type'] );
 
-		// force it to become the actual default template part in the active block theme.
+		// Only a run that asked for it turns the default part into the block theme's own header or footer.
+		$replace_theme_parts = ! empty( $options['replace_theme_parts'] );
 		$is_global   = ! empty( $template_info['is_global'] );
 		$has_targets = ! empty( $template_info['target_pages'] ) && is_array( $template_info['target_pages'] );
 
-		if ( self::TEMPLATE_ROLE_DEFAULT_HEADER === $template_info['role'] && 'header' === $template_info['type'] ) {
+		if ( $replace_theme_parts && self::TEMPLATE_ROLE_DEFAULT_HEADER === $template_info['role'] && 'header' === $template_info['type'] ) {
 			$this->force_block_theme_default_header( $target_id );
 		}
 
-		if ( self::TEMPLATE_ROLE_DEFAULT_FOOTER === $template_info['role'] && 'footer' === $template_info['type'] ) {
+		if ( $replace_theme_parts && self::TEMPLATE_ROLE_DEFAULT_FOOTER === $template_info['role'] && 'footer' === $template_info['type'] ) {
 			$this->force_block_theme_default_footer( $target_id );
 		}
 
@@ -2788,6 +2806,8 @@ class Batch_Convert_Wizard {
 		);
 
 		if ( $existing_target ) {
+			// An existing part keeps its slug: renaming it would silently undo, or redo, a site-wide header or footer.
+			unset( $postarr['post_name'] );
 			$postarr['ID'] = $existing_target;
 			$saved         = wp_update_post( $postarr, true );
 		} else {
@@ -3419,6 +3439,8 @@ class Batch_Convert_Wizard {
 			/* translators: 1: tab label, 2: item count */
 			'tabCountLabel'            => __( '%1$s (%2$d)', 'migrate-off-elementor' ),
 			'skipConverted'            => __( 'Skip pages that were already converted', 'migrate-off-elementor' ),
+			'replaceThemeParts'        => __( 'Replace the theme\'s header and footer with the converted default header and footer', 'migrate-off-elementor' ),
+			'replaceThemePartsHelp'    => __( 'Site-wide change on a block theme: the converted header and footer marked as default are shown on every page and post of the site instead of the theme\'s own, whether or not that page was converted. Leave this off to only save them as template parts, which you can place yourself in the Site Editor.', 'migrate-off-elementor' ),
 			/* translators: %d: number of pages converted by an older version of the plugin. */
 			'reconvertOutdated'        => __( 'Convert again the %d pages converted by an older version of the plugin', 'migrate-off-elementor' ),
 			'reconvertOutdatedHelp'    => __( 'Their converted copies were written with older block markup and can show "This block contains unexpected or invalid content" in the editor. Converting again replaces the content of each copy, including any edits made to it since.', 'migrate-off-elementor' ),

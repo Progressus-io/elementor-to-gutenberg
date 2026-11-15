@@ -37,9 +37,9 @@ Converted pages are saved as brand-new pages, and your Elementor originals are n
 * **Theme install.** If you choose a block theme in the wizard's theme step that is not installed, the plugin downloads and installs it from WordPress.org. It only runs if your account may install themes.
 * **Theme switch.** If you choose a theme other than the active one, the plugin switches the site's active theme when the run starts. That changes how the whole site looks to visitors, not only the converted pages.
 * **Additional CSS is merged.** When the theme is switched, the previous theme's Additional CSS is appended to the new theme's Additional CSS, marked with a "Migrated from" comment. It is on by default, you can turn it off in the wizard, and it always runs in automatic mode.
-* **Template parts.** Converted Elementor headers and footers are saved as block template parts. On a block theme, the converted header and footer marked as default take the place of the theme's own header and footer across the whole site.
+* **Template parts.** Converted Elementor headers and footers are saved as block template parts. They only take the place of a block theme's own header and footer, across the whole site, when "Replace the theme's header and footer" is ticked on the Header & Footer step. It is ticked by default when the run switches theme and unticked when you keep the current theme. A template part that already exists is rewritten only with the "overwrite" conflict option.
 
-Choosing "Keep current theme" in the theme step skips the theme install, the theme switch and the Additional CSS merge. On a block theme, converted headers and footers still take the place of the theme's own.
+Choosing "Keep current theme" in the theme step skips the theme install, the theme switch and the Additional CSS merge, and leaves the theme's own header and footer in place unless you tick the option above.
 
 = What to expect =
 

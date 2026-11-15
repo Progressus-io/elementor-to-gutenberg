@@ -130,6 +130,7 @@
 				defaultFooterId: 0,
 				skipConverted: true,
 				reconvertOutdated: false,
+				replaceThemeParts: null,
 				conflictPolicy: 'skip',
 				tablePage: 1,
 				perPage: 10,
@@ -326,6 +327,18 @@
 				this.themes.currentTheme &&
 				this.themes.currentTheme.isBlockTheme
 			);
+		}
+
+		/**
+		 * Whether the run should make the converted default header and footer the theme's own.
+		 * Until the user decides, it follows the theme choice: on when switching theme, off when keeping it.
+		 *
+		 * @return {boolean} True when the theme's header and footer are to be replaced.
+		 */
+		shouldReplaceThemeParts() {
+			return null === this.state.replaceThemeParts
+				? this.willChangeTheme()
+				: this.state.replaceThemeParts;
 		}
 
 		willChangeTheme() {
@@ -854,6 +867,7 @@
 			const themePayload = this.getThemePayload();
 			Object.assign( payload, themePayload );
 
+			payload.replaceThemeParts = this.shouldReplaceThemeParts() ? 1 : 0;
 			payload.headerTemplates = selectedHeaders;
 			payload.footerTemplates = selectedFooters;
 			payload.defaultHeader = this.userCanManageTemplateParts
@@ -2229,6 +2243,36 @@
 				this.renderTemplatesGroup( 'footer', '' )
 			);
 			container.appendChild( footerSection );
+
+			if ( this.userCanManageTemplateParts ) {
+				const replaceWrapper = createElement(
+					'div',
+					'blockshift-skip-converted-wrapper blockshift-replace-theme-parts-wrapper'
+				);
+				const replaceCheckbox = document.createElement( 'input' );
+				replaceCheckbox.type = 'checkbox';
+				replaceCheckbox.checked = this.shouldReplaceThemeParts();
+				replaceCheckbox.id = 'blockshift-replace-theme-parts';
+				replaceCheckbox.addEventListener( 'change', () => {
+					this.state.replaceThemeParts = replaceCheckbox.checked;
+					this.render();
+				} );
+				const replaceLabel = document.createElement( 'label' );
+				replaceLabel.htmlFor = 'blockshift-replace-theme-parts';
+				replaceLabel.textContent =
+					this.strings.replaceThemeParts ||
+					'Replace the theme’s header and footer with the converted default header and footer';
+				replaceWrapper.appendChild( replaceCheckbox );
+				replaceWrapper.appendChild( replaceLabel );
+				replaceWrapper.appendChild(
+					createElement(
+						'p',
+						'description',
+						this.strings.replaceThemePartsHelp || ''
+					)
+				);
+				container.appendChild( replaceWrapper );
+			}
 
 			const templatesWarning = this.renderUnconvertedTemplatesWarning();
 			if ( templatesWarning ) {
