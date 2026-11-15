@@ -2745,8 +2745,8 @@ class Batch_Convert_Wizard {
 
 		// Only a run that asked for it turns the default part into the block theme's own header or footer.
 		$replace_theme_parts = ! empty( $options['replace_theme_parts'] );
-		$is_global   = ! empty( $template_info['is_global'] );
-		$has_targets = ! empty( $template_info['target_pages'] ) && is_array( $template_info['target_pages'] );
+		$is_global           = ! empty( $template_info['is_global'] );
+		$has_targets         = ! empty( $template_info['target_pages'] ) && is_array( $template_info['target_pages'] );
 
 		if ( $replace_theme_parts && self::TEMPLATE_ROLE_DEFAULT_HEADER === $template_info['role'] && 'header' === $template_info['type'] ) {
 			$this->force_block_theme_default_header( $target_id );
