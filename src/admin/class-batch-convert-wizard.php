@@ -695,6 +695,35 @@ class Batch_Convert_Wizard {
 				$result          = $template_result;
 				$view_url        = $template_result['view_url'];
 
+				if ( ! empty( $template_result['warning'] ) ) {
+					$template_result['message'] = trim( $template_result['message'] . ' ' . $template_result['warning'] );
+					$job['warnings']            = isset( $job['warnings'] ) && is_array( $job['warnings'] ) ? $job['warnings'] : array();
+					$job['warnings'][]          = array(
+						'code'    => 'theme_part_takeover_failed',
+						'message' => $template_result['warning'],
+						'details' => '',
+					);
+
+					if ( '' !== $run_id && Admin_Settings::is_logging_enabled() ) {
+						Diagnostic_Logger::log_issue(
+							$run_id,
+							array(
+								'item_id'       => $index,
+								'status'        => 'SUCCESS_WITH_WARNINGS',
+								'severity'      => 'high',
+								'issue_code'    => 'THEME_PART_TAKEOVER_FAILED',
+								'issue_message' => $template_result['warning'],
+								'widget_type'   => null,
+								'widget_id'     => null,
+								'source_id'     => (int) $template_info['id'],
+								'target_id'     => (int) $template_result['target'],
+								'action_taken'  => 'template_part_saved_without_takeover',
+								'context'       => array(),
+							)
+						);
+					}
+				}
+
 				$result_entry = array(
 					'id'                => (int) $template_info['id'],
 					'title'             => $template_info['title'],
@@ -2450,10 +2479,15 @@ class Batch_Convert_Wizard {
 		}
 
 		if ( $write_id > 0 ) {
-			$save = wp_update_post(
-				array(
-					'ID'           => $write_id,
-					'post_content' => wp_slash( $content ),
+			$existing_copy = get_post( $write_id );
+			$save          = wp_update_post(
+				array_merge(
+					array(
+						'ID'           => $write_id,
+						'post_content' => wp_slash( $content ),
+					),
+					// The copy now holds the source's current content, so it follows a source that was hidden since.
+					$existing_copy instanceof WP_Post ? Admin_Settings::get_visibility_downgrade_fields( $post, $existing_copy ) : array()
 				),
 				true
 			);
@@ -2644,7 +2678,10 @@ class Batch_Convert_Wizard {
 
 		if ( ! empty( $options['skip_converted'] ) && 'success' === $last_status && $existing_target ) {
 			$this->update_template_part_role( $existing_target, (string) $template_info['role'], (string) $template_info['type'] );
-			$message = esc_html__( 'Skipped: template already converted.', 'migrate-off-elementor' );
+			$takeover = $this->maybe_take_over_theme_part( (int) $existing_target, $template_info, $options );
+			$message  = trim( esc_html__( 'Skipped: template already converted.', 'migrate-off-elementor' ) . ' ' . $takeover['note'] );
+
+			$result['warning'] = $takeover['warning'];
 
 			$edit_link = $existing_target ? get_edit_post_link( $existing_target, '' ) : '';
 			if ( $existing_target && ! $edit_link ) {
@@ -2663,7 +2700,10 @@ class Batch_Convert_Wizard {
 		if ( $existing_target && 'skip' === $conflict_policy ) {
 			$edit_link = get_edit_post_link( $existing_target, '' );
 
-			$result['message']  = esc_html__( 'Skipped: this template already has a converted template part.', 'migrate-off-elementor' );
+			$takeover = $this->maybe_take_over_theme_part( (int) $existing_target, $template_info, $options );
+
+			$result['message']  = trim( esc_html__( 'Skipped: this template already has a converted template part.', 'migrate-off-elementor' ) . ' ' . $takeover['note'] );
+			$result['warning']  = $takeover['warning'];
 			$result['target']   = $existing_target;
 			$result['view_url'] = $edit_link ? (string) $edit_link : admin_url( 'post.php?post=' . $existing_target . '&action=edit' );
 
@@ -2743,18 +2783,9 @@ class Batch_Convert_Wizard {
 		$this->store_template_part_meta( $target_id, $template_info );
 		$this->update_template_part_role( $target_id, (string) $template_info['role'], (string) $template_info['type'] );
 
-		// Only a run that asked for it turns the default part into the block theme's own header or footer.
-		$replace_theme_parts = ! empty( $options['replace_theme_parts'] );
-		$is_global           = ! empty( $template_info['is_global'] );
-		$has_targets         = ! empty( $template_info['target_pages'] ) && is_array( $template_info['target_pages'] );
+		$has_targets = ! empty( $template_info['target_pages'] ) && is_array( $template_info['target_pages'] );
 
-		if ( $replace_theme_parts && self::TEMPLATE_ROLE_DEFAULT_HEADER === $template_info['role'] && 'header' === $template_info['type'] ) {
-			$this->force_block_theme_default_header( $target_id );
-		}
-
-		if ( $replace_theme_parts && self::TEMPLATE_ROLE_DEFAULT_FOOTER === $template_info['role'] && 'footer' === $template_info['type'] ) {
-			$this->force_block_theme_default_footer( $target_id );
-		}
+		$takeover = $this->maybe_take_over_theme_part( $target_id, $template_info, $options );
 
 		if ( $has_targets ) {
 
@@ -2772,7 +2803,8 @@ class Batch_Convert_Wizard {
 		}
 
 		$result['status']   = 'success';
-		$result['message']  = $message;
+		$result['message']  = trim( $message . ' ' . $takeover['note'] );
+		$result['warning']  = $takeover['warning'];
 		$result['target']   = $target_id;
 		$result['view_url'] = (string) $edit_link;
 
@@ -2855,149 +2887,166 @@ class Batch_Convert_Wizard {
 	}
 
 	/**
-	 * Force a converted template part to act as the default FSE header.
+	 * Make a converted template part the block theme's own header or footer.
 	 *
-	 * @param int $target_id Template part post ID.
+	 * A block theme shows the part whose slug is `header` or `footer`. A part the
+	 * user customised already holds that slug, so it is renamed aside - never
+	 * deleted - before the converted part takes the slug.
+	 *
+	 * @param int    $target_id Converted template part ID.
+	 * @param string $area      Either header or footer.
+	 *
+	 * @return array{set_aside: array<int, string>, unconfirmed: bool}|WP_Error Slugs the previous parts were moved to and
+	 *                                                                       whether no theme template was found using the slug, or why the takeover did not happen.
 	 */
-	private function force_block_theme_default_header( int $target_id ): void {
-		// Renaming a part to `header` makes it the site-wide header of a block
-		// theme, which is an edit_theme_options action.
+	private function take_over_theme_part( int $target_id, string $area ) {
+		$label = 'header' === $area ? __( 'header', 'migrate-off-elementor' ) : __( 'footer', 'migrate-off-elementor' );
+
 		if ( ! self::current_user_can_manage_template_parts() ) {
-			return;
+			/* translators: %s: header or footer. */
+			return new WP_Error( 'blockshift_takeover_capability', sprintf( __( 'The converted %s was saved as a template part but did not replace the theme\'s own, because your account may not edit theme options.', 'migrate-off-elementor' ), $label ) );
 		}
 
 		if ( ! function_exists( 'wp_is_block_theme' ) || ! wp_is_block_theme() ) {
-			return;
+			/* translators: %s: header or footer. */
+			return new WP_Error( 'blockshift_takeover_classic_theme', sprintf( __( 'The converted %s was saved as a template part but did not replace the theme\'s own, because the active theme is not a block theme.', 'migrate-off-elementor' ), $label ) );
 		}
 
 		$post = get_post( $target_id );
 		if ( ! $post instanceof WP_Post || 'wp_template_part' !== $post->post_type ) {
-			return;
+			/* translators: %s: header or footer. */
+			return new WP_Error( 'blockshift_takeover_missing_part', sprintf( __( 'The converted %s template part could not be found, so the theme\'s own was left in place.', 'migrate-off-elementor' ), $label ) );
 		}
 
 		$theme = get_stylesheet();
+		wp_set_post_terms( $target_id, array( $theme ), 'wp_theme', false );
+		wp_set_post_terms( $target_id, array( $area ), 'wp_template_part_area', false );
 
-		// Attach the template part to the current theme and mark it as header area.
-		if ( $theme ) {
-			wp_set_post_terms( $target_id, array( $theme ), 'wp_theme', false );
-		}
-		wp_set_post_terms( $target_id, array( 'header' ), 'wp_template_part_area', false );
-
-		// Find any existing "header" template parts.
-		$existing_query = new WP_Query(
+		$holders = get_posts(
 			array(
 				'post_type'      => 'wp_template_part',
 				'post_status'    => array( 'publish', 'draft', 'pending', 'future', 'private' ),
-				'posts_per_page' => - 1,
-				'name'           => 'header',
+				'posts_per_page' => -1,
+				'name'           => $area,
+				'post__not_in'   => array( $target_id ),
+				'fields'         => 'ids',
 				// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
 				'tax_query'      => array(
-					'relation' => 'AND',
 					array(
 						'taxonomy' => 'wp_theme',
 						'field'    => 'slug',
 						'terms'    => array( $theme ),
 					),
-					array(
-						'taxonomy' => 'wp_template_part_area',
-						'field'    => 'slug',
-						'terms'    => array( 'header' ),
-					),
 				),
 			)
 		);
 
-		if ( $existing_query->have_posts() ) {
-			foreach ( $existing_query->posts as $existing ) {
-				$existing_id = (int) $existing->ID;
-				if ( $existing_id === $target_id ) {
-					continue;
-				}
+		$set_aside = array();
+		foreach ( $holders as $holder_id ) {
+			$holder_id = (int) $holder_id;
+			$new_slug  = $area . '-replaced-' . $holder_id;
+			$renamed   = wp_update_post(
+				array(
+					'ID'        => $holder_id,
+					'post_name' => $new_slug,
+				),
+				true
+			);
 
-				update_post_meta( $existing_id, '_blockshift_template_role', self::TEMPLATE_ROLE_EXTRA );
+			if ( is_wp_error( $renamed ) ) {
+				/* translators: 1: header or footer, 2: error message. */
+				return new WP_Error( 'blockshift_takeover_rename_failed', sprintf( __( 'The converted %1$s did not replace the theme\'s own, because the existing customised part could not be set aside: %2$s', 'migrate-off-elementor' ), $label, $renamed->get_error_message() ) );
 			}
-		}
 
-		wp_reset_postdata();
+			update_post_meta( $holder_id, '_blockshift_template_role', self::TEMPLATE_ROLE_EXTRA );
+			update_post_meta( $holder_id, '_blockshift_replaced_slug', $area );
+			update_post_meta( $holder_id, '_blockshift_replaced_by', $target_id );
+			$set_aside[] = (string) get_post_field( 'post_name', $holder_id );
+		}
 
 		wp_update_post(
 			array(
 				'ID'        => $target_id,
-				'post_name' => 'header',
+				'post_name' => $area,
 			)
+		);
+		clean_post_cache( $target_id );
+
+		$slug = (string) get_post_field( 'post_name', $target_id );
+		if ( $slug !== $area ) {
+			/* translators: 1: header or footer, 2: slug the theme uses, 3: slug the part was given. */
+			return new WP_Error( 'blockshift_takeover_slug_taken', sprintf( __( 'The converted %1$s did not replace the theme\'s own: the slug "%2$s" is still taken, so the part was saved as "%3$s". Rename or remove the other "%2$s" template part in the Site Editor, then run the conversion again.', 'migrate-off-elementor' ), $label, $area, $slug ) );
+		}
+
+		return array(
+			'set_aside'   => $set_aside,
+			'unconfirmed' => ! $this->theme_templates_use_part( $area ),
 		);
 	}
 
 	/**
-	 * Force a converted template part to act as the default FSE footer.
+	 * Whether any template of the active theme includes a template part with the given slug.
 	 *
-	 * @param int $target_id Template part post ID.
+	 * @param string $slug Template part slug.
+	 *
+	 * @return bool
 	 */
-	private function force_block_theme_default_footer( int $target_id ): void {
-		// Renaming a part to `footer` makes it the site-wide footer of a block
-		// theme, which is an edit_theme_options action.
-		if ( ! self::current_user_can_manage_template_parts() ) {
-			return;
+	private function theme_templates_use_part( string $slug ): bool {
+		if ( ! function_exists( 'get_block_templates' ) ) {
+			return false;
 		}
 
-		if ( ! function_exists( 'wp_is_block_theme' ) || ! wp_is_block_theme() ) {
-			return;
-		}
-
-		$post = get_post( $target_id );
-		if ( ! $post instanceof WP_Post || 'wp_template_part' !== $post->post_type ) {
-			return;
-		}
-
-		$theme = get_stylesheet();
-
-		if ( $theme ) {
-			wp_set_post_terms( $target_id, array( $theme ), 'wp_theme', false );
-		}
-		wp_set_post_terms( $target_id, array( 'footer' ), 'wp_template_part_area', false );
-
-		$existing_query = new WP_Query(
-			array(
-				'post_type'      => 'wp_template_part',
-				'post_status'    => array( 'publish', 'draft', 'pending', 'future', 'private' ),
-				'posts_per_page' => - 1,
-				'name'           => 'footer',
-				// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
-				'tax_query'      => array(
-					'relation' => 'AND',
-					array(
-						'taxonomy' => 'wp_theme',
-						'field'    => 'slug',
-						'terms'    => array( $theme ),
-					),
-					array(
-						'taxonomy' => 'wp_template_part_area',
-						'field'    => 'slug',
-						'terms'    => array( 'footer' ),
-					),
-				),
-			)
-		);
-
-		if ( $existing_query->have_posts() ) {
-			foreach ( $existing_query->posts as $existing ) {
-				$existing_id = (int) $existing->ID;
-				if ( $existing_id === $target_id ) {
-					continue;
-				}
-
-				update_post_meta( $existing_id, '_blockshift_template_role', self::TEMPLATE_ROLE_EXTRA );
+		$pattern = '/<!--\s*wp:template-part\s+\{[^>]*"slug"\s*:\s*"' . preg_quote( $slug, '/' ) . '"/';
+		foreach ( get_block_templates( array(), 'wp_template' ) as $template ) {
+			if ( 1 === preg_match( $pattern, (string) $template->content ) ) {
+				return true;
 			}
 		}
 
-		wp_reset_postdata();
+		return false;
+	}
 
-		wp_update_post(
-			array(
-				'ID'        => $target_id,
-				'post_name' => 'footer',
-			)
+	/**
+	 * Take over the theme's header or footer when the run asked for it and the part is the default one.
+	 *
+	 * @param int   $target_id     Converted template part ID.
+	 * @param array $template_info Template info array.
+	 * @param array $options       Job options.
+	 *
+	 * @return array{note: string, warning: string} A note for the result message and a warning when the takeover did not happen.
+	 */
+	private function maybe_take_over_theme_part( int $target_id, array $template_info, array $options ): array {
+		$outcome = array(
+			'note'    => '',
+			'warning' => '',
 		);
+
+		$type       = 'header' === $template_info['type'] ? 'header' : 'footer';
+		$is_default = in_array( $template_info['role'], array( self::TEMPLATE_ROLE_DEFAULT_HEADER, self::TEMPLATE_ROLE_DEFAULT_FOOTER ), true );
+		if ( empty( $options['replace_theme_parts'] ) || ! $is_default || $target_id <= 0 ) {
+			return $outcome;
+		}
+
+		$takeover = $this->take_over_theme_part( $target_id, $type );
+		if ( is_wp_error( $takeover ) ) {
+			$outcome['warning'] = $takeover->get_error_message();
+
+			return $outcome;
+		}
+
+		if ( ! empty( $takeover['set_aside'] ) ) {
+			/* translators: %s: comma-separated template part slugs. */
+			$outcome['note'] = sprintf( __( 'It now replaces the theme\'s own; the previous template part was kept as "%s".', 'migrate-off-elementor' ), implode( '", "', $takeover['set_aside'] ) );
+		} else {
+			$outcome['note'] = __( 'It now replaces the theme\'s own.', 'migrate-off-elementor' );
+		}
+
+		if ( $takeover['unconfirmed'] ) {
+			/* translators: 1: header or footer, 2: template part slug. */
+			$outcome['warning'] = sprintf( __( 'The converted %1$s was saved under the slug "%2$s", but no template of the active theme includes a template part with that slug, so it may not be shown. Check the theme\'s templates in the Site Editor.', 'migrate-off-elementor' ), $type, $type );
+		}
+
+		return $outcome;
 	}
 
 	/**

@@ -714,6 +714,39 @@ class Admin_Settings {
 	}
 
 	/**
+	 * Get the fields that hide an existing copy whose source has become less visible since it was converted.
+	 *
+	 * Rewriting a copy puts the source's current content into it, so a published
+	 * copy must not keep showing a source that is now private, unpublished or
+	 * behind a password. A copy is only ever made less visible here: one the user
+	 * unpublished or protected stays as it is.
+	 *
+	 * @param \WP_Post $source The source post.
+	 * @param \WP_Post $copy   The existing converted copy.
+	 *
+	 * @return array Post fields for wp_update_post(), empty when nothing needs to change.
+	 */
+	public static function get_visibility_downgrade_fields( \WP_Post $source, \WP_Post $copy ): array {
+		$fields = array();
+
+		if ( 'publish' === $copy->post_status && in_array( $source->post_status, array( 'draft', 'pending', 'private', 'future' ), true ) ) {
+			$fields['post_status'] = $source->post_status;
+
+			if ( 'future' === $source->post_status ) {
+				$fields['post_date']     = $source->post_date;
+				$fields['post_date_gmt'] = $source->post_date_gmt;
+				$fields['edit_date']     = true;
+			}
+		}
+
+		if ( '' !== $source->post_password && '' === $copy->post_password ) {
+			$fields['post_password'] = wp_slash( $source->post_password );
+		}
+
+		return $fields;
+	}
+
+	/**
 	 * Copy the source page's non-Elementor meta onto the converted page.
 	 *
 	 * Page layout lives in post meta for most themes - Astra stores
@@ -1442,6 +1475,11 @@ class Admin_Settings {
 
 		$template = get_post( $template_id );
 		if ( ! $template instanceof \WP_Post || ( 'publish' !== $template->post_status && ! current_user_can( 'edit_post', $template_id ) ) ) {
+			if ( null !== $this->conversion_log ) {
+				/* translators: %d: Elementor template ID. */
+				$this->conversion_log->record_warning( $widget_type, sprintf( __( 'Template %d is missing or cannot be read, so its content was not converted.', 'migrate-off-elementor' ), $template_id ) );
+			}
+
 			return '';
 		}
 
@@ -1450,6 +1488,11 @@ class Admin_Settings {
 			$data = json_decode( $data, true );
 		}
 		if ( ! is_array( $data ) || empty( $data ) ) {
+			if ( null !== $this->conversion_log ) {
+				/* translators: %d: Elementor template ID. */
+				$this->conversion_log->record_warning( $widget_type, sprintf( __( 'Template %d has no Elementor content, so nothing was converted from it.', 'migrate-off-elementor' ), $template_id ) );
+			}
+
 			return '';
 		}
 

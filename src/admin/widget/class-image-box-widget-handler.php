@@ -174,7 +174,8 @@ class Image_Box_Widget_Handler implements Widget_Handler_Interface {
 			$title_html = '<h3 class="image-box-title" style="' . implode( ';', $title_style_parts ) . '">' . wp_kses_post( $title ) . '</h3>';
 		}
 
-		$link_url = isset( $settings['link']['url'] ) ? trim( (string) $settings['link']['url'] ) : '';
+		// One value feeds both the markup and the block attribute, so save() writes the same href.
+		$link_url = isset( $settings['link']['url'] ) ? esc_url_raw( trim( (string) $settings['link']['url'] ) ) : '';
 		if ( '' !== $link_url && ( '' !== $title_html || '' !== $image_url ) ) {
 			$is_external = ! empty( $settings['link']['is_external'] );
 			$rel         = trim( ( ! empty( $settings['link']['nofollow'] ) ? 'nofollow ' : '' ) . ( $is_external ? 'noreferrer' : '' ) );
@@ -269,7 +270,7 @@ class Image_Box_Widget_Handler implements Widget_Handler_Interface {
 			'wrapperMargin'             => $margin_css,
 			'objectFit'                 => isset( $settings['image_object_fit'] ) ? (string) $settings['image_object_fit'] : 'cover',
 			'objectPosition'            => isset( $settings['image_object_position'] ) ? (string) $settings['image_object_position'] : 'center center',
-			'link'                      => isset( $settings['link']['url'] ) ? (string) $settings['link']['url'] : '',
+			'link'                      => $link_url,
 			'linkTarget'                => ! empty( $settings['link']['is_external'] ),
 			'nofollow'                  => ! empty( $settings['link']['nofollow'] ),
 			'title'                     => wp_kses_post( $title ),

@@ -90,7 +90,7 @@ Yes. Converted pages use standard WordPress blocks, so they work with any modern
 
 = Is any of my data sent to outside services? =
 
-The conversion itself runs entirely on your own site. A few optional features do connect to outside services (any Google fonts/maps/videos your page already used, and sending feedback if you choose to). Each one is explained in full in the **External services** section below, and the feedback feature only ever runs when you choose to start it.
+The conversion itself runs entirely on your own site. A few optional features do connect to outside services (any Google fonts, maps and YouTube, Vimeo, Dailymotion or VideoPress videos your page already used, and sending feedback if you choose to). Each one is explained in full in the **External services** section below, and the feedback feature only ever runs when you choose to start it.
 
 == External services ==
 
@@ -112,11 +112,17 @@ This service is provided by Google. Terms: https://policies.google.com/terms —
 
 = Embedded maps and videos =
 
-If a converted page contains a map or video, the page embeds it from Google Maps (https://maps.google.com) or YouTube (https://www.youtube.com), the same way the original Elementor page did. These embeds load when such a page is viewed, and also in the block editor while a Map block is open, so that you can see a preview of the map you are editing. In the editor the preview is rebuilt once you stop typing, not on every keystroke.
+If a converted page contains a map or video, the page embeds it from the service the original Elementor page used: Google Maps (https://maps.google.com), YouTube (https://www.youtube.com), Vimeo (https://vimeo.com), Dailymotion (https://www.dailymotion.com) or VideoPress (https://videopress.com). A video the Elementor page loaded from an external file address is loaded from that same address. These embeds load when such a page is viewed, and also in the block editor while a Map block is open, so that you can see a preview of the map you are editing. In the editor the preview is rebuilt once you stop typing, not on every keystroke.
 
 A Google Maps embed is a page served by Google inside an iframe. Once it loads, Google's own code in that iframe fetches map tiles and its supporting resources from further Google hosts: https://www.google.com, https://maps.googleapis.com, https://places.googleapis.com, https://maps.gstatic.com, https://fonts.googleapis.com and https://fonts.gstatic.com. The plugin sends Google only the address or the coordinates stored in the block, plus the zoom level.
 
-Provided by Google. Terms: https://policies.google.com/terms and https://www.youtube.com/t/terms — Privacy policy: https://policies.google.com/privacy
+Google Maps and YouTube are provided by Google. Terms: https://policies.google.com/terms and https://www.youtube.com/t/terms — Privacy policy: https://policies.google.com/privacy
+
+Vimeo is provided by Vimeo. Terms: https://vimeo.com/terms — Privacy policy: https://vimeo.com/privacy
+
+Dailymotion is provided by Dailymotion. Terms: https://legal.dailymotion.com/en/terms-of-use/ — Privacy policy: https://legal.dailymotion.com/en/privacy-policy/
+
+VideoPress is provided by Automattic. Terms: https://wordpress.com/tos/ — Privacy policy: https://automattic.com/privacy/
 
 = Google Maps Embed API =
 
@@ -149,16 +155,30 @@ Lucide line icons (ISC) are inlined uncompressed in assets/js/pgs-icons.js. Sour
 == Changelog ==
 
 = 1.1.0 =
-* Improve: Converted pages now closely match the original Elementor design - row/column layout, vertical alignment, spacing and section widths all follow the original.
-* Improve: Section and container backgrounds now carry over, including overlays and colours taken from your theme or Elementor palette.
-* Fix: Background and content images reuse the image already in your Media Library instead of downloading a fresh copy each time or linking back to the old site.
-* Improve: Images keep their set size and alignment.
-* Improve: Icon boxes, buttons, headings, image boxes, galleries, social icons, testimonials, menus and the site logo convert more faithfully - size, padding, colours and fonts now follow the original.
-* Add: Headers and footers built with Elementor's Header & Footer widgets now convert.
-* Fix: Converted pages use your theme's full-width layout where the original was full width, and no longer scroll sideways.
-* Improve: Once Elementor is deactivated, converted pages load none of its stylesheets or scripts, so they are lighter and faster. While Elementor is active, it still loads them.
-* Fix: Converted pages now open cleanly in the WordPress block editor - blocks no longer show an "unexpected or invalid content" warning, so you can edit a converted page like any other.
-* Fix: An icon box now keeps its original heading level instead of always becoming an H3.
+* Add: Headers and footers built with Header & Footer Elementor now convert.
+* Add: Tabs, nested tabs, videos (uploaded, YouTube, Vimeo, Dailymotion and VideoPress) and the HTML widget now convert.
+* Add: Menu anchors, Template widgets and global widgets now convert.
+* Add: Widgets the plugin cannot convert keep their text, links and images instead of disappearing, with a note in the editor.
+* Add: Contact forms now support dropdown, radio, checkbox, acceptance, hidden and multi-step fields, and have spam protection.
+* Add: "Hide on desktop, tablet and mobile" settings now carry over.
+* Add: The Conversion Wizard can convert again the pages converted by an older version of the plugin.
+* Add: The Conversion Wizard warns you that switching theme changes your whole site, and that Elementor headers and footers you did not convert will stop showing.
+* Improve: Converted pages look much closer to the original: layout, spacing, backgrounds, colours, fonts and section widths now match.
+* Improve: Images, buttons, headings, icon boxes, galleries, social icons, testimonials, menus and the site logo keep their original size and style.
+* Improve: Once Elementor is deactivated, converted pages load none of its styles or scripts, so they load faster.
+* Fix: A converted page is now as private as the original. Drafts stay drafts, and private, password-protected and scheduled pages keep their protection and date.
+* Fix: Accordions and nested accordions now keep their titles and content.
+* Fix: The Pro gallery, menus with sub-menus and linked headings now convert correctly.
+* Fix: Images already in your Media Library are reused instead of being downloaded again or linked to the old site.
+* Fix: Converted pages open in the block editor without "unexpected or invalid content" warnings.
+* Fix: Converted pages use your theme's full-width layout when the original was full width, and no longer scroll sideways.
+* Fix: An icon box keeps its original heading level instead of always becoming an H3.
+* Fix: Icon list labels and the shortcode widget can no longer be used to add unsafe code.
+* Fix: Feedback can only be sent for your own conversions.
+* Fix: Your theme's header and footer are replaced only when you choose that option in the wizard.
+* Fix: The plugin's styles and scripts load only on converted pages, not on any page that mentions "blockshift".
+* Fix: The Conversion Wizard now shows "Classic theme" for classic themes instead of always saying "Block theme".
+* Tweak: The Conversion Wizard now asks you to keep the tab open while it converts.
 
 = 1.0.0 =
 * Initial release.

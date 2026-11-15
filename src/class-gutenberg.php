@@ -918,8 +918,9 @@ class Gutenberg {
 	/**
 	 * Find the block a submission belongs to, on a post that still declares it.
 	 *
-	 * The registry is tried first. A form on a page saved before the registry
-	 * existed is found through the page the submission came from, then recorded.
+	 * The page the submission came from is tried first, then the registry, which
+	 * covers a form that lives in a template part or a synced pattern. A form on a
+	 * page saved before the registry existed is recorded once it is found.
 	 *
 	 * @param string $form_key Submitted form ID, or form name for a form without one.
 	 * @param string $page_url URL of the page the form was submitted from.
@@ -927,11 +928,16 @@ class Gutenberg {
 	 * @return array{post_id: int, attrs: array<string, mixed>}|null The declaring post and block attributes, or null.
 	 */
 	private function find_declared_form( string $form_key, string $page_url ): ?array {
-		$registry   = get_option( self::OPTION_FORM_REGISTRY, array() );
-		$candidates = is_array( $registry ) && isset( $registry[ $form_key ] ) ? array_map( 'intval', (array) $registry[ $form_key ] ) : array();
+		$registry = get_option( self::OPTION_FORM_REGISTRY, array() );
 
+		// The page the form was sent from goes first: a form key is only unique within one post.
+		$candidates = array();
 		foreach ( array( $page_url, (string) wp_get_referer() ) as $url ) {
 			$candidates[] = '' === $url ? 0 : (int) url_to_postid( $url );
+		}
+
+		if ( is_array( $registry ) && isset( $registry[ $form_key ] ) ) {
+			$candidates = array_merge( $candidates, array_map( 'intval', (array) $registry[ $form_key ] ) );
 		}
 
 		foreach ( array_unique( array_filter( $candidates ) ) as $post_id ) {
@@ -1010,9 +1016,12 @@ class Gutenberg {
 				}
 			}
 
+			// A choice field written by an earlier release lists no options and renders as a plain input.
+			$is_legacy = empty( $allowed );
+
 			$values = array();
 			foreach ( (array) $raw as $value ) {
-				if ( is_scalar( $value ) && in_array( (string) $value, $allowed, true ) ) {
+				if ( is_scalar( $value ) && '' !== (string) $value && ( $is_legacy || in_array( (string) $value, $allowed, true ) ) ) {
 					$values[] = sanitize_text_field( (string) $value );
 				}
 			}
@@ -1039,28 +1048,41 @@ class Gutenberg {
 	}
 
 	/**
-	 * Count a submission against the sender's address and report whether it is over the limit.
+	 * The transient that counts the submissions accepted from the sender's address.
+	 *
+	 * @return string Transient name.
+	 */
+	private static function get_form_throttle_key(): string {
+		$address = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
+
+		return 'blockshift_form_rl_' . md5( wp_hash( $address ) );
+	}
+
+	/**
+	 * Report whether the sender's address is over the submission limit.
 	 *
 	 * @return bool True when this address has submitted too often in the current window.
 	 */
 	private function is_form_submission_throttled(): bool {
-		$address = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
-		$key     = 'blockshift_form_rl_' . md5( $address );
-		$count   = (int) get_transient( $key );
-
 		/**
 		 * Filters how many form submissions one IP address may make per throttle window.
 		 *
 		 * @param int $limit Submissions allowed per window.
 		 */
 		$limit = (int) apply_filters( 'blockshift_form_submission_limit', self::FORM_SUBMISSION_LIMIT );
-		if ( $count >= $limit ) {
-			return true;
-		}
 
-		set_transient( $key, $count + 1, self::FORM_SUBMISSION_WINDOW );
+		return (int) get_transient( self::get_form_throttle_key() ) >= $limit;
+	}
 
-		return false;
+	/**
+	 * Count a submission that passed validation against the sender's address.
+	 *
+	 * A rejected submission is not counted, so a visitor correcting a field is not locked out.
+	 */
+	private function count_form_submission(): void {
+		$key = self::get_form_throttle_key();
+
+		set_transient( $key, (int) get_transient( $key ) + 1, self::FORM_SUBMISSION_WINDOW );
 	}
 
 	/**
@@ -1228,7 +1250,7 @@ class Gutenberg {
 			$form_key = isset( $_POST['form_name'] ) ? sanitize_text_field( wp_unslash( $_POST['form_name'] ) ) : '';
 		}
 
-		$page_url = isset( $_POST['page_url'] ) ? esc_url_raw( wp_unslash( $_POST['page_url'] ) ) : '';
+		$page_url = isset( $_POST['page_url'] ) && is_string( $_POST['page_url'] ) ? esc_url_raw( wp_unslash( $_POST['page_url'] ) ) : '';
 		$form     = '' === $form_key ? null : $this->find_declared_form( $form_key, $page_url );
 		if ( null === $form ) {
 			wp_send_json_error(
@@ -1277,6 +1299,8 @@ class Gutenberg {
 			$label               = isset( $field['fieldLabel'] ) && '' !== trim( (string) $field['fieldLabel'] ) ? sanitize_text_field( (string) $field['fieldLabel'] ) : ucfirst( str_replace( array( '_', '-' ), ' ', $field['customId'] ) );
 			$form_data[ $label ] = $value;
 		}
+
+		$this->count_form_submission();
 
 		if ( $is_bot ) {
 			wp_send_json_success( $success );

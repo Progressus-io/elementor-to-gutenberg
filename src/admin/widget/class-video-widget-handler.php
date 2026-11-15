@@ -57,7 +57,8 @@ class Video_Widget_Handler implements Widget_Handler_Interface {
 		$settings = is_array( $element['settings'] ?? null ) ? $element['settings'] : array();
 		$type     = isset( $settings['video_type'] ) && '' !== $settings['video_type'] ? (string) $settings['video_type'] : 'youtube';
 
-		if ( 'hosted' === $type ) {
+		// A VideoPress widget plays a media library file unless its external URL switch is on.
+		if ( 'hosted' === $type || ( 'videopress' === $type && empty( $settings['insert_url'] ) ) ) {
 			$output = $this->build_hosted_video( $settings );
 		} else {
 			$output = $this->build_embed( $type, $settings );

@@ -43,6 +43,9 @@ class Html_Widget_Handler implements Widget_Handler_Interface {
 		$html = isset( $element['settings']['html'] ) && is_string( $element['settings']['html'] ) ? $element['settings']['html'] : '';
 
 		if ( ! current_user_can( 'unfiltered_html' ) ) {
+			// The content filter drops the script and style tags but keeps what is between them, so remove both whole.
+			$html = (string) preg_replace( '@<(script|style)\b[^>]*>.*?</\1\s*>@is', '', $html );
+
 			return Core_Block_Markup::html( wp_kses_post( $html ) );
 		}
 
