@@ -18,6 +18,7 @@ use Progressus\BlockShift\Admin\Helper\Anchor_Helper;
 use Progressus\BlockShift\Admin\Helper\Content_Extractor;
 use Progressus\BlockShift\Admin\Widget\Atomic_Widget_Handler;
 use Progressus\BlockShift\Admin\Widget\Fallback_Widget_Handler;
+use Progressus\BlockShift\Admin\Widget\Form_Widget_Handler;
 use Progressus\BlockShift\Admin\Widget\Html_Widget_Handler;
 use Progressus\BlockShift\Admin\Conversion_Log;
 use Progressus\BlockShift\Admin\Conversion_Log_Admin;
@@ -1032,6 +1033,7 @@ class Admin_Settings {
 		$this->pending_anchor = '';
 		$this->template_stack = array();
 		Html_Widget_Handler::reset();
+		Form_Widget_Handler::take_pending_settings();
 
 		if ( empty( $json_data['content'] ) || ! is_array( $json_data['content'] ) ) {
 			return '';
@@ -1096,6 +1098,13 @@ class Admin_Settings {
 		}
 
 		$this->persist_post_used_fonts( $post_id );
+
+		$form_settings = Form_Widget_Handler::take_pending_settings();
+		if ( empty( $form_settings ) ) {
+			delete_post_meta( $post_id, Form_Widget_Handler::SETTINGS_META_KEY );
+		} else {
+			update_post_meta( $post_id, Form_Widget_Handler::SETTINGS_META_KEY, $form_settings );
+		}
 
 		return $updated_content;
 	}

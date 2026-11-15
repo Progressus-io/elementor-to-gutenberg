@@ -24,7 +24,7 @@ class Content_Extractor {
 	/**
 	 * Setting keys that hold styling or behaviour rather than content.
 	 */
-	private const STYLE_KEY_PATTERN = '/color|typography|align|size|style|icon|animation|position|width|height|spacing|padding|margin|border|background|shadow|tag$|view$|skin|layout|type$|_id$|^id$|class|css|hover|transition|opacity|radius|gap|overflow|z_index|order|direction|wrap|shape|motion|sticky|display|condition|attributes|placeholder|source|columns|target|format|separator$|shortcode/i';
+	private const STYLE_KEY_PATTERN = '/color|typography|align|size|style|icon|animation|position|width|height|spacing|padding|margin|border|background|shadow|tag$|view$|skin|layout|type$|_id$|^id$|class|css|hover|transition|opacity|radius|gap|overflow|z_index|order|direction|wrap|shape|motion|sticky|display|condition|attributes|placeholder|source|columns|target|format|separator$|shortcode|^email_|^form_name$|webhook|_options$/i';
 
 	/**
 	 * Setting keys whose text is a title rather than body copy.

@@ -1,17 +1,5 @@
 import { useBlockProps, InnerBlocks } from '@wordpress/block-editor';
-
-/**
- * Drop declarations whose value is empty, so a style object never serializes `color:;`.
- *
- * @param {Object} style Style object.
- * @return {Object} Style object without empty values.
- */
-const withoutEmptyValues = ( style ) =>
-	Object.fromEntries(
-		Object.entries( style ).filter(
-			( [ , value ] ) => undefined !== value && '' !== value
-		)
-	);
+import { withoutEmptyValues } from '../shared/styles';
 
 const Save = ( { attributes } ) => {
 	const {
