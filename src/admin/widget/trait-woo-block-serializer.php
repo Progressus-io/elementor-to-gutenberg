@@ -3,7 +3,6 @@
 namespace Progressus\BlockShift\Admin\Widget;
 
 use function is_array;
-use function wp_json_encode;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -68,7 +67,7 @@ trait Woo_Block_Serializer_Trait {
 			return serialize_block( $parsed ) . "\n";
 		}
 
-		$attr_json = empty( $attrs ) ? '' : ' ' . wp_json_encode( $attrs, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
+		$attr_json = empty( $attrs ) ? '' : ' ' . serialize_block_attributes( $attrs );
 
 		if ( '' === $inner_html ) {
 			return sprintf( '<!-- wp:%s%s /-->%s', $block_name, $attr_json, "\n" );

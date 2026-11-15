@@ -232,7 +232,6 @@ class Button_Widget_Handler implements Widget_Handler_Interface {
 		$icon_html = '';
 		if ( '' !== $icon_data['class_name'] ) {
 			$icon_html = '<span class="blockshift-button-icon ' . esc_attr( $icon_data['class_name'] ) . '" aria-hidden="true"></span>';
-			Style_Parser::save_generated_css( '/* icon class captured for ETG_EXTRA_ATTRS_MAP_V1 */' );
 		} elseif ( '' !== $icon_data['url'] ) {
 			/*
 			 * Elementor renders a button's SVG icon inline and scales it with the

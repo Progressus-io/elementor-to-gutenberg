@@ -40,6 +40,50 @@
     }
   },
   "attributes": {
+    "icon": {
+      "type": "string",
+      "default": ""
+    },
+    "iconStyle": {
+      "type": "string",
+      "default": "fas"
+    },
+    "svg": {
+      "type": "string",
+      "default": ""
+    },
+    "size": {
+      "type": "number",
+      "default": 32
+    },
+    "color": {
+      "type": "string",
+      "default": "#333333"
+    },
+    "backgroundColor": {
+      "type": "string",
+      "default": ""
+    },
+    "borderRadius": {
+      "type": "number",
+      "default": 0
+    },
+    "padding": {
+      "type": "number",
+      "default": 0
+    },
+    "hoverColor": {
+      "type": "string",
+      "default": ""
+    },
+    "hoverBackgroundColor": {
+      "type": "string",
+      "default": ""
+    },
+    "hoverEffect": {
+      "type": "string",
+      "default": "none"
+    },
     "alignment": {
       "type": "string",
       "default": "left"

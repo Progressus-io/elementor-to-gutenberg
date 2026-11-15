@@ -1,4 +1,5 @@
 import { useBlockProps } from '@wordpress/block-editor';
+import { withoutEmptyValues } from '../shared/styles';
 
 export default function save( { attributes } ) {
 	const {
@@ -23,36 +24,36 @@ export default function save( { attributes } ) {
 		textAlign: alignment,
 	};
 
-	const titleStyle = {
+	const titleStyle = withoutEmptyValues( {
 		color: titleColor,
 		fontSize: titleSize + 'px',
 		marginBottom: '10px',
-	};
+	} );
 
-	const progressBarStyle = {
+	const progressBarStyle = withoutEmptyValues( {
 		height: barHeight + 'px',
 		backgroundColor,
 		borderRadius: borderRadius + 'px',
 		position: 'relative',
 		overflow: 'hidden',
-	};
+	} );
 
-	const progressStyle = {
+	const progressStyle = withoutEmptyValues( {
 		width: percentage + '%',
 		height: '100%',
 		backgroundColor: barColor,
 		transition: 'width 0.3s ease-in-out',
 		position: 'relative',
-	};
+	} );
 
-	const textStyle = {
+	const textStyle = withoutEmptyValues( {
 		position: 'absolute',
 		right: '10px',
 		top: '50%',
 		transform: 'translateY(-50%)',
 		color: textColor,
 		zIndex: 1,
-	};
+	} );
 
 	return (
 		<div { ...blockProps }>

@@ -569,7 +569,51 @@ class Block_Builder {
 			}
 		}
 
-		return implode( ' ', array_filter( $classes ) );
+		if ( in_array( $block_slug, array( 'group', 'column', 'columns' ), true ) ) {
+			$classes = array_merge( $classes, self::build_color_support_classes( $attrs ) );
+		}
+
+		return implode( ' ', array_unique( array_filter( $classes ) ) );
+	}
+
+	/**
+	 * Build the classes core's colour support adds to a block's wrapper in save().
+	 *
+	 * @param array $attrs Prepared block attributes.
+	 *
+	 * @return array<int, string> Classes such as has-background and has-text-color.
+	 */
+	private static function build_color_support_classes( array $attrs ): array {
+		$classes = array();
+		$color   = isset( $attrs['style']['color'] ) && is_array( $attrs['style']['color'] ) ? $attrs['style']['color'] : array();
+
+		$text_slug = isset( $attrs['textColor'] ) ? Style_Parser::clean_class( (string) $attrs['textColor'] ) : '';
+		if ( '' !== $text_slug ) {
+			$classes[] = 'has-' . $text_slug . '-color';
+		}
+		if ( '' !== $text_slug || ! empty( $color['text'] ) ) {
+			$classes[] = 'has-text-color';
+		}
+
+		$background_slug = isset( $attrs['backgroundColor'] ) ? Style_Parser::clean_class( (string) $attrs['backgroundColor'] ) : '';
+		if ( '' !== $background_slug ) {
+			$classes[] = 'has-' . $background_slug . '-background-color';
+		}
+
+		$gradient_slug = isset( $attrs['gradient'] ) ? Style_Parser::clean_class( (string) $attrs['gradient'] ) : '';
+		if ( '' !== $gradient_slug ) {
+			$classes[] = 'has-' . $gradient_slug . '-gradient-background';
+		}
+
+		if ( '' !== $background_slug || '' !== $gradient_slug || ! empty( $color['background'] ) || ! empty( $color['gradient'] ) ) {
+			$classes[] = 'has-background';
+		}
+
+		if ( ! empty( $attrs['style']['elements']['link']['color']['text'] ) ) {
+			$classes[] = 'has-link-color';
+		}
+
+		return $classes;
 	}
 
 	/**

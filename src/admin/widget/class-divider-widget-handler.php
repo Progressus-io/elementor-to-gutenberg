@@ -163,7 +163,7 @@ class Divider_Widget_Handler implements Widget_Handler_Interface {
 
 			$block_content .= sprintf(
 				'<!-- wp:group %s --><div class="wp-block-group">',
-				$group_attrs ? wp_json_encode( $group_attrs ) : ''
+				$group_attrs ? serialize_block_attributes( $group_attrs ) : ''
 			);
 
 			// core/separator's save() prints has-text-color has-background whenever a
@@ -180,7 +180,7 @@ class Divider_Widget_Handler implements Widget_Handler_Interface {
 			// First separator.
 			$block_content .= sprintf(
 				'<!-- wp:separator %s --><hr class="wp-block-separator %s" style="%s"/><!-- /wp:separator -->' . "\n",
-				$separator_attrs ? wp_json_encode( $separator_attrs ) : '',
+				$separator_attrs ? serialize_block_attributes( $separator_attrs ) : '',
 				esc_attr( $separator_attrs['className'] ),
 				esc_attr( self::build_separator_style( $separator_attrs ) )
 			);
@@ -198,7 +198,7 @@ class Divider_Widget_Handler implements Widget_Handler_Interface {
 			);
 			$block_content .= sprintf(
 				'<!-- wp:separator %s --><hr class="wp-block-separator has-css-opacity %s"/><!-- /wp:separator -->' . "\n",
-				wp_json_encode( $second_attrs ),
+				serialize_block_attributes( $second_attrs ),
 				esc_attr( $unique_class )
 			);
 
@@ -229,7 +229,7 @@ class Divider_Widget_Handler implements Widget_Handler_Interface {
 
 			$block_content .= sprintf(
 				"<!-- wp:separator %s -->\n<hr%s class=\"wp-block-separator %s\" style=\"%s\"/>\n<!-- /wp:separator -->\n",
-				$separator_attrs ? wp_json_encode( $separator_attrs ) : '',
+				$separator_attrs ? serialize_block_attributes( $separator_attrs ) : '',
 				$id_attr,
 				esc_attr( $separator_attrs['className'] ),
 				esc_attr( $inline_style_attr )

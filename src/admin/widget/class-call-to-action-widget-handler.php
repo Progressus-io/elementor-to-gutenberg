@@ -316,7 +316,8 @@ class Call_To_Action_Widget_Handler implements Widget_Handler_Interface {
 
 			if ( '' !== trim( $button_url ) ) {
 				$target_attr = $button_target ? ' target="_blank"' : '';
-				$rel_attr    = $button_nofollow ? ' rel="nofollow"' : '';
+				$rel_value   = trim( ( $button_nofollow ? 'nofollow ' : '' ) . ( $button_target ? 'noreferrer' : '' ) );
+				$rel_attr    = '' !== $rel_value ? ' rel="' . $rel_value . '"' : '';
 				$segments[]  = '<a href="' . esc_url( $button_url ) . '" class="call-to-action-button" style="' . implode( ';', $button_style_parts ) . '"' . $target_attr . $rel_attr . '><span>' . esc_html( $button_text ) . '</span></a>';
 			} else {
 				$segments[] = '<span class="call-to-action-button" style="' . implode( ';', $button_style_parts ) . '">' . esc_html( $button_text ) . '</span>';

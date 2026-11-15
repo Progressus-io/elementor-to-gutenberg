@@ -8,6 +8,7 @@
 namespace Progressus\BlockShift\Admin\Widget;
 
 use Progressus\BlockShift\Admin\Helper\Block_Builder;
+use Progressus\BlockShift\Admin\Helper\Core_Block_Markup;
 use Progressus\BlockShift\Admin\Helper\Style_Parser;
 use Progressus\BlockShift\Admin\Widget_Handler_Interface;
 
@@ -68,13 +69,20 @@ class Generic_Elementor_Widget_Handler implements Widget_Handler_Interface {
 			return '';
 		}
 
+		$html = "\n" . '<figure class="wp-block-embed is-type-rich is-provider-soundcloud wp-block-embed-soundcloud"><div class="wp-block-embed__wrapper">' . "\n" . \esc_url( $url ) . "\n" . '</div></figure>' . "\n";
+
 		return $this->serialize_parsed_block(
 			array(
 				'blockName'    => 'core/embed',
-				'attrs'        => array( 'url' => $url ),
+				'attrs'        => array(
+					'url'              => $url,
+					'type'             => 'rich',
+					'providerNameSlug' => 'soundcloud',
+					'responsive'       => true,
+				),
 				'innerBlocks'  => array(),
-				'innerHTML'    => '',
-				'innerContent' => array(),
+				'innerHTML'    => $html,
+				'innerContent' => array( $html ),
 			)
 		);
 	}
@@ -112,25 +120,16 @@ class Generic_Elementor_Widget_Handler implements Widget_Handler_Interface {
 	 * @param array $settings Widget settings.
 	 */
 	private function handle_alert( array $settings ): string {
-		$text = $this->extract_text( $settings, array( 'text', 'message' ) );
-		if ( '' === $text ) {
+		$title = $this->extract_text( $settings, array( 'alert_title' ) );
+		$text  = $this->extract_text( $settings, array( 'alert_description', 'text', 'message' ) );
+
+		$inner = Core_Block_Markup::paragraph( '' === $title ? '' : '<strong>' . \esc_html( $title ) . '</strong>' )
+			. Core_Block_Markup::paragraph( \esc_html( $text ) );
+		if ( '' === $inner ) {
 			return '';
 		}
 
-		$paragraph = $this->build_paragraph_block( $text );
-		if ( array() === $paragraph ) {
-			return '';
-		}
-
-		return $this->serialize_parsed_block(
-			array(
-				'blockName'    => 'core/group',
-				'attrs'        => array(),
-				'innerBlocks'  => array( $paragraph ),
-				'innerHTML'    => '',
-				'innerContent' => array(),
-			)
-		);
+		return "<!-- wp:group -->\n" . '<div class="wp-block-group">' . $inner . '</div>' . "\n<!-- /wp:group -->\n";
 	}
 
 	/**

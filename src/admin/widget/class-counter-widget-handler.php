@@ -8,11 +8,14 @@
 namespace Progressus\BlockShift\Admin\Widget;
 
 use Progressus\BlockShift\Admin\Helper\Alignment_Helper;
-use Progressus\BlockShift\Admin\Widget_Handler_Interface;
+use Progressus\BlockShift\Admin\Helper\Content_Extractor;
 use Progressus\BlockShift\Admin\Helper\Style_Parser;
+use Progressus\BlockShift\Admin\Helper\Widget_Style_Helper;
+use Progressus\BlockShift\Admin\Widget_Handler_Interface;
 
-// @phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped
-// @phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedFunctionFound
+use function esc_attr;
+use function esc_html;
+use function serialize_block_attributes;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -24,40 +27,35 @@ class Counter_Widget_Handler implements Widget_Handler_Interface {
 	/**
 	 * Handle conversion of Elementor counter to Gutenberg block.
 	 *
+	 * The markup is what the blockshift/counter save() writes for the same
+	 * attributes; the widget's own spacing and typography go to the stylesheet.
+	 *
 	 * @param array $element The Elementor element data.
 	 *
 	 * @return string The Gutenberg block content.
 	 */
 	public function handle( array $element ): string {
-		$settings        = isset( $element['settings'] ) && is_array( $element['settings'] ) ? $element['settings'] : array();
-		$spacing         = Style_Parser::parse_spacing( $settings );
-		$spacing_attr    = isset( $spacing['attributes'] ) ? $spacing['attributes'] : array();
-		$spacing_css     = isset( $spacing['style'] ) ? $spacing['style'] : '';
-		$typography      = Style_Parser::parse_typography( $settings );
-		$typography_attr = isset( $typography['attributes'] ) ? $typography['attributes'] : array();
-		$typography_css  = isset( $typography['style'] ) ? $typography['style'] : '';
+		$settings   = isset( $element['settings'] ) && is_array( $element['settings'] ) ? $element['settings'] : array();
+		$spacing    = Style_Parser::parse_spacing( $settings );
+		$typography = Style_Parser::parse_typography( $settings );
 
-		// Extract counter settings.
 		$starting_number = isset( $settings['starting_number'] ) ? intval( $settings['starting_number'] ) : 0;
 		$ending_number   = isset( $settings['ending_number'] ) ? intval( $settings['ending_number'] ) : 100;
-		$prefix          = isset( $settings['prefix'] ) ? \esc_html( $settings['prefix'] ) : '';
-		$suffix          = isset( $settings['suffix'] ) ? \esc_html( $settings['suffix'] ) : '';
 		$duration        = isset( $settings['duration'] ) ? intval( $settings['duration'] ) : 2000;
-		$title           = isset( $settings['title'] ) ? \esc_html( $settings['title'] ) : '';
+		$prefix          = Content_Extractor::normalize_text( (string) ( $settings['prefix'] ?? '' ) );
+		$suffix          = Content_Extractor::normalize_text( (string) ( $settings['suffix'] ?? '' ) );
+		$title           = Content_Extractor::normalize_text( (string) ( $settings['title'] ?? '' ) );
 
-		// Extract styles.
-		$number_color = isset( $settings['number_color'] ) ? $settings['number_color'] : '';
-		$title_color  = isset( $settings['title_color'] ) ? $settings['title_color'] : '';
+		$number_color = isset( $settings['number_color'] ) ? trim( (string) $settings['number_color'] ) : '';
+		$title_color  = isset( $settings['title_color'] ) ? trim( (string) $settings['title_color'] ) : '';
 		$alignment    = Alignment_Helper::detect_alignment( $settings, array( 'align', 'alignment', 'text_align' ) );
 		$align        = '' === $alignment ? 'center' : $alignment;
 
-		// Font sizes.
 		$number_typography = $settings['number_typography'] ?? array();
 		$title_typography  = $settings['title_typography'] ?? array();
 		$number_size       = isset( $number_typography['size'] ) ? intval( $number_typography['size'] ) : 50;
 		$title_size        = isset( $title_typography['size'] ) ? intval( $title_typography['size'] ) : 20;
 
-		// Prepare attributes.
 		$attrs = array(
 			'startValue'  => $starting_number,
 			'endValue'    => $ending_number,
@@ -72,82 +70,50 @@ class Counter_Widget_Handler implements Widget_Handler_Interface {
 			'alignment'   => $align,
 		);
 
-		if ( ! empty( $spacing_attr ) ) {
-			$attrs['style']['spacing'] = $spacing_attr;
+		$wrapper_class = 'wp-block-blockshift-counter';
+		$extra_class   = Widget_Style_Helper::externalize( $element, (string) ( $spacing['style'] ?? '' ), (string) ( $typography['style'] ?? '' ) );
+		if ( '' !== $extra_class ) {
+			$attrs['className'] = $extra_class;
+			$wrapper_class     .= ' ' . $extra_class;
 		}
 
-		if ( ! empty( $typography_attr ) ) {
-			$attrs['style']['typography'] = $typography_attr;
-		}
+		$counter_style = Widget_Style_Helper::join(
+			array(
+				'text-align' => $align,
+				'color'      => $number_color,
+				'font-size'  => $number_size . 'px',
+			)
+		);
 
-		// Convert attributes to JSON
-		$attrs_json = \wp_json_encode( $attrs );
-
-		// Generate block styles
-		$base_styles = array();
-
-		if ( '' !== $spacing_css ) {
-			$base_styles[] = $spacing_css;
-		}
-
-		if ( '' !== $typography_css ) {
-			$base_styles[] = $typography_css;
-		}
-
-		$counter_style_parts   = $base_styles;
-		$counter_style_parts[] = sprintf( 'text-align:%s;', \esc_attr( $align ) );
-
-		if ( '' !== $number_color ) {
-			$counter_style_parts[] = sprintf( 'color:%s;', \esc_attr( $number_color ) );
-		}
-
-		if ( $number_size > 0 ) {
-			$counter_style_parts[] = sprintf( 'font-size:%dpx;', $number_size );
-		}
-
-		$counter_style = implode( '', $counter_style_parts );
-
-		$title_style_parts = $base_styles;
-
-		if ( '' !== $title_color ) {
-			$title_style_parts[] = sprintf( 'color:%s;', \esc_attr( $title_color ) );
-		}
-
-		if ( $title_size > 0 ) {
-			$title_style_parts[] = sprintf( 'font-size:%dpx;', $title_size );
-		}
-
-		$title_style_parts[] = sprintf( 'text-align:%s;', \esc_attr( $align ) );
-
-		$title_style = implode( '', $title_style_parts );
-
-		// Generate block content
 		$block_content = sprintf(
-			'<div class="wp-block-blockshift-counter"><div class="counter-preview" style="%s" data-start="%d" data-end="%d" data-duration="%d"><span class="prefix">%s</span><span class="counter-value">%d</span><span class="suffix">%s</span></div>',
-			$counter_style,
+			'<div class="%s"><div class="counter-preview" style="%s" data-start="%d" data-end="%d" data-duration="%d"><span class="prefix">%s</span><span class="counter-value">%d</span><span class="suffix">%s</span></div>',
+			esc_attr( $wrapper_class ),
+			esc_attr( $counter_style ),
 			$starting_number,
 			$ending_number,
 			$duration,
-			\esc_html( $prefix ),
+			esc_html( $prefix ),
 			$starting_number,
-			\esc_html( $suffix )
+			esc_html( $suffix )
 		);
 
-		// Add title if present
-		if ( ! empty( $title ) ) {
-			$block_content .= sprintf(
-				'<h4 class="counter-title" style="%s">%s</h4>',
-				$title_style,
-				\esc_html( $title )
+		if ( '' !== $title ) {
+			$title_style = Widget_Style_Helper::join(
+				array(
+					'color'      => $title_color,
+					'font-size'  => $title_size . 'px',
+					'text-align' => $align,
+				)
 			);
+
+			$block_content .= sprintf( '<h4 class="counter-title" style="%s">%s</h4>', esc_attr( $title_style ), esc_html( $title ) );
 		}
 
 		$block_content .= '</div>';
 
-		// Generate complete Gutenberg block
 		return sprintf(
 			'<!-- wp:blockshift/counter %s -->%s<!-- /wp:blockshift/counter -->',
-			$attrs_json,
+			serialize_block_attributes( $attrs ),
 			$block_content
 		);
 	}

@@ -83,7 +83,7 @@ class Site_Logo_Widget_Handler implements Widget_Handler_Interface {
 		}
 
 		// Encode attributes for the block.
-		$attributes_json = wp_json_encode( $attributes );
+		$attributes_json = serialize_block_attributes( $attributes );
 
 		// Generate the complete site-logo block markup (self-closing).
 		$block_content = '<!-- wp:site-logo ' . $attributes_json . ' /-->';
@@ -174,6 +174,6 @@ class Site_Logo_Widget_Handler implements Widget_Handler_Interface {
 			Style_Parser::save_custom_css( $custom_css );
 		}
 
-		return '<!-- wp:image ' . wp_json_encode( $attributes ) . ' -->' . $figure . '<!-- /wp:image -->' . "\n";
+		return '<!-- wp:image ' . serialize_block_attributes( $attributes ) . ' -->' . $figure . '<!-- /wp:image -->' . "\n";
 	}
 }

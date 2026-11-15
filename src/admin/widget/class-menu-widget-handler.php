@@ -90,7 +90,7 @@ class Menu_Widget_Handler implements Widget_Handler_Interface {
 		}
 
 		// Encode attributes for the block.
-		$attributes_json = wp_json_encode( $attributes );
+		$attributes_json = serialize_block_attributes( $attributes );
 
 		// Generate the complete navigation block markup (self-closing).
 		$block_content = '<!-- wp:navigation ' . $attributes_json . ' /-->';

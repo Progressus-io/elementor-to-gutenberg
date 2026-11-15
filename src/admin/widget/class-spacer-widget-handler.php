@@ -47,11 +47,7 @@ class Spacer_Widget_Handler implements Widget_Handler_Interface {
 		$class_parts = array_values( array_unique( array_filter( $class_parts ) ) );
 		$class_attr  = implode( ' ', $class_parts );
 
-		$attrs = wp_json_encode(
-			array(
-				'height' => $height,
-			)
-		);
+		$attrs = serialize_block_attributes( array( 'height' => $height ) );
 
 		$id_attr = '';
 		if ( '' !== $custom_id ) {

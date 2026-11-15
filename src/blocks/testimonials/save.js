@@ -1,4 +1,5 @@
 import { useBlockProps } from '@wordpress/block-editor';
+import { withoutEmptyValues } from '../shared/styles';
 
 const Save = ( { attributes } ) => {
 	const {
@@ -98,20 +99,20 @@ const Save = ( { attributes } ) => {
 								<>
 									<div
 										className="testimonial-name"
-										style={ {
+										style={ withoutEmptyValues( {
 											color: nameColor,
 											fontWeight: 'bold',
 											marginBottom: '5px',
-										} }
+										} ) }
 									>
 										{ slide.name }
 									</div>
 									<div
 										className="testimonial-title"
-										style={ {
+										style={ withoutEmptyValues( {
 											color: titleColor,
 											fontSize: '14px',
-										} }
+										} ) }
 									>
 										{ slide.title }
 									</div>
@@ -121,7 +122,7 @@ const Save = ( { attributes } ) => {
 							const renderContent = () => (
 								<div
 									className="testimonial-content"
-									style={ {
+									style={ withoutEmptyValues( {
 										color: contentColor,
 										fontSize: `${ contentTypography.fontSize }px`,
 										fontWeight:
@@ -135,7 +136,7 @@ const Save = ( { attributes } ) => {
 										fontFamily:
 											contentTypography.fontFamily,
 										marginBottom: `${ contentGap }px`,
-									} }
+									} ) }
 								>
 									{ slide.content }
 								</div>
@@ -200,7 +201,7 @@ const Save = ( { attributes } ) => {
 								<div key={ index } className="swiper-slide">
 									<div
 										className={ `testimonial-slide layout-${ layout }` }
-										style={ {
+										style={ withoutEmptyValues( {
 											backgroundColor:
 												slideBackgroundColor,
 											border: `${
@@ -213,7 +214,7 @@ const Save = ( { attributes } ) => {
 											textAlign: alignment,
 											maxWidth: `${ width }%`,
 											margin: '0 auto',
-										} }
+										} ) }
 									>
 										{ getSlideContent() }
 									</div>

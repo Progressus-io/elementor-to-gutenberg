@@ -1,4 +1,5 @@
 import { useBlockProps } from '@wordpress/block-editor';
+import { withoutEmptyValues } from '../shared/styles';
 
 const Save = ( { attributes } ) => {
 	const {
@@ -17,17 +18,17 @@ const Save = ( { attributes } ) => {
 
 	const blockProps = useBlockProps.save();
 
-	const counterStyle = {
+	const counterStyle = withoutEmptyValues( {
 		textAlign: alignment,
 		color: numberColor,
 		fontSize: `${ numberSize }px`,
-	};
+	} );
 
-	const titleStyle = {
+	const titleStyle = withoutEmptyValues( {
 		color: titleColor,
 		fontSize: `${ titleSize }px`,
 		textAlign: alignment,
-	};
+	} );
 
 	return (
 		<div { ...blockProps }>
