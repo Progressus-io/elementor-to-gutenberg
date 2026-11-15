@@ -540,7 +540,7 @@ class Form_Widget_Handler implements Widget_Handler_Interface {
 
 		$label_text = esc_html( $field['fieldLabel'] ) . ( $field['required'] ? ' *' : '' );
 		$label      = '';
-		if ( in_array( $type, array( 'radio', 'checkbox' ), true ) ) {
+		if ( in_array( $type, array( 'radio', 'checkbox' ), true ) || ( 'acceptance' === $type && '' !== $field['fieldLabel'] ) ) {
 			$label = '<span class="form-label" style="' . esc_attr( $label_style ) . '">' . $label_text . '</span>';
 		} elseif ( 'acceptance' !== $type ) {
 			$label = '<label for="' . $id . '" style="' . esc_attr( $label_style ) . '">' . $label_text . '</label>';

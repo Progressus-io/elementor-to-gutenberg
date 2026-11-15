@@ -196,7 +196,9 @@ const renderField = ( field, index, inputSize, labelStyle, preview ) => {
 		);
 	}
 
-	const isGroup = GROUP_TYPES.includes( field.fieldType );
+	const isGroup =
+		GROUP_TYPES.includes( field.fieldType ) ||
+		( 'acceptance' === field.fieldType && !! field.fieldLabel );
 	const marker = field.required && ' *';
 	let label = null;
 
