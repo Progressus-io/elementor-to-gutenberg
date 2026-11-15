@@ -120,6 +120,7 @@ const v1Save = ( { attributes } ) => {
 
 export default [
 	{
+		apiVersion: metadata.apiVersion,
 		attributes: metadata.attributes,
 		supports: metadata.supports,
 		save: v1Save,

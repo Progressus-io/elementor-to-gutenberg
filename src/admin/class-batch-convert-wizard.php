@@ -104,6 +104,17 @@ class Batch_Convert_Wizard {
 
 	private const TEMPLATE_SOURCE_HEADER_FOOTER = 'header_footer_elementor';
 
+	/**
+	 * Version of the block markup the converter writes. Raise it whenever a release
+	 * changes that markup in a way older converted pages only pick up by converting again.
+	 */
+	public const MARKUP_VERSION = 2;
+
+	/**
+	 * Post meta holding the markup version a source and its converted copy were last converted with.
+	 */
+	public const MARKUP_VERSION_META = '_blockshift_markup_version';
+
 	private const TEMPLATE_ROLE_DEFAULT_HEADER = 'default_header';
 
 	private const TEMPLATE_ROLE_DEFAULT_FOOTER = 'default_footer';
@@ -358,6 +369,7 @@ class Batch_Convert_Wizard {
 		$mode            = isset( $_POST['mode'] ) ? sanitize_key( wp_unslash( $_POST['mode'] ) ) : 'auto';
 		$conflict_policy = isset( $_POST['conflictPolicy'] ) ? sanitize_key( wp_unslash( $_POST['conflictPolicy'] ) ) : 'skip';
 		$skip_converted  = ! empty( $_POST['skipConverted'] );
+		$reconvert_old   = ! empty( $_POST['reconvertOutdated'] );
 
 		$raw_pages       = isset( $_POST['pages'] ) ? array_map( 'sanitize_text_field', (array) wp_unslash( $_POST['pages'] ) ) : array();
 		$raw_headers     = isset( $_POST['headerTemplates'] ) ? array_map( 'sanitize_text_field', (array) wp_unslash( $_POST['headerTemplates'] ) ) : array();
@@ -450,7 +462,8 @@ class Batch_Convert_Wizard {
 			$warnings[] = $this->build_theme_warning_from_error( $theme_result );
 		}
 
-		$options = $this->build_job_options( $mode, $conflict_policy, $skip_converted );
+		$options                       = $this->build_job_options( $mode, $conflict_policy, $skip_converted );
+		$options['reconvert_outdated'] = $reconvert_old;
 
 		$job_id = uniqid( 'blockshift_', true );
 
@@ -1804,6 +1817,7 @@ class Batch_Convert_Wizard {
 			'lastResultMessage' => is_array( $last_result ) && isset( $last_result['message'] ) ? (string) $last_result['message'] : '',
 			'lastConverted'     => $last_converted,
 			'hasConflict'       => $target_id > 0,
+			'isOutdated'        => 'success' === $status_key && $target_id > 0 && $this->is_outdated_conversion( (int) $post->ID, $target_id ),
 			'targetId'          => $target_id,
 			'viewConvertedUrl'  => $view_converted,
 			'editUrl'           => get_edit_post_link( $post ),
@@ -2356,7 +2370,10 @@ class Batch_Convert_Wizard {
 			$this->get_existing_target_id( $source_id )
 		);
 
-		if ( ! empty( $options['skip_converted'] ) && $existing_target_id > 0 && $this->has_been_converted( $source_id, $existing_target_id ) ) {
+		// A copy written by an older release is converted again in place when the run asks for it.
+		$reconvert_in_place = ! empty( $options['reconvert_outdated'] ) && $existing_target_id > 0 && $this->is_outdated_conversion( $source_id, $existing_target_id );
+
+		if ( ! $reconvert_in_place && ! empty( $options['skip_converted'] ) && $existing_target_id > 0 && $this->has_been_converted( $source_id, $existing_target_id ) ) {
 			$title = get_the_title( $source_id );
 			/* translators: %s: page title */
 			$message                     = sprintf( esc_html__( 'Skipped: “%s” is already converted.', 'migrate-off-elementor' ), $title );
@@ -2411,9 +2428,9 @@ class Batch_Convert_Wizard {
 		$created_new_target = false;
 
 		if ( $existing_target_id > 0 ) {
-			if ( 'duplicate' === $conflict_policy ) {
+			if ( 'duplicate' === $conflict_policy && ! $reconvert_in_place ) {
 				$write_id = 0;
-			} elseif ( 'overwrite' === $conflict_policy || 'update' === $options['mode'] ) {
+			} elseif ( 'overwrite' === $conflict_policy || 'update' === $options['mode'] || $reconvert_in_place ) {
 				$write_id = $existing_target_id;
 			} else {
 				$title = get_the_title( $source_id );
@@ -2534,10 +2551,32 @@ class Batch_Convert_Wizard {
 	}
 
 	/**
-	 * Determine whether a post already has a converted target.
+	 * Whether a converted copy was written by a release older than the current block markup.
 	 *
-	 * @param int $post_id Source post ID.
-	 * @param int $target_id Target post ID.
+	 * Releases before the markup version existed stored none, so their copies count as outdated.
+	 *
+	 * @param int $post_id   Source post ID.
+	 * @param int $target_id Converted post ID, or zero.
+	 *
+	 * @return bool
+	 */
+	private function is_outdated_conversion( int $post_id, int $target_id ): bool {
+		if ( ! $this->has_been_converted( $post_id, $target_id ) ) {
+			return false;
+		}
+
+		$version = $target_id > 0 ? (int) get_post_meta( $target_id, self::MARKUP_VERSION_META, true ) : (int) get_post_meta( $post_id, self::MARKUP_VERSION_META, true );
+
+		return $version < self::MARKUP_VERSION;
+	}
+
+	/**
+	 * Whether a post has a successful conversion on record.
+	 *
+	 * @param int $post_id   Source post ID.
+	 * @param int $target_id Converted post ID, or zero.
+	 *
+	 * @return bool
 	 */
 	private function has_been_converted( int $post_id, int $target_id ): bool {
 		$converted_time = '';
@@ -3380,6 +3419,10 @@ class Batch_Convert_Wizard {
 			/* translators: 1: tab label, 2: item count */
 			'tabCountLabel'            => __( '%1$s (%2$d)', 'migrate-off-elementor' ),
 			'skipConverted'            => __( 'Skip pages that were already converted', 'migrate-off-elementor' ),
+			/* translators: %d: number of pages converted by an older version of the plugin. */
+			'reconvertOutdated'        => __( 'Convert again the %d pages converted by an older version of the plugin', 'migrate-off-elementor' ),
+			'reconvertOutdatedHelp'    => __( 'Their converted copies were written with older block markup and can show "This block contains unexpected or invalid content" in the editor. Converting again replaces the content of each copy, including any edits made to it since.', 'migrate-off-elementor' ),
+			'outdatedBadge'            => __( 'Older version', 'migrate-off-elementor' ),
 			'selectAllEligible'        => __( 'Select all eligible', 'migrate-off-elementor' ),
 			'clearSelection'           => __( 'Clear selection', 'migrate-off-elementor' ),
 			/* translators: %1$d: number of selected items */
@@ -3646,9 +3689,11 @@ class Batch_Convert_Wizard {
 		// Mark as "converted" only when success.
 		if ( 'success' === $result_entry['status'] ) {
 			update_post_meta( $source_id, '_blockshift_last_converted', $time );
+			update_post_meta( $source_id, self::MARKUP_VERSION_META, self::MARKUP_VERSION );
 
 			if ( $converted_post_id > 0 ) {
 				update_post_meta( $converted_post_id, '_blockshift_last_converted', $time );
+				update_post_meta( $converted_post_id, self::MARKUP_VERSION_META, self::MARKUP_VERSION );
 			}
 		}
 
@@ -3845,6 +3890,7 @@ class Batch_Convert_Wizard {
 
 		if ( 'success' === $result_entry['status'] ) {
 			update_post_meta( $template_id, '_blockshift_last_converted', $time );
+			update_post_meta( $template_id, self::MARKUP_VERSION_META, self::MARKUP_VERSION );
 		}
 
 		// Append to the global conversion log for the UI.

@@ -129,6 +129,7 @@
 				defaultHeaderId: 0,
 				defaultFooterId: 0,
 				skipConverted: true,
+				reconvertOutdated: false,
 				conflictPolicy: 'skip',
 				tablePage: 1,
 				perPage: 10,
@@ -846,6 +847,7 @@
 				mode: this.state.mode,
 				pages: selected,
 				skipConverted: this.state.skipConverted ? 1 : 0,
+				reconvertOutdated: this.state.reconvertOutdated ? 1 : 0,
 				conflictPolicy: this.state.conflictPolicy,
 			};
 
@@ -894,6 +896,7 @@
 			payload.mode = 'custom';
 			payload.pages = [ pageId ];
 			payload.skipConverted = 0;
+			payload.reconvertOutdated = 0;
 			payload.conflictPolicy = this.state.job
 				? this.state.job.conflictPolicy || 'skip'
 				: 'skip';
@@ -1813,6 +1816,10 @@
 
 				const lastTd = document.createElement( 'td' );
 				lastTd.textContent = page.lastConverted || '—';
+				if ( page.isOutdated ) {
+					lastTd.textContent +=
+						' · ' + ( this.strings.outdatedBadge || 'Older version' );
+				}
 				tr.appendChild( lastTd );
 
 				const compatTd = document.createElement( 'td' );
@@ -1909,6 +1916,39 @@
 				skipWrapper.appendChild( skipCheckbox );
 				skipWrapper.appendChild( skipLabel );
 				container.appendChild( skipWrapper );
+			}
+
+			const outdatedCount = this.getSelectedPages().filter(
+				( page ) => page.isOutdated
+			).length;
+			if ( outdatedCount > 0 ) {
+				const outdatedWrapper = createElement(
+					'div',
+					'blockshift-skip-converted-wrapper blockshift-reconvert-outdated-wrapper'
+				);
+				const outdatedCheckbox = document.createElement( 'input' );
+				outdatedCheckbox.type = 'checkbox';
+				outdatedCheckbox.checked = this.state.reconvertOutdated;
+				outdatedCheckbox.id = 'blockshift-reconvert-outdated';
+				outdatedCheckbox.addEventListener( 'change', () => {
+					this.state.reconvertOutdated = outdatedCheckbox.checked;
+					this.render();
+				} );
+				const outdatedLabel = document.createElement( 'label' );
+				outdatedLabel.htmlFor = 'blockshift-reconvert-outdated';
+				outdatedLabel.textContent = (
+					this.strings.reconvertOutdated ||
+					'Convert again the %d pages converted by an older version of the plugin'
+				).replace( '%d', outdatedCount );
+				const outdatedHelp = createElement(
+					'p',
+					'description',
+					this.strings.reconvertOutdatedHelp || ''
+				);
+				outdatedWrapper.appendChild( outdatedCheckbox );
+				outdatedWrapper.appendChild( outdatedLabel );
+				outdatedWrapper.appendChild( outdatedHelp );
+				container.appendChild( outdatedWrapper );
 			}
 
 			const buttons = createElement( 'div', 'blockshift-wizard-buttons' );
@@ -2503,7 +2543,9 @@
 
 			const selectedCount = this.state.selectedPageIds.size;
 			const convertedSelected = this.getSelectedPages().filter(
-				( page ) => page.conversionStatus === 'converted'
+				( page ) =>
+					page.conversionStatus === 'converted' &&
+					! ( this.state.reconvertOutdated && page.isOutdated )
 			).length;
 			const convertCount = this.state.skipConverted
 				? Math.max( 0, selectedCount - convertedSelected )
