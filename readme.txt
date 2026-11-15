@@ -154,39 +154,44 @@ Lucide line icons (ISC) are inlined uncompressed in assets/js/pgs-icons.js. Sour
 
 == Changelog ==
 
-= 1.1.0 =
-* Add: Headers and footers built with Header & Footer Elementor now convert.
-* Add: Tabs, nested tabs, videos (uploaded, YouTube, Vimeo, Dailymotion and VideoPress) and the HTML widget now convert.
-* Add: Menu anchors, Template widgets and global widgets now convert.
-* Add: Widgets the plugin cannot convert keep their text, links and images instead of disappearing, with a note in the editor.
-* Add: Contact forms now support dropdown, radio, checkbox, acceptance, hidden and multi-step fields, and have spam protection.
+= 1.2.0 =
+* Add: Tabs, nested tabs, videos (uploaded, YouTube, Vimeo, Dailymotion and VideoPress), the HTML widget, menu anchors, Template widgets and global widgets now convert.
+* Add: Widgets the plugin cannot convert keep their text, links and images, with a note in the editor, instead of disappearing.
+* Add: Contact forms now support dropdowns, radio buttons, checkboxes, acceptance boxes, hidden fields and multi-step forms, and are protected against spam.
 * Add: "Hide on desktop, tablet and mobile" settings now carry over.
 * Add: The Conversion Wizard can convert again the pages converted by an older version of the plugin.
-* Add: The Conversion Wizard warns you that switching theme changes your whole site, and that Elementor headers and footers you did not convert will stop showing.
-* Improve: Converted pages look much closer to the original: layout, spacing, backgrounds, colours, fonts and section widths now match.
-* Improve: Images, buttons, headings, icon boxes, galleries, social icons, testimonials, menus and the site logo keep their original size and style.
-* Improve: Once Elementor is deactivated, converted pages load none of its styles or scripts, so they load faster.
-* Fix: A converted page is now as private as the original. Drafts stay drafts, and private, password-protected and scheduled pages keep their protection and date.
-* Fix: Accordions and nested accordions now keep their titles and content.
-* Fix: The Pro gallery, menus with sub-menus and linked headings now convert correctly.
-* Fix: Images already in your Media Library are reused instead of being downloaded again or linked to the old site.
-* Fix: Converted pages open in the block editor without "unexpected or invalid content" warnings.
-* Fix: Converted pages use your theme's full-width layout when the original was full width, and no longer scroll sideways.
-* Fix: An icon box keeps its original heading level instead of always becoming an H3.
-* Fix: Icon list labels and the shortcode widget can no longer be used to add unsafe code.
-* Fix: Feedback can only be sent for your own conversions.
-* Fix: Your theme's header and footer are replaced only when you choose that option in the wizard.
-* Fix: The plugin's styles and scripts load only on converted pages, not on any page that mentions "blockshift".
-* Fix: The Conversion Wizard now shows "Classic theme" for classic themes instead of always saying "Block theme".
-* Tweak: The Conversion Wizard now asks you to keep the tab open while it converts.
+* Add: The Conversion Wizard warns you that switching theme changes your whole site, and that headers and footers you did not convert will stop showing.
+* Fix: A converted page is now as private as the original. Drafts, private, password-protected and scheduled pages stay that way, also when you convert them again.
+* Fix: Accordions, nested accordions, the Pro gallery, menus with sub-menus and linked headings now convert correctly.
+* Fix: Icons, counters, progress bars, image boxes, calls to action and testimonials no longer show an "invalid content" warning in the block editor.
+* Fix: Your theme's header and footer are replaced only when you choose that option in the wizard, and the wizard tells you if one could not be replaced.
+* Fix: Icon lists and shortcodes can no longer add unsafe code to a page, and feedback can only be sent about your own conversions.
+* Fix: The plugin's styles and scripts now load only on converted pages.
+* Fix: The Conversion Wizard now labels classic themes as "Classic theme" instead of "Block theme".
+* Tweak: The conversion log now warns you when a widget loses content or a Template widget cannot be read.
+
+= 1.1.0 =
+* Improve: Converted pages now closely match the original Elementor design - row/column layout, vertical alignment, spacing and section widths all follow the original.
+* Improve: Section and container backgrounds now carry over, including overlays and colours taken from your theme or Elementor palette.
+* Fix: Background and content images reuse the image already in your Media Library instead of downloading a fresh copy each time or linking back to the old site.
+* Improve: Images keep their set size and alignment.
+* Improve: Icon boxes, buttons, headings, image boxes, galleries, social icons, testimonials, menus and the site logo convert more faithfully - size, padding, colours and fonts now follow the original.
+* Add: Headers and footers built with Elementor's Header & Footer widgets now convert.
+* Fix: Converted pages use your theme's full-width layout where the original was full width, and no longer scroll sideways.
+* Improve: Converted pages no longer load any Elementor stylesheets or scripts, so they are lighter and faster.
+* Fix: Converted pages now open cleanly in the WordPress block editor - blocks no longer show an "unexpected or invalid content" warning, so you can edit a converted page like any other.
+* Fix: An icon box now keeps its original heading level instead of always becoming an H3.
 
 = 1.0.0 =
 * Initial release.
 
 == Upgrade Notice ==
 
+= 1.2.0 =
+More Elementor widgets now convert, and converted pages stay as private as the original. Pages converted with an older version do not change on their own: re-convert them from the Conversion Wizard by ticking "Convert again the pages converted by an older version of the plugin".
+
 = 1.1.0 =
-Converted pages now match their Elementor originals far more closely and open cleanly in the block editor. Pages converted with an earlier version do not change on their own. The plugin's own blocks on them keep opening in the editor, and the Conversion Wizard lists them as converted by an older version: tick "Convert again the pages converted by an older version of the plugin" on the page step to rewrite those copies with the current markup. That replaces the content of each converted copy, including edits made to it since.
+Converted pages now match their Elementor originals far more closely and open cleanly in the block editor. Existing converted pages are unaffected until you convert again.
 
 = 1.0.0 =
 Initial release.
