@@ -6,6 +6,9 @@
   "title": "Tabs",
   "category": "design",
   "description": "Display content in tabs",
+  "providesContext": {
+    "blockshift/activeTab": "activeTab"
+  },
   "supports": {
     "html": false,
     "align": ["wide", "full"]
@@ -23,6 +26,10 @@
           "content": "Content for tab 2"
         }
       ]
+    },
+    "innerTabs": {
+      "type": "boolean",
+      "default": false
     },
     "activeTab": {
       "type": "number",

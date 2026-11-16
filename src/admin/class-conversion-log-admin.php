@@ -377,9 +377,10 @@ class Conversion_Log_Admin {
 							<tbody>
 								<?php foreach ( $log as $entry ) :
 									$status      = $entry['status'] ?? 'skipped';
-									$unsupported = (int) ( $entry['stats']['unsupported'] ?? 0 );
-									$is_partial  = 'success' === $status && $unsupported > 0;
-									$badge       = $is_partial ? 'partial' : $status;
+									$unsupported   = (int) ( $entry['stats']['unsupported'] ?? 0 );
+									$warning_lines = is_array( $entry['warnings'] ?? null ) ? $entry['warnings'] : array();
+									$is_partial    = 'success' === $status && ( $unsupported > 0 || ! empty( $warning_lines ) );
+									$badge         = $is_partial ? 'partial' : $status;
 
 									$pill_variants = array(
 										'success' => 'pgs-pill--success',
@@ -445,6 +446,23 @@ class Conversion_Log_Admin {
 										<?php endif; ?>
 									</td>
 									<td>
+										<?php if ( ! empty( $warning_lines ) ) : ?>
+											<details>
+												<summary class="pgs-issue" style="cursor:pointer;list-style:none;">
+													<i data-icon="alert-triangle"></i>
+													<?php
+													$warning_count = count( $warning_lines );
+													/* translators: %d: number of warnings about content a conversion lost, converted only in part, or skipped. */
+													printf( esc_html( _n( '%d content warning', '%d content warnings', $warning_count, 'migrate-off-elementor' ) ), (int) $warning_count );
+													?>
+												</summary>
+												<ul style="margin:6px 0 0 16px;padding:0;font-size:var(--text-xs);color:var(--text-muted);list-style:disc;">
+													<?php foreach ( $warning_lines as $warning_line ) : ?>
+														<li><?php echo esc_html( (string) $warning_line ); ?></li>
+													<?php endforeach; ?>
+												</ul>
+											</details>
+										<?php endif; ?>
 										<?php if ( ! empty( $unsp_types ) ) : ?>
 											<details>
 												<summary class="pgs-issue" style="cursor:pointer;list-style:none;">
@@ -477,7 +495,7 @@ class Conversion_Log_Admin {
 												printf( esc_html( _n( '%d empty output', '%d empty outputs', $empty_w, 'migrate-off-elementor' ) ), (int) $empty_w );
 												?>
 											</span>
-										<?php else : ?>
+										<?php elseif ( empty( $warning_lines ) ) : ?>
 											<span class="pgs-issue pgs-issue--ok"><i data-icon="check"></i> <?php esc_html_e( 'None', 'migrate-off-elementor' ); ?></span>
 										<?php endif; ?>
 									</td>

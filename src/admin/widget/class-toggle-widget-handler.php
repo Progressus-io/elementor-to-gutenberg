@@ -11,7 +11,6 @@ use Progressus\BlockShift\Admin\Helper\Style_Parser;
 use Progressus\BlockShift\Admin\Widget_Handler_Interface;
 
 use function esc_attr;
-use function wp_json_encode;
 use function wp_kses_post;
 
 defined( 'ABSPATH' ) || exit;
@@ -68,7 +67,7 @@ class Toggle_Widget_Handler implements Widget_Handler_Interface {
 			$classes    = array_filter( array_unique( array_merge( array( 'wp-block-details' ), $custom_classes ) ) );
 			$class_attr = ' class="' . esc_attr( implode( ' ', $classes ) ) . '"';
 
-			$attrs_comment = ! empty( $attrs ) ? ' ' . (string) wp_json_encode( $attrs ) : '';
+			$attrs_comment = ! empty( $attrs ) ? ' ' . serialize_block_attributes( $attrs ) : '';
 			$summary_html  = wp_kses_post( $title );
 
 			$content_trimmed = trim( $content );

@@ -122,7 +122,7 @@ class Social_Icons_Widget_Handler implements Widget_Handler_Interface {
 
 			$links_markup .= sprintf(
 				'<!-- wp:social-link%s /-->',
-				empty( $link_attrs ) ? '' : ' ' . wp_json_encode( $link_attrs )
+				empty( $link_attrs ) ? '' : ' ' . serialize_block_attributes( $link_attrs )
 			);
 		}
 

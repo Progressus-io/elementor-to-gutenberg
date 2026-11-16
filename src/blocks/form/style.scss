@@ -164,3 +164,78 @@
     }
   }
 }
+
+// Layout of the current markup. Forms saved by 1.1.0 and earlier carry an inline
+// grid instead of the gap property, so they are left as they were.
+.wp-block-blockshift-form .blockshift-form[style*="--blockshift-form-gap"] {
+  display: flex;
+  flex-wrap: wrap;
+  margin-left: calc(var(--blockshift-form-gap) / -2);
+  margin-right: calc(var(--blockshift-form-gap) / -2);
+
+  > .form-field,
+  > .form-step > .form-field,
+  > .form-button-wrapper,
+  > .form-message,
+  > .form-step-nav {
+    box-sizing: border-box;
+    width: 100%;
+    padding-left: calc(var(--blockshift-form-gap) / 2);
+    padding-right: calc(var(--blockshift-form-gap) / 2);
+  }
+
+  > .form-step {
+    display: flex;
+    flex-wrap: wrap;
+    width: 100%;
+    row-gap: inherit;
+  }
+
+  &.has-steps > .form-step:not(.is-active) {
+    display: none;
+  }
+
+  @media (min-width: 768px) {
+    > .form-field,
+    > .form-step > .form-field {
+      width: var(--blockshift-field-width, 100%);
+    }
+  }
+
+  .form-field-honeypot {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+
+  .form-label {
+    display: block;
+    font-weight: 500;
+  }
+
+  .form-options {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    &.is-inline {
+      flex-direction: row;
+      flex-wrap: wrap;
+      gap: 6px 16px;
+    }
+  }
+
+  .form-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 400;
+  }
+
+  .form-step-nav {
+    display: flex;
+    gap: 12px;
+  }
+}

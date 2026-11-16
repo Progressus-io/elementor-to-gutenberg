@@ -189,7 +189,7 @@ class Icon_List_Widget_Handler implements Widget_Handler_Interface {
 
 		$attrs_json = '';
 		if ( ! empty( $attrs ) ) {
-			$attrs_json = ' ' . wp_json_encode( $attrs );
+			$attrs_json = ' ' . serialize_block_attributes( $attrs );
 		}
 
 		$class_attr = '';

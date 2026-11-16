@@ -264,7 +264,7 @@ class Testimonial_Carousel_Widget_Handler implements Widget_Handler_Interface {
 			$block_content = serialize_block( $parsed );
 		} else {
 
-			$attributes_json = wp_json_encode( $attributes, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
+			$attributes_json = serialize_block_attributes( $attributes );
 			if ( false === $attributes_json || '' === $attributes_json ) {
 				$attributes_json = '{}';
 			}
@@ -344,7 +344,7 @@ class Testimonial_Carousel_Widget_Handler implements Widget_Handler_Interface {
 
 		$content_color_style = '' !== $content_color ? 'color:' . $content_color . ';' : '';
 		$content_style       = sprintf(
-			'%sfont-size:%dpx;font-weight:%s;font-style:%s;text-decoration:%s;line-height:%s;letter-spacing:%spx;word-spacing:%spx;font-family:%s;margin-bottom:%dpx',
+			'%sfont-size:%dpx;font-weight:%s;font-style:%s;text-decoration:%s;line-height:%s;letter-spacing:%spx;word-spacing:%spx;%smargin-bottom:%dpx',
 			$content_color_style,
 			(int) ( $content_typography['fontSize'] ?? 16 ),
 			(string) ( $content_typography['fontWeight'] ?? 'normal' ),
@@ -353,7 +353,7 @@ class Testimonial_Carousel_Widget_Handler implements Widget_Handler_Interface {
 			$line_height,
 			(string) ( $content_typography['letterSpacing'] ?? 0 ),
 			(string) ( $content_typography['wordSpacing'] ?? 0 ),
-			(string) ( $content_typography['fontFamily'] ?? '' ),
+			empty( $content_typography['fontFamily'] ) ? '' : 'font-family:' . (string) $content_typography['fontFamily'] . ';',
 			(int) $content_gap
 		);
 
@@ -403,7 +403,7 @@ class Testimonial_Carousel_Widget_Handler implements Widget_Handler_Interface {
 
 			$content_color_style = '' !== $content_color ? 'color:' . $content_color . ';' : '';
 			$content_style       = sprintf(
-				'%sfont-size:%dpx;font-weight:%s;font-style:%s;text-decoration:%s;line-height:%s;letter-spacing:%spx;word-spacing:%spx;font-family:%s;margin-bottom:%dpx',
+				'%sfont-size:%dpx;font-weight:%s;font-style:%s;text-decoration:%s;line-height:%s;letter-spacing:%spx;word-spacing:%spx;%smargin-bottom:%dpx',
 				$content_color_style,
 				(int) ( $content_typography['fontSize'] ?? 16 ),
 				(string) ( $content_typography['fontWeight'] ?? 'normal' ),
@@ -412,7 +412,7 @@ class Testimonial_Carousel_Widget_Handler implements Widget_Handler_Interface {
 				$line_height,
 				(string) ( $content_typography['letterSpacing'] ?? 0 ),
 				(string) ( $content_typography['wordSpacing'] ?? 0 ),
-				(string) ( $content_typography['fontFamily'] ?? '' ),
+				empty( $content_typography['fontFamily'] ) ? '' : 'font-family:' . (string) $content_typography['fontFamily'] . ';',
 				(int) $content_gap
 			);
 
@@ -442,9 +442,11 @@ class Testimonial_Carousel_Widget_Handler implements Widget_Handler_Interface {
 			$html .= '<div class="swiper-slide">';
 			$html .= '<div class="testimonial-slide layout-' . esc_attr( $layout ) . '" style="' . esc_attr( $slide_style ) . '">';
 
-			$image_html      = ! empty( $slide['imageUrl'] ) ? '<img src="' . esc_url( $slide['imageUrl'] ) . '" alt="' . esc_attr( $slide['name'] ) . '" style="' . esc_attr( $image_style ) . '">' : '';
-			$content_html    = '<div class="testimonial-content" style="' . esc_attr( $content_style ) . '">' . $this->escape_text_node( (string) ( $slide['content'] ?? '' ) ) . '</div>';
-			$name_title_html = '<div class="testimonial-name" style="color:' . esc_attr( $name_color ) . ';font-weight:bold;margin-bottom:5px">' . $this->escape_text_node( (string) ( $slide['name'] ?? '' ) ) . '</div><div class="testimonial-title" style="color:' . esc_attr( $title_color ) . ';font-size:14px">' . $this->escape_text_node( (string) ( $slide['title'] ?? '' ) ) . '</div>';
+			$image_html        = ! empty( $slide['imageUrl'] ) ? '<img src="' . esc_url( $slide['imageUrl'] ) . '" alt="' . esc_attr( $slide['name'] ) . '" style="' . esc_attr( $image_style ) . '">' : '';
+			$content_html      = '<div class="testimonial-content" style="' . esc_attr( $content_style ) . '">' . $this->escape_text_node( (string) ( $slide['content'] ?? '' ) ) . '</div>';
+			$name_color_style  = '' !== trim( (string) $name_color ) ? 'color:' . esc_attr( $name_color ) . ';' : '';
+			$title_color_style = '' !== trim( (string) $title_color ) ? 'color:' . esc_attr( $title_color ) . ';' : '';
+			$name_title_html   = '<div class="testimonial-name" style="' . $name_color_style . 'font-weight:bold;margin-bottom:5px">' . $this->escape_text_node( (string) ( $slide['name'] ?? '' ) ) . '</div><div class="testimonial-title" style="' . $title_color_style . 'font-size:14px">' . $this->escape_text_node( (string) ( $slide['title'] ?? '' ) ) . '</div>';
 
 			if ( 'image_above' === $layout ) {
 				$html .= $image_html . $content_html . $name_title_html;

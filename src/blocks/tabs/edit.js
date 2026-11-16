@@ -5,7 +5,11 @@ import {
 	PanelColorSettings,
 	BlockControls,
 	FontSizePicker,
+	useInnerBlocksProps,
+	store as blockEditorStore,
 } from '@wordpress/block-editor';
+import { createBlock } from '@wordpress/blocks';
+import { useDispatch, useSelect } from '@wordpress/data';
 import {
 	PanelBody,
 	TextControl,
@@ -21,7 +25,7 @@ import {
 	ToolbarButton,
 } from '@wordpress/components';
 
-const Edit = ( { attributes, setAttributes } ) => {
+const Edit = ( { attributes, setAttributes, clientId } ) => {
 	const {
 		tabs,
 		activeTab,
@@ -46,7 +50,27 @@ const Edit = ( { attributes, setAttributes } ) => {
 
 	const blockProps = useBlockProps();
 
+	const childTabs = useSelect(
+		( select ) => select( blockEditorStore ).getBlocks( clientId ),
+		[ clientId ]
+	);
+	const { insertBlock, removeBlock } = useDispatch( blockEditorStore );
+	const usesInnerTabs = !! attributes.innerTabs;
+
 	const addTab = () => {
+		if ( usesInnerTabs ) {
+			insertBlock(
+				createBlock( 'blockshift/tab' ),
+				childTabs.length,
+				clientId,
+				false
+			);
+			setAttributes( {
+				tabs: [ ...tabs, { title: `Tab ${ tabs.length + 1 }` } ],
+			} );
+			return;
+		}
+
 		const newTabs = [
 			...tabs,
 			{
@@ -58,6 +82,10 @@ const Edit = ( { attributes, setAttributes } ) => {
 	};
 
 	const removeTab = ( index ) => {
+		if ( usesInnerTabs && childTabs[ index ] && tabs.length > 1 ) {
+			removeBlock( childTabs[ index ].clientId, false );
+		}
+
 		if ( tabs.length > 1 ) {
 			const newTabs = tabs.filter( ( _, i ) => i !== index );
 			setAttributes( {
@@ -68,8 +96,9 @@ const Edit = ( { attributes, setAttributes } ) => {
 	};
 
 	const updateTab = ( index, field, value ) => {
-		const newTabs = [ ...tabs ];
-		newTabs[ index ][ field ] = value;
+		const newTabs = tabs.map( ( tab, i ) =>
+			i === index ? { ...tab, [ field ]: value } : tab
+		);
 		setAttributes( { tabs: newTabs } );
 	};
 
@@ -125,6 +154,14 @@ const Edit = ( { attributes, setAttributes } ) => {
 		lineHeight: contentTypography.lineHeight || undefined,
 		fontFamily: contentTypography.fontFamily || undefined,
 	};
+
+	const innerBlocksProps = useInnerBlocksProps(
+		{ className: 'blockshift-tabs-content', style: contentStyle },
+		{
+			allowedBlocks: [ 'blockshift/tab' ],
+			renderAppender: false,
+		}
+	);
 
 	return (
 		<>
@@ -658,18 +695,20 @@ const Edit = ( { attributes, setAttributes } ) => {
 								__nextHasNoMarginBottom
 							/>
 
-							<TextareaControl
-								label={ __(
-									'Content',
-									'migrate-off-elementor'
-								) }
-								value={ tab.content }
-								onChange={ ( value ) =>
-									updateTab( index, 'content', value )
-								}
-								rows={ 3 }
-								__nextHasNoMarginBottom
-							/>
+							{ ! usesInnerTabs && (
+								<TextareaControl
+									label={ __(
+										'Content',
+										'migrate-off-elementor'
+									) }
+									value={ tab.content }
+									onChange={ ( value ) =>
+										updateTab( index, 'content', value )
+									}
+									rows={ 3 }
+									__nextHasNoMarginBottom
+								/>
+							) }
 						</div>
 					) ) }
 				</PanelBody>
@@ -716,14 +755,18 @@ const Edit = ( { attributes, setAttributes } ) => {
 						) ) }
 					</div>
 
-					<div
-						className="blockshift-tabs-content"
-						style={ contentStyle }
-					>
-						<div className="blockshift-tab-content">
-							{ tabs[ activeTab ]?.content || '' }
+					{ usesInnerTabs ? (
+						<div { ...innerBlocksProps } />
+					) : (
+						<div
+							className="blockshift-tabs-content"
+							style={ contentStyle }
+						>
+							<div className="blockshift-tab-content">
+								{ tabs[ activeTab ]?.content || '' }
+							</div>
 						</div>
-					</div>
+					) }
 				</div>
 			</div>
 		</>

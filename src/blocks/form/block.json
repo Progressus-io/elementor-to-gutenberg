@@ -18,6 +18,10 @@
       "type": "string",
       "default": "contact-form"
     },
+    "formId": {
+      "type": "string",
+      "default": ""
+    },
     "formFields": {
       "type": "array",
       "default": [
@@ -63,6 +67,18 @@
     "errorMessage": {
       "type": "string",
       "default": "Your submission failed because of an error."
+    },
+    "redirectUrl": {
+      "type": "string",
+      "default": ""
+    },
+    "nextButtonText": {
+      "type": "string",
+      "default": "Next"
+    },
+    "previousButtonText": {
+      "type": "string",
+      "default": "Previous"
     },
     "requiredFieldMessage": {
       "type": "string",

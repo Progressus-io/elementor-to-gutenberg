@@ -145,3 +145,6 @@
     }
   }
 }
+.blockshift-tabs:not(.is-ready) > .blockshift-tabs-content > .wp-block-blockshift-tab:not(:first-child) {
+  display: none;
+}
