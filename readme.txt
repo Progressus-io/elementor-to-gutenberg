@@ -155,14 +155,19 @@ Lucide line icons (ISC) are inlined uncompressed in assets/js/pgs-icons.js. Sour
 == Changelog ==
 
 = 1.2.0 =
-* Add: Tabs, nested tabs, videos (uploaded, YouTube, Vimeo, Dailymotion and VideoPress), the HTML widget, menu anchors, Template widgets and global widgets now convert.
-* Add: Widgets the plugin cannot convert keep their text, links and images, with a note in the editor, instead of disappearing.
-* Add: Contact forms now support dropdowns, radio buttons, checkboxes, acceptance boxes, hidden fields and multi-step forms, and are protected against spam.
+* Add: Videos from your Media Library, YouTube, Vimeo, Dailymotion and VideoPress now convert.
+* Add: The HTML widget, menu anchors, Template widgets and global widgets now convert.
+* Add: Widgets the plugin cannot convert keep their text, links and images instead of disappearing.
+* Add: Contact forms now support dropdowns, radio buttons, checkboxes, hidden fields and multi-step forms.
+* Add: Contact forms are now protected against spam.
 * Add: "Hide on desktop, tablet and mobile" settings now carry over.
 * Add: The Conversion Wizard can convert again the pages converted by an older version of the plugin.
 * Add: The Conversion Wizard warns you that switching theme changes your whole site, and that headers and footers you did not convert will stop showing.
-* Fix: A converted page is now as private as the original. Drafts, private, password-protected and scheduled pages stay that way, also when you convert them again.
+* Fix: Draft, private, password-protected and scheduled pages stay that way after you convert them.
+* Fix: Nested tabs now keep their titles and content.
 * Fix: Accordions, nested accordions, the Pro gallery, menus with sub-menus and linked headings now convert correctly.
+* Fix: Page-wide fonts and colours from Elementor now apply to converted pages.
+* Fix: The wizard no longer switches or installs a theme when nothing is selected to convert.
 * Fix: Icons, counters, progress bars, image boxes, calls to action and testimonials no longer show an "invalid content" warning in the block editor.
 * Fix: Your theme's header and footer are replaced only when you choose that option in the wizard, and the wizard tells you if one could not be replaced.
 * Fix: Icon lists and shortcodes can no longer add unsafe code to a page, and feedback can only be sent about your own conversions.
@@ -188,7 +193,7 @@ Lucide line icons (ISC) are inlined uncompressed in assets/js/pgs-icons.js. Sour
 == Upgrade Notice ==
 
 = 1.2.0 =
-More Elementor widgets now convert, and converted pages stay as private as the original. Pages converted with an older version do not change on their own: re-convert them from the Conversion Wizard by ticking "Convert again the pages converted by an older version of the plugin".
+More Elementor widgets now convert, and converted pages stay as private as the original. Pages converted with an older version do not change on their own: re-convert them from the Conversion Wizard by ticking "Convert again the [number] pages converted by an older version of the plugin".
 
 = 1.1.0 =
 Converted pages now match their Elementor originals far more closely and open cleanly in the block editor. Existing converted pages are unaffected until you convert again.
