@@ -193,7 +193,7 @@ Lucide line icons (ISC) are inlined uncompressed in assets/js/pgs-icons.js. Sour
 == Upgrade Notice ==
 
 = 1.2.0 =
-More Elementor widgets now convert, and converted pages stay as private as the original. Pages converted with an older version do not change on their own: re-convert them from the Conversion Wizard by ticking "Convert again the [number] pages converted by an older version of the plugin".
+More Elementor widgets now convert, and converted pages stay as private as the original. Pages converted with an older version do not change on their own: re-convert them from the Conversion Wizard with the option to convert again pages made by an older version.
 
 = 1.1.0 =
 Converted pages now match their Elementor originals far more closely and open cleanly in the block editor. Existing converted pages are unaffected until you convert again.
