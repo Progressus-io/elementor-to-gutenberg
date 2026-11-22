@@ -3,7 +3,7 @@ Contributors: shadim
 Tags: gutenberg, migration, conversion, blocks
 Requires at least: 6.7
 Tested up to: 7.1
-Stable tag: 1.1.0
+Stable tag: 1.2.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -94,7 +94,7 @@ The conversion itself runs entirely on your own site. A few optional features do
 
 == External services ==
 
-This plugin can connect to the third-party services listed below. The feedback service is only contacted from the admin area, as part of an action you explicitly start (submitting feedback). The others load only when a converted page that uses those features is viewed, or while a Map block is open in the block editor.
+This plugin can connect to the third-party services listed below. The feedback service is only contacted from the admin area, as part of an action you explicitly start (submitting feedback). The WordPress.org themes API is only contacted from the Conversion Wizard. The others load only when a converted page that uses those features is viewed, or while a Map block is open in the block editor.
 
 = Feedback service =
 
@@ -123,6 +123,12 @@ Vimeo is provided by Vimeo. Terms: https://vimeo.com/terms — Privacy policy: h
 Dailymotion is provided by Dailymotion. Terms: https://legal.dailymotion.com/en/terms-of-use/ — Privacy policy: https://legal.dailymotion.com/en/privacy-policy/
 
 VideoPress is provided by Automattic. Terms: https://wordpress.com/tos/ — Privacy policy: https://automattic.com/privacy/
+
+= WordPress.org themes =
+
+When you open the Conversion Wizard and one of the block themes it suggests (Twenty Twenty-Five, Twenty Twenty-Four) is not installed, the plugin asks the WordPress.org themes API (https://api.wordpress.org) for that theme's screenshot so the theme step can show it. Only the theme's name is sent. If you then choose that theme, it is downloaded and installed from WordPress.org.
+
+Provided by WordPress.org. Privacy policy: https://wordpress.org/about/privacy/
 
 = Google Maps Embed API =
 
