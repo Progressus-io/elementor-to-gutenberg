@@ -36,6 +36,8 @@ namespace Progressus\BlockShift\Admin;
 
 defined( 'ABSPATH' ) || exit;
 
+use Progressus\BlockShift\Gutenberg;
+
 use function add_option;
 use function basename;
 use function clean_post_cache;
@@ -69,7 +71,14 @@ class Data_Migration {
 	/**
 	 * Marker stored once every step below has run.
 	 */
-	const TARGET_VERSION = '2026-08-scope-and-log';
+	const TARGET_VERSION = '2026-11-form-registry';
+
+	/**
+	 * Marker written by 1.1.0 and earlier once every step up to
+	 * secure_diagnostic_log had run. A site carrying it only needs the steps
+	 * added since.
+	 */
+	const SCOPE_AND_LOG_VERSION = '2026-08-scope-and-log';
 
 	/**
 	 * Marker written by the original all-or-nothing rename pass. A site
@@ -89,6 +98,22 @@ class Data_Migration {
 	 * @var string[]
 	 */
 	private const STEPS = array(
+		'migrate_postmeta_keys',
+		'migrate_usermeta_keys',
+		'migrate_option_names',
+		'migrate_page_template_assignments',
+		'migrate_post_content',
+		'migrate_external_css',
+		'secure_diagnostic_log',
+		'backfill_form_registry',
+	);
+
+	/**
+	 * The steps a site holding SCOPE_AND_LOG_VERSION has already run.
+	 *
+	 * @var string[]
+	 */
+	private const SCOPE_AND_LOG_STEPS = array(
 		'migrate_postmeta_keys',
 		'migrate_usermeta_keys',
 		'migrate_option_names',
@@ -263,6 +288,11 @@ class Data_Migration {
 
 		if ( empty( $completed ) && self::LEGACY_RENAME_VERSION === get_option( self::VERSION_OPTION ) ) {
 			$completed = self::LEGACY_RENAME_STEPS;
+		}
+
+		// A site that finished every step known to 1.1.0 only runs the newer ones.
+		if ( empty( $completed ) && self::SCOPE_AND_LOG_VERSION === get_option( self::VERSION_OPTION ) ) {
+			$completed = self::SCOPE_AND_LOG_STEPS;
 		}
 
 		return $completed;
@@ -550,5 +580,38 @@ class Data_Migration {
 				$wp_filesystem->delete( $legacy );
 			}
 		}
+	}
+
+	/**
+	 * Record the forms on pages converted before the form registry existed.
+	 *
+	 * A submission is matched to the post that declares its form. A form in a
+	 * header or footer part is submitted from other pages, so it can only be
+	 * found through the registry, which until now was filled when a post was
+	 * saved. This lists the forms already stored, and removes the option the
+	 * earlier form handler kept its field list in.
+	 *
+	 * @return void
+	 */
+	private static function backfill_form_registry(): void {
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- A one-time content search across every post type has no core API.
+		$post_ids = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT ID FROM {$wpdb->posts} WHERE post_type <> 'revision' AND post_status IN ( 'publish', 'private' ) AND post_content LIKE %s",
+				'%' . $wpdb->esc_like( '<!-- wp:blockshift/form' ) . '%'
+			)
+		);
+
+		$plugin = Gutenberg::instance();
+		foreach ( (array) $post_ids as $post_id ) {
+			$post = get_post( (int) $post_id );
+			if ( $plugin && $post instanceof \WP_Post ) {
+				$plugin->register_post_forms( (int) $post_id, $post );
+			}
+		}
+
+		delete_option( 'blockshift_form_fields' );
 	}
 }
