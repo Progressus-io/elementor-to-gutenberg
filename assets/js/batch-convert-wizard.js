@@ -1447,7 +1447,7 @@
 						'blockshift-alert blockshift-alert-warning blockshift-theme-change-warning',
 						formatString(
 							this.strings.themeChangeWarning ||
-								'Switching themes is a site-wide change: %s becomes the active theme for every page and post on your site as soon as the conversion starts, before any page is converted. Test on a staging site first when possible.',
+								'Switching themes is a site-wide change: %s becomes the active theme for every page and post on your site as soon as the conversion starts, before any page is converted. Test on a staging site first when possible. Elementor also clears its cached CSS for every page when the theme changes.',
 							this.getTargetThemeName()
 						)
 					)
@@ -2725,7 +2725,7 @@
 					'span',
 					null,
 					this.strings.safetyNote ||
-						'Recommended to run on a staging environment if your site is live. Conversion runs in the background — you can safely close this page.'
+						'Recommended to run on a staging environment if your site is live. Keep this tab open until the conversion finishes.'
 				)
 			);
 			container.appendChild( safety );

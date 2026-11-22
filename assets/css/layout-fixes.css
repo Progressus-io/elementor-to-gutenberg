@@ -54,9 +54,12 @@
  * content and centre it" - which dragged left-aligned text into the middle of the
  * column. Centring from the parent leaves the group in normal flow, so its children
  * still span the full width and keep their own alignment.
+ *
+ * The column rule is scoped under the converted-content wrapper, because this file
+ * also loads on pages that only render a converted header or footer.
  */
 .blockshift-full-width-section:has(> .wp-block-group.are-vertically-aligned-center),
-.wp-block-column:has(> .wp-block-group.are-vertically-aligned-center) {
+[class*="blockshift-page-"] .wp-block-column:has(> .wp-block-group.are-vertically-aligned-center) {
     display: flex;
     flex-direction: column;
     justify-content: center;
