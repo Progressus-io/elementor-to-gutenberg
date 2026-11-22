@@ -129,6 +129,8 @@
 				defaultHeaderId: 0,
 				defaultFooterId: 0,
 				skipConverted: true,
+				reconvertOutdated: false,
+				replaceThemeParts: null,
 				conflictPolicy: 'skip',
 				tablePage: 1,
 				perPage: 10,
@@ -167,6 +169,36 @@
 				this.resetSelectionForMode( this.state.modeSelection );
 			}
 			this.render();
+			this.loadThemeScreenshots();
+		}
+
+		/**
+		 * Fetch the screenshots of suggested themes that are not installed,
+		 * once the wizard is on screen.
+		 */
+		loadThemeScreenshots() {
+			const suggested = Array.isArray( this.themes.suggestedCoreThemes )
+				? this.themes.suggestedCoreThemes
+				: [];
+			if ( ! suggested.some( ( theme ) => ! theme.screenshot ) ) {
+				return;
+			}
+
+			this.request( 'blockshift_theme_screenshots', {} )
+				.then( ( data ) => {
+					const screenshots = ( data && data.screenshots ) || {};
+					let changed = false;
+					suggested.forEach( ( theme ) => {
+						if ( ! theme.screenshot && screenshots[ theme.slug ] ) {
+							theme.screenshot = screenshots[ theme.slug ];
+							changed = true;
+						}
+					} );
+					if ( changed && this.state.currentStep === 'theme' ) {
+						this.render();
+					}
+				} )
+				.catch( () => {} );
 		}
 
 		resetSelectionForMode( mode ) {
@@ -327,6 +359,18 @@
 			);
 		}
 
+		/**
+		 * Whether the run should make the converted default header and footer the theme's own.
+		 * Until the user decides, it follows the theme choice: on when switching theme, off when keeping it.
+		 *
+		 * @return {boolean} True when the theme's header and footer are to be replaced.
+		 */
+		shouldReplaceThemeParts() {
+			return null === this.state.replaceThemeParts
+				? this.willChangeTheme()
+				: this.state.replaceThemeParts;
+		}
+
 		willChangeTheme() {
 			const targetSlug =
 				this.state.selectedThemeSlug || this.getCurrentThemeSlug();
@@ -352,12 +396,17 @@
 		/**
 		 * Number of detected Elementor header and footer templates.
 		 *
-		 * @return {number} Headers plus footers.
+		 * Only published templates count: a draft is not shown on the site,
+		 * so switching theme does not take it away.
+		 *
+		 * @return {number} Published headers plus footers.
 		 */
 		getElementorTemplateCount() {
+			const isLive = ( template ) =>
+				! template.status || template.status === 'publish';
 			return (
-				this.getTemplatesFor( 'header' ).length +
-				this.getTemplatesFor( 'footer' ).length
+				this.getTemplatesFor( 'header' ).filter( isLive ).length +
+				this.getTemplatesFor( 'footer' ).filter( isLive ).length
 			);
 		}
 
@@ -846,12 +895,14 @@
 				mode: this.state.mode,
 				pages: selected,
 				skipConverted: this.state.skipConverted ? 1 : 0,
+				reconvertOutdated: this.state.reconvertOutdated ? 1 : 0,
 				conflictPolicy: this.state.conflictPolicy,
 			};
 
 			const themePayload = this.getThemePayload();
 			Object.assign( payload, themePayload );
 
+			payload.replaceThemeParts = this.shouldReplaceThemeParts() ? 1 : 0;
 			payload.headerTemplates = selectedHeaders;
 			payload.footerTemplates = selectedFooters;
 			payload.defaultHeader = this.userCanManageTemplateParts
@@ -894,6 +945,7 @@
 			payload.mode = 'custom';
 			payload.pages = [ pageId ];
 			payload.skipConverted = 0;
+			payload.reconvertOutdated = 0;
 			payload.conflictPolicy = this.state.job
 				? this.state.job.conflictPolicy || 'skip'
 				: 'skip';
@@ -1813,6 +1865,10 @@
 
 				const lastTd = document.createElement( 'td' );
 				lastTd.textContent = page.lastConverted || '—';
+				if ( page.isOutdated ) {
+					lastTd.textContent +=
+						' · ' + ( this.strings.outdatedBadge || 'Older version' );
+				}
 				tr.appendChild( lastTd );
 
 				const compatTd = document.createElement( 'td' );
@@ -1909,6 +1965,39 @@
 				skipWrapper.appendChild( skipCheckbox );
 				skipWrapper.appendChild( skipLabel );
 				container.appendChild( skipWrapper );
+			}
+
+			const outdatedCount = this.getSelectedPages().filter(
+				( page ) => page.isOutdated
+			).length;
+			if ( outdatedCount > 0 ) {
+				const outdatedWrapper = createElement(
+					'div',
+					'blockshift-skip-converted-wrapper blockshift-reconvert-outdated-wrapper'
+				);
+				const outdatedCheckbox = document.createElement( 'input' );
+				outdatedCheckbox.type = 'checkbox';
+				outdatedCheckbox.checked = this.state.reconvertOutdated;
+				outdatedCheckbox.id = 'blockshift-reconvert-outdated';
+				outdatedCheckbox.addEventListener( 'change', () => {
+					this.state.reconvertOutdated = outdatedCheckbox.checked;
+					this.render();
+				} );
+				const outdatedLabel = document.createElement( 'label' );
+				outdatedLabel.htmlFor = 'blockshift-reconvert-outdated';
+				outdatedLabel.textContent = (
+					this.strings.reconvertOutdated ||
+					'Convert again the %d pages converted by an older version of the plugin'
+				).replace( '%d', outdatedCount );
+				const outdatedHelp = createElement(
+					'p',
+					'description',
+					this.strings.reconvertOutdatedHelp || ''
+				);
+				outdatedWrapper.appendChild( outdatedCheckbox );
+				outdatedWrapper.appendChild( outdatedLabel );
+				outdatedWrapper.appendChild( outdatedHelp );
+				container.appendChild( outdatedWrapper );
 			}
 
 			const buttons = createElement( 'div', 'blockshift-wizard-buttons' );
@@ -2189,6 +2278,36 @@
 				this.renderTemplatesGroup( 'footer', '' )
 			);
 			container.appendChild( footerSection );
+
+			if ( this.userCanManageTemplateParts ) {
+				const replaceWrapper = createElement(
+					'div',
+					'blockshift-skip-converted-wrapper blockshift-replace-theme-parts-wrapper'
+				);
+				const replaceCheckbox = document.createElement( 'input' );
+				replaceCheckbox.type = 'checkbox';
+				replaceCheckbox.checked = this.shouldReplaceThemeParts();
+				replaceCheckbox.id = 'blockshift-replace-theme-parts';
+				replaceCheckbox.addEventListener( 'change', () => {
+					this.state.replaceThemeParts = replaceCheckbox.checked;
+					this.render();
+				} );
+				const replaceLabel = document.createElement( 'label' );
+				replaceLabel.htmlFor = 'blockshift-replace-theme-parts';
+				replaceLabel.textContent =
+					this.strings.replaceThemeParts ||
+					'Replace the theme’s header and footer with the converted default header and footer';
+				replaceWrapper.appendChild( replaceCheckbox );
+				replaceWrapper.appendChild( replaceLabel );
+				replaceWrapper.appendChild(
+					createElement(
+						'p',
+						'description',
+						this.strings.replaceThemePartsHelp || ''
+					)
+				);
+				container.appendChild( replaceWrapper );
+			}
 
 			const templatesWarning = this.renderUnconvertedTemplatesWarning();
 			if ( templatesWarning ) {
@@ -2503,7 +2622,9 @@
 
 			const selectedCount = this.state.selectedPageIds.size;
 			const convertedSelected = this.getSelectedPages().filter(
-				( page ) => page.conversionStatus === 'converted'
+				( page ) =>
+					page.conversionStatus === 'converted' &&
+					! ( this.state.reconvertOutdated && page.isOutdated )
 			).length;
 			const convertCount = this.state.skipConverted
 				? Math.max( 0, selectedCount - convertedSelected )

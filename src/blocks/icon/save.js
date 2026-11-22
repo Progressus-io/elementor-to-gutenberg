@@ -3,6 +3,13 @@ import { useBlockProps } from '@wordpress/block-editor';
 export default function save( { attributes } ) {
 	const {
 		className,
+		icon,
+		iconStyle,
+		color,
+		backgroundColor,
+		borderRadius,
+		padding,
+		hoverColor,
 		svg,
 		svgUrl,
 		svgStyle,
@@ -71,8 +78,36 @@ export default function save( { attributes } ) {
 				style={ imgStyles }
 			/>
 		);
-	} else {
-		iconElement = null;
+	} else if ( icon ) {
+		const iconStyles = {
+			fontSize: `${ size }px`,
+			color,
+			backgroundColor: backgroundColor || 'transparent',
+			borderRadius: `${ borderRadius }px`,
+			padding: `${ padding }px`,
+			display: 'inline-block',
+			lineHeight: '1',
+			transition: 'all 0.3s ease',
+			width: 'auto',
+			height: 'auto',
+		};
+		if ( hoverColor ) {
+			iconStyles[ '--fontawesome-icon-hover-color' ] = hoverColor;
+		}
+
+		iconElement = (
+			<i
+				className={ `${ iconStyle } ${ icon } fontawesome-icon-hover-${
+					hoverEffect || 'none'
+				}` }
+				style={ iconStyles }
+				aria-label={ ariaLabel || '' }
+				aria-hidden={ ariaLabel ? 'false' : 'true' }
+				data-hover-effect={ hoverEffect || 'none' }
+				data-icon={ icon }
+				data-icon-style={ iconStyle }
+			/>
+		);
 	}
 
 	const linkProps = link

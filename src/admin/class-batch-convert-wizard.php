@@ -104,6 +104,17 @@ class Batch_Convert_Wizard {
 
 	private const TEMPLATE_SOURCE_HEADER_FOOTER = 'header_footer_elementor';
 
+	/**
+	 * Version of the block markup the converter writes. Raise it whenever a release
+	 * changes that markup in a way older converted pages only pick up by converting again.
+	 */
+	public const MARKUP_VERSION = 2;
+
+	/**
+	 * Post meta holding the markup version a source and its converted copy were last converted with.
+	 */
+	public const MARKUP_VERSION_META = '_blockshift_markup_version';
+
 	private const TEMPLATE_ROLE_DEFAULT_HEADER = 'default_header';
 
 	private const TEMPLATE_ROLE_DEFAULT_FOOTER = 'default_footer';
@@ -186,6 +197,7 @@ class Batch_Convert_Wizard {
 		add_action( 'admin_menu', array( $this, 'register_menu' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 		add_action( 'wp_ajax_blockshift_pages', array( $this, 'ajax_get_pages' ) );
+		add_action( 'wp_ajax_blockshift_theme_screenshots', array( $this, 'ajax_get_theme_screenshots' ) );
 		add_action( 'wp_ajax_blockshift_start_job', array( $this, 'ajax_start_job' ) );
 		add_action( 'wp_ajax_blockshift_poll_job', array( $this, 'ajax_poll_job' ) );
 		add_action( 'wp_ajax_blockshift_cancel_job', array( $this, 'ajax_cancel_job' ) );
@@ -328,6 +340,28 @@ class Batch_Convert_Wizard {
 		);
 	}
 
+	/**
+	 * Return the screenshots of the suggested themes that are not installed.
+	 *
+	 * The WordPress.org lookup runs here, after the wizard has loaded, so a slow
+	 * or blocked connection never delays the wizard page itself.
+	 *
+	 * @return void
+	 */
+	public function ajax_get_theme_screenshots(): void {
+		$this->verify_ajax_request();
+
+		$installed   = wp_get_themes();
+		$screenshots = array();
+		foreach ( self::SUGGESTED_BLOCK_THEMES as $theme ) {
+			if ( ! isset( $installed[ $theme['slug'] ] ) ) {
+				$screenshots[ $theme['slug'] ] = $this->get_remote_theme_screenshot( (string) $theme['slug'], true );
+			}
+		}
+
+		wp_send_json_success( array( 'screenshots' => $screenshots ) );
+	}
+
 	private function build_preflight_summary(): array {
 		$pages           = $this->get_elementor_pages_data();
 		$eligible_count  = 0;
@@ -358,6 +392,7 @@ class Batch_Convert_Wizard {
 		$mode            = isset( $_POST['mode'] ) ? sanitize_key( wp_unslash( $_POST['mode'] ) ) : 'auto';
 		$conflict_policy = isset( $_POST['conflictPolicy'] ) ? sanitize_key( wp_unslash( $_POST['conflictPolicy'] ) ) : 'skip';
 		$skip_converted  = ! empty( $_POST['skipConverted'] );
+		$reconvert_old   = ! empty( $_POST['reconvertOutdated'] );
 
 		$raw_pages       = isset( $_POST['pages'] ) ? array_map( 'sanitize_text_field', (array) wp_unslash( $_POST['pages'] ) ) : array();
 		$raw_headers     = isset( $_POST['headerTemplates'] ) ? array_map( 'sanitize_text_field', (array) wp_unslash( $_POST['headerTemplates'] ) ) : array();
@@ -450,7 +485,13 @@ class Batch_Convert_Wizard {
 			$warnings[] = $this->build_theme_warning_from_error( $theme_result );
 		}
 
-		$options = $this->build_job_options( $mode, $conflict_policy, $skip_converted );
+		$options                       = $this->build_job_options( $mode, $conflict_policy, $skip_converted );
+		$options['reconvert_outdated'] = $reconvert_old;
+
+		// Taking over the theme's header and footer is opt-in. Left unsaid, it follows the theme choice:
+		// on when the run switches theme, off when the current theme is kept.
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified in verify_ajax_request()
+		$options['replace_theme_parts'] = isset( $_POST['replaceThemeParts'] ) ? ! empty( $_POST['replaceThemeParts'] ) : $change_theme;
 
 		$job_id = uniqid( 'blockshift_', true );
 
@@ -677,6 +718,35 @@ class Batch_Convert_Wizard {
 				$result          = $template_result;
 				$view_url        = $template_result['view_url'];
 
+				if ( ! empty( $template_result['warning'] ) ) {
+					$template_result['message'] = trim( $template_result['message'] . ' ' . $template_result['warning'] );
+					$job['warnings']            = isset( $job['warnings'] ) && is_array( $job['warnings'] ) ? $job['warnings'] : array();
+					$job['warnings'][]          = array(
+						'code'    => 'theme_part_takeover_failed',
+						'message' => $template_result['warning'],
+						'details' => '',
+					);
+
+					if ( '' !== $run_id && Admin_Settings::is_logging_enabled() ) {
+						Diagnostic_Logger::log_issue(
+							$run_id,
+							array(
+								'item_id'       => $index,
+								'status'        => 'SUCCESS_WITH_WARNINGS',
+								'severity'      => 'high',
+								'issue_code'    => 'THEME_PART_TAKEOVER_FAILED',
+								'issue_message' => $template_result['warning'],
+								'widget_type'   => null,
+								'widget_id'     => null,
+								'source_id'     => (int) $template_info['id'],
+								'target_id'     => (int) $template_result['target'],
+								'action_taken'  => 'template_part_saved_without_takeover',
+								'context'       => array(),
+							)
+						);
+					}
+				}
+
 				$result_entry = array(
 					'id'                => (int) $template_info['id'],
 					'title'             => $template_info['title'],
@@ -720,12 +790,12 @@ class Batch_Convert_Wizard {
 								'status'        => $_jstatus,
 								'severity'      => $_ci['severity'],
 								'issue_code'    => $_ci['code'],
-								'issue_message' => ( $_entry['type'] ?? '' ) . ': ' . ( $_entry['widget'] ?? '' ),
+								'issue_message' => ( $_entry['type'] ?? '' ) . ': ' . ( $_entry['widget'] ?? '' ) . ( isset( $_entry['message'] ) ? ' - ' . $_entry['message'] : '' ),
 								'widget_type'   => $_entry['widget'] ?? null,
 								'widget_id'     => null,
 								'source_id'     => $_src_id,
 								'target_id'     => $_tgt_id > 0 ? $_tgt_id : null,
-								'action_taken'  => 'unsupported' === ( $_entry['type'] ?? '' ) ? 'placeholder_rendered' : 'empty_output',
+								'action_taken'  => 'unsupported' === ( $_entry['type'] ?? '' ) ? 'fallback_rendered' : (string) ( $_entry['type'] ?? 'empty_output' ),
 								'context'       => array(),
 							)
 						);
@@ -1279,7 +1349,7 @@ class Batch_Convert_Wizard {
 
 			$theme['isInstalled']  = false;
 			$theme['isBlockTheme'] = true;
-			$theme['screenshot']   = $this->get_remote_theme_screenshot( (string) $theme['slug'] );
+			$theme['screenshot']   = $this->get_remote_theme_screenshot( (string) $theme['slug'], false );
 			$suggested[]           = $theme;
 		}
 
@@ -1296,15 +1366,20 @@ class Batch_Convert_Wizard {
 	 * The result is cached for a day, or for an hour when the API fails, and an
 	 * empty string means the card shows no image.
 	 *
-	 * @param string $slug Theme slug.
+	 * @param string $slug  Theme slug.
+	 * @param bool   $fetch Whether to ask WordPress.org when nothing is cached. The page render passes false.
 	 *
 	 * @return string The screenshot URL, or an empty string.
 	 */
-	private function get_remote_theme_screenshot( string $slug ): string {
+	private function get_remote_theme_screenshot( string $slug, bool $fetch ): string {
 		$cache_key = 'blockshift_theme_screenshot_' . sanitize_key( $slug );
 		$cached    = get_transient( $cache_key );
 		if ( is_string( $cached ) ) {
 			return $cached;
+		}
+
+		if ( ! $fetch ) {
+			return '';
 		}
 
 		require_once ABSPATH . 'wp-admin/includes/theme.php';
@@ -1804,6 +1879,7 @@ class Batch_Convert_Wizard {
 			'lastResultMessage' => is_array( $last_result ) && isset( $last_result['message'] ) ? (string) $last_result['message'] : '',
 			'lastConverted'     => $last_converted,
 			'hasConflict'       => $target_id > 0,
+			'isOutdated'        => 'success' === $status_key && $target_id > 0 && $this->is_outdated_conversion( (int) $post->ID, $target_id ),
 			'targetId'          => $target_id,
 			'viewConvertedUrl'  => $view_converted,
 			'editUrl'           => get_edit_post_link( $post ),
@@ -2356,7 +2432,10 @@ class Batch_Convert_Wizard {
 			$this->get_existing_target_id( $source_id )
 		);
 
-		if ( ! empty( $options['skip_converted'] ) && $existing_target_id > 0 && $this->has_been_converted( $source_id, $existing_target_id ) ) {
+		// A copy written by an older release is converted again in place when the run asks for it.
+		$reconvert_in_place = ! empty( $options['reconvert_outdated'] ) && $existing_target_id > 0 && $this->is_outdated_conversion( $source_id, $existing_target_id );
+
+		if ( ! $reconvert_in_place && ! empty( $options['skip_converted'] ) && $existing_target_id > 0 && $this->has_been_converted( $source_id, $existing_target_id ) ) {
 			$title = get_the_title( $source_id );
 			/* translators: %s: page title */
 			$message                     = sprintf( esc_html__( 'Skipped: “%s” is already converted.', 'migrate-off-elementor' ), $title );
@@ -2411,9 +2490,9 @@ class Batch_Convert_Wizard {
 		$created_new_target = false;
 
 		if ( $existing_target_id > 0 ) {
-			if ( 'duplicate' === $conflict_policy ) {
+			if ( 'duplicate' === $conflict_policy && ! $reconvert_in_place ) {
 				$write_id = 0;
-			} elseif ( 'overwrite' === $conflict_policy || 'update' === $options['mode'] ) {
+			} elseif ( 'overwrite' === $conflict_policy || 'update' === $options['mode'] || $reconvert_in_place ) {
 				$write_id = $existing_target_id;
 			} else {
 				$title = get_the_title( $source_id );
@@ -2428,10 +2507,15 @@ class Batch_Convert_Wizard {
 		}
 
 		if ( $write_id > 0 ) {
-			$save = wp_update_post(
-				array(
-					'ID'           => $write_id,
-					'post_content' => wp_slash( $content ),
+			$existing_copy = get_post( $write_id );
+			$save          = wp_update_post(
+				array_merge(
+					array(
+						'ID'           => $write_id,
+						'post_content' => wp_slash( $content ),
+					),
+					// The copy now holds the source's current content, so it follows a source that was hidden since.
+					$existing_copy instanceof WP_Post ? Admin_Settings::get_visibility_downgrade_fields( $post, $existing_copy ) : array()
 				),
 				true
 			);
@@ -2534,10 +2618,32 @@ class Batch_Convert_Wizard {
 	}
 
 	/**
-	 * Determine whether a post already has a converted target.
+	 * Whether a converted copy was written by a release older than the current block markup.
 	 *
-	 * @param int $post_id Source post ID.
-	 * @param int $target_id Target post ID.
+	 * Releases before the markup version existed stored none, so their copies count as outdated.
+	 *
+	 * @param int $post_id   Source post ID.
+	 * @param int $target_id Converted post ID, or zero.
+	 *
+	 * @return bool
+	 */
+	private function is_outdated_conversion( int $post_id, int $target_id ): bool {
+		if ( ! $this->has_been_converted( $post_id, $target_id ) ) {
+			return false;
+		}
+
+		$version = $target_id > 0 ? (int) get_post_meta( $target_id, self::MARKUP_VERSION_META, true ) : (int) get_post_meta( $post_id, self::MARKUP_VERSION_META, true );
+
+		return $version < self::MARKUP_VERSION;
+	}
+
+	/**
+	 * Whether a post has a successful conversion on record.
+	 *
+	 * @param int $post_id   Source post ID.
+	 * @param int $target_id Converted post ID, or zero.
+	 *
+	 * @return bool
 	 */
 	private function has_been_converted( int $post_id, int $target_id ): bool {
 		$converted_time = '';
@@ -2600,7 +2706,10 @@ class Batch_Convert_Wizard {
 
 		if ( ! empty( $options['skip_converted'] ) && 'success' === $last_status && $existing_target ) {
 			$this->update_template_part_role( $existing_target, (string) $template_info['role'], (string) $template_info['type'] );
-			$message = esc_html__( 'Skipped: template already converted.', 'migrate-off-elementor' );
+			$takeover = $this->maybe_take_over_theme_part( (int) $existing_target, $template_info, $options );
+			$message  = trim( esc_html__( 'Skipped: template already converted.', 'migrate-off-elementor' ) . ' ' . $takeover['note'] );
+
+			$result['warning'] = $takeover['warning'];
 
 			$edit_link = $existing_target ? get_edit_post_link( $existing_target, '' ) : '';
 			if ( $existing_target && ! $edit_link ) {
@@ -2610,6 +2719,21 @@ class Batch_Convert_Wizard {
 			$result['message']  = $message;
 			$result['target']   = $existing_target;
 			$result['view_url'] = (string) $edit_link;
+
+			return $result;
+		}
+
+		// The conflict policy covers template parts as it does pages: an existing part is only rewritten on "overwrite".
+		$conflict_policy = isset( $options['conflict_policy'] ) ? sanitize_key( (string) $options['conflict_policy'] ) : 'skip';
+		if ( $existing_target && 'skip' === $conflict_policy ) {
+			$edit_link = get_edit_post_link( $existing_target, '' );
+
+			$takeover = $this->maybe_take_over_theme_part( (int) $existing_target, $template_info, $options );
+
+			$result['message']  = trim( esc_html__( 'Skipped: this template already has a converted template part.', 'migrate-off-elementor' ) . ' ' . $takeover['note'] );
+			$result['warning']  = $takeover['warning'];
+			$result['target']   = $existing_target;
+			$result['view_url'] = $edit_link ? (string) $edit_link : admin_url( 'post.php?post=' . $existing_target . '&action=edit' );
 
 			return $result;
 		}
@@ -2671,7 +2795,7 @@ class Batch_Convert_Wizard {
 			return $result;
 		}
 
-		$target_id = $this->save_template_part( $template_info, $post, $content, $existing_target );
+		$target_id = $this->save_template_part( $template_info, $post, $content, 'duplicate' === $conflict_policy ? 0 : $existing_target );
 		if ( ! $target_id ) {
 			$message           = esc_html__( 'Failed: could not save Gutenberg template.', 'migrate-off-elementor' );
 			$result['status']  = 'error';
@@ -2687,17 +2811,9 @@ class Batch_Convert_Wizard {
 		$this->store_template_part_meta( $target_id, $template_info );
 		$this->update_template_part_role( $target_id, (string) $template_info['role'], (string) $template_info['type'] );
 
-		// force it to become the actual default template part in the active block theme.
-		$is_global   = ! empty( $template_info['is_global'] );
 		$has_targets = ! empty( $template_info['target_pages'] ) && is_array( $template_info['target_pages'] );
 
-		if ( self::TEMPLATE_ROLE_DEFAULT_HEADER === $template_info['role'] && 'header' === $template_info['type'] ) {
-			$this->force_block_theme_default_header( $target_id );
-		}
-
-		if ( self::TEMPLATE_ROLE_DEFAULT_FOOTER === $template_info['role'] && 'footer' === $template_info['type'] ) {
-			$this->force_block_theme_default_footer( $target_id );
-		}
+		$takeover = $this->maybe_take_over_theme_part( $target_id, $template_info, $options );
 
 		if ( $has_targets ) {
 
@@ -2715,7 +2831,8 @@ class Batch_Convert_Wizard {
 		}
 
 		$result['status']   = 'success';
-		$result['message']  = $message;
+		$result['message']  = trim( $message . ' ' . $takeover['note'] );
+		$result['warning']  = $takeover['warning'];
 		$result['target']   = $target_id;
 		$result['view_url'] = (string) $edit_link;
 
@@ -2749,6 +2866,8 @@ class Batch_Convert_Wizard {
 		);
 
 		if ( $existing_target ) {
+			// An existing part keeps its slug: renaming it would silently undo, or redo, a site-wide header or footer.
+			unset( $postarr['post_name'] );
 			$postarr['ID'] = $existing_target;
 			$saved         = wp_update_post( $postarr, true );
 		} else {
@@ -2796,149 +2915,166 @@ class Batch_Convert_Wizard {
 	}
 
 	/**
-	 * Force a converted template part to act as the default FSE header.
+	 * Make a converted template part the block theme's own header or footer.
 	 *
-	 * @param int $target_id Template part post ID.
+	 * A block theme shows the part whose slug is `header` or `footer`. A part the
+	 * user customised already holds that slug, so it is renamed aside - never
+	 * deleted - before the converted part takes the slug.
+	 *
+	 * @param int    $target_id Converted template part ID.
+	 * @param string $area      Either header or footer.
+	 *
+	 * @return array{set_aside: array<int, string>, unconfirmed: bool}|WP_Error Slugs the previous parts were moved to and
+	 *                                                                       whether no theme template was found using the slug, or why the takeover did not happen.
 	 */
-	private function force_block_theme_default_header( int $target_id ): void {
-		// Renaming a part to `header` makes it the site-wide header of a block
-		// theme, which is an edit_theme_options action.
+	private function take_over_theme_part( int $target_id, string $area ) {
+		$label = 'header' === $area ? __( 'header', 'migrate-off-elementor' ) : __( 'footer', 'migrate-off-elementor' );
+
 		if ( ! self::current_user_can_manage_template_parts() ) {
-			return;
+			/* translators: %s: header or footer. */
+			return new WP_Error( 'blockshift_takeover_capability', sprintf( __( 'The converted %s was saved as a template part but did not replace the theme\'s own, because your account may not edit theme options.', 'migrate-off-elementor' ), $label ) );
 		}
 
 		if ( ! function_exists( 'wp_is_block_theme' ) || ! wp_is_block_theme() ) {
-			return;
+			/* translators: %s: header or footer. */
+			return new WP_Error( 'blockshift_takeover_classic_theme', sprintf( __( 'The converted %s was saved as a template part but did not replace the theme\'s own, because the active theme is not a block theme.', 'migrate-off-elementor' ), $label ) );
 		}
 
 		$post = get_post( $target_id );
 		if ( ! $post instanceof WP_Post || 'wp_template_part' !== $post->post_type ) {
-			return;
+			/* translators: %s: header or footer. */
+			return new WP_Error( 'blockshift_takeover_missing_part', sprintf( __( 'The converted %s template part could not be found, so the theme\'s own was left in place.', 'migrate-off-elementor' ), $label ) );
 		}
 
 		$theme = get_stylesheet();
+		wp_set_post_terms( $target_id, array( $theme ), 'wp_theme', false );
+		wp_set_post_terms( $target_id, array( $area ), 'wp_template_part_area', false );
 
-		// Attach the template part to the current theme and mark it as header area.
-		if ( $theme ) {
-			wp_set_post_terms( $target_id, array( $theme ), 'wp_theme', false );
-		}
-		wp_set_post_terms( $target_id, array( 'header' ), 'wp_template_part_area', false );
-
-		// Find any existing "header" template parts.
-		$existing_query = new WP_Query(
+		$holders = get_posts(
 			array(
 				'post_type'      => 'wp_template_part',
 				'post_status'    => array( 'publish', 'draft', 'pending', 'future', 'private' ),
-				'posts_per_page' => - 1,
-				'name'           => 'header',
+				'posts_per_page' => -1,
+				'name'           => $area,
+				'post__not_in'   => array( $target_id ),
+				'fields'         => 'ids',
 				// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
 				'tax_query'      => array(
-					'relation' => 'AND',
 					array(
 						'taxonomy' => 'wp_theme',
 						'field'    => 'slug',
 						'terms'    => array( $theme ),
 					),
-					array(
-						'taxonomy' => 'wp_template_part_area',
-						'field'    => 'slug',
-						'terms'    => array( 'header' ),
-					),
 				),
 			)
 		);
 
-		if ( $existing_query->have_posts() ) {
-			foreach ( $existing_query->posts as $existing ) {
-				$existing_id = (int) $existing->ID;
-				if ( $existing_id === $target_id ) {
-					continue;
-				}
+		$set_aside = array();
+		foreach ( $holders as $holder_id ) {
+			$holder_id = (int) $holder_id;
+			$new_slug  = $area . '-replaced-' . $holder_id;
+			$renamed   = wp_update_post(
+				array(
+					'ID'        => $holder_id,
+					'post_name' => $new_slug,
+				),
+				true
+			);
 
-				update_post_meta( $existing_id, '_blockshift_template_role', self::TEMPLATE_ROLE_EXTRA );
+			if ( is_wp_error( $renamed ) ) {
+				/* translators: 1: header or footer, 2: error message. */
+				return new WP_Error( 'blockshift_takeover_rename_failed', sprintf( __( 'The converted %1$s did not replace the theme\'s own, because the existing customised part could not be set aside: %2$s', 'migrate-off-elementor' ), $label, $renamed->get_error_message() ) );
 			}
-		}
 
-		wp_reset_postdata();
+			update_post_meta( $holder_id, '_blockshift_template_role', self::TEMPLATE_ROLE_EXTRA );
+			update_post_meta( $holder_id, '_blockshift_replaced_slug', $area );
+			update_post_meta( $holder_id, '_blockshift_replaced_by', $target_id );
+			$set_aside[] = (string) get_post_field( 'post_name', $holder_id );
+		}
 
 		wp_update_post(
 			array(
 				'ID'        => $target_id,
-				'post_name' => 'header',
+				'post_name' => $area,
 			)
+		);
+		clean_post_cache( $target_id );
+
+		$slug = (string) get_post_field( 'post_name', $target_id );
+		if ( $slug !== $area ) {
+			/* translators: 1: header or footer, 2: slug the theme uses, 3: slug the part was given. */
+			return new WP_Error( 'blockshift_takeover_slug_taken', sprintf( __( 'The converted %1$s did not replace the theme\'s own: the slug "%2$s" is still taken, so the part was saved as "%3$s". Rename or remove the other "%2$s" template part in the Site Editor, then run the conversion again.', 'migrate-off-elementor' ), $label, $area, $slug ) );
+		}
+
+		return array(
+			'set_aside'   => $set_aside,
+			'unconfirmed' => ! $this->theme_templates_use_part( $area ),
 		);
 	}
 
 	/**
-	 * Force a converted template part to act as the default FSE footer.
+	 * Whether any template of the active theme includes a template part with the given slug.
 	 *
-	 * @param int $target_id Template part post ID.
+	 * @param string $slug Template part slug.
+	 *
+	 * @return bool
 	 */
-	private function force_block_theme_default_footer( int $target_id ): void {
-		// Renaming a part to `footer` makes it the site-wide footer of a block
-		// theme, which is an edit_theme_options action.
-		if ( ! self::current_user_can_manage_template_parts() ) {
-			return;
+	private function theme_templates_use_part( string $slug ): bool {
+		if ( ! function_exists( 'get_block_templates' ) ) {
+			return false;
 		}
 
-		if ( ! function_exists( 'wp_is_block_theme' ) || ! wp_is_block_theme() ) {
-			return;
-		}
-
-		$post = get_post( $target_id );
-		if ( ! $post instanceof WP_Post || 'wp_template_part' !== $post->post_type ) {
-			return;
-		}
-
-		$theme = get_stylesheet();
-
-		if ( $theme ) {
-			wp_set_post_terms( $target_id, array( $theme ), 'wp_theme', false );
-		}
-		wp_set_post_terms( $target_id, array( 'footer' ), 'wp_template_part_area', false );
-
-		$existing_query = new WP_Query(
-			array(
-				'post_type'      => 'wp_template_part',
-				'post_status'    => array( 'publish', 'draft', 'pending', 'future', 'private' ),
-				'posts_per_page' => - 1,
-				'name'           => 'footer',
-				// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
-				'tax_query'      => array(
-					'relation' => 'AND',
-					array(
-						'taxonomy' => 'wp_theme',
-						'field'    => 'slug',
-						'terms'    => array( $theme ),
-					),
-					array(
-						'taxonomy' => 'wp_template_part_area',
-						'field'    => 'slug',
-						'terms'    => array( 'footer' ),
-					),
-				),
-			)
-		);
-
-		if ( $existing_query->have_posts() ) {
-			foreach ( $existing_query->posts as $existing ) {
-				$existing_id = (int) $existing->ID;
-				if ( $existing_id === $target_id ) {
-					continue;
-				}
-
-				update_post_meta( $existing_id, '_blockshift_template_role', self::TEMPLATE_ROLE_EXTRA );
+		$pattern = '/<!--\s*wp:template-part\s+\{[^>]*"slug"\s*:\s*"' . preg_quote( $slug, '/' ) . '"/';
+		foreach ( get_block_templates( array(), 'wp_template' ) as $template ) {
+			if ( 1 === preg_match( $pattern, (string) $template->content ) ) {
+				return true;
 			}
 		}
 
-		wp_reset_postdata();
+		return false;
+	}
 
-		wp_update_post(
-			array(
-				'ID'        => $target_id,
-				'post_name' => 'footer',
-			)
+	/**
+	 * Take over the theme's header or footer when the run asked for it and the part is the default one.
+	 *
+	 * @param int   $target_id     Converted template part ID.
+	 * @param array $template_info Template info array.
+	 * @param array $options       Job options.
+	 *
+	 * @return array{note: string, warning: string} A note for the result message and a warning when the takeover did not happen.
+	 */
+	private function maybe_take_over_theme_part( int $target_id, array $template_info, array $options ): array {
+		$outcome = array(
+			'note'    => '',
+			'warning' => '',
 		);
+
+		$type       = 'header' === $template_info['type'] ? 'header' : 'footer';
+		$is_default = in_array( $template_info['role'], array( self::TEMPLATE_ROLE_DEFAULT_HEADER, self::TEMPLATE_ROLE_DEFAULT_FOOTER ), true );
+		if ( empty( $options['replace_theme_parts'] ) || ! $is_default || $target_id <= 0 ) {
+			return $outcome;
+		}
+
+		$takeover = $this->take_over_theme_part( $target_id, $type );
+		if ( is_wp_error( $takeover ) ) {
+			$outcome['warning'] = $takeover->get_error_message();
+
+			return $outcome;
+		}
+
+		if ( ! empty( $takeover['set_aside'] ) ) {
+			/* translators: %s: comma-separated template part slugs. */
+			$outcome['note'] = sprintf( __( 'It now replaces the theme\'s own; the previous template part was kept as "%s".', 'migrate-off-elementor' ), implode( '", "', $takeover['set_aside'] ) );
+		} else {
+			$outcome['note'] = __( 'It now replaces the theme\'s own.', 'migrate-off-elementor' );
+		}
+
+		if ( $takeover['unconfirmed'] ) {
+			/* translators: 1: header or footer, 2: template part slug. */
+			$outcome['warning'] = sprintf( __( 'The converted %1$s was saved under the slug "%2$s", but no template of the active theme includes a template part with that slug, so it may not be shown. Check the theme\'s templates in the Site Editor.', 'migrate-off-elementor' ), $type, $type );
+		}
+
+		return $outcome;
 	}
 
 	/**
@@ -3380,6 +3516,12 @@ class Batch_Convert_Wizard {
 			/* translators: 1: tab label, 2: item count */
 			'tabCountLabel'            => __( '%1$s (%2$d)', 'migrate-off-elementor' ),
 			'skipConverted'            => __( 'Skip pages that were already converted', 'migrate-off-elementor' ),
+			'replaceThemeParts'        => __( 'Replace the theme\'s header and footer with the converted default header and footer', 'migrate-off-elementor' ),
+			'replaceThemePartsHelp'    => __( 'Site-wide change on a block theme: the converted header and footer marked as default are shown on every page and post of the site instead of the theme\'s own, whether or not that page was converted. Leave this off to only save them as template parts, which you can place yourself in the Site Editor.', 'migrate-off-elementor' ),
+			/* translators: %d: number of pages converted by an older version of the plugin. */
+			'reconvertOutdated'        => __( 'Convert again the %d pages converted by an older version of the plugin', 'migrate-off-elementor' ),
+			'reconvertOutdatedHelp'    => __( 'Their converted copies were written with older block markup and can show "This block contains unexpected or invalid content" in the editor. Converting again replaces the content of each copy, including any edits made to it since.', 'migrate-off-elementor' ),
+			'outdatedBadge'            => __( 'Older version', 'migrate-off-elementor' ),
 			'selectAllEligible'        => __( 'Select all eligible', 'migrate-off-elementor' ),
 			'clearSelection'           => __( 'Clear selection', 'migrate-off-elementor' ),
 			/* translators: %1$d: number of selected items */
@@ -3632,6 +3774,7 @@ class Batch_Convert_Wizard {
 			'time'                => $time,
 			'stats'               => $widget_log['stats'] ?? null,
 			'unsupported_by_type' => $widget_log['unsupported_by_type'] ?? array(),
+			'warnings'            => $widget_log['warnings'] ?? array(),
 		);
 
 		// Store on the original Elementor page.
@@ -3645,9 +3788,11 @@ class Batch_Convert_Wizard {
 		// Mark as "converted" only when success.
 		if ( 'success' === $result_entry['status'] ) {
 			update_post_meta( $source_id, '_blockshift_last_converted', $time );
+			update_post_meta( $source_id, self::MARKUP_VERSION_META, self::MARKUP_VERSION );
 
 			if ( $converted_post_id > 0 ) {
 				update_post_meta( $converted_post_id, '_blockshift_last_converted', $time );
+				update_post_meta( $converted_post_id, self::MARKUP_VERSION_META, self::MARKUP_VERSION );
 			}
 		}
 
@@ -3664,6 +3809,7 @@ class Batch_Convert_Wizard {
 				'duration'            => (float) ( $result_entry['duration'] ?? 0 ),
 				'stats'               => $widget_log['stats'] ?? null,
 				'unsupported_by_type' => $widget_log['unsupported_by_type'] ?? array(),
+				'warnings'            => $widget_log['warnings'] ?? array(),
 			)
 		);
 	}
@@ -3836,12 +3982,14 @@ class Batch_Convert_Wizard {
 			'time'                => $time,
 			'stats'               => $widget_log['stats'] ?? null,
 			'unsupported_by_type' => $widget_log['unsupported_by_type'] ?? array(),
+			'warnings'            => $widget_log['warnings'] ?? array(),
 		);
 
 		update_post_meta( $template_id, '_blockshift_last_result', $data );
 
 		if ( 'success' === $result_entry['status'] ) {
 			update_post_meta( $template_id, '_blockshift_last_converted', $time );
+			update_post_meta( $template_id, self::MARKUP_VERSION_META, self::MARKUP_VERSION );
 		}
 
 		// Append to the global conversion log for the UI.
@@ -3857,6 +4005,7 @@ class Batch_Convert_Wizard {
 				'duration'            => (float) ( $result_entry['duration'] ?? 0 ),
 				'stats'               => $widget_log['stats'] ?? null,
 				'unsupported_by_type' => $widget_log['unsupported_by_type'] ?? array(),
+				'warnings'            => $widget_log['warnings'] ?? array(),
 			)
 		);
 	}

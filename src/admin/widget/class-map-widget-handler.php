@@ -106,7 +106,7 @@ class Map_Widget_Handler implements Widget_Handler_Interface {
 		$attributes['_padding']         = $norm_spacing['padding'];
 		$attributes['style']['spacing'] = $norm_spacing;
 
-		$attrs_json = wp_json_encode( $attributes );
+		$attrs_json = serialize_block_attributes( $attributes );
 
 		// Save any custom CSS into the Customizer so styles persist.
 		if ( ! empty( $custom_css ) ) {

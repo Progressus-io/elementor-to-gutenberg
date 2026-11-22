@@ -235,6 +235,21 @@ class Diagnostic_Logger {
 				return array( 'code' => self::UNSUPPORTED_WIDGET, 'severity' => 'medium' );
 			case 'empty_output':
 				return array( 'code' => self::WIDGET_FALLBACK_USED, 'severity' => 'low' );
+			case 'content_lost':
+				return array(
+					'code'     => self::WIDGET_FALLBACK_USED,
+					'severity' => 'high',
+				);
+			case 'partial_output':
+				return array(
+					'code'     => self::WIDGET_FALLBACK_USED,
+					'severity' => 'medium',
+				);
+			case 'warning':
+				return array(
+					'code'     => self::WIDGET_FALLBACK_USED,
+					'severity' => 'low',
+				);
 			default:
 				return array( 'code' => self::UNKNOWN_WIDGET_HANDLER, 'severity' => 'medium' );
 		}
@@ -258,8 +273,10 @@ class Diagnostic_Logger {
 				return 'SUCCESS';
 			}
 			$stats      = is_array( $widget_log['stats'] ?? null ) ? $widget_log['stats'] : array();
-			$has_issues = ( (int) ( $stats['unsupported'] ?? 0 ) > 0 )
-			              || ( (int) ( $stats['empty_output'] ?? 0 ) > 0 );
+			$has_issues = false;
+			foreach ( array( 'unsupported', 'empty_output', 'content_lost', 'partial_output', 'warnings' ) as $stat ) {
+				$has_issues = $has_issues || (int) ( $stats[ $stat ] ?? 0 ) > 0;
+			}
 			return $has_issues ? 'SUCCESS_WITH_WARNINGS' : 'SUCCESS';
 		}
 		return 'PARTIAL';

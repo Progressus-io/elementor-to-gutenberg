@@ -72,6 +72,12 @@ class Icon_Widget_Handler implements Widget_Handler_Interface {
 			$attributes['anchor'] = $custom_id;
 		}
 
+		$alignment       = Alignment_Helper::detect_alignment( $settings, array( 'align', 'alignment', 'icon_align' ) );
+		$alignment_value = '' === $alignment ? 'left' : $alignment;
+		if ( 'left' !== $alignment_value ) {
+			$attributes['alignment'] = $alignment_value;
+		}
+
 		$attributes = array_filter(
 			$attributes,
 			static function ( $value ) {
@@ -137,10 +143,8 @@ class Icon_Widget_Handler implements Widget_Handler_Interface {
 			);
 		}
 
-		$alignment       = Alignment_Helper::detect_alignment( $settings, array( 'align', 'alignment', 'icon_align' ) );
-		$alignment_value = '' === $alignment ? 'left' : $alignment;
-		$align_class     = Style_Parser::clean_class( 'fontawesome-icon-align-' . $alignment_value );
-		$wrapper_style   = 'text-align:' . $alignment_value;
+		$align_class   = Style_Parser::clean_class( 'fontawesome-icon-align-' . $alignment_value );
+		$wrapper_style = 'text-align:' . $alignment_value;
 
 		$wrapper_classes = array_merge(
 			array(

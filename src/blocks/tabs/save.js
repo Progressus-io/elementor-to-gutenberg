@@ -1,8 +1,10 @@
-import { useBlockProps } from '@wordpress/block-editor';
+import { useBlockProps, InnerBlocks } from '@wordpress/block-editor';
+import { withoutEmptyValues } from '../shared/styles';
 
 const Save = ( { attributes } ) => {
 	const {
 		tabs,
+		innerTabs,
 		activeTab,
 		tabStyle,
 		tabColor,
@@ -87,6 +89,55 @@ const Save = ( { attributes } ) => {
 		lineHeight: contentTypography?.lineHeight || undefined,
 		fontFamily: contentTypography?.fontFamily || undefined,
 	};
+
+	if ( innerTabs ) {
+		const headerStyle = withoutEmptyValues( tabHeaderStyle );
+		const activeHeaderStyle = withoutEmptyValues( activeTabHeaderStyle );
+
+		return (
+			<div { ...blockProps }>
+				<div
+					className="blockshift-tabs"
+					style={ tabsStyle }
+					data-tab-style={ tabStyle }
+					data-active-tab={ activeTab }
+				>
+					<div
+						className="blockshift-tabs-headers"
+						style={ {
+							display: 'flex',
+							flexDirection:
+								tabStyle === 'vertical' ? 'column' : 'row',
+						} }
+					>
+						{ tabs.map( ( tab, index ) => (
+							<div
+								key={ index }
+								className={ `blockshift-tab-header ${
+									index === activeTab ? 'active' : ''
+								}` }
+								style={
+									index === activeTab
+										? activeHeaderStyle
+										: headerStyle
+								}
+								data-tab-index={ index }
+							>
+								{ tab.title }
+							</div>
+						) ) }
+					</div>
+
+					<div
+						className="blockshift-tabs-content"
+						style={ withoutEmptyValues( contentStyle ) }
+					>
+						<InnerBlocks.Content />
+					</div>
+				</div>
+			</div>
+		);
+	}
 
 	return (
 		<div { ...blockProps }>

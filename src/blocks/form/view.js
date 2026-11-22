@@ -6,6 +6,8 @@ document.addEventListener( 'DOMContentLoaded', function () {
 	const forms = document.querySelectorAll( '.blockshift-form' );
 
 	forms.forEach( ( form ) => {
+		setUpSteps( form );
+
 		form.addEventListener( 'submit', function ( e ) {
 			e.preventDefault();
 
@@ -20,6 +22,8 @@ document.addEventListener( 'DOMContentLoaded', function () {
 			formData.append( 'action', 'blockshift_form_submit' );
 			formData.append( 'nonce', blockshiftFormData.nonce );
 			formData.append( 'form_name', formName );
+			formData.append( 'form_id', form.dataset.formId || '' );
+			formData.append( 'page_url', window.location.href );
 
 			// Save original button text
 			const originalButtonText = submitButton.innerHTML;
@@ -46,6 +50,8 @@ document.addEventListener( 'DOMContentLoaded', function () {
 			} )
 				.then( ( response ) => response.json() )
 				.then( ( data ) => {
+					const result = data.data || {};
+
 					// Remove loader and restore button
 					submitButton.disabled = false;
 					submitButton.innerHTML = originalButtonText;
@@ -56,13 +62,18 @@ document.addEventListener( 'DOMContentLoaded', function () {
 						messageContainer.className =
 							'form-message success-message';
 						messageContainer.textContent =
-							data.data.message || successMessage;
+							result.message || successMessage;
 						form.reset();
+
+						if ( result.redirect ) {
+							window.location.href = result.redirect;
+							return;
+						}
 					} else {
 						messageContainer.className =
 							'form-message error-message';
 						messageContainer.textContent =
-							data.data.message || errorMessage;
+							result.message || errorMessage;
 					}
 
 					// Auto-hide message after 5 seconds
@@ -89,4 +100,63 @@ document.addEventListener( 'DOMContentLoaded', function () {
 				} );
 		} );
 	} );
+
+	/**
+	 * Show a multi-step form one step at a time, with previous and next buttons.
+	 *
+	 * @param {HTMLFormElement} form The form element.
+	 */
+	function setUpSteps( form ) {
+		const steps = Array.from(
+			form.querySelectorAll( ':scope > .form-step' )
+		);
+		if ( steps.length < 2 ) {
+			return;
+		}
+
+		const submitWrapper = form.querySelector( '.form-button-wrapper' );
+		const nav = document.createElement( 'div' );
+		const previous = document.createElement( 'button' );
+		const next = document.createElement( 'button' );
+		let current = 0;
+
+		nav.className = 'form-step-nav';
+		previous.type = 'button';
+		previous.className = 'form-step-previous';
+		previous.textContent = form.dataset.previousText || 'Previous';
+		next.type = 'button';
+		next.className = 'form-step-next';
+		next.textContent = form.dataset.nextText || 'Next';
+		nav.append( previous, next );
+		form.insertBefore( nav, submitWrapper );
+		form.classList.add( 'has-steps' );
+
+		const show = ( index ) => {
+			current = index;
+			steps.forEach( ( step, i ) =>
+				step.classList.toggle( 'is-active', i === index )
+			);
+			previous.hidden = 0 === index;
+			next.hidden = index === steps.length - 1;
+			submitWrapper.style.display =
+				index === steps.length - 1 ? 'flex' : 'none';
+		};
+
+		previous.addEventListener( 'click', () => show( current - 1 ) );
+		next.addEventListener( 'click', () => {
+			const invalid = Array.from(
+				steps[ current ].querySelectorAll( 'input, select, textarea' )
+			).find( ( control ) => ! control.checkValidity() );
+
+			if ( invalid ) {
+				invalid.reportValidity();
+				return;
+			}
+
+			show( current + 1 );
+		} );
+		form.addEventListener( 'reset', () => show( 0 ) );
+
+		show( 0 );
+	}
 } );

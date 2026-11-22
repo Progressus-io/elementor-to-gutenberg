@@ -3,7 +3,7 @@ Contributors: shadim
 Tags: gutenberg, migration, conversion, blocks
 Requires at least: 6.7
 Tested up to: 7.1
-Stable tag: 1.1.0
+Stable tag: 1.2.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -28,7 +28,7 @@ It reads the Elementor data already stored on each page, rebuilds the layout wit
 
 **WooCommerce:** product grids, cart, checkout, mini-cart, product categories, store notices, "my account", and add-to-cart.
 
-A widget the plugin does not support is replaced by a hidden placeholder and flagged in the Conversion Log. Its content is not carried over, so rebuild that part of the page with blocks.
+HTML widgets, menu anchors, Template widgets, global widgets and the Elementor 4 heading, paragraph, button, image, divider and video elements are converted too. A widget the plugin has no block for keeps its text, links and images as plain headings, paragraphs, buttons and images, with a note only editors see, and is flagged in the Conversion Log. Its layout and behaviour are not carried over, so rebuild that part of the page with blocks.
 
 = What a conversion changes on your site =
 
@@ -37,16 +37,16 @@ Converted pages are saved as brand-new pages, and your Elementor originals are n
 * **Theme install.** If you choose a block theme in the wizard's theme step that is not installed, the plugin downloads and installs it from WordPress.org. It only runs if your account may install themes.
 * **Theme switch.** If you choose a theme other than the active one, the plugin switches the site's active theme when the run starts. That changes how the whole site looks to visitors, not only the converted pages.
 * **Additional CSS is merged.** When the theme is switched, the previous theme's Additional CSS is appended to the new theme's Additional CSS, marked with a "Migrated from" comment. It is on by default, you can turn it off in the wizard, and it always runs in automatic mode.
-* **Template parts.** Converted Elementor headers and footers are saved as block template parts. On a block theme, the converted header and footer marked as default take the place of the theme's own header and footer across the whole site.
+* **Template parts.** Converted Elementor headers and footers are saved as block template parts. They only take the place of a block theme's own header and footer, across the whole site, when "Replace the theme's header and footer" is ticked on the Header & Footer step. It is ticked by default when the run switches theme and unticked when you keep the current theme. A template part that already exists is rewritten only with the "overwrite" conflict option.
 
-Choosing "Keep current theme" in the theme step skips the theme install, the theme switch and the Additional CSS merge. On a block theme, converted headers and footers still take the place of the theme's own.
+Choosing "Keep current theme" in the theme step skips the theme install, the theme switch and the Additional CSS merge, and leaves the theme's own header and footer in place unless you tick the option above.
 
 = What to expect =
 
 Most pages land very close to the original straight away. Elementor and the block editor handle layout and styling differently, so some things are approximated rather than copied one to one, mostly on busier and highly customised designs. The Conversion Log lists, page by page, what converted cleanly and what is worth a look, and because the result is ordinary block content you fix anything in the editor you already know. Specifically:
 
 * Complex pages usually need a few small tweaks after conversion.
-* Elementor Pro and third-party widgets the plugin does not support are replaced by a hidden placeholder and flagged in the Conversion Log. Their content is not carried over and needs rebuilding with blocks.
+* Elementor Pro and third-party widgets the plugin does not support keep their text, links and images as plain blocks and are flagged in the Conversion Log. Their layout and behaviour are not carried over and need rebuilding with blocks.
 * Motion effects, some pop-ups, and similar builder-only extras may not carry across and can need rebuilding with block tools.
 * Global Elementor styles (theme-wide colors and fonts set in Elementor) are matched as closely as possible but may need a final check against your theme.
 
@@ -90,11 +90,11 @@ Yes. Converted pages use standard WordPress blocks, so they work with any modern
 
 = Is any of my data sent to outside services? =
 
-The conversion itself runs entirely on your own site. A few optional features do connect to outside services (any Google fonts/maps/videos your page already used, and sending feedback if you choose to). Each one is explained in full in the **External services** section below, and the feedback feature only ever runs when you choose to start it.
+The conversion itself runs entirely on your own site. A few optional features do connect to outside services (any Google fonts, maps and YouTube, Vimeo, Dailymotion or VideoPress videos your page already used, and sending feedback if you choose to). Each one is explained in full in the **External services** section below, and the feedback feature only ever runs when you choose to start it.
 
 == External services ==
 
-This plugin can connect to the third-party services listed below. The feedback service is only contacted from the admin area, as part of an action you explicitly start (submitting feedback). The others load only when a converted page that uses those features is viewed, or while a Map block is open in the block editor.
+This plugin can connect to the third-party services listed below. The feedback service is only contacted from the admin area, as part of an action you explicitly start (submitting feedback). The WordPress.org themes API is only contacted from the Conversion Wizard. The others load only when a converted page that uses those features is viewed, or while a Map block is open in the block editor.
 
 = Feedback service =
 
@@ -112,11 +112,23 @@ This service is provided by Google. Terms: https://policies.google.com/terms —
 
 = Embedded maps and videos =
 
-If a converted page contains a map or video, the page embeds it from Google Maps (https://maps.google.com) or YouTube (https://www.youtube.com), the same way the original Elementor page did. These embeds load when such a page is viewed, and also in the block editor while a Map block is open, so that you can see a preview of the map you are editing. In the editor the preview is rebuilt once you stop typing, not on every keystroke.
+If a converted page contains a map or video, the page embeds it from the service the original Elementor page used: Google Maps (https://maps.google.com), YouTube (https://www.youtube.com), Vimeo (https://vimeo.com), Dailymotion (https://www.dailymotion.com) or VideoPress (https://videopress.com). A video the Elementor page loaded from an external file address is loaded from that same address. These embeds load when such a page is viewed, and also in the block editor while a Map block is open, so that you can see a preview of the map you are editing. In the editor the preview is rebuilt once you stop typing, not on every keystroke.
 
 A Google Maps embed is a page served by Google inside an iframe. Once it loads, Google's own code in that iframe fetches map tiles and its supporting resources from further Google hosts: https://www.google.com, https://maps.googleapis.com, https://places.googleapis.com, https://maps.gstatic.com, https://fonts.googleapis.com and https://fonts.gstatic.com. The plugin sends Google only the address or the coordinates stored in the block, plus the zoom level.
 
-Provided by Google. Terms: https://policies.google.com/terms and https://www.youtube.com/t/terms — Privacy policy: https://policies.google.com/privacy
+Google Maps and YouTube are provided by Google. Terms: https://policies.google.com/terms and https://www.youtube.com/t/terms — Privacy policy: https://policies.google.com/privacy
+
+Vimeo is provided by Vimeo. Terms: https://vimeo.com/terms — Privacy policy: https://vimeo.com/privacy
+
+Dailymotion is provided by Dailymotion. Terms: https://legal.dailymotion.com/en/terms-of-use/ — Privacy policy: https://legal.dailymotion.com/en/privacy-policy/
+
+VideoPress is provided by Automattic. Terms: https://wordpress.com/tos/ — Privacy policy: https://automattic.com/privacy/
+
+= WordPress.org themes =
+
+When you open the Conversion Wizard and one of the block themes it suggests (Twenty Twenty-Five, Twenty Twenty-Four) is not installed, the plugin asks the WordPress.org themes API (https://api.wordpress.org) for that theme's screenshot so the theme step can show it. Only the theme's name is sent. If you then choose that theme, it is downloaded and installed from WordPress.org.
+
+Provided by WordPress.org. Privacy policy: https://wordpress.org/about/privacy/
 
 = Google Maps Embed API =
 
@@ -148,6 +160,27 @@ Lucide line icons (ISC) are inlined uncompressed in assets/js/pgs-icons.js. Sour
 
 == Changelog ==
 
+= 1.2.0 =
+* Add: Videos from your Media Library, YouTube, Vimeo, Dailymotion and VideoPress now convert.
+* Add: The HTML widget, menu anchors, Template widgets and global widgets now convert.
+* Add: Widgets the plugin cannot convert keep their text, links and images instead of disappearing.
+* Add: Contact forms now support dropdowns, radio buttons, checkboxes, hidden fields and multi-step forms.
+* Add: Contact forms are now protected against spam.
+* Add: "Hide on desktop, tablet and mobile" settings now carry over.
+* Add: The Conversion Wizard can convert again the pages converted by an older version of the plugin.
+* Add: The Conversion Wizard warns you that switching theme changes your whole site, and that headers and footers you did not convert will stop showing.
+* Fix: Draft, private, password-protected and scheduled pages stay that way after you convert them.
+* Fix: Nested tabs now keep their titles and content.
+* Fix: Accordions, nested accordions, the Pro gallery, menus with sub-menus and linked headings now convert correctly.
+* Fix: Page-wide fonts and colours from Elementor now apply to converted pages.
+* Fix: The wizard no longer switches or installs a theme when nothing is selected to convert.
+* Fix: Icons, counters, progress bars, image boxes, calls to action and testimonials no longer show an "invalid content" warning in the block editor.
+* Fix: Your theme's header and footer are replaced only when you choose that option in the wizard, and the wizard tells you if one could not be replaced.
+* Fix: Icon lists and shortcodes can no longer add unsafe code to a page, and feedback can only be sent about your own conversions.
+* Fix: The plugin's styles and scripts now load only on converted pages.
+* Fix: The Conversion Wizard now labels classic themes as "Classic theme" instead of "Block theme".
+* Tweak: The conversion log now warns you when a widget loses content or a Template widget cannot be read.
+
 = 1.1.0 =
 * Improve: Converted pages now closely match the original Elementor design - row/column layout, vertical alignment, spacing and section widths all follow the original.
 * Improve: Section and container backgrounds now carry over, including overlays and colours taken from your theme or Elementor palette.
@@ -156,7 +189,7 @@ Lucide line icons (ISC) are inlined uncompressed in assets/js/pgs-icons.js. Sour
 * Improve: Icon boxes, buttons, headings, image boxes, galleries, social icons, testimonials, menus and the site logo convert more faithfully - size, padding, colours and fonts now follow the original.
 * Add: Headers and footers built with Elementor's Header & Footer widgets now convert.
 * Fix: Converted pages use your theme's full-width layout where the original was full width, and no longer scroll sideways.
-* Improve: Once Elementor is deactivated, converted pages load none of its stylesheets or scripts, so they are lighter and faster. While Elementor is active, it still loads them.
+* Improve: Converted pages no longer load any Elementor stylesheets or scripts, so they are lighter and faster.
 * Fix: Converted pages now open cleanly in the WordPress block editor - blocks no longer show an "unexpected or invalid content" warning, so you can edit a converted page like any other.
 * Fix: An icon box now keeps its original heading level instead of always becoming an H3.
 
@@ -165,8 +198,11 @@ Lucide line icons (ISC) are inlined uncompressed in assets/js/pgs-icons.js. Sour
 
 == Upgrade Notice ==
 
+= 1.2.0 =
+More Elementor widgets now convert, and converted pages stay as private as the original. Pages converted with an older version do not change on their own: re-convert them from the Conversion Wizard with the option to convert again pages made by an older version.
+
 = 1.1.0 =
-Converted pages now match their Elementor originals far more closely and open cleanly in the block editor. Pages converted with 1.0.0 do not change on their own: to get these fixes, convert them again with "Choose specific pages" (custom mode) and the "overwrite" conflict option.
+Converted pages now match their Elementor originals far more closely and open cleanly in the block editor. Existing converted pages are unaffected until you convert again.
 
 = 1.0.0 =
 Initial release.

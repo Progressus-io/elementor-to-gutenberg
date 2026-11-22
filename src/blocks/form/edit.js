@@ -4,6 +4,7 @@ import {
 	PanelBody,
 	TextControl,
 	SelectControl,
+	TextareaControl,
 	ToggleControl,
 	RangeControl,
 	Button,
@@ -11,6 +12,7 @@ import {
 	__experimentalBoxControl as BoxControl,
 } from '@wordpress/components';
 import { useState } from '@wordpress/element';
+import { renderFields } from './fields';
 
 const Edit = ( { attributes, setAttributes } ) => {
 	const {
@@ -495,9 +497,139 @@ const Edit = ( { attributes, setAttributes } ) => {
 									),
 									value: 'textarea',
 								},
+								{
+									label: __(
+										'Select',
+										'migrate-off-elementor'
+									),
+									value: 'select',
+								},
+								{
+									label: __( 'Radio', 'migrate-off-elementor' ),
+									value: 'radio',
+								},
+								{
+									label: __(
+										'Checkbox',
+										'migrate-off-elementor'
+									),
+									value: 'checkbox',
+								},
+								{
+									label: __(
+										'Acceptance',
+										'migrate-off-elementor'
+									),
+									value: 'acceptance',
+								},
+								{
+									label: __( 'Date', 'migrate-off-elementor' ),
+									value: 'date',
+								},
+								{
+									label: __( 'Time', 'migrate-off-elementor' ),
+									value: 'time',
+								},
+								{
+									label: __(
+										'Password',
+										'migrate-off-elementor'
+									),
+									value: 'password',
+								},
+								{
+									label: __(
+										'Hidden',
+										'migrate-off-elementor'
+									),
+									value: 'hidden',
+								},
+								{
+									label: __( 'HTML', 'migrate-off-elementor' ),
+									value: 'html',
+								},
+								{
+									label: __(
+										'Honeypot',
+										'migrate-off-elementor'
+									),
+									value: 'honeypot',
+								},
+								{
+									label: __( 'Step', 'migrate-off-elementor' ),
+									value: 'step',
+								},
 							] }
 							onChange={ ( value ) =>
 								updateField( editingField, 'fieldType', value )
+							}
+						/>
+						{ [ 'select', 'radio', 'checkbox' ].includes(
+							formFields[ editingField ].fieldType
+						) && (
+							<TextareaControl
+								label={ __(
+									'Options',
+									'migrate-off-elementor'
+								) }
+								help={ __(
+									'One option per line. Use Label|value to send a different value.',
+									'migrate-off-elementor'
+								) }
+								value={ (
+									formFields[ editingField ].options || []
+								)
+									.map( ( option ) =>
+										option.label === option.value
+											? option.label
+											: `${ option.label }|${ option.value }`
+									)
+									.join( '\n' ) }
+								onChange={ ( value ) =>
+									updateField(
+										editingField,
+										'options',
+										value.split( '\n' ).map( ( line ) => {
+											const [ label, optionValue ] =
+												line.split( '|' );
+											return {
+												label,
+												value:
+													undefined === optionValue
+														? label
+														: optionValue,
+											};
+										} )
+									)
+								}
+							/>
+						) }
+						<SelectControl
+							label={ __( 'Width', 'migrate-off-elementor' ) }
+							value={ String(
+								formFields[ editingField ].width || 100
+							) }
+							options={ [
+								'100',
+								'80',
+								'75',
+								'66',
+								'60',
+								'50',
+								'40',
+								'33',
+								'25',
+								'20',
+							].map( ( width ) => ( {
+								label: `${ width }%`,
+								value: width,
+							} ) ) }
+							onChange={ ( value ) =>
+								updateField(
+									editingField,
+									'width',
+									parseInt( value, 10 )
+								)
 							}
 						/>
 						<TextControl
@@ -561,35 +693,17 @@ const Edit = ( { attributes, setAttributes } ) => {
 					data-form-name={ formName }
 					data-success-message={ successMessage }
 					data-error-message={ errorMessage }
-					style={ { display: 'grid', gap: `${ rowGap }px` } }
+					style={ {
+						'--blockshift-form-gap': `${ columnGap }px`,
+						rowGap: `${ rowGap }px`,
+					} }
 				>
-					{ formFields.map( ( field, index ) => (
-						<div key={ index } className="form-field">
-							<label
-								htmlFor={ field.customId }
-								style={ labelStyle }
-							>
-								{ field.fieldLabel }
-								{ field.required && ' *' }
-							</label>
-							{ field.fieldType === 'textarea' ? (
-								<textarea
-									id={ field.customId }
-									placeholder={ field.placeholder }
-									className={ `form-input size-${ inputSize }` }
-									disabled
-								/>
-							) : (
-								<input
-									type={ field.fieldType }
-									id={ field.customId }
-									placeholder={ field.placeholder }
-									className={ `form-input size-${ inputSize }` }
-									disabled
-								/>
-							) }
-						</div>
-					) ) }
+					{ renderFields( {
+						formFields,
+						inputSize,
+						labelStyle,
+						preview: true,
+					} ) }
 					<div
 						className="form-button-wrapper"
 						style={ {

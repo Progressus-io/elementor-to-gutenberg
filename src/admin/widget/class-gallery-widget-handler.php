@@ -165,7 +165,7 @@ class Gallery_Widget_Handler implements Widget_Handler_Interface {
 			);
 		}
 
-		$gallery_attrs_str = wp_json_encode( $gallery_attrs );
+		$gallery_attrs_str = serialize_block_attributes( $gallery_attrs );
 
 		/*
 		 * The nested-images gallery lays out from a `columns-N` class, not from the

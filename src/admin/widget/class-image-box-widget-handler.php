@@ -141,6 +141,7 @@ class Image_Box_Widget_Handler implements Widget_Handler_Interface {
 		$description_letter_spacing  = isset( $description_typography_attr['letterSpacing'] ) ? $description_typography_attr['letterSpacing'] : '';
 		$description_word_spacing    = isset( $description_typography_attr['wordSpacing'] ) ? $description_typography_attr['wordSpacing'] : '';
 
+		$title_html = '';
 		if ( '' !== trim( $title ) ) {
 			$title_style_parts = array(
 				'font-size:' . esc_attr( $title_size ) . 'px',
@@ -170,7 +171,19 @@ class Image_Box_Widget_Handler implements Widget_Handler_Interface {
 			if ( $title_word_spacing ) {
 				$title_style_parts[] = 'word-spacing:' . esc_attr( $title_word_spacing );
 			}
-			$segments[] = '<h3 class="image-box-title" style="' . implode( ';', $title_style_parts ) . '">' . wp_kses_post( $title ) . '</h3>';
+			$title_html = '<h3 class="image-box-title" style="' . implode( ';', $title_style_parts ) . '">' . wp_kses_post( $title ) . '</h3>';
+		}
+
+		// One value feeds both the markup and the block attribute, so save() writes the same href.
+		$link_url = isset( $settings['link']['url'] ) ? esc_url_raw( trim( (string) $settings['link']['url'] ) ) : '';
+		if ( '' !== $link_url && ( '' !== $title_html || '' !== $image_url ) ) {
+			$is_external = ! empty( $settings['link']['is_external'] );
+			$rel         = trim( ( ! empty( $settings['link']['nofollow'] ) ? 'nofollow ' : '' ) . ( $is_external ? 'noreferrer' : '' ) );
+			$title_html  = '<a href="' . esc_url( $link_url ) . '"' . ( $is_external ? ' target="_blank"' : '' ) . ( '' !== $rel ? ' rel="' . esc_attr( $rel ) . '"' : '' ) . ' aria-label="' . esc_attr( wp_kses_post( $title ) ) . '">' . $title_html . '</a>';
+		}
+
+		if ( '' !== $title_html ) {
+			$segments[] = $title_html;
 		}
 		if ( '' !== trim( $description ) ) {
 			$sanitized_description = wp_kses_post( $description );
@@ -257,7 +270,7 @@ class Image_Box_Widget_Handler implements Widget_Handler_Interface {
 			'wrapperMargin'             => $margin_css,
 			'objectFit'                 => isset( $settings['image_object_fit'] ) ? (string) $settings['image_object_fit'] : 'cover',
 			'objectPosition'            => isset( $settings['image_object_position'] ) ? (string) $settings['image_object_position'] : 'center center',
-			'link'                      => isset( $settings['link']['url'] ) ? (string) $settings['link']['url'] : '',
+			'link'                      => $link_url,
 			'linkTarget'                => ! empty( $settings['link']['is_external'] ),
 			'nofollow'                  => ! empty( $settings['link']['nofollow'] ),
 			'title'                     => wp_kses_post( $title ),

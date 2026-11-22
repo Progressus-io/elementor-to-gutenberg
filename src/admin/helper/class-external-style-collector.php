@@ -353,7 +353,6 @@ class External_Style_Collector {
 			'block'   => $block_slug,
 			'type'    => $type,
 			'payload' => $payload,
-			'tag'     => 'ETG_EXTRA_ATTRS_MAP_V1',
 		);
 	}
 
@@ -371,7 +370,6 @@ class External_Style_Collector {
 			'block'    => $block_slug,
 			'decision' => $decision,
 			'context'  => $context,
-			'tag'      => 'ETG_EXTRA_ATTRS_MAP_V1',
 		);
 	}
 
@@ -388,7 +386,6 @@ class External_Style_Collector {
 			'block'   => $block_slug,
 			'type'    => 'inner-html',
 			'payload' => $result,
-			'tag'     => 'ETG_EXTRA_ATTRS_MAP_V1',
 		);
 	}
 

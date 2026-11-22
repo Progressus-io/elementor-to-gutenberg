@@ -77,7 +77,8 @@ class Shortcode_Widget_Handler implements Widget_Handler_Interface {
 		$output = '';
 		foreach ( $parts as $index => $part ) {
 			// Odd indexes are the captured shortcode tokens.
-			$output .= 1 === $index % 2 ? wp_strip_all_tags( $part ) : esc_html( $part );
+			// Text between tokens can be the body of an enclosing shortcode, so its safe markup is kept.
+			$output .= 1 === $index % 2 ? wp_strip_all_tags( $part ) : wp_kses_post( $part );
 		}
 
 		return trim( $output );

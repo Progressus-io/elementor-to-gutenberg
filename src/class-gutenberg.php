@@ -16,6 +16,8 @@ use Progressus\BlockShift\Admin\Data_Migration;
 use Progressus\BlockShift\Admin\Helper\External_CSS_Service;
 use Progressus\BlockShift\Admin\Helper\Elementor_Fonts_Service;
 use Progressus\BlockShift\Admin\Helper\Style_Parser;
+use Progressus\BlockShift\Admin\Widget\Form_Widget_Handler;
+use Progressus\BlockShift\Admin\Widget\Video_Widget_Handler;
 
 /**
  * Class Gutenberg
@@ -37,11 +39,11 @@ class Gutenberg {
 	public const FULL_WIDTH_CSS_HANDLE = 'blockshift-full-width-page';
 
 	/**
-	 * Option holding, per form name, the field names that form's block declares.
-	 * Written when a page containing a form block is rendered, and read by the
+	 * Option mapping each form key to the IDs of the posts whose content declares
+	 * that form. Kept up to date whenever a post is saved, and read by the
 	 * submission handler so it never has to trust the shape of the request.
 	 */
-	private const OPTION_FORM_FIELDS = 'blockshift_form_fields';
+	private const OPTION_FORM_REGISTRY = 'blockshift_form_registry';
 
 	/**
 	 * Form name used when a form block does not set one. Matches the default in
@@ -53,7 +55,36 @@ class Gutenberg {
 	 * Fields declared by src/blocks/form/block.json for a form block that has
 	 * never had its field list customised.
 	 */
-	private const DEFAULT_FORM_FIELDS = array( 'name', 'email', 'message' );
+	private const DEFAULT_FORM_FIELDS = array(
+		array(
+			'customId'   => 'name',
+			'fieldType'  => 'text',
+			'required'   => true,
+			'fieldLabel' => 'Name',
+		),
+		array(
+			'customId'   => 'email',
+			'fieldType'  => 'email',
+			'required'   => true,
+			'fieldLabel' => 'Email',
+		),
+		array(
+			'customId'   => 'message',
+			'fieldType'  => 'textarea',
+			'required'   => true,
+			'fieldLabel' => 'Message',
+		),
+	);
+
+	/**
+	 * Form submissions one IP address may make per throttle window.
+	 */
+	private const FORM_SUBMISSION_LIMIT = 5;
+
+	/**
+	 * Length of the form submission throttle window, in seconds.
+	 */
+	private const FORM_SUBMISSION_WINDOW = 600;
 
 	/**
 	 * Classes conversion adds that mark a block as this plugin's output.
@@ -61,7 +92,7 @@ class Gutenberg {
 	 * The converted-page wrapper is matched separately by its
 	 * `blockshift-page-` prefix, since its suffix is the post ID.
 	 */
-	private const PLUGIN_CONTENT_CLASSES = array( 'blockshift-full-width-section', 'blockshift-unsupported-widget' );
+	private const PLUGIN_CONTENT_CLASSES = array( 'blockshift-full-width-section', 'blockshift-unsupported-widget', 'blockshift-video', 'blockshift-video-overlay' );
 
 
 	/**
@@ -284,12 +315,77 @@ class Gutenberg {
 		add_action( 'admin_enqueue_scripts', array( $this, 'fontawesome_icon_block_enqueue_fontawesome' ) );
 		add_action( 'wp_ajax_blockshift_form_submit', array( $this, 'handle_form_submission' ) );
 		add_action( 'wp_ajax_nopriv_blockshift_form_submit', array( $this, 'handle_form_submission' ) );
+		add_action( 'wp_after_insert_post', array( $this, 'register_post_forms' ), 10, 2 );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_editor_assets' ), 9999 );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_converted_page_css' ), 9999 );
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_converted_page_css' ), 9999 );
 		add_filter( 'wp_theme_json_data_default', array( $this, 'inject_elementor_typography_theme_json' ) );
 		add_filter( 'wp_resource_hints', array( $this, 'add_font_resource_hints' ), 10, 2 );
 		add_filter( 'render_block_blockshift/google-map', array( $this, 'apply_google_maps_api_key' ), 10, 2 );
+		add_filter( 'render_block_core/embed', array( $this, 'apply_video_embed_options' ), 10, 2 );
+	}
+
+	/**
+	 * Carry the player options of a converted video onto its embed iframe.
+	 *
+	 * The core/embed block has no autoplay, mute, loop, controls or end-time attributes, so
+	 * the conversion keeps them as query arguments of the block URL and this
+	 * copies the supported ones to the iframe the provider returned.
+	 *
+	 * @param string               $block_content Rendered block HTML.
+	 * @param array<string, mixed> $block         Parsed block, including its attributes.
+	 *
+	 * @return string
+	 */
+	public function apply_video_embed_options( $block_content, $block ): string {
+		$block_content = (string) $block_content;
+		$class_name    = isset( $block['attrs']['className'] ) ? (string) $block['attrs']['className'] : '';
+		$url           = isset( $block['attrs']['url'] ) ? (string) $block['attrs']['url'] : '';
+
+		if ( '' === $url || ! in_array( Video_Widget_Handler::EMBED_CLASS, preg_split( '/\s+/', $class_name ), true ) ) {
+			return $block_content;
+		}
+
+		$query = array();
+		parse_str( (string) wp_parse_url( $url, PHP_URL_QUERY ), $query );
+
+		$options = array();
+		foreach ( array( 'start', 'end', 'autoplay', 'mute', 'muted', 'loop', 'controls' ) as $key ) {
+			if ( isset( $query[ $key ] ) && is_numeric( $query[ $key ] ) ) {
+				$options[ $key ] = (int) $query[ $key ];
+			}
+		}
+
+		if ( ! empty( $options['loop'] ) && ! empty( $query['v'] ) && is_string( $query['v'] ) ) {
+			$options['playlist'] = preg_replace( '/[^a-zA-Z0-9_-]/', '', $query['v'] );
+		}
+
+		$fragment = (string) wp_parse_url( $url, PHP_URL_FRAGMENT );
+		if ( ! preg_match( '/^t=\d+s$/', $fragment ) ) {
+			$fragment = '';
+		}
+
+		if ( empty( $options ) && '' === $fragment ) {
+			return $block_content;
+		}
+
+		$processor = new \WP_HTML_Tag_Processor( $block_content );
+		if ( ! $processor->next_tag( 'iframe' ) ) {
+			return $block_content;
+		}
+
+		$src = (string) $processor->get_attribute( 'src' );
+		if ( '' === $src ) {
+			return $block_content;
+		}
+
+		$src = add_query_arg( $options, strtok( $src, '#' ) );
+		$processor->set_attribute( 'src', '' === $fragment ? $src : $src . '#' . $fragment );
+		if ( ! empty( $options['autoplay'] ) ) {
+			$processor->set_attribute( 'allow', 'autoplay; fullscreen; picture-in-picture; encrypted-media' );
+		}
+
+		return $processor->get_updated_html();
 	}
 
 	/**
@@ -656,20 +752,6 @@ class Gutenberg {
 				true
 			);
 		}
-
-		// Enqueue form submission script if form block is present
-		if ( has_block( 'blockshift/form' ) ) {
-			wp_localize_script(
-				'blockshift-scripts',
-				'blockshiftFormData',
-				array(
-					'ajaxUrl' => admin_url( 'admin-ajax.php' ),
-					'nonce'   => wp_create_nonce( 'blockshift_form_nonce' ),
-				)
-			);
-
-			$this->remember_declared_form_fields( (int) get_queried_object_id() );
-		}
 	}
 
 	/**
@@ -719,128 +801,288 @@ class Gutenberg {
 				'strategy'  => 'defer',
 			)
 		);
+
+		// A form can sit in a template part, so its submission data ships with every converted page.
+		wp_localize_script(
+			'blockshift-scripts',
+			'blockshiftFormData',
+			array(
+				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+				'nonce'   => wp_create_nonce( 'blockshift_form_nonce' ),
+			)
+		);
 	}
 
 	/**
-	 * Record the fields each form block on a rendered page declares, so the
-	 * submission handler has an allow-list to work from without querying for it.
+	 * Keep the form registry in step with the form blocks a saved post holds.
 	 *
-	 * @param int $post_id Post being rendered.
+	 * The registry maps each form key to the posts that declare it, which is how
+	 * the submission handler finds a form's block - on a page or in a template
+	 * part - without trusting anything in the request.
+	 *
+	 * @param int      $post_id Saved post ID.
+	 * @param \WP_Post $post    Saved post.
+	 *
+	 * @return void
 	 */
-	private function remember_declared_form_fields( int $post_id ): void {
-		if ( $post_id <= 0 ) {
+	public function register_post_forms( $post_id, $post ): void {
+		if ( ! $post instanceof \WP_Post || 'revision' === $post->post_type ) {
 			return;
 		}
 
-		$declared = self::collect_declared_form_fields( (string) get_post_field( 'post_content', $post_id ) );
-		if ( empty( $declared ) ) {
-			return;
+		$post_id  = (int) $post_id;
+		$keys     = array_keys( self::collect_declared_forms( (string) $post->post_content ) );
+		$registry = get_option( self::OPTION_FORM_REGISTRY, array() );
+		$registry = is_array( $registry ) ? $registry : array();
+		$updated  = $registry;
+
+		foreach ( $updated as $key => $post_ids ) {
+			$post_ids = array_values( array_diff( array_map( 'intval', (array) $post_ids ), array( $post_id ) ) );
+			if ( empty( $post_ids ) ) {
+				unset( $updated[ $key ] );
+			} else {
+				$updated[ $key ] = $post_ids;
+			}
 		}
 
-		$stored = get_option( self::OPTION_FORM_FIELDS, array() );
-		$stored = is_array( $stored ) ? $stored : array();
-
-		$merged = array_merge( $stored, $declared );
-		if ( $merged === $stored ) {
-			return;
+		foreach ( $keys as $key ) {
+			$updated[ $key ]   = isset( $updated[ $key ] ) ? $updated[ $key ] : array();
+			$updated[ $key ][] = $post_id;
 		}
 
-		update_option( self::OPTION_FORM_FIELDS, $merged, false );
+		if ( $updated !== $registry ) {
+			update_option( self::OPTION_FORM_REGISTRY, $updated, false );
+		}
 	}
 
 	/**
-	 * Map of form name => declared field names, read out of the form blocks in
-	 * a piece of post content.
+	 * The key a form block is submitted under: its ID, or its name when it has none.
+	 *
+	 * @param array<string, mixed> $attrs Form block attributes.
+	 *
+	 * @return string
+	 */
+	private static function get_form_key( array $attrs ): string {
+		$form_id = isset( $attrs['formId'] ) ? sanitize_key( (string) $attrs['formId'] ) : '';
+		if ( '' !== $form_id ) {
+			return $form_id;
+		}
+
+		$form_name = isset( $attrs['formName'] ) ? sanitize_text_field( (string) $attrs['formName'] ) : '';
+
+		return '' === $form_name ? self::DEFAULT_FORM_NAME : $form_name;
+	}
+
+	/**
+	 * Map of form key => block attributes, read out of the form blocks in a piece of post content.
 	 *
 	 * @param string $content Post content.
 	 *
-	 * @return array<string, array<int, string>>
+	 * @return array<string, array<string, mixed>>
 	 */
-	private static function collect_declared_form_fields( string $content ): array {
+	private static function collect_declared_forms( string $content ): array {
 		$map = array();
 
 		if ( '' === $content || false === strpos( $content, 'wp:blockshift/form' ) ) {
 			return $map;
 		}
 
-		self::walk_blocks_for_form_fields( parse_blocks( $content ), $map );
+		self::walk_blocks_for_forms( parse_blocks( $content ), $map );
 
 		return $map;
 	}
 
 	/**
-	 * Recursive worker for collect_declared_form_fields().
+	 * Recursive worker for collect_declared_forms().
 	 *
-	 * @param array<int, array<string, mixed>> $blocks Parsed blocks.
-	 * @param array<string, array<int, string>> $map   Accumulator, by reference.
+	 * @param array<int, array<string, mixed>>    $blocks Parsed blocks.
+	 * @param array<string, array<string, mixed>> $map    Accumulator, by reference.
 	 */
-	private static function walk_blocks_for_form_fields( array $blocks, array &$map ): void {
+	private static function walk_blocks_for_forms( array $blocks, array &$map ): void {
 		foreach ( $blocks as $block ) {
 			if ( ! is_array( $block ) ) {
 				continue;
 			}
 
 			if ( isset( $block['blockName'] ) && 'blockshift/form' === $block['blockName'] ) {
-				$attrs = isset( $block['attrs'] ) && is_array( $block['attrs'] ) ? $block['attrs'] : array();
-
-				$form_name = isset( $attrs['formName'] ) ? sanitize_text_field( (string) $attrs['formName'] ) : self::DEFAULT_FORM_NAME;
-				if ( '' === $form_name ) {
-					$form_name = self::DEFAULT_FORM_NAME;
-				}
-
-				$fields = array();
-				if ( isset( $attrs['formFields'] ) && is_array( $attrs['formFields'] ) ) {
-					foreach ( $attrs['formFields'] as $field ) {
-						if ( ! is_array( $field ) || empty( $field['customId'] ) ) {
-							continue;
-						}
-
-						$key = sanitize_key( (string) $field['customId'] );
-						if ( '' !== $key ) {
-							$fields[] = $key;
-						}
-					}
-				}
-
-				// A form block that never overrode the attribute carries the
-				// defaults declared in block.json.
-				$map[ $form_name ] = empty( $fields ) ? self::DEFAULT_FORM_FIELDS : array_values( array_unique( $fields ) );
+				$attrs                               = isset( $block['attrs'] ) && is_array( $block['attrs'] ) ? $block['attrs'] : array();
+				$map[ self::get_form_key( $attrs ) ] = $attrs;
 			}
 
 			if ( ! empty( $block['innerBlocks'] ) && is_array( $block['innerBlocks'] ) ) {
-				self::walk_blocks_for_form_fields( $block['innerBlocks'], $map );
+				self::walk_blocks_for_forms( $block['innerBlocks'], $map );
 			}
 		}
 	}
 
 	/**
-	 * The fields a submission for the given form name is allowed to carry.
+	 * Find the block a submission belongs to, on a post that still declares it.
 	 *
-	 * @param string $form_name Submitted form name.
+	 * The page the submission came from is tried first, then the registry, which
+	 * covers a form that lives in a template part or a synced pattern. A form on a
+	 * page saved before the registry existed is recorded once it is found.
 	 *
-	 * @return array<int, string>
+	 * @param string $form_key Submitted form ID, or form name for a form without one.
+	 * @param string $page_url URL of the page the form was submitted from.
+	 *
+	 * @return array{post_id: int, attrs: array<string, mixed>}|null The declaring post and block attributes, or null.
 	 */
-	private function get_declared_form_fields( string $form_name ): array {
-		$stored = get_option( self::OPTION_FORM_FIELDS, array() );
-		if ( is_array( $stored ) && ! empty( $stored[ $form_name ] ) && is_array( $stored[ $form_name ] ) ) {
-			return $stored[ $form_name ];
+	private function find_declared_form( string $form_key, string $page_url ): ?array {
+		$registry = get_option( self::OPTION_FORM_REGISTRY, array() );
+
+		// The page the form was sent from goes first: a form key is only unique within one post.
+		$candidates = array();
+		foreach ( array( $page_url, (string) wp_get_referer() ) as $url ) {
+			$candidates[] = '' === $url ? 0 : (int) url_to_postid( $url );
 		}
 
-		// Nothing recorded for this form - which happens when a full-page cache
-		// means the front-end render never ran. Read the declaration off the page
-		// the submission came from instead.
-		$referer = wp_get_referer();
-		if ( is_string( $referer ) && '' !== $referer ) {
-			$post_id = url_to_postid( $referer );
-			if ( $post_id > 0 ) {
-				$declared = self::collect_declared_form_fields( (string) get_post_field( 'post_content', $post_id ) );
-				if ( ! empty( $declared[ $form_name ] ) ) {
-					return $declared[ $form_name ];
+		if ( is_array( $registry ) && isset( $registry[ $form_key ] ) ) {
+			$candidates = array_merge( $candidates, array_map( 'intval', (array) $registry[ $form_key ] ) );
+		}
+
+		foreach ( array_unique( array_filter( $candidates ) ) as $post_id ) {
+			$post = get_post( $post_id );
+			if ( ! $post instanceof \WP_Post || ! in_array( $post->post_status, array( 'publish', 'private' ), true ) ) {
+				continue;
+			}
+
+			$declared = self::collect_declared_forms( (string) $post->post_content );
+			if ( isset( $declared[ $form_key ] ) ) {
+				if ( ! is_array( $registry ) || ! in_array( $post_id, (array) ( $registry[ $form_key ] ?? array() ), true ) ) {
+					$this->register_post_forms( $post_id, $post );
 				}
+
+				return array(
+					'post_id' => $post_id,
+					'attrs'   => $declared[ $form_key ],
+				);
 			}
 		}
 
-		return self::DEFAULT_FORM_FIELDS;
+		return null;
+	}
+
+	/**
+	 * The field definitions of a form block, falling back to the block.json defaults.
+	 *
+	 * @param array<string, mixed> $attrs Form block attributes.
+	 *
+	 * @return array<int, array<string, mixed>> Field definitions with a sanitized `customId`.
+	 */
+	private static function get_form_fields( array $attrs ): array {
+		if ( ! isset( $attrs['formFields'] ) || ! is_array( $attrs['formFields'] ) ) {
+			return self::DEFAULT_FORM_FIELDS;
+		}
+
+		$fields = array();
+		foreach ( $attrs['formFields'] as $field ) {
+			$key = is_array( $field ) && isset( $field['customId'] ) ? sanitize_key( (string) $field['customId'] ) : '';
+			if ( '' === $key ) {
+				continue;
+			}
+
+			$field['customId']  = $key;
+			$field['fieldType'] = isset( $field['fieldType'] ) ? (string) $field['fieldType'] : 'text';
+			$fields[]           = $field;
+		}
+
+		return $fields;
+	}
+
+	/**
+	 * Read one submitted field, cleaned according to the type its block declares.
+	 *
+	 * Choice fields only keep values the block lists as options.
+	 *
+	 * @param array<string, mixed> $field Field definition.
+	 *
+	 * @return string The cleaned value, with several choices joined by commas.
+	 */
+	private static function read_submitted_field( array $field ): string {
+		$key = $field['customId'];
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- The nonce is verified in handle_form_submission() before any field is read.
+		if ( ! isset( $_POST[ $key ] ) ) {
+			return '';
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Nonce verified by the caller; every branch below sanitizes the value for its field type.
+		$raw = wp_unslash( $_POST[ $key ] );
+
+		if ( in_array( $field['fieldType'], array( 'select', 'radio', 'checkbox' ), true ) ) {
+			$allowed = array();
+			foreach ( isset( $field['options'] ) && is_array( $field['options'] ) ? $field['options'] : array() as $option ) {
+				if ( is_array( $option ) && isset( $option['value'] ) ) {
+					$allowed[] = (string) $option['value'];
+				}
+			}
+
+			// A choice field written by an earlier release lists no options and renders as a plain input.
+			$is_legacy = empty( $allowed );
+
+			$values = array();
+			foreach ( (array) $raw as $value ) {
+				if ( is_scalar( $value ) && '' !== (string) $value && ( $is_legacy || in_array( (string) $value, $allowed, true ) ) ) {
+					$values[] = sanitize_text_field( (string) $value );
+				}
+			}
+
+			return implode( ', ', $values );
+		}
+
+		if ( ! is_scalar( $raw ) ) {
+			return '';
+		}
+
+		switch ( $field['fieldType'] ) {
+			case 'email':
+				return sanitize_email( (string) $raw );
+			case 'url':
+				return esc_url_raw( (string) $raw );
+			case 'textarea':
+				return sanitize_textarea_field( (string) $raw );
+			case 'acceptance':
+				return '' === (string) $raw ? '' : __( 'Yes', 'migrate-off-elementor' );
+			default:
+				return sanitize_text_field( (string) $raw );
+		}
+	}
+
+	/**
+	 * The transient that counts the submissions accepted from the sender's address.
+	 *
+	 * @return string Transient name.
+	 */
+	private static function get_form_throttle_key(): string {
+		$address = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
+
+		return 'blockshift_form_rl_' . md5( wp_hash( $address ) );
+	}
+
+	/**
+	 * Report whether the sender's address is over the submission limit.
+	 *
+	 * @return bool True when this address has submitted too often in the current window.
+	 */
+	private function is_form_submission_throttled(): bool {
+		/**
+		 * Filters how many form submissions one IP address may make per throttle window.
+		 *
+		 * @param int $limit Submissions allowed per window.
+		 */
+		$limit = (int) apply_filters( 'blockshift_form_submission_limit', self::FORM_SUBMISSION_LIMIT );
+
+		return (int) get_transient( self::get_form_throttle_key() ) >= $limit;
+	}
+
+	/**
+	 * Count a submission that passed validation against the sender's address.
+	 *
+	 * A rejected submission is not counted, so a visitor correcting a field is not locked out.
+	 */
+	private function count_form_submission(): void {
+		$key = self::get_form_throttle_key();
+
+		set_transient( $key, (int) get_transient( $key ) + 1, self::FORM_SUBMISSION_WINDOW );
 	}
 
 	/**
@@ -979,10 +1221,13 @@ class Gutenberg {
 	}
 
 	/**
-	 * Handle form submission via AJAX
+	 * Handle form submission via AJAX.
+	 *
+	 * Only a form whose block is declared on a published post is accepted. The
+	 * recipient and subject come from what the conversion stored for that post,
+	 * never from the request.
 	 */
 	public function handle_form_submission() {
-		// Verify nonce
 		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'blockshift_form_nonce' ) ) {
 			wp_send_json_error(
 				array(
@@ -991,58 +1236,128 @@ class Gutenberg {
 			);
 		}
 
-		// Get form data
-		$form_name = isset( $_POST['form_name'] ) ? sanitize_text_field( wp_unslash( $_POST['form_name'] ) ) : '';
-		$form_data = array();
+		if ( $this->is_form_submission_throttled() ) {
+			wp_send_json_error(
+				array(
+					'message' => __( 'Too many submissions. Please try again in a few minutes.', 'migrate-off-elementor' ),
+				),
+				429
+			);
+		}
 
-		// Collect only the fields the submitted form's block declares, and ignore
-		// everything else in the request: an anonymous caller no longer decides
-		// what ends up in the site owner's inbox.
-		foreach ( $this->get_declared_form_fields( $form_name ) as $field ) {
-			if ( ! isset( $_POST[ $field ] ) ) {
+		$form_key = isset( $_POST['form_id'] ) ? sanitize_key( wp_unslash( $_POST['form_id'] ) ) : '';
+		if ( '' === $form_key ) {
+			$form_key = isset( $_POST['form_name'] ) ? sanitize_text_field( wp_unslash( $_POST['form_name'] ) ) : '';
+		}
+
+		$page_url = isset( $_POST['page_url'] ) && is_string( $_POST['page_url'] ) ? esc_url_raw( wp_unslash( $_POST['page_url'] ) ) : '';
+		$form     = '' === $form_key ? null : $this->find_declared_form( $form_key, $page_url );
+		if ( null === $form ) {
+			wp_send_json_error(
+				array(
+					'message' => __( 'This form is not available.', 'migrate-off-elementor' ),
+				),
+				400
+			);
+		}
+
+		$attrs           = $form['attrs'];
+		$fields          = self::get_form_fields( $attrs );
+		$success_message = isset( $attrs['successMessage'] ) && '' !== $attrs['successMessage'] ? sanitize_text_field( (string) $attrs['successMessage'] ) : __( 'Your submission was successful.', 'migrate-off-elementor' );
+		$error_message   = isset( $attrs['errorMessage'] ) && '' !== $attrs['errorMessage'] ? sanitize_text_field( (string) $attrs['errorMessage'] ) : __( 'Your submission failed because of an error.', 'migrate-off-elementor' );
+		$success         = array(
+			'message'  => $success_message,
+			'redirect' => isset( $attrs['redirectUrl'] ) ? esc_url_raw( (string) $attrs['redirectUrl'] ) : '',
+		);
+
+		// A filled honeypot is a bot: answer as if the mail went out and send nothing.
+		$is_bot = ! empty( $_POST['blockshift_hp'] );
+
+		$form_data = array();
+		foreach ( $fields as $field ) {
+			if ( in_array( $field['fieldType'], array( 'html', 'step' ), true ) ) {
 				continue;
 			}
 
-			// sanitize_text_field() returns '' for arrays and objects, which is
-			// what keeps a crafted array value from causing a fatal here.
-			$form_data[ sanitize_key( $field ) ] = sanitize_text_field( wp_unslash( $_POST[ $field ] ) );
+			$value = self::read_submitted_field( $field );
+
+			if ( 'honeypot' === $field['fieldType'] ) {
+				$is_bot = $is_bot || '' !== $value;
+				continue;
+			}
+
+			if ( '' === $value && ! empty( $field['required'] ) ) {
+				wp_send_json_error(
+					array(
+						'message' => isset( $attrs['requiredFieldMessage'] ) && '' !== $attrs['requiredFieldMessage'] ? sanitize_text_field( (string) $attrs['requiredFieldMessage'] ) : __( 'This field is required.', 'migrate-off-elementor' ),
+						'field'   => $field['customId'],
+					),
+					400
+				);
+			}
+
+			$label               = isset( $field['fieldLabel'] ) && '' !== trim( (string) $field['fieldLabel'] ) ? sanitize_text_field( (string) $field['fieldLabel'] ) : ucfirst( str_replace( array( '_', '-' ), ' ', $field['customId'] ) );
+			$form_data[ $label ] = $value;
 		}
 
-		// Get admin email
-		$admin_email = get_option( 'admin_email' );
+		$this->count_form_submission();
 
-		// Prepare email content
-		/* translators: %s: name of the form submitted */
-		$subject = sprintf( __( 'New Form Submission: %s', 'migrate-off-elementor' ), $form_name );
+		if ( $is_bot ) {
+			wp_send_json_success( $success );
+		}
+
+		$stored   = get_post_meta( $form['post_id'], Form_Widget_Handler::SETTINGS_META_KEY, true );
+		$settings = is_array( $stored ) && isset( $stored[ $form_key ] ) && is_array( $stored[ $form_key ] ) ? $stored[ $form_key ] : array();
+
+		$recipients = array();
+		foreach ( isset( $settings['email_to'] ) && is_array( $settings['email_to'] ) ? $settings['email_to'] : array() as $recipient ) {
+			$recipient = sanitize_email( (string) $recipient );
+			if ( is_email( $recipient ) ) {
+				$recipients[] = $recipient;
+			}
+		}
+		if ( empty( $recipients ) ) {
+			$recipients[] = get_option( 'admin_email' );
+		}
+
+		$subject = isset( $settings['subject'] ) ? trim( (string) preg_replace( '/[\r\n]+/', ' ', sanitize_text_field( (string) $settings['subject'] ) ) ) : '';
+		if ( '' === $subject ) {
+			/* translators: %s: name of the WordPress site */
+			$subject = sprintf( __( 'New form submission from %s', 'migrate-off-elementor' ), wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES ) );
+		}
+
 		/* translators: %s: name of the WordPress site */
 		$message = sprintf( __( "You have received a new form submission from %s:\n\n", 'migrate-off-elementor' ), get_bloginfo( 'name' ) );
 
-		foreach ( $form_data as $field => $value ) {
-			$message .= sprintf( "%s: %s\n", ucfirst( str_replace( array( '_', '-' ), ' ', $field ) ), $value );
+		foreach ( $form_data as $label => $value ) {
+			$message .= sprintf( "%s: %s\n", $label, $value );
 		}
 
 		/* translators: %s: date and time of form submission */
 		$message .= sprintf( "\n\n" . __( 'Submitted at: %s', 'migrate-off-elementor' ), current_time( 'mysql' ) );
 
-		// Set email headers
 		$headers = array( 'Content-Type: text/plain; charset=UTF-8' );
 
-		// Try to send email
-		$email_sent = wp_mail( $admin_email, $subject, $message, $headers );
-
-		if ( $email_sent ) {
-			wp_send_json_success(
-				array(
-					'message' => __( 'Your submission was successful. We will get back to you soon!', 'migrate-off-elementor' ),
-				)
-			);
-		} else {
-			wp_send_json_error(
-				array(
-					'message' => __( 'Your submission failed because of an error. Please try again.', 'migrate-off-elementor' ),
-				)
-			);
+		// Reply-To is only ever an address that passed is_email(), so it cannot carry a second header.
+		$reply_to_field = isset( $settings['reply_to_field'] ) ? sanitize_key( (string) $settings['reply_to_field'] ) : '';
+		foreach ( $fields as $field ) {
+			if ( '' !== $reply_to_field && $field['customId'] === $reply_to_field && 'email' === $field['fieldType'] ) {
+				$reply_to = self::read_submitted_field( $field );
+				if ( is_email( $reply_to ) ) {
+					$headers[] = 'Reply-To: ' . $reply_to;
+				}
+			}
 		}
+
+		if ( wp_mail( $recipients, $subject, $message, $headers ) ) {
+			wp_send_json_success( $success );
+		}
+
+		wp_send_json_error(
+			array(
+				'message' => $error_message,
+			)
+		);
 	}
 
 	/**
