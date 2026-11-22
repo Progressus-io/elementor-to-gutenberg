@@ -169,6 +169,36 @@
 				this.resetSelectionForMode( this.state.modeSelection );
 			}
 			this.render();
+			this.loadThemeScreenshots();
+		}
+
+		/**
+		 * Fetch the screenshots of suggested themes that are not installed,
+		 * once the wizard is on screen.
+		 */
+		loadThemeScreenshots() {
+			const suggested = Array.isArray( this.themes.suggestedCoreThemes )
+				? this.themes.suggestedCoreThemes
+				: [];
+			if ( ! suggested.some( ( theme ) => ! theme.screenshot ) ) {
+				return;
+			}
+
+			this.request( 'blockshift_theme_screenshots', {} )
+				.then( ( data ) => {
+					const screenshots = ( data && data.screenshots ) || {};
+					let changed = false;
+					suggested.forEach( ( theme ) => {
+						if ( ! theme.screenshot && screenshots[ theme.slug ] ) {
+							theme.screenshot = screenshots[ theme.slug ];
+							changed = true;
+						}
+					} );
+					if ( changed && this.state.currentStep === 'theme' ) {
+						this.render();
+					}
+				} )
+				.catch( () => {} );
 		}
 
 		resetSelectionForMode( mode ) {
@@ -366,12 +396,17 @@
 		/**
 		 * Number of detected Elementor header and footer templates.
 		 *
-		 * @return {number} Headers plus footers.
+		 * Only published templates count: a draft is not shown on the site,
+		 * so switching theme does not take it away.
+		 *
+		 * @return {number} Published headers plus footers.
 		 */
 		getElementorTemplateCount() {
+			const isLive = ( template ) =>
+				! template.status || template.status === 'publish';
 			return (
-				this.getTemplatesFor( 'header' ).length +
-				this.getTemplatesFor( 'footer' ).length
+				this.getTemplatesFor( 'header' ).filter( isLive ).length +
+				this.getTemplatesFor( 'footer' ).filter( isLive ).length
 			);
 		}
 

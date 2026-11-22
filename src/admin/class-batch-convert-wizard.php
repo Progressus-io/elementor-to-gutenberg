@@ -197,6 +197,7 @@ class Batch_Convert_Wizard {
 		add_action( 'admin_menu', array( $this, 'register_menu' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 		add_action( 'wp_ajax_blockshift_pages', array( $this, 'ajax_get_pages' ) );
+		add_action( 'wp_ajax_blockshift_theme_screenshots', array( $this, 'ajax_get_theme_screenshots' ) );
 		add_action( 'wp_ajax_blockshift_start_job', array( $this, 'ajax_start_job' ) );
 		add_action( 'wp_ajax_blockshift_poll_job', array( $this, 'ajax_poll_job' ) );
 		add_action( 'wp_ajax_blockshift_cancel_job', array( $this, 'ajax_cancel_job' ) );
@@ -337,6 +338,28 @@ class Batch_Convert_Wizard {
 				'preflight' => $this->build_preflight_summary(),
 			)
 		);
+	}
+
+	/**
+	 * Return the screenshots of the suggested themes that are not installed.
+	 *
+	 * The WordPress.org lookup runs here, after the wizard has loaded, so a slow
+	 * or blocked connection never delays the wizard page itself.
+	 *
+	 * @return void
+	 */
+	public function ajax_get_theme_screenshots(): void {
+		$this->verify_ajax_request();
+
+		$installed   = wp_get_themes();
+		$screenshots = array();
+		foreach ( self::SUGGESTED_BLOCK_THEMES as $theme ) {
+			if ( ! isset( $installed[ $theme['slug'] ] ) ) {
+				$screenshots[ $theme['slug'] ] = $this->get_remote_theme_screenshot( (string) $theme['slug'], true );
+			}
+		}
+
+		wp_send_json_success( array( 'screenshots' => $screenshots ) );
 	}
 
 	private function build_preflight_summary(): array {
@@ -1326,7 +1349,7 @@ class Batch_Convert_Wizard {
 
 			$theme['isInstalled']  = false;
 			$theme['isBlockTheme'] = true;
-			$theme['screenshot']   = $this->get_remote_theme_screenshot( (string) $theme['slug'] );
+			$theme['screenshot']   = $this->get_remote_theme_screenshot( (string) $theme['slug'], false );
 			$suggested[]           = $theme;
 		}
 
@@ -1343,15 +1366,20 @@ class Batch_Convert_Wizard {
 	 * The result is cached for a day, or for an hour when the API fails, and an
 	 * empty string means the card shows no image.
 	 *
-	 * @param string $slug Theme slug.
+	 * @param string $slug  Theme slug.
+	 * @param bool   $fetch Whether to ask WordPress.org when nothing is cached. The page render passes false.
 	 *
 	 * @return string The screenshot URL, or an empty string.
 	 */
-	private function get_remote_theme_screenshot( string $slug ): string {
+	private function get_remote_theme_screenshot( string $slug, bool $fetch ): string {
 		$cache_key = 'blockshift_theme_screenshot_' . sanitize_key( $slug );
 		$cached    = get_transient( $cache_key );
 		if ( is_string( $cached ) ) {
 			return $cached;
+		}
+
+		if ( ! $fetch ) {
+			return '';
 		}
 
 		require_once ABSPATH . 'wp-admin/includes/theme.php';
