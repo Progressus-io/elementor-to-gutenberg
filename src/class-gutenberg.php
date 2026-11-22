@@ -55,6 +55,14 @@ class Gutenberg {
 	 */
 	private const DEFAULT_FORM_FIELDS = array( 'name', 'email', 'message' );
 
+	/**
+	 * Classes conversion adds that mark a block as this plugin's output.
+	 *
+	 * The converted-page wrapper is matched separately by its
+	 * `blockshift-page-` prefix, since its suffix is the post ID.
+	 */
+	private const PLUGIN_CONTENT_CLASSES = array( 'blockshift-full-width-section', 'blockshift-unsupported-widget' );
+
 
 	/**
 	 * Instance to call certain functions globally within the plugin
@@ -272,6 +280,7 @@ class Gutenberg {
 	public function init_hooks(): void {
 		add_action( 'init', array( $this, 'init' ), 1 );
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
+		add_filter( 'render_block', array( $this, 'enqueue_assets_for_rendered_block' ), 10, 2 );
 		add_action( 'admin_enqueue_scripts', array( $this, 'fontawesome_icon_block_enqueue_fontawesome' ) );
 		add_action( 'wp_ajax_blockshift_form_submit', array( $this, 'handle_form_submission' ) );
 		add_action( 'wp_ajax_nopriv_blockshift_form_submit', array( $this, 'handle_form_submission' ) );
@@ -502,10 +511,11 @@ class Gutenberg {
 	/**
 	 * Whether the post being served carries any of this plugin's content.
 	 *
-	 * Converted pages and this plugin's blocks both leave "blockshift" in the
-	 * post content - as a `wp:blockshift/*` block name, a `blockshift-*` class,
-	 * or a converted-page wrapper id - so one lookup over content WordPress has
-	 * already loaded answers it.
+	 * A post the wizard wrote is recognised by its source meta. Anything else
+	 * has to contain one of this plugin's blocks or a block carrying one of the
+	 * classes conversion adds - matching the word "blockshift" anywhere in the
+	 * content also caught posts that merely mention it, such as a link to a
+	 * site whose domain contains it.
 	 */
 	private function current_post_has_plugin_content(): bool {
 		if ( ! is_singular() ) {
@@ -517,12 +527,95 @@ class Gutenberg {
 			return false;
 		}
 
+		if ( '' !== (string) get_post_meta( $post_id, '_blockshift_source_id', true ) ) {
+			return true;
+		}
+
 		$content = (string) get_post_field( 'post_content', $post_id );
-		if ( '' === $content ) {
+		if ( '' === $content || false === strpos( $content, 'blockshift' ) ) {
 			return false;
 		}
 
-		return false !== strpos( $content, 'blockshift' );
+		return self::blocks_contain_plugin_content( parse_blocks( $content ) );
+	}
+
+	/**
+	 * Whether any block in a parsed tree, at any depth, is plugin content.
+	 *
+	 * @param array<int, array<string, mixed>> $blocks Blocks as returned by parse_blocks().
+	 *
+	 * @return bool
+	 */
+	private static function blocks_contain_plugin_content( array $blocks ): bool {
+		foreach ( $blocks as $block ) {
+			if ( ! is_array( $block ) ) {
+				continue;
+			}
+
+			if ( self::is_plugin_block( $block ) ) {
+				return true;
+			}
+
+			if ( ! empty( $block['innerBlocks'] ) && is_array( $block['innerBlocks'] ) && self::blocks_contain_plugin_content( $block['innerBlocks'] ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Whether a single block is one of this plugin's blocks or carries a class
+	 * that conversion adds.
+	 *
+	 * Every converted page, post and header/footer part is wrapped in a group
+	 * whose class starts with `blockshift-page-`, so the wrapper alone marks
+	 * converted output; the other classes cover sections copied out of it.
+	 *
+	 * @param array<string, mixed> $block Parsed block.
+	 *
+	 * @return bool
+	 */
+	private static function is_plugin_block( array $block ): bool {
+		$name = isset( $block['blockName'] ) ? (string) $block['blockName'] : '';
+		if ( 0 === strpos( $name, 'blockshift/' ) ) {
+			return true;
+		}
+
+		$class_name = $block['attrs']['className'] ?? '';
+		if ( ! is_string( $class_name ) || false === strpos( $class_name, 'blockshift-' ) ) {
+			return false;
+		}
+
+		foreach ( preg_split( '/\s+/', trim( $class_name ) ) as $token ) {
+			if ( 0 === strpos( $token, 'blockshift-page-' ) || in_array( $token, self::PLUGIN_CONTENT_CLASSES, true ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Load the plugin's front-end assets when a block it styles is rendered.
+	 *
+	 * The per-post check only sees the queried post. A converted header or
+	 * footer part, a synced pattern or a converted post shown in a loop renders
+	 * this plugin's markup on pages whose own content has none of it. Block
+	 * themes render the whole template before wp_head(), so the assets still
+	 * land in the head; on classic themes they print in the footer.
+	 *
+	 * @param string               $block_content Rendered block HTML.
+	 * @param array<string, mixed> $block         Parsed block.
+	 *
+	 * @return string Unchanged block HTML.
+	 */
+	public function enqueue_assets_for_rendered_block( $block_content, $block ) {
+		if ( ! is_admin() && is_array( $block ) && self::is_plugin_block( $block ) ) {
+			$this->enqueue_plugin_content_assets();
+		}
+
+		return $block_content;
 	}
 
 	/**
@@ -541,38 +634,7 @@ class Gutenberg {
 			return;
 		}
 
-		wp_enqueue_style(
-			'font-awesome-custom',
-			BLOCKSHIFT_DIR_URL . '/assets/vendor/fontawesome/css/all.min.css',
-			array(),
-			'6.5.0'
-		);
-
-		wp_enqueue_style(
-			'blockshift-layout-fixes',
-			BLOCKSHIFT_DIR_URL . '/assets/css/layout-fixes.css',
-			array(),
-			$this->asset_version( 'assets/css/layout-fixes.css' )
-		);
-
-		/*
-		 * Conversion leaves a note in place of a widget it had no block for.
-		 * That note is for whoever edits the page, not for visitors, so the
-		 * front end hides it - the editor loads the same stylesheet without
-		 * this rule and keeps showing it.
-		 */
-		wp_add_inline_style( 'blockshift-layout-fixes', '.blockshift-unsupported-widget{display:none;}' );
-
-		wp_enqueue_script(
-			'blockshift-scripts',
-			BLOCKSHIFT_DIR_URL . '/assets/js/scripts.js',
-			array( 'jquery' ),
-			$this->asset_version( 'assets/js/scripts.js' ),
-			array(
-				'in_footer' => true,
-				'strategy'  => 'defer',
-			)
-		);
+		$this->enqueue_plugin_content_assets();
 
 		if ( has_block( 'blockshift/icon' ) ) {
 			wp_enqueue_style( 'dashicons' );
@@ -608,6 +670,55 @@ class Gutenberg {
 
 			$this->remember_declared_form_fields( (int) get_queried_object_id() );
 		}
+	}
+
+	/**
+	 * Enqueue the assets every piece of this plugin's markup relies on.
+	 *
+	 * Safe to call more than once per request. The queue is checked rather
+	 * than a flag because WordPress dequeues assets enqueued while rendering a
+	 * block whose output turns out empty, so an earlier enqueue may have been
+	 * undone by the time wp_enqueue_scripts runs.
+	 */
+	private function enqueue_plugin_content_assets(): void {
+		if ( wp_style_is( 'blockshift-layout-fixes', 'enqueued' ) || wp_style_is( 'blockshift-layout-fixes', 'done' ) ) {
+			return;
+		}
+
+		wp_enqueue_style(
+			'font-awesome-custom',
+			BLOCKSHIFT_DIR_URL . '/assets/vendor/fontawesome/css/all.min.css',
+			array(),
+			'6.5.0'
+		);
+
+		wp_enqueue_style(
+			'blockshift-layout-fixes',
+			BLOCKSHIFT_DIR_URL . '/assets/css/layout-fixes.css',
+			array(),
+			$this->asset_version( 'assets/css/layout-fixes.css' )
+		);
+
+		/*
+		 * Conversion leaves a note in place of a widget it had no block for.
+		 * That note is for whoever edits the page, not for visitors, so the
+		 * front end hides it - the editor loads the same stylesheet without
+		 * this rule and keeps showing it.
+		 */
+		if ( empty( wp_styles()->get_data( 'blockshift-layout-fixes', 'after' ) ) ) {
+			wp_add_inline_style( 'blockshift-layout-fixes', '.blockshift-unsupported-widget{display:none;}' );
+		}
+
+		wp_enqueue_script(
+			'blockshift-scripts',
+			BLOCKSHIFT_DIR_URL . '/assets/js/scripts.js',
+			array( 'jquery' ),
+			$this->asset_version( 'assets/js/scripts.js' ),
+			array(
+				'in_footer' => true,
+				'strategy'  => 'defer',
+			)
+		);
 	}
 
 	/**
