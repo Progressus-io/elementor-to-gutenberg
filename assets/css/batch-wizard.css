@@ -597,6 +597,210 @@
 }
 
 /* ============================================================
+   INTRO ("BEFORE YOU START") SCREEN
+   ============================================================ */
+
+.blockshift-intro-lead {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    padding: 18px 20px;
+    margin-bottom: 24px;
+    background: var(--blockshift-warning-soft);
+    border: 1px solid var(--blockshift-warning-soft-border);
+    border-radius: var(--blockshift-radius-lg);
+    color: #934b08;
+}
+
+.blockshift-intro-lead svg {
+    width: 26px;
+    height: 26px;
+    flex: none;
+    margin-top: 1px;
+}
+
+.blockshift-intro-lead strong {
+    display: block;
+    font-family: var(--blockshift-font-display);
+    font-size: 16px;
+    color: #7a3d05;
+    margin-bottom: 4px;
+}
+
+.blockshift-intro-lead p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.55;
+}
+
+.blockshift-intro-grid {
+    display: grid;
+    grid-template-columns: 1.25fr 1fr;
+    gap: 16px;
+    margin-bottom: 28px;
+}
+
+.blockshift-intro-panel {
+    border: 1px solid var(--blockshift-border);
+    border-radius: var(--blockshift-radius-lg);
+    padding: 20px 22px;
+    background: var(--blockshift-surface);
+}
+
+.blockshift-intro-panel--safe {
+    background: var(--blockshift-surface-alt);
+}
+
+.blockshift-intro-panel h3 {
+    margin: 0 0 12px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--blockshift-text);
+}
+
+.blockshift-intro-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.blockshift-intro-list li {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    margin: 0 0 12px;
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--blockshift-text-secondary);
+}
+
+.blockshift-intro-list li:last-child {
+    margin-bottom: 0;
+}
+
+.blockshift-intro-list svg {
+    width: 18px;
+    height: 18px;
+    flex: none;
+    margin-top: 1px;
+}
+
+.blockshift-intro-list--risk svg {
+    color: var(--blockshift-warning);
+}
+
+.blockshift-intro-list--safe svg {
+    color: var(--blockshift-success);
+}
+
+.blockshift-intro-list b {
+    color: var(--blockshift-text);
+}
+
+.blockshift-intro-question {
+    margin: 0 0 12px;
+    font-family: var(--blockshift-font-display);
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--blockshift-text);
+}
+
+.blockshift-intro-options {
+    display: grid;
+    gap: 12px;
+}
+
+.blockshift-intro-option {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    border: 2px solid var(--blockshift-border);
+    border-radius: var(--blockshift-radius-lg);
+    padding: 16px 18px;
+    background: var(--blockshift-surface);
+    cursor: pointer;
+    transition: all var(--blockshift-transition);
+}
+
+.blockshift-intro-option:hover {
+    border-color: var(--blockshift-primary-soft-border);
+    background: var(--blockshift-surface-alt);
+}
+
+.blockshift-intro-option input[type="radio"] {
+    margin: 3px 0 0;
+    flex: none;
+}
+
+.blockshift-intro-option input[type="radio"]:checked {
+    border-color: var(--blockshift-primary);
+    background: radial-gradient(circle, var(--blockshift-primary) 0 4px, #fff 5px);
+}
+
+.blockshift-intro-option input[type="radio"]:checked::before {
+    content: none;
+}
+
+.blockshift-intro-option--production input[type="radio"]:checked {
+    border-color: var(--blockshift-warning);
+    background: radial-gradient(circle, var(--blockshift-warning) 0 4px, #fff 5px);
+}
+
+.blockshift-intro-option-title {
+    display: block;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--blockshift-text);
+}
+
+.blockshift-intro-option-desc {
+    display: block;
+    margin-top: 3px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--blockshift-text-secondary);
+}
+
+.blockshift-intro-badge {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 2px 9px;
+    vertical-align: 2px;
+    border-radius: var(--blockshift-radius-pill);
+    background: var(--blockshift-success-soft);
+    color: #096748;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.blockshift-intro-option.is-active {
+    border-color: var(--blockshift-primary);
+    background: var(--blockshift-primary-soft);
+}
+
+.blockshift-intro-option--production.is-active {
+    border-color: var(--blockshift-warning);
+    background: var(--blockshift-warning-soft);
+}
+
+.blockshift-intro-production-note {
+    margin: 16px 0 0;
+}
+
+.blockshift-intro-hint {
+    font-size: 13px;
+    color: var(--blockshift-text-tertiary);
+}
+
+@media (max-width: 960px) {
+    .blockshift-intro-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ============================================================
    SELECT STEP TOOLBAR
    ============================================================ */
 

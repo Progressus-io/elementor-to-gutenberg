@@ -120,7 +120,8 @@
 			this.userCanManageTemplateParts =
 				!! config.userCanManageTemplateParts;
 			this.state = {
-				currentStep: 'mode',
+				currentStep: 'intro',
+				siteType: '',
 				mode: 'auto',
 				modeSelection: 'auto',
 				selectedPageIds: new Set(),
@@ -1103,6 +1104,268 @@
 			const className =
 				'blockshift-alert blockshift-alert-' + this.state.notice.type;
 			return createElement( 'div', className, this.state.notice.message );
+		}
+
+		renderIntroStep() {
+			const s = this.strings;
+			const svgNS = 'http://www.w3.org/2000/svg';
+			const makeIcon = function ( pathD ) {
+				const svg = document.createElementNS( svgNS, 'svg' );
+				svg.setAttribute( 'viewBox', '0 0 24 24' );
+				svg.setAttribute( 'fill', 'none' );
+				svg.setAttribute( 'stroke', 'currentColor' );
+				svg.setAttribute( 'stroke-width', '2' );
+				svg.setAttribute( 'stroke-linecap', 'round' );
+				svg.setAttribute( 'stroke-linejoin', 'round' );
+				svg.setAttribute( 'aria-hidden', 'true' );
+				const path = document.createElementNS( svgNS, 'path' );
+				path.setAttribute( 'd', pathD );
+				svg.appendChild( path );
+				return svg;
+			};
+			const alertIcon =
+				'M12 3a9 9 0 100 18 9 9 0 000-18zM12 8v4M12 16h.01';
+			const checkIcon = 'M20 6L9 17l-5-5';
+
+			const container = createElement( 'div' );
+			container.appendChild(
+				createElement(
+					'h2',
+					'blockshift-wizard-step-title',
+					s.introTitle || 'Before you start'
+				)
+			);
+			container.appendChild(
+				createElement(
+					'p',
+					'blockshift-step-description',
+					s.introDesc ||
+						'This wizard can change how your site looks to visitors. Please read this before you continue.'
+				)
+			);
+
+			const lead = createElement( 'div', 'blockshift-intro-lead' );
+			lead.appendChild(
+				makeIcon(
+					'M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0zM12 9v4M12 17h.01'
+				)
+			);
+			const leadBody = createElement( 'div' );
+			leadBody.appendChild(
+				createElement(
+					'strong',
+					null,
+					s.introLeadTitle || 'Test on a staging site first'
+				)
+			);
+			leadBody.appendChild(
+				createElement(
+					'p',
+					null,
+					s.introLeadText ||
+						'Run the wizard on a staging copy of your site, check the result, and only run it on your live site when you are ready for the final migration. Take a full backup of your files and database before you start.'
+				)
+			);
+			lead.appendChild( leadBody );
+			container.appendChild( lead );
+
+			const buildPanel = ( title, items, modifier, iconPath ) => {
+				const panel = createElement(
+					'div',
+					'blockshift-intro-panel blockshift-intro-panel--' + modifier
+				);
+				panel.appendChild( createElement( 'h3', null, title ) );
+				const list = createElement(
+					'ul',
+					'blockshift-intro-list blockshift-intro-list--' + modifier
+				);
+				items.forEach( ( item ) => {
+					const li = createElement( 'li' );
+					li.appendChild( makeIcon( iconPath ) );
+					const text = createElement( 'span' );
+					if ( item.label ) {
+						text.appendChild(
+							createElement( 'b', null, item.label )
+						);
+						text.appendChild( document.createTextNode( ' ' ) );
+					}
+					text.appendChild( document.createTextNode( item.text ) );
+					li.appendChild( text );
+					list.appendChild( li );
+				} );
+				panel.appendChild( list );
+				return panel;
+			};
+
+			const grid = createElement( 'div', 'blockshift-intro-grid' );
+			grid.appendChild(
+				buildPanel(
+					s.introChangesTitle || 'What can change on your site',
+					[
+						{
+							label: s.introChangeThemeLabel || 'The active theme.',
+							text:
+								s.introChangeThemeText ||
+								'If you pick a different theme in the wizard, it becomes the theme for your whole site as soon as the conversion starts. Every page changes, not only the ones you convert.',
+						},
+						{
+							label:
+								s.introChangePartsLabel ||
+								'Headers and footers.',
+							text:
+								s.introChangePartsText ||
+								'Block themes do not show Elementor header and footer templates. Any you do not convert stop showing on every page.',
+						},
+						{
+							label: s.introChangeCssLabel || 'Additional CSS.',
+							text:
+								s.introChangeCssText ||
+								"When the theme is switched, the old theme's Additional CSS is copied to the new theme.",
+						},
+					],
+					'risk',
+					alertIcon
+				)
+			);
+			grid.appendChild(
+				buildPanel(
+					s.introSafeTitle || 'What stays as it is',
+					[
+						{
+							text:
+								s.introSafePages ||
+								'Your Elementor pages are never deleted or edited. Converted pages are saved as new pages.',
+						},
+						{
+							text:
+								s.introSafeTheme ||
+								'Choosing "Keep current theme" skips the theme switch and the Additional CSS copy.',
+						},
+						{
+							text:
+								s.introSafeStart ||
+								'Nothing changes until you start the conversion on the last step.',
+						},
+					],
+					'safe',
+					checkIcon
+				)
+			);
+			container.appendChild( grid );
+
+			container.appendChild(
+				createElement(
+					'p',
+					'blockshift-intro-question',
+					s.introQuestion ||
+						'Which site are you running the wizard on?'
+				)
+			);
+
+			const options = createElement( 'div', 'blockshift-intro-options' );
+			options.setAttribute( 'role', 'radiogroup' );
+			[
+				{
+					key: 'staging',
+					title: s.introStagingTitle || 'This is a staging site',
+					badge: s.introRecommended || 'Recommended',
+					description:
+						s.introStagingDesc ||
+						'A copy of my site that visitors do not see.',
+				},
+				{
+					key: 'production',
+					title:
+						s.introProductionTitle ||
+						'This is a production site and I still want to continue with the migration',
+					description:
+						s.introProductionDesc ||
+						'Visitors see this site. I understand the wizard can change how the whole site looks.',
+				},
+			].forEach( ( option ) => {
+				const label = createElement(
+					'label',
+					'blockshift-intro-option blockshift-intro-option--' +
+						option.key +
+						( this.state.siteType === option.key ? ' is-active' : '' )
+				);
+				const input = document.createElement( 'input' );
+				input.type = 'radio';
+				input.name = 'blockshift-site-type';
+				input.value = option.key;
+				input.checked = this.state.siteType === option.key;
+				input.addEventListener( 'change', () => {
+					this.state.siteType = option.key;
+					this.render();
+					const checked = this.root.querySelector(
+						'input[name="blockshift-site-type"]:checked'
+					);
+					if ( checked ) {
+						checked.focus();
+					}
+				} );
+				label.appendChild( input );
+				const body = createElement( 'span' );
+				const title = createElement(
+					'span',
+					'blockshift-intro-option-title',
+					option.title
+				);
+				if ( option.badge ) {
+					title.appendChild(
+						createElement(
+							'span',
+							'blockshift-intro-badge',
+							option.badge
+						)
+					);
+				}
+				body.appendChild( title );
+				body.appendChild(
+					createElement(
+						'span',
+						'blockshift-intro-option-desc',
+						option.description
+					)
+				);
+				label.appendChild( body );
+				options.appendChild( label );
+			} );
+			container.appendChild( options );
+
+			if ( this.state.siteType === 'production' ) {
+				container.appendChild(
+					createElement(
+						'div',
+						'blockshift-alert blockshift-alert-error blockshift-intro-production-note',
+						s.introProductionNote ||
+							'You are about to run the wizard on a live site. Take a full backup first. If you switch theme, visitors see the change straight away. To leave the theme as it is, choose "Keep current theme" on the theme step.'
+					)
+				);
+			}
+
+			const buttons = createElement( 'div', 'blockshift-wizard-buttons' );
+			buttons.appendChild(
+				createElement(
+					'span',
+					'blockshift-intro-hint',
+					this.state.siteType
+						? ''
+						: s.introHint || 'Choose an option to continue.'
+				)
+			);
+			const startBtn = createButton(
+				s.introStart || 'Start the wizard',
+				'button button-primary'
+			);
+			startBtn.disabled = ! this.state.siteType;
+			startBtn.addEventListener( 'click', () => {
+				this.goToStep( 'mode' );
+			} );
+			buttons.appendChild( startBtn );
+			container.appendChild( buttons );
+
+			return container;
 		}
 
 		renderModeStep() {
@@ -4124,6 +4387,10 @@
 		render() {
 			this.closeWarningPopover();
 			this.root.innerHTML = '';
+			if ( this.state.currentStep === 'intro' ) {
+				this.root.appendChild( this.renderIntroStep() );
+				return;
+			}
 			this.root.appendChild( this.renderHeader() );
 			const notice = this.renderNotice();
 			if ( notice ) {

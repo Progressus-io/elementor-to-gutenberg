@@ -3,7 +3,7 @@ Contributors: shadim
 Tags: gutenberg, migration, conversion, blocks
 Requires at least: 6.7
 Tested up to: 7.1
-Stable tag: 1.2.0
+Stable tag: 1.2.1
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -160,6 +160,9 @@ Lucide line icons (ISC) are inlined uncompressed in assets/js/pgs-icons.js. Sour
 
 == Changelog ==
 
+= 1.2.1 =
+* Add: The Conversion Wizard now opens with a "Before you start" screen that recommends testing on a staging site, lists what can change on your site, and asks whether the site is staging or production before you continue.
+
 = 1.2.0 =
 * Add: Videos from your Media Library, YouTube, Vimeo, Dailymotion and VideoPress now convert.
 * Add: The HTML widget, menu anchors, Template widgets and global widgets now convert.
@@ -197,6 +200,9 @@ Lucide line icons (ISC) are inlined uncompressed in assets/js/pgs-icons.js. Sour
 * Initial release.
 
 == Upgrade Notice ==
+
+= 1.2.1 =
+The Conversion Wizard now starts with a screen that explains what can change on your site and recommends testing on a staging site first.
 
 = 1.2.0 =
 More Elementor widgets now convert, and converted pages stay as private as the original. Pages converted with an older version do not change on their own: re-convert them from the Conversion Wizard with the option to convert again pages made by an older version.

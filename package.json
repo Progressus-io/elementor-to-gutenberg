@@ -1,6 +1,6 @@
 {
 	"name": "migrate-off-elementor",
-	"version": "1.2.0",
+	"version": "1.2.1",
 	"description": "Convert Elementor layouts into native WordPress blocks.",
 	"main": "build/index.js",
 	"files": [
